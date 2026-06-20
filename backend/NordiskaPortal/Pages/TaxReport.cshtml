@@ -1,0 +1,51 @@
+@page
+@model NordiskaPortal.Pages.TaxReportModel
+@{
+    ViewData["Title"] = "Skatteunderlag";
+}
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Ladda ner skatteunderlag</h3>
+            </div>
+            <div class="panel-body">
+                <p>
+                    Ditt skatteunderlag innehåller alla transaktioner och ränteinkomster
+                    för innevarande år. Dokumentet laddas ner som PDF.
+                </p>
+                <p class="text-muted">
+                    <strong>Obs:</strong> Generering kan ta några sekunder beroende på
+                    antal transaktioner.
+                </p>
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group">
+                        <label>Välj konto</label>
+                        <select class="form-control" name="accountId">
+                            @foreach (var acc in Model.Accounts)
+                            {
+                                <option value="@acc.Id">@acc.AccountNumber</option>
+                            }
+                            <option value="0">Alla konton</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>År</label>
+                        <select class="form-control" name="year">
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="glyphicon glyphicon-download-alt"></span>
+                        Generera och ladda ner
+                    </button>
+                    <a href="/Dashboard" class="btn btn-default">Tillbaka</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,64 @@
+@page
+@model NordiskaPortal.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Mitt konto";
+}
+
+<h2>Välkommen, @Model.CustomerName!</h2>
+<p class="text-muted">Senast inloggad: @DateTime.Now.ToString("yyyy-MM-dd HH:mm") (serverloggning ej implementerad)</p>
+
+<div class="row" style="margin-top: 20px;">
+    @foreach (var account in Model.Accounts)
+    {
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">Konto @account.AccountNumber</h4>
+                </div>
+                <div class="panel-body">
+                    <p>Kontotyp: <strong>@account.AccountType</strong></p>
+                    <p>Saldo: <span class="balance-amount">@account.Balance.ToString("N2") kr</span></p>
+                    <p>Ränta: <strong>@((account.InterestRate * 100).ToString("F2"))%</strong></p>
+                    <hr />
+                    <p><strong>Beräknad årsränta:</strong></p>
+                    <p>@account.YearlyInterest.ToString("N2") kr
+                        <span class="text-muted">(beräknat på nuvarande saldo)</span></p>
+                    <a href="/Deposit?accountId=@account.Id" class="btn btn-success btn-sm">Sätt in / Ta ut</a>
+                    <a href="/TaxReport?accountId=@account.Id" class="btn btn-default btn-sm">Skatteunderlag</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (!Model.Accounts.Any())
+{
+    <div class="alert alert-info">Inga konton hittades.</div>
+}
+
+<h3>Senaste transaktioner</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Datum</th>
+            <th>Konto</th>
+            <th>Typ</th>
+            <th>Belopp</th>
+            <th>Saldo efter</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tx in Model.RecentTransactions)
+        {
+            <tr>
+                <td>@tx.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@tx.AccountNumber</td>
+                <td>@(tx.Type == "deposit" ? "Insättning" : "Uttag")</td>
+                <td class="@(tx.Type == "deposit" ? "text-success" : "text-danger")">
+                    @(tx.Type == "deposit" ? "+" : "-")@tx.Amount.ToString("N2") kr
+                </td>
+                <td>@tx.BalanceAfter.ToString("N2") kr</td>
+            </tr>
+        }
+    </tbody>
+</table>
