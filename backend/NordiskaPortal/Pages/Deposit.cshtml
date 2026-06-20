@@ -1,0 +1,79 @@
+@page
+@model NordiskaPortal.Pages.DepositModel
+@{
+    ViewData["Title"] = "Insättning / Uttag";
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Insättning / Uttag</h3>
+            </div>
+            <div class="panel-body">
+                @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                {
+                    <div class="alert alert-success">@Model.SuccessMessage</div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger">@Model.ErrorMessage</div>
+                }
+
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group">
+                        <label>Välj konto</label>
+                        <select class="form-control" name="accountId">
+                            @foreach (var acc in Model.Accounts)
+                            {
+                                var isSelected = acc.Id.ToString() == Request.Query["accountId"];
+                                if (isSelected)
+                                {
+                                    <option value="@acc.Id" selected="selected">@acc.AccountNumber — @acc.Balance.ToString("N2") kr</option>
+                                }
+                                else
+                                {
+                                    <option value="@acc.Id">@acc.AccountNumber — @acc.Balance.ToString("N2") kr</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Typ</label>
+                        <select class="form-control" name="transactionType">
+                            <option value="deposit">Insättning</option>
+                            <option value="withdrawal">Uttag</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Belopp (kr)</label>
+                        <input type="number" class="form-control" name="amount"
+                               min="1" max="500000" step="0.01" placeholder="0.00" />
+                        <span class="help-block">Max uttag: 50 000 kr per transaktion</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Genomför</button>
+                    <a href="/Dashboard" class="btn btn-default">Avbryt</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Information</h3>
+            </div>
+            <div class="panel-body">
+                <p><strong>Insättningsgräns:</strong> Obegränsad</p>
+                <p><strong>Uttagsgräns:</strong> 50 000 kr / transaktion</p>
+                <p><strong>Ränta:</strong> Beräknas dagligen, utbetalas 31 december</p>
+                <p class="text-muted" style="font-size: 0.85em;">
+                    Insättningar och uttag behandlas direkt. Nordiska Sparbanken
+                    ansvarar ej för fel vid tekniska problem. Kontakta kundtjänst
+                    vid oklarheter.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
