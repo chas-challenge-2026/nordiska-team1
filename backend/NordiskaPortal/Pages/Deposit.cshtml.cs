@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Npgsql;
@@ -128,6 +129,32 @@ public class DepositModel : PageModel
 
             string verb = transactionType == "deposit" ? "Insättning" : "Uttag";
             SuccessMessage = $"{verb} på {amount:N2} kr genomförd. Nytt saldo: {newBalance:N2} kr.";
+
+            // Confirmation mail sent right here in the handler - no queue, no retry
+            try
+            {
+                string? email = null;
+                using (var mailCmd = new NpgsqlCommand(
+                    "SELECT email FROM customers WHERE id = @cid", conn))
+                {
+                    mailCmd.Parameters.AddWithValue("cid", int.Parse(customerId));
+                    email = mailCmd.ExecuteScalar() as string;
+                }
+
+                if (email != null)
+                {
+                    var smtp = new SmtpClient(
+                        _config["Smtp:Host"] ?? "localhost",
+                        int.Parse(_config["Smtp:Port"] ?? "25"));
+                    smtp.Send("noreply@nordiskasparbanken.se", email,
+                        $"{verb} genomförd",
+                        $"{verb} på {amount:N2} kr har genomförts. Nytt saldo: {newBalance:N2} kr.");
+                }
+            }
+            catch
+            {
+                // mail is not critical
+            }
 
             // Reload accounts to show updated balance
             LoadAccounts(customerId);

@@ -11,13 +11,7 @@ This directory is reserved for v2 native modules.
 - **Why native?** Thread.Sleep-based synchronous generation in v1 times out above ~20 accounts. A C/C++ batch worker called from a .NET background job can generate PDFs at 1,000/s using libharu or cairo.
 - **Interface:** Called via `dotnet exec` or a named pipe IPC from the .NET background job service.
 
-### 2. Guardrail Pipeline — `guardrail/`
-- **Language:** C++ (or Rust if team prefers)
-- **Purpose:** Inline content filter for AI copilot suggestions
-- **What it does:** Validates that AI-generated financial advice does not violate Finansinspektionen rules before surfacing to customer. Runs as a sidecar process.
-- **Performance requirement:** < 5ms p99 latency on 512-token input.
-
-### 3. PDF Signing Module — `pdf_signer/`
+### 2. PDF Signing Module — `pdf_signer/`
 - **Language:** C
 - **Purpose:** Cryptographic signing of generated tax report PDFs for audit trail
 - **What it does:** Computes SHA-256 hash of PDF content, signs with private key (PKCS#1), embeds signature in PDF metadata.

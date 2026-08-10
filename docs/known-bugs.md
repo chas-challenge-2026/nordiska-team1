@@ -85,3 +85,23 @@ UPDATE savings_accounts SET balance = balance + @delta WHERE id = @id
 **What happens:** The database password `nordiska123` appears in source code committed to git. Anyone with read access to the repository has the database credentials.
 
 **Correct fix:** Use environment variables or a secrets manager (Azure Key Vault, AWS Secrets Manager, HashiCorp Vault). In development, use `dotnet user-secrets`. Never commit credentials.
+
+---
+
+## Bug 9: FAQ Often Answers the Wrong Question
+
+**File:** `Pages/Faq.cshtml.cs`
+
+**What happens:** The FAQ is a hardcoded static list in the page model. Matching lowercases the question, splits on spaces, and returns the first entry whose keyword list shares any single word with the question. No ranking, no stemming, no stop-word handling. Ask "hur tar jag ut pengar" and the shared word "pengar" can hit the deposit entry before the withdrawal entry, so the answer is about deposits. Ask about closing an account and you may get the answer for opening one, because "konto" hits the earlier entry first.
+
+**Correct fix:** Move the entries to a `FaqEntry` table (question, answer, category, keywords). Implement rule-based matching that normalizes the input, scores all entries and returns the best-ranked hit, with a "no answer" fallback below a confidence threshold. Cover the match logic with unit tests.
+
+---
+
+## Bug 10: Emails Sent Inline from the Page Handler
+
+**File:** `Pages/Deposit.cshtml.cs`, `appsettings.json`
+
+**What happens:** After a successful deposit or withdrawal, a confirmation email is sent directly in the request handler with `SmtpClient` (the obsolete `System.Net.Mail` API), using `Smtp:Host`/`Smtp:Port` from configuration. There is no queue and no retry, and the whole send is wrapped in a bare `catch { }`. If no SMTP server is running, every mail silently disappears and nobody notices. If a server is running, the synchronous send blocks the request thread and adds its full latency (or timeout) to the user's transaction request.
+
+**Correct fix:** Treat notifications as their own component. Write a `Notification` row (recipient, type, ref_id, status, sent_at) in the same unit of work as the transaction, and let a background worker send the email with retry and status updates. The HTTP request should never wait on SMTP.
