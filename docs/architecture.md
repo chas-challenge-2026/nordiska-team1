@@ -13,6 +13,7 @@ ASP.NET Core Razor Pages (NordiskaPortal)
   │  ├── Pages/Dashboard      — Balance view (raw SQL)
   │  ├── Pages/Deposit        — Deposit/withdrawal (raw SQL, no transaction)
   │  ├── Pages/TaxReport      — Synchronous PDF generation (Thread.Sleep)
+  │  ├── Pages/Faq            - FAQ assistant (hardcoded keyword list)
   │  └── Pages/Logout         — Session.Clear()
   │
   ▼
@@ -44,6 +45,14 @@ Tax reports are generated synchronously in the HTTP request pipeline:
 
 For 3 transactions this is ~150ms overhead. For year-end batch (10,000 accounts × 50 transactions), this would require concurrent requests and would hit ASP.NET Core's request timeout.
 
+## FAQ Assistant
+
+The FAQ page holds a hardcoded static list of ~8 FAQ entries (question, answer, category, keywords) inside the `FaqModel` class. Matching is a keyword grep: the question is lowercased, split on spaces, and the first entry whose keyword list shares any word with the question wins. No ranking, no stemming, no normalization beyond lowercase. Overlapping keywords between entries mean the answer is often wrong or feels random.
+
+## Email Notifications
+
+Confirmation emails are sent inline from the Deposit page handler using `SmtpClient` (the obsolete `System.Net.Mail` API), with host and port read from `appsettings.json` (`Smtp:Host`, `Smtp:Port`). There is no queue and no retry. The send is wrapped in a bare `try { } catch { }`, so when no SMTP server is running every mail silently disappears. When a server does exist, the synchronous send adds its latency to the request.
+
 ## Configuration
 
 `appsettings.json` contains the live database connection string including credentials. There is also a hardcoded fallback `const string FALLBACK_CONN` in each page model.
@@ -54,4 +63,4 @@ All database calls are wrapped in `try { } catch { }` with no logging. Errors ar
 
 ## Deployment
 
-Docker Compose: `db` (Postgres 12) + `app` (.NET 8 Razor Pages on port 8080). The app connects to `db` by hostname. No TLS. No reverse proxy in v1.
+Docker Compose: `db` (Postgres 12) + `app` (.NET 6 Razor Pages on port 8080). The app connects to `db` by hostname. No TLS. No reverse proxy in v1.

@@ -12,7 +12,7 @@ v2 replaces the Razor Pages monolith with a proper layered system. Each componen
 - **Database:** PostgreSQL 15 (upgrade from 12). EF Core migrations replace `seed.sql`.
 - **Ledger pattern for transactions:** Never mutate `balance` directly. Instead, append an immutable `LedgerEntry` row and compute balance as `SUM(amount)`. Eliminates the race condition structurally.
 - **Auth:** Replace MD5 session cookie with JWT (short-lived access token + refresh token). Use `BCrypt.Net-Next` for password hashing. Optionally integrate BankID mock for v2.2.
-- **Rate limiting:** `Microsoft.AspNetCore.RateLimiting` — limit deposit/withdrawal endpoints to 10 req/min per customer.
+- **Rate limiting:** `Microsoft.AspNetCore.RateLimiting` on sensitive endpoints: limit login and deposit/withdrawal to 10 req/min per customer.
 - **Validation:** FluentValidation. No inline `if (amount <= 0)` in controllers.
 - **Error handling:** Global `IExceptionHandler` middleware with structured logging (Serilog) and correlation IDs.
 - **Health checks:** `/health` endpoint via `Microsoft.Extensions.Diagnostics.HealthChecks`.
@@ -20,6 +20,23 @@ v2 replaces the Razor Pages monolith with a proper layered system. Each componen
   - Year-end interest accrual
   - Batch PDF generation (delegates to native module)
   - Session cleanup
+
+---
+
+## FAQ Search
+
+- **Rule-based search against a controlled FAQ database with correct match logic.** Replaces the hardcoded keyword list in `Pages/Faq.cshtml.cs`.
+- **Model:** `FaqEntry` table (fraga, svar, kategori, nyckelord). Seeded and maintained via migrations, not source code.
+- **Match logic:** normalize the question (lowercase, strip punctuation, basic stemming), score every entry against its keyword list and return the best-ranked hit, not the first one. Below a confidence threshold, return a "no answer" response with a customer service fallback.
+- **API:** `GET /api/faq/search?q=...` served by a `FaqService`; the SPA renders the FAQ UI.
+
+---
+
+## Notifications
+
+- **Notification handling as a proper component.** No email sending inline from controllers (v1 calls `SmtpClient` directly in the Deposit page handler).
+- **Model:** `Notification` table (recipient, type, ref_id, status, sent_at).
+- **Flow:** the transaction service writes a `Notification` row and returns immediately. A background worker (Hangfire or `IHostedService`) picks up pending rows, sends the email, retries with backoff on failure and updates `status`/`sent_at`. Request latency is never coupled to SMTP.
 
 ---
 
@@ -35,6 +52,7 @@ v2 replaces the Razor Pages monolith with a proper layered system. Each componen
   - Deposit/Withdrawal form (real-time balance preview)
   - Transaction history (virtualized list)
   - Tax report download (polling job status)
+  - FAQ search (rule-based search against the FaqEntry database)
 
 ---
 
@@ -46,11 +64,6 @@ See `native/README.md` for full spec.
 - Batch-generate real PDFs using libharu or libpoppler
 - Called from .NET background job via `Process.Start` or P/Invoke
 - Target: 10,000 PDFs in < 5 minutes
-
-### guardrail (C++)
-- Content filter sidecar for AI copilot
-- Validates financial advice against rule list
-- < 5ms p99 on 512-token input
 
 ### pdf_signer (C)
 - SHA-256 + PKCS#1 signing via OpenSSL

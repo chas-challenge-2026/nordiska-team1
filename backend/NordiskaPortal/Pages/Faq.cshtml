@@ -1,0 +1,65 @@
+@page
+@model NordiskaPortal.Pages.FaqModel
+@{
+    ViewData["Title"] = "Vanliga frågor";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Vanliga frågor</h3>
+            </div>
+            <div class="panel-body">
+                <p>Ställ din fråga så söker vi fram ett svar ur vår FAQ.</p>
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group">
+                        <label>Din fråga</label>
+                        <input type="text" class="form-control" name="question"
+                               value="@Model.Question" placeholder="T.ex. När betalas räntan ut?" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sök svar</button>
+                </form>
+
+                @if (Model.Searched)
+                {
+                    <hr />
+                    @if (!string.IsNullOrEmpty(Model.MatchedQuestion))
+                    {
+                        <div class="alert alert-info">
+                            <p><strong>@Model.MatchedQuestion</strong></p>
+                            <p>@Model.Answer</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <p>@Model.Answer</p>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Exempel på frågor</h3>
+            </div>
+            <div class="panel-body">
+                <ul>
+                    <li>När betalas räntan ut?</li>
+                    <li>Hur gör jag ett uttag?</li>
+                    <li>Var hittar jag mitt årsbesked?</li>
+                    <li>Hur öppnar jag ett nytt sparkonto?</li>
+                </ul>
+                <p class="text-muted" style="font-size: 0.85em;">
+                    Hittar du inte svaret? Kontakta kundtjänst på 08-123 456 78,
+                    vardagar 9-17.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

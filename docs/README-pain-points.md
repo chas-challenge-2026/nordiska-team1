@@ -6,6 +6,8 @@
 - **Balance display:** The dashboard correctly shows account balances and calculates yearly interest (inline formula).
 - **Deposit/withdrawal:** Single-user deposits and withdrawals work correctly when no concurrent requests are made.
 - **Tax report:** Generates and downloads a text file with transaction history. Works for small accounts.
+- **FAQ page:** Renders, takes a question and returns an answer for most questions that contain a known keyword. Whether it is the right answer is another matter.
+- **Email confirmation:** A confirmation mail is attempted after every deposit/withdrawal. Delivered only if an SMTP server is listening; failures are invisible.
 - **CSRF protection:** AntiForgery tokens are present and validated on all POST forms.
 - **Docker Compose:** `docker compose up` from `infra/` starts the database and app together.
 - **Session isolation:** Each browser session is independent.
@@ -15,6 +17,10 @@
 ### At Scale
 - **Tax report generation times out** with more than ~200 transactions due to `Thread.Sleep(50)` per transaction in the request thread.
 - **Concurrent deposits corrupt balance.** Open two browser tabs, submit a deposit of 1,000 kr from both simultaneously — one will be lost.
+
+### FAQ and Notifications
+- **FAQ often answers the wrong question.** First keyword hit wins, no ranking, no stemming. Overlapping keywords between entries make the answers feel random.
+- **Confirmation emails are silently lost.** `SmtpClient` is called inline in the request handler; without an SMTP server every send fails inside a bare `catch { }`. With a server, the synchronous send adds latency to the transaction request.
 
 ### Security
 - **MD5 passwords** are trivially reversible. The seed data hash `482c811da5d5b4bc6d497ffa98491e38` corresponds to `password123` — easily verified on any rainbow table site.
