@@ -155,6 +155,17 @@ public class TaxReportModel : PageModel
             byte[] fileBytes = Encoding.UTF8.GetBytes(sb.ToString());
             string fileName = $"skatteunderlag_{year}_{DateTime.Now:yyyyMMddHHmm}.pdf";
 
+            // Audit: same file append as Deposit, no locking
+            try
+            {
+                System.IO.File.AppendAllText("audit.log",
+                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} kund {customerId} taxreport {year}\n");
+            }
+            catch
+            {
+                // audit is best effort
+            }
+
             return File(fileBytes, "application/pdf", fileName);
         }
         catch

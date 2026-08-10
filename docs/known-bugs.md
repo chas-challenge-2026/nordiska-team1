@@ -105,3 +105,13 @@ UPDATE savings_accounts SET balance = balance + @delta WHERE id = @id
 **What happens:** After a successful deposit or withdrawal, a confirmation email is sent directly in the request handler with `SmtpClient` (the obsolete `System.Net.Mail` API), using `Smtp:Host`/`Smtp:Port` from configuration. There is no queue and no retry, and the whole send is wrapped in a bare `catch { }`. If no SMTP server is running, every mail silently disappears and nobody notices. If a server is running, the synchronous send blocks the request thread and adds its full latency (or timeout) to the user's transaction request.
 
 **Correct fix:** Treat notifications as their own component. Write a `Notification` row (recipient, type, ref_id, status, sent_at) in the same unit of work as the transaction, and let a background worker send the email with retry and status updates. The HTTP request should never wait on SMTP.
+
+---
+
+## Bug 11: Audit Log Is a Throwaway Local File
+
+**Files:** `Pages/Deposit.cshtml.cs`, `Pages/TaxReport.cshtml.cs`
+
+**What happens:** Audit entries are written with `File.AppendAllText("audit.log", ...)` inline in the page handlers. The path is relative, so the file lives in the container working directory and is lost on every restart or redeploy. There is no locking, so concurrent requests can interleave or corrupt lines under load. There is no DB table, no signing and no integrity protection, so anyone with file access can edit or delete history without a trace. The write is wrapped in a bare `catch { }`, so a failed audit write is invisible.
+
+**Correct fix:** Store audit entries in a DB table (`AuditEntry`) written in the same unit of work as the audited action. Sign or hash-chain entries for tamper evidence (the v2 `pdf_signer` native module covers signing of generated documents). Never treat audit as best effort.

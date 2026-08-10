@@ -53,6 +53,10 @@ The FAQ page holds a hardcoded static list of ~8 FAQ entries (question, answer, 
 
 Confirmation emails are sent inline from the Deposit page handler using `SmtpClient` (the obsolete `System.Net.Mail` API), with host and port read from `appsettings.json` (`Smtp:Host`, `Smtp:Port`). There is no queue and no retry. The send is wrapped in a bare `try { } catch { }`, so when no SMTP server is running every mail silently disappears. When a server does exist, the synchronous send adds its latency to the request.
 
+## Audit Logging
+
+Audit is a single line appended to `audit.log` with `File.AppendAllText` directly in the page models (Deposit after a successful transaction, TaxReport when a report is downloaded). The path is relative, so the file lands in the container working directory and disappears on every restart or redeploy. There is no locking (concurrent requests can interleave lines), no DB table and no signing, so the log is trivially editable. Each write is wrapped in a bare `catch { }`.
+
 ## Configuration
 
 `appsettings.json` contains the live database connection string including credentials. There is also a hardcoded fallback `const string FALLBACK_CONN` in each page model.
