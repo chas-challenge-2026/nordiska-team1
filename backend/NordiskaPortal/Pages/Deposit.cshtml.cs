@@ -130,6 +130,18 @@ public class DepositModel : PageModel
             string verb = transactionType == "deposit" ? "Insättning" : "Uttag";
             SuccessMessage = $"{verb} på {amount:N2} kr genomförd. Nytt saldo: {newBalance:N2} kr.";
 
+            // Audit: append to local file, relative path, no locking
+            try
+            {
+                string accNum = Accounts.FirstOrDefault(a => a.Id == accountId)?.AccountNumber ?? accountId.ToString();
+                System.IO.File.AppendAllText("audit.log",
+                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {accNum} {transactionType} {amount:N2}\n");
+            }
+            catch
+            {
+                // audit is best effort
+            }
+
             // Confirmation mail sent right here in the handler - no queue, no retry
             try
             {
