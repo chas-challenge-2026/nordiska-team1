@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Configure PDF generator",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S",
+                "${workspaceFolder}/native/pdf_generator",
+                "-B",
+                "${workspaceFolder}/native/pdf_generator/build",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Build PDF generator",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/native/pdf_generator/build"
+            ],
+            "dependsOn": "Configure PDF generator",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Build NordiskaPortal",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "${workspaceFolder}/backend/NordiskaPortal/NordiskaPortal.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

@@ -1,6 +1,6 @@
 #include <filesystem>
 #include <iostream>
-#include <stdexcept>
+#include <exception>
 
 #include "nordiska/create_pdf.hpp"
 #include "nordiska/json_report_reader.hpp"
@@ -26,4 +26,3 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 }
-

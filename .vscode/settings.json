@@ -1,0 +1,17 @@
+{
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/native/pdf_generator/build/compile_commands.json",
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+    "C_Cpp.default.intelliSenseMode": "linux-clang-x64",
+    "clang-format.executable": "/usr/bin/clang-format",
+    "[c]": {
+        "editor.defaultFormatter": "xaver.clang-format",
+        "editor.formatOnSave": true
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format",
+        "editor.formatOnSave": true
+    },
+    "[csharp]": {
+        "editor.formatOnSave": false
+    }
+}

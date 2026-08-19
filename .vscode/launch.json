@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug NordiskaPortal (.NET)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Build NordiskaPortal",
+            "program": "${workspaceFolder}/backend/NordiskaPortal/bin/Debug/net6.0/NordiskaPortal.dll",
+            "cwd": "${workspaceFolder}/backend/NordiskaPortal",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "stopAtEntry": false
+        },
+        {
+            "name": "Debug PDF generator (C++)",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "Build PDF generator",
+            "program": "${workspaceFolder}/native/pdf_generator/build/pdf_generator",
+            "args": [
+                "${workspaceFolder}/native/pdf_generator/sample-input.json",
+                "${workspaceFolder}/native/pdf_generator/report.pdf"
+            ],
+            "cwd": "${workspaceFolder}/native/pdf_generator",
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
