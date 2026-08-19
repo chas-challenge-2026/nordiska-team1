@@ -3,14 +3,9 @@
   "configurePresets": [
     {
       "name": "default",
-      "displayName": "Dependency-free development build",
+      "displayName": "Native development build with vcpkg",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build"
-    },
-    {
-      "name": "vcpkg",
-      "displayName": "Development build with vcpkg manifest",
-      "inherits": "default",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
@@ -20,10 +15,6 @@
     {
       "name": "default",
       "configurePreset": "default"
-    },
-    {
-      "name": "vcpkg",
-      "configurePreset": "vcpkg"
     }
   ]
 }

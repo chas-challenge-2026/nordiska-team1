@@ -1,8 +1,8 @@
 # Native PDF Generator
 
 This directory contains the native PDF-generation component for Nordiska v2.
-It currently implements the first single-report slice. Batch generation and
-the production PDF backend are still to be implemented.
+It provides one application core, libharu and Cairo renderer adapters, and
+single-report and batch entry points.
 
 ## Requirements and constraints
 
@@ -88,14 +88,13 @@ git clone https://github.com/microsoft/vcpkg.git ~/vcpkg
 ~/vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT=~/vcpkg
 
-cmake --preset vcpkg
-cmake --build --preset vcpkg
+cmake --preset default
+cmake --build --preset default
 ```
 
-The vcpkg preset installs the manifest dependencies into the ignored
-`build/vcpkg_installed` directory. The current proof-of-concept renderer does
-not link those libraries yet; they are now available for the libharu and Cairo
-adapters. For a zero-dependency build, use `cmake --preset default`.
+The preset installs the manifest dependencies into the ignored
+`build/vcpkg_installed` directory. Cairo is consumed through its pkg-config
+metadata because the vcpkg Cairo port does not provide a CMake package config.
 
 
 ## First-slice usage
@@ -130,10 +129,19 @@ future work.
 Build from this directory:
 
 ```bash
-cmake -S . -B build
-cmake --build build --config Release
-./build/pdf_generator sample-input.json report.pdf
+export VCPKG_ROOT=$HOME/vcpkg
+cmake --preset default
+cmake --build --preset default
+./build/pdf_generator_single sample-input.json
+./build/pdf_generator_single sample-input.json --renderer cairo
 ```
 
-On a multi-configuration generator, the executable may instead be under a
-`Release/` subdirectory.
+Reports are written to the ignored `output/reports/` directory. The renderer
+name and a sequence number are added automatically, for example
+`report-cairo-0.pdf` or `report-haru-1.pdf`.
+
+Batch mode takes a directory of report JSON files and writes one PDF per input:
+
+```bash
+./build/pdf_generator_batch ./input-reports 4 --renderer haru
+```

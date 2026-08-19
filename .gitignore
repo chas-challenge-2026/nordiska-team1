@@ -37,8 +37,6 @@ CMakeCache.txt
 cmake_install.cmake
 compile_commands.json
 install_manifest.txt
-native/pdf_generator/report.pdf
-
 # Dependencies and package managers
 node_modules/
 packages/
