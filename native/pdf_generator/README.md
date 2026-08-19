@@ -22,30 +22,6 @@ These are the requirements inherited from the v2 project documentation.
 - **Deployment:** the native build must be reproducible in Docker.
 - **Money:** monetary values are represented as integer minor units, not
   binary floating-point values.
-
-The v1 implementation used synchronous request-thread work and
-`Thread.Sleep`. The native batch worker exists to remove that limitation.
-The throughput target is a requirement to measure, not an assumption about
-the performance of a particular library.
-
-## Current status
-
-- [x] CMake project and C++23 build.
-- [x] JSON input adapter for the temporary report shape.
-- [x] `CreatePdf` application use case with basic validation.
-- [x] `IPdfRenderer` application-owned renderer boundary.
-- [x] Dependency-free proof-of-concept renderer.
-- [ ] vcpkg manifest and reproducible third-party dependencies.
-- [ ] libharu renderer adapter.
-- [ ] Cairo renderer adapter.
-- [ ] Single-report production executable.
-- [ ] Batch application service and worker queue.
-- [ ] Renderer benchmark and backend decision.
-
-The dependency-free renderer is only a development proof of concept. It may
-be removed after the real adapters and tests are working; it is not the
-planned production backend.
-
 ## Working architectural decisions
 
 ### One application core, multiple entry points
@@ -95,18 +71,32 @@ dependencies are:
 
 - `libharu`
 - `cairo`
-- `openssl` for the separate signing module
+
+Only PDF-rendering dependencies belong in this manifest. The separate
+signing program will manage its own cryptographic dependencies.
 
 The manifest should initially live beside this `CMakeLists.txt`. If the PDF
 generator and C signer later become one top-level native CMake project, the
 manifest can move to `native/`.
 
-### Signing
+The manifest is pinned to a vcpkg baseline, so the dependency versions are
+resolved from a known vcpkg commit. Install vcpkg separately (outside this
+repository), set `VCPKG_ROOT`, and configure with the vcpkg preset:
 
-PDF signing is a separate native module, not part of the renderer. It is
-planned as a C module using OpenSSL/libcrypto. The C++ PDF generator should
-produce the PDF first; signing should consume the generated artifact through
-its own C API or executable boundary.
+```bash
+git clone https://github.com/microsoft/vcpkg.git ~/vcpkg
+~/vcpkg/bootstrap-vcpkg.sh
+export VCPKG_ROOT=~/vcpkg
+
+cmake --preset vcpkg
+cmake --build --preset vcpkg
+```
+
+The vcpkg preset installs the manifest dependencies into the ignored
+`build/vcpkg_installed` directory. The current proof-of-concept renderer does
+not link those libraries yet; they are now available for the libharu and Cairo
+adapters. For a zero-dependency build, use `cmake --preset default`.
+
 
 ## First-slice usage
 
@@ -147,30 +137,3 @@ cmake --build build --config Release
 
 On a multi-configuration generator, the executable may instead be under a
 `Release/` subdirectory.
-
-## Current structure
-
-```text
-src/main.cpp                          current CLI composition root
-src/application/create_pdf.cpp        single-report orchestration/validation
-src/adapters/json_report_reader.cpp   temporary JSON input adapter
-src/adapters/minimal_pdf_renderer.cpp proof-of-concept renderer
-include/nordiska/report.hpp            domain data only
-include/nordiska/pdf_renderer.hpp     PDF port/interface
-```
-
-Planned additions include `libharu_pdf_renderer.cpp`,
-`cairo_pdf_renderer.cpp`, `batch_create_pdf.cpp`, and a separate
-`native/pdf_signer/` module.
-
-## Open decisions to preserve
-
-- [ ] Select the production renderer after benchmarking both adapters.
-- [ ] Decide whether batch failures are fail-fast or collected and reported
-  after the batch.
-- [ ] Establish the renderer's thread-safety model before sharing renderer
-  instances between workers.
-- [ ] Decide whether the optional .NET-facing native library is needed after
-  the process executable path is working.
-- [ ] Define PDF metadata, fonts, pagination, Unicode, and signing-placement
-  requirements before treating a renderer benchmark as complete.
