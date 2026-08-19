@@ -10,37 +10,42 @@ tools/synthetic-input-generator/
 
 Datasets are generated on demand and are not stored in the repository.
 
+The goal is not to simulate a bank perfectly. The goal is to produce credible, repeatable workloads so PDF performance can be measured and compared.
+
 ## Requirements
 
 * JSON-configurable.
 * Deterministic through a random seed.
 * One JSON input per account.
 * Stateful account simulation.
-* Configurable workload, account product, currency, interest rules, and tax jurisdiction.
-* Swedish savings-account behavior is the default, not hard-coded.
+* Swedish savings-account behavior is the default.
+* Keep configuration minimal; add more knobs only when there is a concrete need.
 
 ## Default Workloads
 
-**`uniform-500k`**
+### `uniform-500k`
 
 * 10,000 accounts
 * 500,000 customer transactions
-* 50 transactions/account
+* 50 transactions per account
 * Control benchmark for ideal load balancing.
 
-**`realistic-500k`**
+### `realistic-500k`
 
 * 10,000 accounts
 * 500,000 customer transactions
-* Heavy-tailed transaction distribution.
+* Skewed/heavy-tailed transaction allocation.
+* Most accounts have relatively few transactions; a small number have many.
 * Primary benchmark.
 
-**`stress-skewed-500k`**
+This is intended to be credible rather than to claim an exact empirical model of Nordiska customers.
+
+### `stress-skewed-500k`
 
 * 10,000 accounts
 * 500,000 customer transactions
 * Deliberately extreme concentration of activity.
-* Tests scheduling/load-balancing behavior.
+* Used to expose poor scheduling and load balancing.
 
 ## Determinism
 
@@ -52,19 +57,28 @@ configuration + seed
 
 must generate identical accounts, dates, amounts, transactions, and interest results.
 
-Emit a manifest containing the effective configuration, seed, counts, and distribution statistics.
+The generator should emit a manifest containing:
+
+* effective configuration
+* seed
+* account count
+* customer transaction count
+* generated ledger-event count
+* basic transaction-distribution statistics
 
 ## Account Simulation
 
 Accounts are simulated chronologically.
 
-* Start balance: `0`.
-* First customer event: deposit.
+Rules:
+
+* Start balance is `0`.
+* First customer event is a deposit.
 * Deposits increase balance.
 * Withdrawals cannot exceed available balance.
 * Balance may reach `0`.
 * Another deposit is required before further withdrawals.
-* Opening deposits should generally be larger, but probabilistically rather than by invariant.
+* Opening deposits should generally be larger than ordinary deposits, but this is probabilistic rather than guaranteed.
 
 Initial ledger types:
 
@@ -75,7 +89,9 @@ INTEREST_CREDIT
 TAX_WITHHOLDING
 ```
 
-The configured customer-transaction count refers to deposits and withdrawals. Daily interest accrual is calculation work, not ledger transactions.
+The configured transaction count refers to customer deposits and withdrawals.
+
+Interest accrual calculations are not ledger transactions.
 
 ## Interest
 
@@ -89,28 +105,16 @@ daily interest accrual
 periodic INTEREST_CREDIT
 ```
 
-Default Swedish benchmark configuration:
+There is no need to simulate a particular clock time. Interest can be calculated efficiently from balance intervals.
 
-```json
-{
-  "currency": "SEK",
-  "interest": {
-    "annual_rate": 0.025,
-    "accrual_frequency": "daily",
-    "day_count_convention": "ACTUAL_ACTUAL",
-    "credit_frequency": "monthly",
-    "credit_day": "month_end"
-  }
-}
-```
-
-There is no need to model a particular clock time. The implementation can calculate interest efficiently from balance intervals.
-
-## Swedish Tax Default
+Default Swedish behavior:
 
 ```text
-jurisdiction: SE
-interest withholding: 30%
+currency: SEK
+annual interest rate: configurable
+interest accrual: daily
+interest credit: monthly at month-end
+interest withholding tax: 30%
 ```
 
 Gross interest and withholding remain separate:
@@ -121,39 +125,29 @@ TAX_WITHHOLDING     -300.00 SEK
 net balance effect  +700.00 SEK
 ```
 
-The PDF/reporting input must retain gross credited interest and tax withheld separately.
+The report input must retain gross credited interest and tax withheld separately.
 
-## Configuration Structure
+## Minimal Configuration
+
+The public configuration surface should stay small:
 
 ```json
 {
   "seed": 827461,
+  "year": 2025,
 
-  "workload": {
-    "accounts": 10000,
-    "customer_transactions": 500000,
-    "distribution": "realistic"
-  },
+  "accounts": 10000,
+  "transactions": 500000,
+  "distribution": "realistic",
 
-  "account_product": {
-    "currency": "SEK",
-    "interest": {
-      "annual_rate": 0.025,
-      "accrual_frequency": "daily",
-      "day_count_convention": "ACTUAL_ACTUAL",
-      "credit_frequency": "monthly",
-      "credit_day": "month_end"
-    }
-  },
-
-  "jurisdiction": {
-    "country": "SE",
-    "interest_withholding_rate": 0.30
-  }
+  "currency": "SEK",
+  "annual_interest_rate": 0.025
 }
 ```
 
-Workload generation, account-product behavior, and jurisdiction rules should remain independent.
+Swedish defaults such as daily accrual, monthly crediting and 30% withholding remain implementation defaults for now.
+
+If another jurisdiction or account product is later required, those rules can be promoted into configuration rather than designing the full abstraction in advance.
 
 ## Output
 
@@ -165,24 +159,124 @@ generated/
 └── ...
 ```
 
-Each account should contain at minimum:
+Each account JSON should contain at minimum:
 
 * account identifier
 * currency
 * reporting year
-* interest configuration
+* annual interest rate
 * chronological ledger transactions
 * gross interest credited
 * tax withheld
 * ending balance
 
-## Benchmark Use
+## Benchmark Workloads
 
-The same generated workload should support measuring:
+The requirement workload is:
 
-* disk input → PDF generation → disk output
-* preloaded input → PDFs generated in RAM
-* pre-generated PDF buffers → disk writes
-* input reading/parsing only
+```text
+10,000 reports
+500,000 customer transactions
+```
+
+The benchmark should also scale this workload to demonstrate headroom:
+
+| Scale | Accounts | Transactions |
+| ----- | -------: | -----------: |
+| 0.1×  |    1,000 |       50,000 |
+| 0.5×  |    5,000 |      250,000 |
+| 1×    |   10,000 |      500,000 |
+| 2×    |   20,000 |    1,000,000 |
+| 5×    |   50,000 |    2,500,000 |
+| 10×   |  100,000 |    5,000,000 |
+
+This allows claims such as:
+
+* meets the required workload
+* handles 2× / 5× / 10× the required workload
+* meets the requirement under a constrained CPU or memory budget
+
+## Benchmark Modes
+
+The same synthetic workload should support measuring:
+
+1. **End-to-end**
+
+   * read JSON from disk
+   * parse input
+   * generate PDFs
+   * write PDFs to disk
+
+2. **Generation only**
+
+   * preload and parse all input
+   * generate PDFs into memory
+   * exclude disk I/O
+
+3. **Output I/O only**
+
+   * pre-generate PDF buffers
+   * measure writing them to disk
+
+4. **Input I/O only**
+
+   * read and parse JSON
+   * exclude PDF generation
+
+This separates PDF-engine performance from storage performance.
+
+## Reference Resource Constraints
+
+Use a reproducible constrained environment for reference benchmarks.
+
+Example:
+
+```text
+CPU allocation: 1 CPU
+memory limit:   512 MB
+workers:        1
+build:          Release
+seed:           fixed
+```
+
+Docker/Linux CPU quotas are suitable for limiting available CPU time. Do not describe a CPU quota as a specific clock speed such as a “1 GHz CPU”.
+
+For every benchmark, record the actual host CPU model as well.
+
+## Metrics
+
+Primary metrics:
+
+* elapsed wall-clock time
+* PDFs per second
+* transactions per second
+* peak memory usage
+
+Useful engineering metrics from Linux `perf`:
+
+* CPU task time
+* retired instructions
+* CPU cycles
+* IPC
+* cache misses
+* context switches
+
+Wall-clock throughput remains the main user-facing performance result. Hardware counters are diagnostic and useful for comparing implementation changes.
+
+## Reproducibility
+
+A benchmark result should always identify:
+
+```text
+commit/build
+compiler and build mode
+host CPU
+resource constraints
+seed
+workload profile
+account count
+transaction count
+benchmark mode
+```
 
 Changing the benchmark implementation must not silently change the synthetic workload.
