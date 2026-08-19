@@ -6,7 +6,7 @@ namespace nordiska {
 
 class LibHaruPdfRenderer final : public IPdfRenderer {
   public:
-    void render(const Report& report, const std::filesystem::path& output_path) override;
+    void render(const Report& report, IByteSink& sink) override;
 };
 
 } // namespace nordiska

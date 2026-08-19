@@ -26,7 +26,21 @@ pdf_generator_batch  -> application + one selected renderer
 pdf_signer            -> C implementation + OpenSSL/libcrypto
 ```
 
-`IPdfRenderer` remains the application-owned boundary. Third-party library types must not appear in `Report`, `CreatePdf`, or `IPdfRenderer`.
+`IPdfRenderer` remains the application-owned PDF boundary. Renderers write
+bytes to the generic `IByteSink` boundary; `FileByteSink`, `MemoryByteSink`,
+and `NullByteSink` own persistence or discard behavior. Third-party library
+types must not appear in `Report`, `CreatePdf`, `IPdfRenderer`, or
+`IByteSink`.
+
+The output flow is:
+
+```text
+Report -> IPdfRenderer -> IByteSink
+```
+
+The CLI preserves its existing behavior by using `FileByteSink`, including
+atomic publication. A benchmark can separately measure input loading,
+rendering to memory/null, file persistence, and full end-to-end generation.
 
 The current `MinimalPdfRenderer` is temporary and may be deleted after the real adapters and tests are working. Tests should use a fake renderer rather than retaining the minimal production backend.
 
@@ -73,6 +87,7 @@ pdf_generator_batch
 - [x] Keep all Cairo headers/includes inside the Cairo adapter implementation.
 - [x] Make both adapters produce the same output contract through `IPdfRenderer`.
 - [x] Ensure output is written atomically or through a temporary file before replacement.
+- [x] Separate PDF rendering from output persistence with `IByteSink`.
 - [ ] Add renderer-level tests for valid output, empty/invalid reports, Unicode/text handling, and file errors.
 
 ## Phase 4 — Single and batch execution

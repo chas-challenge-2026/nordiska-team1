@@ -1,14 +1,14 @@
 #include "nordiska/libharu_pdf_renderer.hpp"
 
-#include "atomic_output.hpp"
-
 #include <hpdf.h>
 
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <span>
 #include <string>
+#include <vector>
 
 namespace nordiska {
 namespace {
@@ -50,7 +50,7 @@ void check(HaruError& error, HPDF_STATUS status, const char* operation) {
     }
 }
 
-void render_to_file(const Report& report, const std::filesystem::path& path) {
+void render_to_sink(const Report& report, IByteSink& sink) {
     HaruError error;
     HPDF_Doc pdf = HPDF_New(error_handler, &error);
     if (pdf == nullptr) {
@@ -98,7 +98,22 @@ void render_to_file(const Report& report, const std::filesystem::path& path) {
             write_line(transaction_line(transaction));
         }
         check(error, HPDF_Page_EndText(page), "end text");
-        check(error, HPDF_SaveToFile(pdf, path.c_str()), "save document");
+        check(error, HPDF_SaveToStream(pdf), "save document to stream");
+        std::vector<std::byte> buffer(64 * 1024);
+        while (true) {
+            HPDF_UINT32 size = static_cast<HPDF_UINT32>(buffer.size());
+            const HPDF_STATUS status =
+                HPDF_ReadFromStream(pdf, reinterpret_cast<HPDF_BYTE*>(buffer.data()), &size);
+            if (status != HPDF_OK && status != HPDF_STREAM_EOF) {
+                check(error, status, "read document stream");
+            }
+            if (size != 0) {
+                sink.write(std::span<const std::byte>(buffer.data(), size));
+            }
+            if (status == HPDF_STREAM_EOF || size == 0) {
+                break;
+            }
+        }
         HPDF_Free(pdf);
     } catch (...) {
         HPDF_Free(pdf);
@@ -108,10 +123,8 @@ void render_to_file(const Report& report, const std::filesystem::path& path) {
 
 } // namespace
 
-void LibHaruPdfRenderer::render(const Report& report, const std::filesystem::path& output_path) {
-    detail::write_atomically(output_path, [&](const std::filesystem::path& temporary_path) {
-        render_to_file(report, temporary_path);
-    });
+void LibHaruPdfRenderer::render(const Report& report, IByteSink& sink) {
+    render_to_sink(report, sink);
 }
 
 } // namespace nordiska

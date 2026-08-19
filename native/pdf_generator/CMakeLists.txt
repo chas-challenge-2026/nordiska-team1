@@ -15,6 +15,12 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 
+add_library(nordiska_pdf_io STATIC
+    src/io/byte_sink.cpp
+)
+target_include_directories(nordiska_pdf_io PUBLIC include)
+target_compile_features(nordiska_pdf_io PUBLIC cxx_std_23)
+
 add_library(nordiska_pdf_application STATIC
     src/application/batch_create_pdf.cpp
     src/application/create_pdf.cpp
@@ -22,7 +28,7 @@ add_library(nordiska_pdf_application STATIC
 )
 target_include_directories(nordiska_pdf_application PUBLIC include)
 target_compile_features(nordiska_pdf_application PUBLIC cxx_std_23)
-target_link_libraries(nordiska_pdf_application PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(nordiska_pdf_application PRIVATE nordiska_pdf_io nlohmann_json::nlohmann_json)
 
 add_library(nordiska_pdf_renderer_haru STATIC
     src/adapters/libharu_pdf_renderer.cpp
@@ -60,4 +66,8 @@ if(BUILD_TESTING)
     add_executable(nordiska_json_input_adapter_tests tests/json_input_adapter_tests.cpp)
     target_link_libraries(nordiska_json_input_adapter_tests PRIVATE nordiska_pdf_application)
     add_test(NAME nordiska_json_input_adapter_tests COMMAND nordiska_json_input_adapter_tests)
+
+    add_executable(nordiska_byte_sink_tests tests/byte_sink_tests.cpp)
+    target_link_libraries(nordiska_byte_sink_tests PRIVATE nordiska_pdf_io)
+    add_test(NAME nordiska_byte_sink_tests COMMAND nordiska_byte_sink_tests)
 endif()

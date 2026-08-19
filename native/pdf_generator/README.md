@@ -45,14 +45,25 @@ start that service.
 
 ### Renderer boundary
 
-The application talks to `IPdfRenderer`, never directly to a PDF library:
+The application talks to `IPdfRenderer`, never directly to a PDF library. PDF
+rendering is separated from byte persistence through the generic `IByteSink`
+boundary:
 
 ```cpp
 class IPdfRenderer {
 public:
     virtual ~IPdfRenderer() = default;
-    virtual void render(const Report&, const std::filesystem::path&) = 0;
+    virtual void render(const Report&, IByteSink&) = 0;
 };
+```
+
+`MemoryByteSink`, `FileByteSink`, and `NullByteSink` provide simple memory,
+atomic file, and discard destinations. The CLI uses `FileByteSink`, while
+future benchmarks can render to memory or null output to measure rendering
+without disk persistence. The boundary is therefore:
+
+```text
+Report -> IPdfRenderer -> IByteSink
 ```
 
 Third-party types must not appear in `Report`, `CreatePdf`, or
@@ -135,8 +146,9 @@ cmake --build --preset default
 ./build/pdf_generator_single sample-input.json --renderer cairo
 ```
 
-Reports are written to the ignored `output/reports/` directory. The renderer
-name and a sequence number are added automatically, for example
+Reports are written to the ignored `output/reports/` directory through
+`FileByteSink`. The renderer name and a sequence number are added
+automatically, for example
 `report-cairo-0.pdf` or `report-haru-0.pdf`. Each renderer has its own sequence.
 
 Batch mode takes a directory of report JSON files and writes one PDF per input:

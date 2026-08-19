@@ -1,10 +1,10 @@
 #include "nordiska/batch_create_pdf.hpp"
 
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,12 +13,10 @@ namespace {
 
 class FakeRenderer final : public nordiska::IPdfRenderer {
   public:
-    void render(const nordiska::Report& report, const std::filesystem::path& output_path) override {
-        std::ofstream output(output_path);
-        if (!output) {
-            throw std::runtime_error("fake renderer could not open output");
-        }
-        output << report.account_number << '\n' << report.transactions.size() << '\n';
+    void render(const nordiska::Report& report, nordiska::IByteSink& sink) override {
+        const std::string value = report.account_number + "\n" +
+                                  std::to_string(report.transactions.size()) + "\n";
+        sink.write(std::as_bytes(std::span(value.data(), value.size())));
     }
 };
 

@@ -1,11 +1,11 @@
 #include "nordiska/cairo_pdf_renderer.hpp"
 
-#include "atomic_output.hpp"
-
 #include <cairo/cairo-pdf.h>
 
 #include <cstdint>
+#include <exception>
 #include <iomanip>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -39,8 +39,26 @@ void check(cairo_t* context, const char* operation) {
     }
 }
 
-void render_to_file(const Report& report, const std::filesystem::path& path) {
-    cairo_surface_t* surface = cairo_pdf_surface_create(path.c_str(), 612, 792);
+struct SinkWriter {
+    IByteSink& sink;
+    std::exception_ptr failure;
+};
+
+cairo_status_t write_to_sink(void* closure, const unsigned char* data, unsigned int length) {
+    auto& writer = *static_cast<SinkWriter*>(closure);
+    try {
+        writer.sink.write(std::span<const std::byte>(reinterpret_cast<const std::byte*>(data), length));
+        return CAIRO_STATUS_SUCCESS;
+    } catch (...) {
+        writer.failure = std::current_exception();
+        return CAIRO_STATUS_WRITE_ERROR;
+    }
+}
+
+void render_to_sink(const Report& report, IByteSink& sink) {
+    SinkWriter writer{sink};
+    cairo_surface_t* surface =
+        cairo_pdf_surface_create_for_stream(write_to_sink, &writer, 612, 792);
     if (surface == nullptr || cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
         const auto status =
             surface == nullptr ? CAIRO_STATUS_NO_MEMORY : cairo_surface_status(surface);
@@ -92,6 +110,9 @@ void render_to_file(const Report& report, const std::filesystem::path& path) {
             throw std::runtime_error(std::string("Cairo PDF output failed: ") +
                                      cairo_status_to_string(status));
         }
+        if (writer.failure != nullptr) {
+            std::rethrow_exception(writer.failure);
+        }
     } catch (...) {
         if (context != nullptr) {
             cairo_destroy(context);
@@ -103,10 +124,8 @@ void render_to_file(const Report& report, const std::filesystem::path& path) {
 
 } // namespace
 
-void CairoPdfRenderer::render(const Report& report, const std::filesystem::path& output_path) {
-    detail::write_atomically(output_path, [&](const std::filesystem::path& temporary_path) {
-        render_to_file(report, temporary_path);
-    });
+void CairoPdfRenderer::render(const Report& report, IByteSink& sink) {
+    render_to_sink(report, sink);
 }
 
 } // namespace nordiska
