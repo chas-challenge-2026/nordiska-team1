@@ -13,9 +13,10 @@ inline std::filesystem::path reports_directory() {
     return std::filesystem::current_path() / "output" / "reports";
 }
 
-inline std::int64_t next_report_number(const std::filesystem::path& directory) {
+inline std::int64_t next_report_number(const std::filesystem::path& directory,
+                                      std::string_view renderer) {
     std::filesystem::create_directories(directory);
-    const std::regex report_pattern(R"(^report-.+-([0-9]+)\.pdf$)");
+    const std::regex report_pattern("^report-" + std::string(renderer) + R"(-([0-9]+)\.pdf$)");
     std::int64_t next_number = 0;
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
@@ -41,7 +42,7 @@ inline std::filesystem::path report_path(const std::filesystem::path& directory,
 
 inline std::filesystem::path next_report_path(const std::filesystem::path& directory,
                                               std::string_view renderer) {
-    return report_path(directory, renderer, next_report_number(directory));
+    return report_path(directory, renderer, next_report_number(directory, renderer));
 }
 
 } // namespace nordiska::cli

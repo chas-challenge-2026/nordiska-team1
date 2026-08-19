@@ -4,6 +4,7 @@
   "dependencies": [
     "cairo",
     "libharu",
+    "nlohmann-json",
     "openssl"
   ]
 }

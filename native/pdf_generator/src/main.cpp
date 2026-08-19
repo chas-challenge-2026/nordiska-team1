@@ -7,7 +7,7 @@
 
 #include "nordiska/cairo_pdf_renderer.hpp"
 #include "nordiska/create_pdf.hpp"
-#include "nordiska/json_report_reader.hpp"
+#include "nordiska/json_input_adapter.hpp"
 #include "nordiska/libharu_pdf_renderer.hpp"
 #include "renderer_output_path.hpp"
 
@@ -41,7 +41,9 @@ int main(int argc, char* argv[]) {
             renderer_name = argv[3];
         }
 
-        const nordiska::Report report = nordiska::read_report_json(std::filesystem::path(argv[1]));
+        const nordiska::JsonInputAdapter json_input_adapter;
+        const nordiska::IInputAdapter& input_adapter = json_input_adapter;
+        const nordiska::Report report = input_adapter.import(std::filesystem::path(argv[1]));
         const std::filesystem::path output_path =
             nordiska::cli::next_report_path(nordiska::cli::reports_directory(), renderer_name);
         const std::unique_ptr<nordiska::IPdfRenderer> renderer = make_renderer(renderer_name);

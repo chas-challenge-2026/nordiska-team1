@@ -9,7 +9,7 @@
 
 #include "nordiska/batch_create_pdf.hpp"
 #include "nordiska/cairo_pdf_renderer.hpp"
-#include "nordiska/json_report_reader.hpp"
+#include "nordiska/json_input_adapter.hpp"
 #include "nordiska/libharu_pdf_renderer.hpp"
 #include "renderer_output_path.hpp"
 
@@ -68,12 +68,15 @@ int main(int argc, char* argv[]) {
         }
         std::sort(inputs.begin(), inputs.end());
 
+        const nordiska::JsonInputAdapter json_input_adapter;
+        const nordiska::IInputAdapter& input_adapter = json_input_adapter;
         std::vector<nordiska::BatchPdfRequest> requests;
         requests.reserve(inputs.size());
-        std::int64_t report_number = nordiska::cli::next_report_number(output_directory);
+        std::int64_t report_number =
+            nordiska::cli::next_report_number(output_directory, renderer_name);
         for (const auto& input : inputs) {
             requests.push_back(
-                {nordiska::read_report_json(input),
+                {input_adapter.import(input),
                  nordiska::cli::report_path(output_directory, renderer_name, report_number++)});
         }
 

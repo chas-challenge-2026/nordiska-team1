@@ -138,7 +138,7 @@ cmake --build --preset default
 
 Reports are written to the ignored `output/reports/` directory. The renderer
 name and a sequence number are added automatically, for example
-`report-cairo-0.pdf` or `report-haru-1.pdf`.
+`report-cairo-0.pdf` or `report-haru-0.pdf`. Each renderer has its own sequence.
 
 Batch mode takes a directory of report JSON files and writes one PDF per input:
 
