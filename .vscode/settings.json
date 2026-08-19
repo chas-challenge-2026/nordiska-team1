@@ -4,8 +4,7 @@
     "C_Cpp.default.intelliSenseMode": "linux-clang-x64",
     "clang-format.executable": "/usr/bin/clang-format",
     "[c]": {
-        "editor.defaultFormatter": "xaver.clang-format",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": false
     },
     "[cpp]": {
         "editor.defaultFormatter": "xaver.clang-format",

@@ -1,6 +1,6 @@
+#include <exception>
 #include <filesystem>
 #include <iostream>
-#include <exception>
 
 #include "nordiska/create_pdf.hpp"
 #include "nordiska/json_report_reader.hpp"
@@ -13,8 +13,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        const nordiska::Report report =
-            nordiska::read_report_json(std::filesystem::path(argv[1]));
+        const nordiska::Report report = nordiska::read_report_json(std::filesystem::path(argv[1]));
         nordiska::MinimalPdfRenderer renderer;
         nordiska::CreatePdf create_pdf(renderer);
 
