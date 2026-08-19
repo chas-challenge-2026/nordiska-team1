@@ -1,0 +1,52 @@
+# Personal and local documentation
+docs/jimmy/
+
+# Operating-system files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# .NET / Visual Studio
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# CMake and native build output
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+install_manifest.txt
+native/pdf_generator/report.pdf
+
+# Dependencies and package managers
+node_modules/
+packages/
+*.nupkg
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs, coverage, and temporary files
+*.log
+coverage/
+tmp/
+temp/
