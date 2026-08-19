@@ -58,6 +58,19 @@ target_link_libraries(pdf_generator_batch PRIVATE
     nordiska_pdf_renderer_cairo
 )
 
+add_library(nordiska_pdf_benchmark_metrics STATIC
+    src/benchmark/benchmark_metrics.cpp
+)
+target_include_directories(nordiska_pdf_benchmark_metrics PUBLIC include)
+target_compile_features(nordiska_pdf_benchmark_metrics PUBLIC cxx_std_23)
+
+add_executable(pdf_generator_benchmark src/benchmark/main.cpp)
+target_link_libraries(pdf_generator_benchmark PRIVATE
+    nordiska_pdf_application
+    nordiska_pdf_renderer_haru
+    nordiska_pdf_benchmark_metrics
+)
+
 if(BUILD_TESTING)
     add_executable(nordiska_pdf_application_tests tests/application_tests.cpp)
     target_link_libraries(nordiska_pdf_application_tests PRIVATE nordiska_pdf_application)
@@ -70,4 +83,8 @@ if(BUILD_TESTING)
     add_executable(nordiska_byte_sink_tests tests/byte_sink_tests.cpp)
     target_link_libraries(nordiska_byte_sink_tests PRIVATE nordiska_pdf_io)
     add_test(NAME nordiska_byte_sink_tests COMMAND nordiska_byte_sink_tests)
+
+    add_executable(nordiska_benchmark_metrics_tests tests/benchmark_metrics_tests.cpp)
+    target_link_libraries(nordiska_benchmark_metrics_tests PRIVATE nordiska_pdf_benchmark_metrics)
+    add_test(NAME nordiska_benchmark_metrics_tests COMMAND nordiska_benchmark_metrics_tests)
 endif()

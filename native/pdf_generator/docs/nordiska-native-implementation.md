@@ -113,7 +113,9 @@ pdf_generator_batch
 ## Phase 6 — Benchmark and choose the renderer
 
 - [ ] Create a fixed corpus of representative reports.
-- [ ] Benchmark Haru and Cairo using the same input data and output requirements.
+- [x] Add a separate Haru benchmark harness using the deterministic synthetic
+  input corpus, with input, memory-render, null-render, persistence, and
+  end-to-end phase accounting.
 - [ ] Measure wall-clock time, throughput, peak memory, output size, and failure rate.
 - [ ] Validate that every output is a real readable PDF, not only that generation succeeded.
 - [ ] Compare required features: fonts, Unicode, pagination, metadata, tables, and signing compatibility.

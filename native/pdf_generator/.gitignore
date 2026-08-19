@@ -1,5 +1,6 @@
 build/
 vcpkg_installed/
 output/
+benchmark-output/
 tools/synthetic-input-generator/generated/
 *.pdf
