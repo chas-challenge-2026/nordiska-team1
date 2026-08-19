@@ -2,7 +2,11 @@
 
 ## Scope
 
-This plan covers only the native C/C++ modules. The .NET integration is defined elsewhere and is not changed here.
+This plan covers the standalone native PDF-generator component in this
+directory. It owns PDF report input, rendering, batching, validation, and the
+native API/CLI boundary used by a caller. It does not cover deployment,
+Docker, WSL provisioning, .NET integration, background-job orchestration, or
+host application wiring.
 
 ## Agreed architecture
 
@@ -26,10 +30,10 @@ pdf_signer            -> C implementation + OpenSSL/libcrypto
 
 The current `MinimalPdfRenderer` is temporary and may be deleted after the real adapters and tests are working. Tests should use a fake renderer rather than retaining the minimal production backend.
 
-## Phase 1 — Install dependency management in WSL
+## Phase 1 — Native dependency setup
 
-- [ ] Install and bootstrap vcpkg once inside WSL.
-- [ ] Set `VCPKG_ROOT` in the WSL shell environment.
+- [ ] Document the one-time local vcpkg prerequisite for developers.
+- [ ] Verify that a clean local configure/build works when `VCPKG_ROOT` is set.
 - [x] Create the manifest beside the current CMake project: `native/pdf_generator/vcpkg.json`.
 - [x] Declare the initial dependencies:
   - `libharu`
@@ -38,9 +42,8 @@ The current `MinimalPdfRenderer` is temporary and may be deleted after the real 
 - [x] Create `vcpkg-configuration.json` with a reproducible registry baseline.
 - [x] Add CMake configure presets using the vcpkg toolchain file.
 - [x] Add generated directories such as `build/` and `vcpkg_installed/` to `.gitignore`.
-- [ ] Verify that a clean WSL configure/build works.
-
-The package manager is a build-time tool. It does not become part of the application architecture and does not require a Microsoft account or hosted service.
+The package manager is a build-time tool. It does not become part of the
+application architecture or the caller-facing boundary.
 
 ## Phase 2 — Refactor native CMake targets
 
@@ -101,7 +104,7 @@ pdf_generator_batch
 - [ ] Compare required features: fonts, Unicode, pagination, metadata, tables, and signing compatibility.
 - [ ] Select the production backend based on measured results and document the decision.
 
-## Phase 7 — Optional native shared-library boundary
+## Phase 7 — Optional native library boundary
 
 Only after the executable path is stable:
 
@@ -113,11 +116,12 @@ Only after the executable path is stable:
 
 ## Definition of done
 
-- [ ] A clean WSL checkout can install dependencies and build with CMake.
-- [ ] A clean Docker build can reproduce the native build.
+- [ ] A clean local checkout can configure and build with CMake.
 - [ ] Single-report generation works through the selected renderer.
 - [ ] Batch generation reuses the same application core.
 - [ ] Haru and Cairo can be benchmarked without changing application code.
 - [ ] Signing is an independent C module using OpenSSL.
 - [ ] No third-party PDF or crypto types leak through application interfaces.
+- [ ] The executable path is usable by a caller, and the optional C ABI is
+      added only if direct library calls are required.
 - [ ] Tests and benchmark results are checked into the project documentation.

@@ -19,7 +19,6 @@ These are the requirements inherited from the v2 project documentation.
   background-job system through the integration boundary specified by the
   main project documentation. The executable/process path is the first
   integration target; a C ABI/shared-library path may be added later.
-- **Deployment:** the native build must be reproducible in Docker.
 - **Money:** monetary values are represented as integer minor units, not
   binary floating-point values.
 ## Working architectural decisions
