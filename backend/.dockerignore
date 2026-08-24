@@ -1,0 +1,13 @@
+bin/
+obj/
+artifacts/
+
+.git/
+.vs/
+
+*.user
+*.suo
+
+Dockerfile*
+docker-compose*
+README.md
