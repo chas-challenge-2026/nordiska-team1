@@ -28,6 +28,8 @@ infrastructure.
 - Preserve integer minor-unit handling for monetary values.
 - Keep executable entry points thin; reusable behavior belongs in the
   application/core targets.
+- Run `./tools/format-native.sh` and then `./tools/check-format.sh` before
+  every commit that changes native C++ code.
 - Add or update focused tests with behavior changes, and run the native CTest
   suite after changes.
 - Do not add deployment, Docker, WSL provisioning, .NET integration, or host
