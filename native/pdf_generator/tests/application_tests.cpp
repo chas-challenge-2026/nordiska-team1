@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,8 +14,8 @@ namespace {
 class FakeRenderer final : public nordiska::IPdfRenderer {
   public:
     void render(const nordiska::Report& report, nordiska::IByteSink& sink) override {
-        const std::string value = report.account_number + "\n" +
-                                  std::to_string(report.transactions.size()) + "\n";
+        const std::string value =
+            report.account_number + "\n" + std::to_string(report.transactions.size()) + "\n";
         sink.write(std::as_bytes(std::span(value.data(), value.size())));
     }
 };

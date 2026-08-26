@@ -1,15 +1,15 @@
+#include "nordiska/cairo_pdf_renderer.hpp"
+#include "nordiska/create_pdf.hpp"
+#include "nordiska/json_input_adapter.hpp"
+#include "nordiska/libharu_pdf_renderer.hpp"
+#include "renderer_output_path.hpp"
+
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
-
-#include "nordiska/cairo_pdf_renderer.hpp"
-#include "nordiska/create_pdf.hpp"
-#include "nordiska/json_input_adapter.hpp"
-#include "nordiska/libharu_pdf_renderer.hpp"
-#include "renderer_output_path.hpp"
 
 namespace {
 

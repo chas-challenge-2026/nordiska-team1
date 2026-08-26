@@ -19,7 +19,9 @@ class MemoryByteSink final : public IByteSink {
     void write(std::span<const std::byte> bytes) override;
     void finish() override;
 
-    std::span<const std::byte> bytes() const noexcept { return bytes_; }
+    std::span<const std::byte> bytes() const noexcept {
+        return bytes_;
+    }
 
   private:
     std::vector<std::byte> bytes_;

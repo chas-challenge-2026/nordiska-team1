@@ -1,4 +1,5 @@
 #pragma once
+
 #include "nordiska/input_adapter.hpp"
 
 namespace nordiska {

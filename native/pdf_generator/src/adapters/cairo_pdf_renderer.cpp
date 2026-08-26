@@ -1,7 +1,6 @@
 #include "nordiska/cairo_pdf_renderer.hpp"
 
 #include <cairo/cairo-pdf.h>
-
 #include <cstdint>
 #include <exception>
 #include <iomanip>
@@ -47,7 +46,8 @@ struct SinkWriter {
 cairo_status_t write_to_sink(void* closure, const unsigned char* data, unsigned int length) {
     auto& writer = *static_cast<SinkWriter*>(closure);
     try {
-        writer.sink.write(std::span<const std::byte>(reinterpret_cast<const std::byte*>(data), length));
+        writer.sink.write(
+            std::span<const std::byte>(reinterpret_cast<const std::byte*>(data), length));
         return CAIRO_STATUS_SUCCESS;
     } catch (...) {
         writer.failure = std::current_exception();

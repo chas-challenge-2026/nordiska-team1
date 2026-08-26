@@ -51,8 +51,7 @@ int main() {
             nordiska::FileByteSink file(failed_output);
             file.write(as_bytes("discarded"));
         }
-        require(!std::filesystem::exists(failed_output),
-                "unfinished file sink published output");
+        require(!std::filesystem::exists(failed_output), "unfinished file sink published output");
 
         nordiska::NullByteSink null_sink;
         null_sink.write(as_bytes("ignored"));

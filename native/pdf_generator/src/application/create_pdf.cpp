@@ -1,6 +1,8 @@
 #include "nordiska/create_pdf.hpp"
+
 #include <cctype>
 #include <stdexcept>
+
 namespace nordiska {
 CreatePdf::CreatePdf(IPdfRenderer& renderer) : renderer_(renderer) {}
 void CreatePdf::execute(const Report& report, IByteSink& sink) const {

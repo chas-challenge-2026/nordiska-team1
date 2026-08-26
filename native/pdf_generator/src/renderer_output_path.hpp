@@ -14,7 +14,7 @@ inline std::filesystem::path reports_directory() {
 }
 
 inline std::int64_t next_report_number(const std::filesystem::path& directory,
-                                      std::string_view renderer) {
+                                       std::string_view renderer) {
     std::filesystem::create_directories(directory);
     const std::regex report_pattern("^report-" + std::string(renderer) + R"(-([0-9]+)\.pdf$)");
     std::int64_t next_number = 0;

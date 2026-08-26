@@ -80,21 +80,42 @@ void wrong_types_and_missing_fields_are_rejected(const std::filesystem::path& di
 
     const auto transaction_path = directory / "wrong-transaction.json";
     write_file(transaction_path,
-               R"({"account_number":"A","transactions":[{"date":"2026-01-05","type":"deposit","currency":"SEK","amount_minor":1.5}]})");
+               R"({
+            "account_number": "A",
+            "transactions": [
+                {
+                    "date": "2026-01-05",
+                    "type": "deposit",
+                    "currency": "SEK",
+                    "amount_minor": 1.5
+                }
+            ]
+        })");
     require_failure(transaction_path, "amount_minor");
 }
 
 void integers_outside_int64_are_rejected(const std::filesystem::path& directory) {
     const auto path = directory / "large-integer.json";
     write_file(path,
-               R"({"account_number":"A","transactions":[{"date":"2026-01-05","type":"deposit","currency":"SEK","amount_minor":9223372036854775808}]})");
+               R"({
+            "account_number": "A",
+            "transactions": [
+                {
+                    "date": "2026-01-05",
+                    "type": "deposit",
+                    "currency": "SEK",
+                    "amount_minor": 9223372036854775808
+                }
+            ]
+        })");
     require_failure(path, "int64 range");
 }
 
 } // namespace
 
 int main() {
-    const auto directory = std::filesystem::temp_directory_path() / "nordiska-json-report-reader-tests";
+    const auto directory =
+        std::filesystem::temp_directory_path() / "nordiska-json-report-reader-tests";
     std::filesystem::remove_all(directory);
     std::filesystem::create_directories(directory);
 

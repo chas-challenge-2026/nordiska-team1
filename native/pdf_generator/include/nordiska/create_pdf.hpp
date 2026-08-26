@@ -1,7 +1,11 @@
 #pragma once
+
 #include "nordiska/pdf_renderer.hpp"
+
 #include <filesystem>
+
 namespace nordiska {
+
 class CreatePdf {
   public:
     explicit CreatePdf(IPdfRenderer& renderer);

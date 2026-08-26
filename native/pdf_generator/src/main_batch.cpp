@@ -1,3 +1,9 @@
+#include "nordiska/batch_create_pdf.hpp"
+#include "nordiska/cairo_pdf_renderer.hpp"
+#include "nordiska/json_input_adapter.hpp"
+#include "nordiska/libharu_pdf_renderer.hpp"
+#include "renderer_output_path.hpp"
+
 #include <algorithm>
 #include <exception>
 #include <filesystem>
@@ -6,12 +12,6 @@
 #include <stdexcept>
 #include <string_view>
 #include <vector>
-
-#include "nordiska/batch_create_pdf.hpp"
-#include "nordiska/cairo_pdf_renderer.hpp"
-#include "nordiska/json_input_adapter.hpp"
-#include "nordiska/libharu_pdf_renderer.hpp"
-#include "renderer_output_path.hpp"
 
 namespace {
 

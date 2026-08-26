@@ -1,12 +1,11 @@
 #include "nordiska/libharu_pdf_renderer.hpp"
 
-#include <hpdf.h>
-
 #include <cstdint>
+#include <hpdf.h>
 #include <iomanip>
+#include <span>
 #include <sstream>
 #include <stdexcept>
-#include <span>
 #include <string>
 #include <vector>
 

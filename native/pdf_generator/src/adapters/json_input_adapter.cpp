@@ -51,7 +51,8 @@ std::int64_t required_integer(const Json& object, const char* key, const std::st
     try {
         if (value.is_number_unsigned()) {
             const auto unsigned_value = value.get<std::uint64_t>();
-            if (unsigned_value > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
+            if (unsigned_value >
+                static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
                 throw std::out_of_range("unsigned JSON integer does not fit int64");
             }
             return static_cast<std::int64_t>(unsigned_value);
@@ -96,10 +97,11 @@ Report JsonInputAdapter::import(const std::filesystem::path& input_path) const {
             throw std::runtime_error("JSON transaction must be an object: " + context);
         }
 
-        report.transactions.push_back(Transaction{required_string(transaction, "date", context),
-                                                  required_string(transaction, "type", context),
-                                                  required_string(transaction, "currency", context),
-                                                  required_integer(transaction, "amount_minor", context)});
+        report.transactions.push_back(
+            Transaction{required_string(transaction, "date", context),
+                        required_string(transaction, "type", context),
+                        required_string(transaction, "currency", context),
+                        required_integer(transaction, "amount_minor", context)});
     }
 
     return report;
