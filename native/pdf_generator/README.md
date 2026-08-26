@@ -4,6 +4,11 @@ This directory contains the native PDF-generation component for Nordiska v2.
 It provides one application core, libharu and Cairo renderer adapters, and
 single-report and batch entry points.
 
+The current implementation is evolving toward the normative architecture in
+`docs/target-architecture.md`. That document governs the intended module
+hierarchy and supersedes older architectural descriptions in this README when
+they conflict.
+
 ## Requirements and constraints
 
 These are the requirements inherited from the v2 project documentation.

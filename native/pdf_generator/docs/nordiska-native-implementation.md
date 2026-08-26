@@ -1,5 +1,10 @@
 # Nordiska Native Implementation Plan
 
+> [!IMPORTANT]
+> This file records an earlier/current implementation plan. The normative end
+> state is defined by `target-architecture.md`, which takes precedence for
+> architecture, module ownership, and dependency decisions.
+
 ## Scope
 
 This plan covers the standalone native PDF-generator component in this

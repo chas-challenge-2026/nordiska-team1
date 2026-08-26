@@ -4,15 +4,18 @@
 
 This directory is a standalone native PDF-generation component. Treat it as
 its own project, with its own CMake build, tests, dependencies, and
-implementation plan in `docs/nordiska-native-implementation.md`.
+normative target architecture in `docs/target-architecture.md`.
 
-The component is intended to be called by another application. The supported
+The target architecture is the authority for ownership, dependency direction,
+public boundaries, and the intended end state. The implementation plan in
+`docs/nordiska-native-implementation.md` describes earlier/current work and
+must not override the target architecture.
+
+The component is intended to be called by another application. The required
 integration shapes are:
 
-- the native executable (`pdf_generator_single` or `pdf_generator_batch`), as
-  the primary caller-facing path;
-- a small C-compatible shared-library boundary, if direct in-process calls
-  are later needed.
+- one thin native generation executable for process invocation; and
+- a C-compatible shared-library boundary for direct .NET invocation.
 
 The reusable application core must remain independent of the caller and must
 not depend on .NET, web services, deployment tooling, Docker, or background-job
@@ -22,9 +25,12 @@ infrastructure.
 
 - Keep PDF input, validation, rendering, batching, and native API/CLI work in
   scope.
+- Follow `docs/target-architecture.md` when deciding where code belongs and
+  which dependencies are allowed.
 - Keep renderer-specific third-party types inside renderer adapters. Do not
-  expose libharu, Cairo, OpenSSL, C++ classes, STL containers, or exceptions
-  through public application interfaces or a C ABI.
+  expose libharu, Cairo, OpenSSL, or other vendor types through public native
+  interfaces. Never expose C++ classes, STL types, or exceptions through the
+  C ABI.
 - Preserve integer minor-unit handling for monetary values.
 - Keep executable entry points thin; reusable behavior belongs in the
   application/core targets.
@@ -36,17 +42,19 @@ infrastructure.
   application orchestration tasks to this project unless the project boundary
   is explicitly changed.
 
-## Main targets
+## Target shape
 
-The expected target shape is:
+The end-state shape is:
 
 ```text
-nordiska_pdf_application
-nordiska_pdf_renderer_haru
-nordiska_pdf_renderer_cairo
-pdf_generator_single
-pdf_generator_batch
+nordiska_document_core
+nordiska_document_c_api
+pdf_generator
 ```
+
+Input, document-renderer, output, delivery, and PDF-engine adapters remain
+separate modules behind the core-owned boundaries. Haru and Cairo are private,
+swappable engines beneath the single application-facing PDF renderer.
 
 The separate PDF-signing target, when implemented, remains a native C module
 and is not part of the renderer adapter interface.

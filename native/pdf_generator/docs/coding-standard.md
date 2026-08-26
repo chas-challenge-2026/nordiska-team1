@@ -19,9 +19,9 @@ line wrapping, braces, include ordering, and comment reflow.
   `noexcept` where they express the API contract.
 - Keep executable entry points thin. Reusable behavior belongs in the native
   application or adapter libraries.
-- Public interfaces must not expose renderer-library types, STL containers,
-  exceptions, or other implementation details across the documented native
-  boundary.
+- Public native interfaces must not expose renderer-library or other vendor
+  types. The C ABI must not expose C++ classes, STL types, exceptions, or
+  other C++ implementation details.
 - Keep comments focused on intent, invariants, ownership, or non-obvious
   constraints. Do not use comments to restate obvious code.
 - Every behavior change requires focused tests and a passing native CTest run.
