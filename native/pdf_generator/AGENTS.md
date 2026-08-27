@@ -7,9 +7,8 @@ its own project, with its own CMake build, tests, dependencies, and
 normative target architecture in `docs/target-architecture.md`.
 
 The target architecture is the authority for ownership, dependency direction,
-public boundaries, and the intended end state. The implementation plan in
-`docs/nordiska-native-implementation.md` describes earlier/current work and
-must not override the target architecture.
+public boundaries, and the intended end state. The README and handoff document
+summarize the current implementation without overriding that architecture.
 
 The component is intended to be called by another application. The required
 integration shapes are:

@@ -51,5 +51,4 @@ ctest --test-dir build --output-on-failure
 ```
 
 The native suite has five tests, including C ABI valid-PDF, invalid-input, and
-callback-failure coverage. The repository environment used for this checkpoint
-does not include the .NET SDK, so the portal build remains to be run elsewhere.
+callback-failure coverage.
