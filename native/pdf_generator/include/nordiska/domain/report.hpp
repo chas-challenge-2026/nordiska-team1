@@ -19,4 +19,7 @@ struct Report {
     std::string title{"Nordiska transaction report"};
     std::vector<std::string> summary_lines;
 };
+
+void validate_report(const Report& report);
+
 } // namespace nordiska

@@ -1,4 +1,4 @@
-#include "nordiska/benchmark_metrics.hpp"
+#include "nordiska/diagnostics/benchmark_metrics.hpp"
 
 namespace nordiska::benchmark {
 

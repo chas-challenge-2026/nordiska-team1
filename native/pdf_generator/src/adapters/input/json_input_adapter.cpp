@@ -1,4 +1,4 @@
-#include "nordiska/json_input_adapter.hpp"
+#include "nordiska/adapters/input/json_input_adapter.hpp"
 
 #include <cstdint>
 #include <fstream>
@@ -89,8 +89,7 @@ std::vector<std::string> optional_string_array(const Json& object, const char* k
 } // namespace
 
 Report JsonInputAdapter::import(const std::filesystem::path& input_path) const {
-    const std::string contents = read_text_file(input_path);
-    return import_text(contents);
+    return import_text(read_text_file(input_path));
 }
 
 Report JsonInputAdapter::import_text(std::string_view contents) const {
@@ -126,7 +125,6 @@ Report JsonInputAdapter::import_text(std::string_view contents) const {
                             required_string(transaction, "currency", context),
                             required_integer(transaction, "amount_minor", context)});
         }
-
         return report;
     } catch (const Json::exception& error) {
         throw JsonInputError("Invalid JSON: " + std::string(error.what()));

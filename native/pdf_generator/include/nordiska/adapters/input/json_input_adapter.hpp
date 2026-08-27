@@ -1,7 +1,8 @@
 #pragma once
 
-#include "nordiska/input_adapter.hpp"
+#include "nordiska/domain/report.hpp"
 
+#include <filesystem>
 #include <stdexcept>
 #include <string_view>
 
@@ -12,9 +13,9 @@ class JsonInputError final : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
-class JsonInputAdapter final : public IInputAdapter {
+class JsonInputAdapter final {
   public:
-    Report import(const std::filesystem::path& input_path) const override;
+    Report import(const std::filesystem::path& input_path) const;
     Report import_text(std::string_view json) const;
 };
 

@@ -1,15 +1,19 @@
-#include "nordiska/document_c_api.h"
+#include "nordiska/delivery/c_api/document_c_api.h"
 
-#include "nordiska/byte_sink.hpp"
-#include "nordiska/default_pdf_generator.hpp"
-#include "nordiska/json_input_adapter.hpp"
+#include "nordiska/adapters/input/json_input_adapter.hpp"
+#include "nordiska/adapters/output/byte_sinks.hpp"
+#include "nordiska/application/generate_documents.hpp"
+#include "nordiska/composition/default_composition.hpp"
 
 #include <algorithm>
 #include <cstring>
 #include <exception>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -46,15 +50,30 @@ extern "C" int nordiska_document_generate_json(const uint8_t* json_utf8, size_t 
         const std::string_view json(reinterpret_cast<const char*>(json_utf8), json_length);
         nordiska::JsonInputAdapter input;
         const nordiska::Report report = input.import_text(json);
-        nordiska::CallbackByteSink sink(
-            [callback, callback_context](std::span<const std::byte> bytes) {
+        const std::vector<nordiska::DocumentRequest> requests{{std::move(report)}};
+        bool callback_failed = false;
+        nordiska::CallbackOutputDestination destination(
+            [callback, callback_context, &callback_failed](std::span<const std::byte> bytes,
+                                                           std::size_t index) {
                 const int callback_status = callback(reinterpret_cast<const uint8_t*>(bytes.data()),
-                                                     bytes.size(), 0, callback_context);
+                                                     bytes.size(), index, callback_context);
                 if (callback_status != 0) {
+                    callback_failed = true;
                     throw CallbackRejected();
                 }
             });
-        nordiska::generate_default_pdf(report, sink);
+        nordiska::GenerateDocuments generate(
+            [] { return nordiska::make_default_document_renderer(); }, 1);
+        const auto results = generate.execute(requests, destination);
+        if (!results.front().succeeded) {
+            if (callback_failed) {
+                throw CallbackRejected();
+            }
+            if (results.front().failure == nordiska::DocumentFailure::invalid_input) {
+                throw std::invalid_argument(results.front().error);
+            }
+            throw std::runtime_error(results.front().error);
+        }
         return NORDISKA_DOCUMENT_OK;
     } catch (const CallbackRejected& error) {
         write_error(error_buffer, error_buffer_length, error.what());

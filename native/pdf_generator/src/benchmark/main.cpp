@@ -1,7 +1,9 @@
-#include "nordiska/benchmark_metrics.hpp"
-#include "nordiska/create_pdf.hpp"
-#include "nordiska/json_input_adapter.hpp"
-#include "nordiska/libharu_pdf_renderer.hpp"
+#include "nordiska/adapters/input/json_input_adapter.hpp"
+#include "nordiska/adapters/output/byte_sinks.hpp"
+#include "nordiska/adapters/renderers/pdf/pdf_renderer.hpp"
+#include "nordiska/diagnostics/benchmark_metrics.hpp"
+#include "nordiska/domain/report.hpp"
+#include "nordiska/ports/document_renderer.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -53,9 +55,9 @@ struct RecordedResult {
     NamedMetrics result;
 };
 
-std::unique_ptr<nordiska::IPdfRenderer> make_renderer(std::string_view name) {
+std::unique_ptr<nordiska::IDocumentRenderer> make_renderer(std::string_view name) {
     if (name == "haru") {
-        return std::make_unique<nordiska::LibHaruPdfRenderer>();
+        return nordiska::make_pdf_renderer(nordiska::PdfEngine::haru);
     }
     throw std::invalid_argument("this benchmark currently supports only the Haru renderer");
 }
@@ -147,9 +149,17 @@ PhaseMetrics timed(const LoadedCorpus& corpus, std::optional<std::size_t> output
             .output_bytes = output_bytes};
 }
 
-std::vector<std::byte> render_to_memory(const Report& report, nordiska::IPdfRenderer& renderer) {
+void render_to_sink(const Report& report, nordiska::IDocumentRenderer& renderer,
+                    nordiska::IByteSink& sink) {
+    nordiska::validate_report(report);
+    renderer.render(report, sink);
+    sink.finish();
+}
+
+std::vector<std::byte> render_to_memory(const Report& report,
+                                        nordiska::IDocumentRenderer& renderer) {
     nordiska::MemoryByteSink sink;
-    nordiska::CreatePdf(renderer).execute(report, sink);
+    render_to_sink(report, renderer, sink);
     return {sink.bytes().begin(), sink.bytes().end()};
 }
 
@@ -181,13 +191,13 @@ std::vector<NamedMetrics> measure(const std::string& renderer_name,
     results.push_back({"memory_render", timed(corpus, bytes, [&] {
                            for (const auto& report : corpus.reports) {
                                nordiska::MemoryByteSink sink;
-                               nordiska::CreatePdf(*renderer).execute(report, sink);
+                               render_to_sink(report, *renderer, sink);
                            }
                        })});
     results.push_back({"null_render", timed(corpus, std::nullopt, [&] {
                            for (const auto& report : corpus.reports) {
                                nordiska::NullByteSink sink;
-                               nordiska::CreatePdf(*renderer).execute(report, sink);
+                               render_to_sink(report, *renderer, sink);
                            }
                        })});
 
@@ -208,7 +218,7 @@ std::vector<NamedMetrics> measure(const std::string& renderer_name,
                                const Report report = adapter.import(corpus.paths[index]);
                                nordiska::FileByteSink sink(
                                    persistence_dir / ("e2e-" + std::to_string(index) + ".pdf"));
-                               nordiska::CreatePdf(*renderer).execute(report, sink);
+                               render_to_sink(report, *renderer, sink);
                            }
                        })});
     if (options.delete_output) {
@@ -331,7 +341,7 @@ std::filesystem::path write_samples(const std::vector<std::filesystem::path>& pa
         const Report report = adapter.import(paths[index]);
         nordiska::FileByteSink sink(sample_directory /
                                     ("sample-" + std::to_string(index + 1) + ".pdf"));
-        nordiska::CreatePdf(*renderer).execute(report, sink);
+        render_to_sink(report, *renderer, sink);
     }
     return sample_directory;
 }

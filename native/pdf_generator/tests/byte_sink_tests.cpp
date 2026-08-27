@@ -1,4 +1,4 @@
-#include "nordiska/byte_sink.hpp"
+#include "nordiska/adapters/output/byte_sinks.hpp"
 
 #include <filesystem>
 #include <fstream>

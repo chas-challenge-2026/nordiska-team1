@@ -1,4 +1,4 @@
-#include "nordiska/json_input_adapter.hpp"
+#include "nordiska/adapters/input/json_input_adapter.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -23,8 +23,7 @@ void write_file(const std::filesystem::path& path, const std::string& contents) 
 void require_failure(const std::filesystem::path& path, const std::string& expected_text) {
     try {
         const nordiska::JsonInputAdapter json_input_adapter;
-        const nordiska::IInputAdapter& input_adapter = json_input_adapter;
-        (void)input_adapter.import(path);
+        (void)json_input_adapter.import(path);
     } catch (const std::runtime_error& error) {
         require(std::string(error.what()).find(expected_text) != std::string::npos,
                 "unexpected error: " + std::string(error.what()));
@@ -55,8 +54,7 @@ void valid_report_is_parsed_without_regex_ambiguity(const std::filesystem::path&
     })");
 
     const nordiska::JsonInputAdapter json_input_adapter;
-    const nordiska::IInputAdapter& input_adapter = json_input_adapter;
-    const nordiska::Report report = input_adapter.import(path);
+    const nordiska::Report report = json_input_adapter.import(path);
     require(report.account_number == "SE\"123", "escaped account number was not decoded");
     require(report.transactions.size() == 2, "wrong transaction count");
     require(report.transactions[0].amount_minor == 100000, "wrong first amount");

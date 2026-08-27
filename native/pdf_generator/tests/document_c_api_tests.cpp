@@ -1,4 +1,4 @@
-#include "nordiska/document_c_api.h"
+#include "nordiska/delivery/c_api/document_c_api.h"
 
 #include <cstdint>
 #include <cstring>
@@ -49,6 +49,14 @@ int main() {
     require(invalid_status == NORDISKA_DOCUMENT_INVALID_INPUT,
             "invalid report did not return invalid-input status");
     require(std::strlen(error) > 0, "invalid report did not return an error message");
+
+    const std::string invalid_report =
+        R"({"account_number":"","transactions":[{"date":"2026-01-05","type":"deposit","currency":"SEK","amount_minor":1}]})";
+    const int invalid_report_status = nordiska_document_generate_json(
+        reinterpret_cast<const uint8_t*>(invalid_report.data()), invalid_report.size(), save_pdf,
+        &pdf, error, sizeof(error));
+    require(invalid_report_status == NORDISKA_DOCUMENT_INVALID_INPUT,
+            "invalid domain report did not return invalid-input status");
 
     const int callback_status =
         nordiska_document_generate_json(reinterpret_cast<const uint8_t*>(json.data()), json.size(),

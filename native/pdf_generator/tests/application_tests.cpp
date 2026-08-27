@@ -1,5 +1,8 @@
-#include "nordiska/batch_create_pdf.hpp"
+#include "nordiska/adapters/output/byte_sinks.hpp"
+#include "nordiska/adapters/renderers/pdf/pdf_renderer.hpp"
+#include "nordiska/application/generate_documents.hpp"
 
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -11,7 +14,7 @@
 
 namespace {
 
-class FakeRenderer final : public nordiska::IPdfRenderer {
+class FakeRenderer final : public nordiska::IDocumentRenderer {
   public:
     void render(const nordiska::Report& report, nordiska::IByteSink& sink) override {
         const std::string value =
@@ -34,50 +37,48 @@ void require(bool condition, const char* message) {
 
 int main() {
     const std::filesystem::path directory =
-        std::filesystem::temp_directory_path() / "nordiska-pdf-application-tests";
+        std::filesystem::temp_directory_path() / "nordiska-document-application-tests";
     std::filesystem::remove_all(directory);
     std::filesystem::create_directories(directory);
 
     try {
-        const auto output = directory / "single.txt";
-        FakeRenderer renderer;
-        nordiska::CreatePdf create_pdf(renderer);
-        create_pdf.execute(valid_report("single"), output);
-        require(std::filesystem::is_regular_file(output), "single output was not created");
-
-        bool rejected = false;
-        try {
-            create_pdf.execute(nordiska::Report{}, directory / "invalid.txt");
-        } catch (const std::invalid_argument&) {
-            rejected = true;
-        }
-        require(rejected, "invalid report was accepted");
-
-        nordiska::BatchCreatePdf batch([] { return std::make_unique<FakeRenderer>(); }, 2);
-        std::vector<nordiska::BatchPdfRequest> requests;
+        std::vector<nordiska::DocumentRequest> requests;
+        requests.push_back({valid_report("single")});
         for (int index = 0; index < 4; ++index) {
-            requests.push_back({valid_report("batch-" + std::to_string(index)),
-                                directory / ("batch-" + std::to_string(index) + ".txt")});
-        }
-        batch.execute(requests);
-        for (const auto& request : requests) {
-            require(std::filesystem::is_regular_file(request.output_path),
-                    "batch output was not created");
+            requests.push_back({valid_report("batch-" + std::to_string(index))});
         }
 
-        requests.push_back({nordiska::Report{}, directory / "rejected.txt"});
-        rejected = false;
-        try {
-            batch.execute(requests);
-        } catch (const std::runtime_error&) {
-            rejected = true;
+        nordiska::FileOutputDestination destination([&](std::size_t index) {
+            return directory / ("document-" + std::to_string(index) + ".txt");
+        });
+        nordiska::GenerateDocuments generate([] { return std::make_unique<FakeRenderer>(); }, 2);
+        const auto results = generate.execute(requests, destination);
+        require(results.size() == requests.size(), "wrong result count");
+        for (const auto& result : results) {
+            require(result.succeeded, "valid document generation failed");
+            require(std::filesystem::is_regular_file(
+                        directory / ("document-" + std::to_string(result.index) + ".txt")),
+                    "document output was not created");
         }
-        require(rejected, "batch failure was not reported");
+
+        auto cairo_renderer = nordiska::make_pdf_renderer(nordiska::PdfEngine::cairo);
+        nordiska::MemoryByteSink cairo_output;
+        cairo_renderer->render(valid_report("cairo"), cairo_output);
+        cairo_output.finish();
+        require(cairo_output.bytes().size() > 8, "Cairo output was empty");
+        require(std::memcmp(cairo_output.bytes().data(), "%PDF-", 5) == 0,
+                "Cairo output is not a PDF");
+
+        requests.push_back({nordiska::Report{}});
+        const auto failure_results = generate.execute(requests, destination);
+        require(!failure_results.back().succeeded, "invalid report was accepted");
+        require(failure_results.back().error.find("account_number") != std::string::npos,
+                "invalid report error was not retained");
     } catch (...) {
         std::filesystem::remove_all(directory);
         throw;
     }
 
     std::filesystem::remove_all(directory);
-    std::cout << "application tests passed\n";
+    std::cout << "document application tests passed\n";
 }

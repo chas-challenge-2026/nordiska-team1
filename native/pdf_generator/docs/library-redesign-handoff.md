@@ -17,9 +17,10 @@ batching, output publication, or error policy.
 ```text
 nordiska_document_generate_json (C ABI)
   -> JsonInputAdapter::import_text
-  -> CallbackByteSink
-  -> generate_default_pdf composition (Haru)
-  -> CreatePdf validation and rendering
+  -> GenerateDocuments
+  -> PdfRenderer (shared presentation and pagination)
+  -> private PDF engine (Haru by default; Cairo available for comparison)
+  -> CallbackOutputDestination
   -> caller callback receives one completed PDF
 ```
 
@@ -31,12 +32,12 @@ does not expose C++ types, choose a renderer, or own an output implementation.
 
 1. Stabilize and test the JSON report contract, including the actual tax-report
    data and presentation requirements.
-2. Design multi-report input and stable per-report result/error callbacks.
-3. Decide whether a caller-visible configuration handle is required; do not add
-   a generic configuration bag before a concrete second use case needs it.
-4. Add renderer tests for pagination, text encoding, tables, and readable-PDF
+2. Extend the JSON adapter from one report to a normalized one-or-many source.
+3. Add renderer tests for pagination, text encoding, tables, and readable-PDF
    validation; retain Haru as the production default unless benchmark evidence
    changes that decision.
+4. Add any caller-visible configuration only when a concrete second use case
+   requires it.
 5. Rebuild one thin CLI only after those library contracts are stable.
 
 ## Verification at this checkpoint
