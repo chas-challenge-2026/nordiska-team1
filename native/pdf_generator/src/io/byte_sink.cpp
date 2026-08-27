@@ -15,6 +15,29 @@ void MemoryByteSink::write(std::span<const std::byte> bytes) {
 
 void MemoryByteSink::finish() {}
 
+CallbackByteSink::CallbackByteSink(CompletionCallback completion_callback)
+    : completion_callback_(std::move(completion_callback)) {
+    if (!completion_callback_) {
+        throw std::invalid_argument("completion_callback must not be empty");
+    }
+}
+
+void CallbackByteSink::write(std::span<const std::byte> bytes) {
+    if (finished_) {
+        throw std::logic_error("callback byte sink is already finished");
+    }
+    buffer_.write(bytes);
+}
+
+void CallbackByteSink::finish() {
+    if (finished_) {
+        throw std::logic_error("callback byte sink is already finished");
+    }
+    buffer_.finish();
+    finished_ = true;
+    completion_callback_(buffer_.bytes());
+}
+
 class FileByteSink::Impl {
   public:
     std::ofstream output;

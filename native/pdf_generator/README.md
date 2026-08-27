@@ -1,8 +1,8 @@
 # Native PDF Generator
 
 This directory contains the native PDF-generation component for Nordiska v2.
-It provides one application core, libharu and Cairo renderer adapters, and
-single-report and batch entry points.
+It provides one reusable application core, libharu and Cairo renderer
+adapters, and a small C ABI shared-library boundary for .NET.
 
 The current implementation is evolving toward the normative architecture in
 `docs/target-architecture.md`. That document governs the intended module
@@ -20,17 +20,16 @@ These are the requirements inherited from the v2 project documentation.
   records in less than five minutes. [NOTE JJ: Distribute transaction counts
   per PDF according to a log-normal or clamped Pareto distribution rather
   than uniformly.]
-- **Integration:** the native component must be callable by the .NET
-  background-job system through the integration boundary specified by the
-  main project documentation. The executable/process path is the first
-  integration target; a C ABI/shared-library path may be added later.
+- **Integration:** the native component is currently callable through its C
+  ABI shared library. The CLI is deliberately deferred until the library
+  boundary is complete.
 - **Money:** monetary values are represented as integer minor units, not
   binary floating-point values.
 ## Working architectural decisions
 
-### One application core, multiple entry points
+### One application core, delivery adapters
 
-The reusable native code should be separated from the executable entry points:
+The reusable native code is independent of its delivery adapters:
 
 ```text
 nordiska_pdf_application
@@ -38,10 +37,9 @@ nordiska_pdf_application
   └── BatchCreatePdf
 
 nordiska_pdf_renderer_haru  -> libharu
-nordiska_pdf_renderer_cairo -> Cairo
+nordiska_pdf_renderer_cairo -> Cairo (comparison adapter)
 
-pdf_generator_single -> application + selected renderer
-pdf_generator_batch  -> application + selected renderer
+nordiska_document_c_api -> C ABI shared-library delivery adapter
 ```
 
 The batch queue and worker management belong in a batch application service.
@@ -62,10 +60,10 @@ public:
 };
 ```
 
-`MemoryByteSink`, `FileByteSink`, and `NullByteSink` provide simple memory,
-atomic file, and discard destinations. The CLI uses `FileByteSink`, while
-future benchmarks can render to memory or null output to measure rendering
-without disk persistence. The boundary is therefore:
+`MemoryByteSink`, `CallbackByteSink`, `FileByteSink`, and `NullByteSink`
+provide memory, callback, atomic file, and discard destinations. The current
+C ABI uses `CallbackByteSink`; benchmarks use memory or null output to measure
+rendering without disk persistence. The boundary is therefore:
 
 ```text
 Report -> IPdfRenderer -> IByteSink
@@ -112,15 +110,9 @@ The preset installs the manifest dependencies into the ignored
 metadata because the vcpkg Cairo port does not provide a CMake package config.
 
 
-## First-slice usage
+## JSON report format
 
-The current proof of concept demonstrates:
-
-```text
-sample-input.json -> pdf_generator -> report.pdf
-```
-
-Example input:
+The current C API accepts one report JSON object. Example input:
 
 ```json
 {
@@ -141,31 +133,51 @@ Example input:
 code. Currency-specific decimal scales and additional validation remain
 future work.
 
-Build from this directory:
+Build the library from this directory:
 
 ```bash
 export VCPKG_ROOT=$HOME/vcpkg
 cmake --preset default
 cmake --build --preset default
-./build/pdf_generator_single sample-input.json
-./build/pdf_generator_single sample-input.json --renderer cairo
 ```
 
-Reports are written to the ignored `output/reports/` directory through
-`FileByteSink`. The renderer name and a sequence number are added
-automatically, for example
-`report-cairo-0.pdf` or `report-haru-0.pdf`. Each renderer has its own sequence.
+## .NET shared-library integration
 
-Batch mode takes a directory of report JSON files and writes one PDF per input:
+`libnordiska_document_c_api.so` is the Linux P/Invoke boundary. It accepts a
+UTF-8 JSON report, renders through the same application path as
+the native core, and synchronously calls a caller-provided callback with the complete
+PDF bytes. The native library never retains the callback, context, or byte
+pointer after the function returns, and no C++ types or exceptions cross the
+boundary. The library's production composition uses Haru; Cairo remains an
+not selected by the C ABI.
+
+```c
+int nordiska_document_generate_json(
+    const uint8_t* json_utf8, size_t json_length,
+    nordiska_document_callback callback, void* callback_context,
+    char* error_buffer, size_t error_buffer_length);
+```
+
+Return value `0` is success. Non-zero values are defined by
+`include/nordiska/document_c_api.h`; diagnostics are UTF-8 in the supplied
+error buffer. Build the library before the portal. The portal project copies
+the built `.so` beside its output automatically when it exists:
 
 ```bash
-./build/pdf_generator_batch ./input-reports 4 --renderer haru
+cd native/pdf_generator
+cmake --preset default
+cmake --build --preset default
+dotnet build ../../backend/NordiskaPortal/NordiskaPortal.csproj
 ```
+
+`NativePdfGenerator` is the portal's managed adapter. The tax-report endpoint
+serializes its transaction data with integer minor units, calls the library,
+and returns genuine PDF bytes with `application/pdf`.
 
 ## Benchmark harness
 
-`pdf_generator_benchmark` measures the native pipeline without changing CLI
-behavior or application code. It currently benchmarks the Haru renderer only.
+`pdf_generator_benchmark` measures the native pipeline without changing
+application code. It currently benchmarks the Haru renderer only.
 It discovers sorted `.json` report files in the given directory;
 `manifest.json` is ignored because it is not a report. The synthetic datasets
 in `tools/synthetic-input-generator/generated/` are the deterministic

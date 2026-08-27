@@ -65,46 +65,74 @@ std::int64_t required_integer(const Json& object, const char* key, const std::st
     }
 }
 
+std::vector<std::string> optional_string_array(const Json& object, const char* key,
+                                               const std::string& context) {
+    if (!object.contains(key)) {
+        return {};
+    }
+    const Json& values = object.at(key);
+    if (!values.is_array()) {
+        throw std::runtime_error("JSON field must be an array: " + context + "." + key);
+    }
+    std::vector<std::string> result;
+    result.reserve(values.size());
+    for (std::size_t index = 0; index < values.size(); ++index) {
+        if (!values.at(index).is_string()) {
+            throw std::runtime_error("JSON array value must be a string: " + context + "." + key +
+                                     "[" + std::to_string(index) + "]");
+        }
+        result.push_back(values.at(index).get<std::string>());
+    }
+    return result;
+}
+
 } // namespace
 
 Report JsonInputAdapter::import(const std::filesystem::path& input_path) const {
     const std::string contents = read_text_file(input_path);
+    return import_text(contents);
+}
 
-    Json document;
+Report JsonInputAdapter::import_text(std::string_view contents) const {
     try {
-        document = Json::parse(contents);
-    } catch (const Json::parse_error& error) {
-        throw std::runtime_error("Invalid JSON in " + input_path.string() + ": " + error.what());
-    }
-
-    if (!document.is_object()) {
-        throw std::runtime_error("Report JSON root must be an object");
-    }
-
-    Report report;
-    report.account_number = required_string(document, "account_number", "report");
-
-    const Json& transactions = required_member(document, "transactions", "report");
-    if (!transactions.is_array()) {
-        throw std::runtime_error("JSON field must be an array: report.transactions");
-    }
-
-    report.transactions.reserve(transactions.size());
-    for (std::size_t index = 0; index < transactions.size(); ++index) {
-        const Json& transaction = transactions.at(index);
-        const std::string context = "report.transactions[" + std::to_string(index) + "]";
-        if (!transaction.is_object()) {
-            throw std::runtime_error("JSON transaction must be an object: " + context);
+        const Json document = Json::parse(contents);
+        if (!document.is_object()) {
+            throw std::runtime_error("Report JSON root must be an object");
         }
 
-        report.transactions.push_back(
-            Transaction{required_string(transaction, "date", context),
-                        required_string(transaction, "type", context),
-                        required_string(transaction, "currency", context),
-                        required_integer(transaction, "amount_minor", context)});
-    }
+        Report report;
+        report.account_number = required_string(document, "account_number", "report");
+        if (document.contains("title")) {
+            report.title = required_string(document, "title", "report");
+        }
+        report.summary_lines = optional_string_array(document, "summary_lines", "report");
 
-    return report;
+        const Json& transactions = required_member(document, "transactions", "report");
+        if (!transactions.is_array()) {
+            throw std::runtime_error("JSON field must be an array: report.transactions");
+        }
+
+        report.transactions.reserve(transactions.size());
+        for (std::size_t index = 0; index < transactions.size(); ++index) {
+            const Json& transaction = transactions.at(index);
+            const std::string context = "report.transactions[" + std::to_string(index) + "]";
+            if (!transaction.is_object()) {
+                throw std::runtime_error("JSON transaction must be an object: " + context);
+            }
+
+            report.transactions.push_back(
+                Transaction{required_string(transaction, "date", context),
+                            required_string(transaction, "type", context),
+                            required_string(transaction, "currency", context),
+                            required_integer(transaction, "amount_minor", context)});
+        }
+
+        return report;
+    } catch (const Json::exception& error) {
+        throw JsonInputError("Invalid JSON: " + std::string(error.what()));
+    } catch (const std::runtime_error& error) {
+        throw JsonInputError(error.what());
+    }
 }
 
 } // namespace nordiska

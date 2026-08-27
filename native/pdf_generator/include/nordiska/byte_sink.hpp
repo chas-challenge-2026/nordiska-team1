@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -25,6 +26,24 @@ class MemoryByteSink final : public IByteSink {
 
   private:
     std::vector<std::byte> bytes_;
+};
+
+// Buffers one completed document before handing it to a caller-owned output
+// callback. The callback is invoked by finish() and is never retained after
+// the sink is destroyed.
+class CallbackByteSink final : public IByteSink {
+  public:
+    using CompletionCallback = std::function<void(std::span<const std::byte>)>;
+
+    explicit CallbackByteSink(CompletionCallback completion_callback);
+
+    void write(std::span<const std::byte> bytes) override;
+    void finish() override;
+
+  private:
+    MemoryByteSink buffer_;
+    CompletionCallback completion_callback_;
+    bool finished_{false};
 };
 
 class FileByteSink final : public IByteSink {

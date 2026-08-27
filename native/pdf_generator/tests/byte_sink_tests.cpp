@@ -46,6 +46,16 @@ int main() {
         const std::string persisted((std::istreambuf_iterator<char>(input)), {});
         require(persisted == "pdf bytes", "file sink did not persist bytes");
 
+        std::string callback_output;
+        nordiska::CallbackByteSink callback_sink(
+            [&callback_output](std::span<const std::byte> bytes) {
+                callback_output.assign(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+            });
+        callback_sink.write(as_bytes("callback bytes"));
+        callback_sink.finish();
+        require(callback_output == "callback bytes",
+                "callback sink did not publish completed bytes");
+
         const auto failed_output = directory / "failed.bin";
         {
             nordiska::FileByteSink file(failed_output);

@@ -71,8 +71,7 @@ void render_to_sink(const Report& report, IByteSink& sink) {
         }
         check(error, HPDF_Page_SetFontAndSize(page, font, 18), "set title font");
         check(error, HPDF_Page_BeginText(page), "begin text");
-        check(error, HPDF_Page_TextOut(page, 72, 740, "Nordiska transaction report"),
-              "write title");
+        check(error, HPDF_Page_TextOut(page, 72, 740, report.title.c_str()), "write title");
         check(error, HPDF_Page_SetFontAndSize(page, font, 12), "set body font");
 
         float y = 710;
@@ -95,6 +94,9 @@ void render_to_sink(const Report& report, IByteSink& sink) {
         write_line("Transactions");
         for (const Transaction& transaction : report.transactions) {
             write_line(transaction_line(transaction));
+        }
+        for (const std::string& line : report.summary_lines) {
+            write_line(line);
         }
         check(error, HPDF_Page_EndText(page), "end text");
         check(error, HPDF_SaveToStream(pdf), "save document to stream");

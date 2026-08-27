@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Npgsql;
-using System.Text;
+using NordiskaPortal.Services;
+using System.Text.Json;
 
 namespace NordiskaPortal.Pages;
 
@@ -19,10 +20,12 @@ public class TaxReportModel : PageModel
     private const decimal CAPITAL_TAX_RATE = 0.30m; // 30% kapitalskatt
 
     private readonly IConfiguration _config;
+    private readonly NativePdfGenerator _pdfGenerator;
 
-    public TaxReportModel(IConfiguration config)
+    public TaxReportModel(IConfiguration config, NativePdfGenerator pdfGenerator)
     {
         _config = config;
+        _pdfGenerator = pdfGenerator;
     }
 
     public List<TaxReportAccountInfo> Accounts { get; set; } = new();
@@ -100,59 +103,33 @@ public class TaxReportModel : PageModel
                 }
             }
 
-            // SYNCHRONOUS PDF GENERATION — blocks the request thread
-            // Thread.Sleep(50) per transaction simulates "rendering" work
-            // This would time out for year-end batch (10,000 customers × many transactions)
-            var sb = new StringBuilder();
-            sb.AppendLine("NORDISKA SPARBANKEN AB");
-            sb.AppendLine("Organisationsnummer: 556789-1234");
-            sb.AppendLine("Skatteunderlag / Kontrolluppgift");
-            sb.AppendLine("====================================");
-            sb.AppendLine($"Kund-ID: {customerId}");
-            sb.AppendLine($"Kundnamn: {HttpContext.Session.GetString("CustomerName")}");
-            sb.AppendLine($"År: {year}");
-            sb.AppendLine($"Genererat: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            sb.AppendLine();
-            sb.AppendLine("TRANSAKTIONER");
-            sb.AppendLine("------------------------------------");
-
-            decimal totalDeposits = 0;
-            decimal totalWithdrawals = 0;
-            decimal estimatedInterest = 0;
-
-            foreach (var tx in transactions)
+            decimal totalDeposits = transactions.Where(tx => tx.Type == "deposit").Sum(tx => tx.Amount);
+            decimal totalWithdrawals = transactions.Where(tx => tx.Type != "deposit").Sum(tx => tx.Amount);
+            decimal estimatedInterest = transactions.Sum(tx => tx.BalAfter * tx.Rate / 365m);
+            var report = new
             {
-                // Fake synchronous "rendering" delay per transaction — intentional bottleneck
-                Thread.Sleep(50);
-
-                string typeLabel = tx.Type == "deposit" ? "Insättning" : "Uttag";
-                sb.AppendLine($"{tx.Date:yyyy-MM-dd}  {tx.AccNum,-15}  {typeLabel,-12}  {tx.Amount,12:N2} kr  Saldo: {tx.BalAfter,12:N2} kr");
-
-                if (tx.Type == "deposit")
-                    totalDeposits += tx.Amount;
-                else
-                    totalWithdrawals += tx.Amount;
-
-                // Interest estimate: crude approximation, not real accrual
-                estimatedInterest += tx.BalAfter * tx.Rate / 365;
-            }
-
-            sb.AppendLine();
-            sb.AppendLine("SAMMANFATTNING");
-            sb.AppendLine("------------------------------------");
-            sb.AppendLine($"Totala insättningar:   {totalDeposits,12:N2} kr");
-            sb.AppendLine($"Totala uttag:          {totalWithdrawals,12:N2} kr");
-            sb.AppendLine($"Beräknad ränta {year}:   {estimatedInterest,12:N2} kr");
-            sb.AppendLine($"Kapitalskatt (30%):    {estimatedInterest * CAPITAL_TAX_RATE,12:N2} kr");
-            sb.AppendLine();
-            sb.AppendLine("Detta dokument är genererat automatiskt och utgör underlag");
-            sb.AppendLine("för deklaration av kapitalinkomster (K4/K12).");
-            sb.AppendLine();
-            sb.AppendLine("Nordiska Sparbanken AB, Box 1234, 111 11 Stockholm");
-            sb.AppendLine("Tel: 08-123 456 78  |  kundtjanst@nordiska.se");
-
-            // "PDF" is actually plain text with .pdf extension — minimum viable spaghetti
-            byte[] fileBytes = Encoding.UTF8.GetBytes(sb.ToString());
+                account_number = accountId == 0
+                    ? $"customer-{customerId}"
+                    : Accounts.FirstOrDefault(account => account.Id == accountId)?.AccountNumber
+                        ?? $"account-{accountId}",
+                title = $"Nordiska tax report {year}",
+                transactions = transactions.Select(tx => new
+                {
+                    date = tx.Date.ToString("yyyy-MM-dd"),
+                    type = tx.Type,
+                    currency = "SEK",
+                    amount_minor = decimal.ToInt64(decimal.Round(tx.Amount * 100m, 0))
+                }),
+                summary_lines = new[]
+                {
+                    "Summary",
+                    $"Total deposits: {totalDeposits:N2} SEK",
+                    $"Total withdrawals: {totalWithdrawals:N2} SEK",
+                    $"Estimated interest: {estimatedInterest:N2} SEK",
+                    $"Capital tax (30%): {estimatedInterest * CAPITAL_TAX_RATE:N2} SEK"
+                }
+            };
+            byte[] fileBytes = _pdfGenerator.Generate(JsonSerializer.Serialize(report));
             string fileName = $"skatteunderlag_{year}_{DateTime.Now:yyyyMMddHHmm}.pdf";
 
             // Audit: same file append as Deposit, no locking

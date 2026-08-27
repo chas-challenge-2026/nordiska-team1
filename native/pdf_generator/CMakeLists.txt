@@ -18,6 +18,7 @@ pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 add_library(nordiska_pdf_io STATIC
     src/io/byte_sink.cpp
 )
+set_target_properties(nordiska_pdf_io PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_pdf_io PUBLIC include)
 target_compile_features(nordiska_pdf_io PUBLIC cxx_std_23)
 
@@ -26,6 +27,7 @@ add_library(nordiska_pdf_application STATIC
     src/application/create_pdf.cpp
     src/adapters/json_input_adapter.cpp
 )
+set_target_properties(nordiska_pdf_application PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_pdf_application PUBLIC include)
 target_compile_features(nordiska_pdf_application PUBLIC cxx_std_23)
 target_link_libraries(nordiska_pdf_application PRIVATE nordiska_pdf_io nlohmann_json::nlohmann_json)
@@ -33,6 +35,7 @@ target_link_libraries(nordiska_pdf_application PRIVATE nordiska_pdf_io nlohmann_
 add_library(nordiska_pdf_renderer_haru STATIC
     src/adapters/libharu_pdf_renderer.cpp
 )
+set_target_properties(nordiska_pdf_renderer_haru PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_pdf_renderer_haru PUBLIC include)
 target_compile_features(nordiska_pdf_renderer_haru PUBLIC cxx_std_23)
 target_link_libraries(nordiska_pdf_renderer_haru PRIVATE unofficial::libharu::hpdf)
@@ -40,22 +43,32 @@ target_link_libraries(nordiska_pdf_renderer_haru PRIVATE unofficial::libharu::hp
 add_library(nordiska_pdf_renderer_cairo STATIC
     src/adapters/cairo_pdf_renderer.cpp
 )
+set_target_properties(nordiska_pdf_renderer_cairo PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_pdf_renderer_cairo PUBLIC include)
 target_compile_features(nordiska_pdf_renderer_cairo PUBLIC cxx_std_23)
 target_link_libraries(nordiska_pdf_renderer_cairo PRIVATE PkgConfig::CAIRO)
 
-add_executable(pdf_generator_single src/main.cpp)
-target_link_libraries(pdf_generator_single PRIVATE
+add_library(nordiska_pdf_composition STATIC
+    src/composition/default_pdf_generator.cpp
+)
+set_target_properties(nordiska_pdf_composition PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(nordiska_pdf_composition PUBLIC include)
+target_compile_features(nordiska_pdf_composition PUBLIC cxx_std_23)
+target_link_libraries(nordiska_pdf_composition PRIVATE
     nordiska_pdf_application
     nordiska_pdf_renderer_haru
     nordiska_pdf_renderer_cairo
 )
 
-add_executable(pdf_generator_batch src/main_batch.cpp)
-target_link_libraries(pdf_generator_batch PRIVATE
+add_library(nordiska_document_c_api SHARED
+    src/c_api/document_c_api.cpp
+)
+target_include_directories(nordiska_document_c_api PUBLIC include)
+target_compile_features(nordiska_document_c_api PUBLIC cxx_std_23)
+target_link_libraries(nordiska_document_c_api PRIVATE
     nordiska_pdf_application
-    nordiska_pdf_renderer_haru
-    nordiska_pdf_renderer_cairo
+    nordiska_pdf_io
+    nordiska_pdf_composition
 )
 
 add_library(nordiska_pdf_benchmark_metrics STATIC
@@ -87,4 +100,8 @@ if(BUILD_TESTING)
     add_executable(nordiska_benchmark_metrics_tests tests/benchmark_metrics_tests.cpp)
     target_link_libraries(nordiska_benchmark_metrics_tests PRIVATE nordiska_pdf_benchmark_metrics)
     add_test(NAME nordiska_benchmark_metrics_tests COMMAND nordiska_benchmark_metrics_tests)
+
+    add_executable(nordiska_document_c_api_tests tests/document_c_api_tests.cpp)
+    target_link_libraries(nordiska_document_c_api_tests PRIVATE nordiska_document_c_api)
+    add_test(NAME nordiska_document_c_api_tests COMMAND nordiska_document_c_api_tests)
 endif()

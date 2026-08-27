@@ -77,7 +77,7 @@ void render_to_sink(const Report& report, IByteSink& sink) {
         cairo_set_source_rgb(context, 0, 0, 0);
         cairo_set_font_size(context, 18);
         cairo_move_to(context, 72, 52);
-        cairo_show_text(context, "Nordiska transaction report");
+        cairo_show_text(context, report.title.c_str());
         check(context, "write title");
 
         cairo_set_font_size(context, 12);
@@ -98,6 +98,9 @@ void render_to_sink(const Report& report, IByteSink& sink) {
         write_line("Transactions");
         for (const Transaction& transaction : report.transactions) {
             write_line(transaction_line(transaction));
+        }
+        for (const std::string& line : report.summary_lines) {
+            write_line(line);
         }
         cairo_show_page(context);
         check(context, "finish page");

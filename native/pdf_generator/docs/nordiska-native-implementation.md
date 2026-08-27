@@ -126,15 +126,15 @@ pdf_generator_batch
 - [ ] Compare required features: fonts, Unicode, pagination, metadata, tables, and signing compatibility.
 - [ ] Select the production backend based on measured results and document the decision.
 
-## Phase 7 — Optional native library boundary
+## Phase 7 — Native library boundary
 
 Only after the executable path is stable:
 
-- [ ] Add a thin `extern "C"` wrapper if direct native-library invocation is required.
-- [ ] Use C-compatible arguments only: byte buffers, lengths, UTF-8 strings, paths, status codes, and caller-owned error buffers.
-- [ ] Never expose `std::string`, `std::vector`, exceptions, C++ classes, or `std::filesystem::path` across the ABI.
-- [ ] Build the wrapper as `.so` for Linux and `.dll` only for Windows builds.
-- [ ] Keep the process executable as the primary integration path unless direct calls are demonstrably necessary.
+- [x] Add a thin `extern "C"` wrapper for direct .NET invocation.
+- [x] Use C-compatible arguments only: byte buffers, lengths, UTF-8 strings, callbacks, status codes, and caller-owned error buffers.
+- [x] Never expose `std::string`, `std::vector`, exceptions, C++ classes, or `std::filesystem::path` across the ABI.
+- [x] Build the wrapper as `.so` for Linux and `.dll` only for Windows builds.
+- [x] Add C ABI tests for real PDF output, validation errors, and callback rejection.
 
 ## Definition of done
 

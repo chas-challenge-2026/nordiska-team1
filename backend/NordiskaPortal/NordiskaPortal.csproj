@@ -10,4 +10,10 @@
     <PackageReference Include="Npgsql" Version="6.0.11" />
   </ItemGroup>
 
+  <ItemGroup Condition="Exists('../../native/pdf_generator/build/libnordiska_document_c_api.so')">
+    <None Include="../../native/pdf_generator/build/libnordiska_document_c_api.so"
+          Link="libnordiska_document_c_api.so"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

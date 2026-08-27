@@ -16,5 +16,7 @@ struct Transaction {
 struct Report {
     std::string account_number;
     std::vector<Transaction> transactions;
+    std::string title{"Nordiska transaction report"};
+    std::vector<std::string> summary_lines;
 };
 } // namespace nordiska
