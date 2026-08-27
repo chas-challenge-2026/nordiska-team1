@@ -27,6 +27,25 @@ facade owns report presentation and pagination; the private engines translate
 that neutral PDF model into Haru or Cairo calls. Output destinations own file,
 memory, and callback behavior.
 
+## How it works
+
+```text
+caller
+  -> input adapter              parses JSON into a canonical Report
+  -> GenerateDocuments          validates and coordinates one or many reports
+  -> IDocumentRenderer          generic document-format boundary
+  -> PdfRenderer                builds shared PDF layout and pagination
+  -> PDF engine                 translates the layout to Haru or Cairo
+  -> IByteSink                  streams completed document bytes
+  -> output destination          writes a file, stores memory, or invokes a callback
+  -> per-document result
+```
+
+The application layer does not know whether input came from JSON, whether the
+document is PDF, which PDF engine is used, or where the bytes are delivered.
+Those choices are connected in composition. A single report follows the same
+path as a batch containing one report.
+
 ## Build and test
 
 From this directory, with vcpkg available through `VCPKG_ROOT`:
