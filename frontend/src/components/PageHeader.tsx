@@ -20,8 +20,13 @@ export default function PageHeader() {
                 <PageLink title="Inställningar" route="/settings" />
                 <PageLink title="Logga ut" route="/logout" />
             </nav>
-            <button className="flex mr-3 gap-2 text-white cursor-pointer"><img className="w-[24px] invert" src="icons/lang-icon.svg" alt="" />SV</button>
-
+            <div className="flex mr-3 gap-2">
+                <img className="w-[24px] invert" src="icons/lang-icon.svg" alt="" />
+                <select name="lang" id="lang" className="text-white">
+                    <option value="SV">SV</option>
+                    <option value="EN">EN</option>
+                </select>
+            </div>
         </header>
     )
 }
