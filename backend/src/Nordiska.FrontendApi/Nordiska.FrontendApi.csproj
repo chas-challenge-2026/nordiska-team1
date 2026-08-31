@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Banking\Nordiska.Modules.Banking.csproj" />
+    <ProjectReference Include="..\Modules\Faq\Nordiska.Modules.Faq.csproj" />
+    <ProjectReference Include="..\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
