@@ -1,0 +1,6 @@
+@Nordiska.FrontendApi_HostAddress = http://localhost:5031
+
+GET {{Nordiska.FrontendApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
