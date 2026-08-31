@@ -2,10 +2,10 @@ import PageLink from "./PageLink"
 
 export default function PageHeader() {
     return (
-        <header className="fixed top-0 w-screen h-[112px] flex items-center bg-nordiska-blue border-b border-white z-[1001]">
+        <header className="flex h-[112px] items-center bg-nordiska-blue border-b border-white gap-10">
 
             {/* LOGO */}
-            <div className="flex-1 flex items-center ml-3">
+            <div className="items-center ml-3 mr-auto min-w-0">
                 <a
                     href="/"
                     className="font-montserrat-alternates text-6xl text-white font-bold tracking-wider whitespace-nowrap"
@@ -15,12 +15,12 @@ export default function PageHeader() {
             </div>
 
             {/* NAVIGATION */}
-            <nav className="flex-1 flex items-center justify-center gap-10 h-full">
+            <nav className="flex items-center justify-center h-full gap-10">
                 <PageLink title="Hjälpcenter" route="/help" />
                 <PageLink title="Inställningar" route="/settings" />
                 <PageLink title="Logga ut" route="/logout" />
-                <PageLink title="Språkval" route="/language" />
             </nav>
+            <button className="flex mr-3 gap-2 text-white cursor-pointer"><img className="w-[24px] invert" src="icons/lang-icon.svg" alt="" />SV</button>
 
         </header>
     )
