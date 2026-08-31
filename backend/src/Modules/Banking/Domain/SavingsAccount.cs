@@ -1,4 +1,5 @@
-namespace Bank.Modules.Banking.Domain;
+namespace Nordiska.Modules.Banking.Domain;
+
 
 public sealed class SavingsAccount
 {
@@ -12,5 +13,5 @@ public sealed class SavingsAccount
 
     public Customer Customer { get; set; } = null!;
     public AccountTypeConfig AccountTypeConfig { get; set; } = null!;
-    public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+    public ICollection<LedgerEntry> Transactions { get; set; } = new List<LedgerEntry>();
 }

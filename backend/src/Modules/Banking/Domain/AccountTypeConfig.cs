@@ -1,4 +1,4 @@
-namespace Bank.Modules.Banking.Domain;
+namespace Nordiska.Modules.Banking.Domain;
 
 public sealed class AccountTypeConfig
 {

@@ -1,4 +1,4 @@
-namespace Bank.Modules.Faq.Domain;
+namespace Nordiska.Modules.Faq.Domain;
 
 public sealed class FaqEntry
 {

@@ -1,4 +1,4 @@
-namespace Bank.Domain.Entities;
+namespace Nordiska.Modules.Banking.Domain;
 
 public sealed class Notification
 {

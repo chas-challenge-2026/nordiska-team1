@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-  </ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+   </ItemGroup>
 </Project>

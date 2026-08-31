@@ -1,6 +1,6 @@
-namespace Bank.Modules.Banking.Domain;
+namespace Nordiska.Modules.Banking.Domain;
 
-public sealed class Transaction
+public sealed class LedgerEntry
 {
     public long Id { get; set; }
     public long AccountId { get; set; }

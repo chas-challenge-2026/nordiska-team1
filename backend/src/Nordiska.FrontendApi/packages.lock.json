@@ -2,17 +2,6 @@
   "version": 2,
   "dependencies": {
     "net8.0": {
-      "Microsoft.EntityFrameworkCore": {
-        "type": "Transitive",
-        "resolved": "8.0.11",
-        "contentHash": "stbjWBTtpQ1HtqXMFyKnXFTr76PvaOHI2b2h85JqBi3eZr00nspvR/a90Zwh8CQ4rVawqLiTG0+0yZQWaav+sQ==",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.11",
-          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.11",
-          "Microsoft.Extensions.Caching.Memory": "8.0.1",
-          "Microsoft.Extensions.Logging": "8.0.1"
-        }
-      },
       "Microsoft.EntityFrameworkCore.Abstractions": {
         "type": "Transitive",
         "resolved": "8.0.11",
@@ -116,25 +105,41 @@
       "nordiska.buildingblocks.database": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[8.0.11, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[8.0.11, )"
         }
       },
       "nordiska.modules.banking": {
         "type": "Project",
         "dependencies": {
-          "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
+          "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[8.0.11, )"
         }
       },
       "nordiska.modules.faq": {
         "type": "Project",
         "dependencies": {
-          "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
+          "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[8.0.11, )"
         }
       },
       "nordiska.modules.reporting": {
         "type": "Project",
         "dependencies": {
-          "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
+          "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[8.0.11, )"
+        }
+      },
+      "Microsoft.EntityFrameworkCore": {
+        "type": "CentralTransitive",
+        "requested": "[8.0.11, )",
+        "resolved": "8.0.11",
+        "contentHash": "stbjWBTtpQ1HtqXMFyKnXFTr76PvaOHI2b2h85JqBi3eZr00nspvR/a90Zwh8CQ4rVawqLiTG0+0yZQWaav+sQ==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.11",
+          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.11",
+          "Microsoft.Extensions.Caching.Memory": "8.0.1",
+          "Microsoft.Extensions.Logging": "8.0.1"
         }
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {

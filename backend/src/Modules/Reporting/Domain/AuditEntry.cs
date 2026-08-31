@@ -1,4 +1,4 @@
-namespace Bank.Modules.Banking.Domain;
+namespace Nordiska.Modules.Reporting.Domain;
 
 public sealed class AuditEntry
 {

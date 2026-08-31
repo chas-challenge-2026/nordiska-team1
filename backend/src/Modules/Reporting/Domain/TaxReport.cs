@@ -1,4 +1,4 @@
-namespace Bank.Modules.Report.Domain;
+namespace Nordiska.Modules.Reporting.Domain;
 
 public sealed class TaxReport
 {
