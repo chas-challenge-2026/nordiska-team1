@@ -465,6 +465,7 @@
       "nordiska.frontendapi": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[11.6.0, )",
           "Nordiska.Modules.Banking": "[1.0.0, )",
           "Nordiska.Modules.Faq": "[1.0.0, )",
           "Nordiska.Modules.Reporting": "[1.0.0, )"
@@ -473,20 +474,29 @@
       "nordiska.modules.banking": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[11.6.0, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
         }
       },
       "nordiska.modules.faq": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[11.6.0, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
         }
       },
       "nordiska.modules.reporting": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[11.6.0, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
         }
+      },
+      "FluentValidation": {
+        "type": "CentralTransitive",
+        "requested": "[11.6.0, )",
+        "resolved": "11.6.0",
+        "contentHash": "DWKd0jHA33d7BXVWytSoN5Oafj9nYuiLUyyFoaUboOZZiaN5tlXdcJpkRbmrrWBUTWdSxjTwIoyUs38KSU/7OQ=="
       },
       "Microsoft.Extensions.Hosting": {
         "type": "CentralTransitive",

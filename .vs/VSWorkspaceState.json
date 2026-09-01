@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\backend",
+    "\\backend\\src",
+    "\\backend\\src\\Modules",
+    "\\backend\\src\\Modules\\Banking",
+    "\\backend\\src\\Modules\\Banking\\Domain",
+    "\\backend\\src\\Modules\\Faq",
+    "\\backend\\src\\Modules\\Faq\\Domain",
+    "\\backend\\src\\Nordiska.FrontendApi",
+    "\\backend\\src\\Nordiska.FrontendApi\\Extensions"
+  ],
+  "SelectedNode": "\\repomix-output.xml",
+  "PreviewInSolutionExplorer": false
+}
