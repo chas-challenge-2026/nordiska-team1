@@ -5,7 +5,9 @@ export default function DesktopLayout() {
     return (
         <>
             <PageHeader />
-            <Outlet />
+            <div className="flex ">
+                <Outlet />
+            </div>
         </>
     )
 }
