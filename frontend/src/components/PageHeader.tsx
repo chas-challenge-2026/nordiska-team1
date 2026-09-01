@@ -13,7 +13,7 @@ type PageHeaderProps = {
 
 export default function PageHeader({navLinks = true, login = false}: PageHeaderProps) {
     return (
-        <header className={`flex h-[112px] items-center ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} border-b border-white gap-10`}>
+        <header className={`fixed top-0 z-1001 flex w-screen h-[112px] items-center ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10`}>
 
             {/* LOGO */}
             <div className="items-center ml-3 mr-auto min-w-0">
