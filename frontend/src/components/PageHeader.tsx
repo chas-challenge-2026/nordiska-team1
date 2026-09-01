@@ -3,6 +3,7 @@ import PageLink from "./PageLink"
 type PageHeaderProps = {
     navLinks?: boolean;
     login?: boolean;
+    fixedPos?: boolean;
 }
 
 /**
@@ -11,9 +12,9 @@ type PageHeaderProps = {
  * login ändrar headerns styling för login-sidan.
  */
 
-export default function PageHeader({navLinks = true, login = false}: PageHeaderProps) {
+export default function PageHeader({navLinks = true, login = false, fixedPos = false}: PageHeaderProps) {
     return (
-        <header className={`fixed top-0 z-1001 flex w-screen h-[112px] items-center ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10`}>
+        <header className={`${fixedPos ? "fixed top-0 z-1001" : ""} flex w-screen h-[112px] items-center ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10`}>
 
             {/* LOGO */}
             <div className="items-center ml-3 mr-auto min-w-0">
