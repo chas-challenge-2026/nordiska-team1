@@ -10,7 +10,7 @@ export default function LandingPage({ inactive = false }: pageProps) {
         <div className='fixed z-[-2] bg-nordiska-blue'>
             <div className='fixed z-[-1] bg-[url("src/assets/img/mountain_view.webp")] bg-cover bg-center h-[100vh] w-[100vw] opacity-65'>
             </div>
-            <PageHeader navLinks={false} />
+            <PageHeader navLinks={false} fixedPos />
             <div className='flex items-center h-[100vh] w-[100vw]'>
                 <div className='flex flex-col gap-10 ml-[20%] text-white'>
                     <h1 className='text-7xl font-bold font-montserrat-alternates'>

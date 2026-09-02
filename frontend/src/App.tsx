@@ -1,6 +1,7 @@
 import './App.css'
-import PageHeader from './components/PageHeader'
 import LandingPage from './pages/LandingPage'
+import DesktopLayout from './layouts/DesktopLayout'
+import OverviewPage from './pages/OverviewPage'
 import { Routes, Route } from 'react-router'
 
 function App() {
@@ -9,6 +10,9 @@ function App() {
             <Routes>
                 <Route path="/welcome" element={<LandingPage />} />
                 <Route path="/inactive" element={<LandingPage inactive />} />
+                <Route path="/" element={<DesktopLayout />}>
+                    <Route index element={<OverviewPage />} />
+                </Route>
             </Routes>
         </>
     )
