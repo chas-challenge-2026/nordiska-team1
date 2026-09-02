@@ -5,6 +5,7 @@ type CollapsibleProps = {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     preview?: ReactNode;
+    trigger?: string;
     children: (close: () => void) => ReactNode;
 };
 
@@ -27,9 +28,10 @@ export default function Collapsible({
     isOpen,
     onOpenChange,
     preview,
+    trigger: triggerOverride,
     children,
 }: CollapsibleProps) {
-    const trigger = preview ? "ÄNDRA" : "LÄGG TILL";
+    const trigger = triggerOverride ?? (preview ? "ÄNDRA" : "LÄGG TILL");
 
     const close = () => onOpenChange(false);
     const toggle = () => onOpenChange(!isOpen);
