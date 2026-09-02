@@ -28,7 +28,7 @@ export default function PageHeader({navLinks = true, login = false, fixedPos = f
 
             {/* NAVIGATION */}
             {navLinks && (
-            <nav className="flex items-center justify-center h-full gap-10">
+            <nav className="flex items-center justify-center h-full gap-10 text-white">
                 <PageLink title="Hjälpcenter" route="/help" />
                 <PageLink title="Inställningar" route="/settings" />
                 <PageLink title="Logga ut" route="/logout" />
