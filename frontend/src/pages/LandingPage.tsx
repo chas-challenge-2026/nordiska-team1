@@ -17,15 +17,15 @@ export default function LandingPage({ inactive = false }: pageProps) {
             <div className='flex items-center h-[100vh] w-[100vw]'>
                 <div className='flex flex-col gap-10 ml-[20%] text-white'>
                     <h1 className='text-7xl font-bold font-montserrat-alternates'>
-                        {inactive ? t("inactivity.title")+"." : t("welcome.title")+"."}
+                        {inactive ? t("inactivity-route.title")+"." : t("welcome-route.title")+"."}
                     </h1>
                     <p className='text-xl w-[80%] font-montserrat'>
                         {inactive ?
-                            t("inactivity.paragraph")
-                            : t("welcome.paragraph")}
+                            t("inactivity-route.paragraph")
+                            : t("welcome-route.paragraph")}
                     </p>
                     <button className='group flex justify-between items-center hover:bg-login-bg cursor-pointer p-8 font-montserrat bg-nordiska-blue w-[60%] text-2xl font-bold h-14 rounded-tr-[10px] rounded-br-[10px] rounded-bl-[10px]'>
-                        {inactive ? t("inactivity.button") : t("welcome.button")}
+                        {inactive ? t("inactivity-route.button") : t("welcome-route.button")}
                         <span><img src="icons/arrow-right.svg" alt="" className='invert w-[36px] group-hover:animate-bounce-right' /></span>
                     </button>
                 </div>

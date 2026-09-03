@@ -32,9 +32,9 @@ export default function PageHeader({navLinks = true, login = false, fixedPos = f
             {/* NAVIGATION */}
             {navLinks && (
             <nav className="flex items-center justify-center h-full gap-10">
-                <PageLink title={t("header-navigation.customer")} route="/help" />
-                <PageLink title={t("header-navigation.settings")} route="/settings" />
-                <PageLink title={t("header-navigation.logout")} route="/logout" />
+                <PageLink title={t("page-header.help-center")} route="/help" />
+                <PageLink title={t("page-header.settings")} route="/settings" />
+                <PageLink title={t("page-header.logout")} route="/logout" />
             </nav>
             )}
 
