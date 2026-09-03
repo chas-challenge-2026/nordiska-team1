@@ -12,7 +12,7 @@ export default function CollapsiblePlayground() {
   // Simulerar det som senare kommer från backend: sparat värde eller inget.
   const [savedEmail, setSavedEmail] = useState<string | undefined>(undefined);
   const [savedPhone, setSavedPhone] = useState<string | undefined>(
-    "070***4501",
+    "07****4501",
   );
   // Bara ett fält kan vara öppet åt gången (accordion).
   const [openField, setOpenField] = useState<OpenField>(null);
@@ -23,6 +23,7 @@ export default function CollapsiblePlayground() {
       <Collapsible
         title="Email"
         preview={savedEmail}
+        label={savedEmail ? "ÄNDRA" : "LÄGG TILL"}
         isOpen={openField === "email"}
         onOpenChange={(open) => setOpenField(open ? "email" : null)}
       >
@@ -40,6 +41,7 @@ export default function CollapsiblePlayground() {
       <Collapsible
         title="Telefonnummer"
         preview={savedPhone}
+        label={savedPhone ? "ÄNDRA" : "LÄGG TILL"}
         isOpen={openField === "phone"}
         onOpenChange={(open) => setOpenField(open ? "phone" : null)}
       >
@@ -57,13 +59,14 @@ export default function CollapsiblePlayground() {
       <div className="mx-auto mt-20 max-w-xl px-4">
         <Collapsible
           title="FAQ Test"
-          trigger=""
           isOpen={faqOpen}
           onOpenChange={setFaqOpen}
         >
           {() => (
             <p className="font-montserrat text-secondary">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Iste perspiciatis ipsum esse praesentium nam non velit ducimus itaque quidem eos.
+              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Iste
+              perspiciatis ipsum esse praesentium nam non velit ducimus itaque
+              quidem eos.
             </p>
           )}
         </Collapsible>
