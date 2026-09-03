@@ -2,7 +2,7 @@
 
 #include <cstddef>
 #include <span>
-
+// JJ: uh If I have time it will be fun to try to do this as a concept instead
 namespace nordiska {
 
 class IByteSink {

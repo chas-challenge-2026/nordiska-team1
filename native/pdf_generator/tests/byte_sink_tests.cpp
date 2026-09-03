@@ -60,7 +60,7 @@ int main() {
         {
             nordiska::FileByteSink file(failed_output);
             file.write(as_bytes("discarded"));
-        }
+        } // Destructor runs without finish()
         require(!std::filesystem::exists(failed_output), "unfinished file sink published output");
 
         nordiska::NullByteSink null_sink;

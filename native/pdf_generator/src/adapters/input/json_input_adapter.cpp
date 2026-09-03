@@ -98,8 +98,13 @@ Report JsonInputAdapter::import_text(std::string_view contents) const {
         if (!document.is_object()) {
             throw std::runtime_error("Report JSON root must be an object");
         }
-
+        // JJ: OK so we are actually  creating the report here I thought that
+        // was created in the output ? or is this actually the translation to the internal
+        // representation Because in my mind I was thinking that report was gonna be the thing we
+        // output and the report is constructed from the internal representation
         Report report;
+        // JJ: ok why are we not validating the fields before importing?
+        // JJ: in general, seems we are not validating hte input at all?
         report.account_number = required_string(document, "account_number", "report");
         if (document.contains("title")) {
             report.title = required_string(document, "title", "report");
