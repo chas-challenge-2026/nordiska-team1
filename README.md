@@ -54,6 +54,92 @@ Kortversion:
 - Native C/C++-moduler för batch-PDF och PDF-signering
 - Strukturerad loggning och /health-endpoint
 
+## Datamodell (ER-diagram v2)
+
+Följande datamodell och entitetsrelationer gäller för v2 av Nordiska Sparbanken:
+
+```mermaid
+erDiagram
+    Customer {
+        bigint id PK
+        string personal_num UK
+        string name
+        string email UK
+        string phone_number "kontaktuppgift"
+        string password_hash
+        datetime created_at
+    }
+
+    AccountTypeConfig {
+        string account_type PK "saving, debit etc"
+        decimal interest_rate "t.ex. 1.45 eller 3.46"
+        string description
+    }
+
+    SavingsAccount {
+        bigint id PK
+        bigint customer_id FK
+        string account_number UK
+        string account_type FK
+        decimal balance "Ledger snapshot"
+        decimal interest_rate
+        string status "active, closed"
+        datetime created_at
+    }
+
+    Transaction {
+        bigint id PK
+        bigint account_id FK
+        string type "deposit, withdrawal, interest"
+        decimal amount
+        datetime created_at
+    }
+
+    TaxReport {
+        bigint id PK
+        bigint account_id FK
+        int year
+        string status "pending, generated, signed"
+        string download_url
+        string signature
+        datetime created_at
+    }
+
+    FaqEntry {
+        int id PK
+        string question
+        string answer
+        string category
+        int helpful_count
+        string keywords "taggar eller sokord"
+    }
+
+    Notification {
+        bigint id PK
+        string recipient "email eller userId"
+        string type "email, push, sms"
+        bigint ref_id "FK till relaterad entitet"
+        string status "pending, sent, failed"
+        datetime sent_at
+        datetime created_at
+    }
+
+    AuditEntry {
+        bigint id PK
+        string action "LOGIN, TRANSFER, UPDATE"
+        bigint user_id FK "Nullable"
+        string details "JSON eller text"
+        string signature
+        datetime created_at
+    }
+
+    Customer ||--o{ SavingsAccount : "owns"
+    AccountTypeConfig ||--o{ SavingsAccount : "defines_rate_for"
+    SavingsAccount ||--o{ Transaction : "has ledger entries"
+    SavingsAccount ||--o{ TaxReport : "has"
+    Customer ||--o{ AuditEntry : "logs"
+```
+
 ## Dokumentation
 
 | Fil | Innehåll |
