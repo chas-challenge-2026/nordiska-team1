@@ -1,20 +1,20 @@
-@Nordiska.FrontendApi_HostAddress = http://localhost:5031
+@HostAddress = http://localhost:5031
 
 ### 1. Get Weather Forecast (Public endpoint)
-GET {{Nordiska.FrontendApi_HostAddress}}/weatherforecast/
+GET {{HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
 
 ### 2. Access protected test endpoint without token (Should return 401 Unauthorized)
-GET {{Nordiska.FrontendApi_HostAddress}}/api/test/secure
+GET {{HostAddress}}/api/test/secure
 Accept: application/json
 
 ###
 
 ### 3. Log in as Anna (Should return 200 OK with a valid JWT token)
 # @name loginAnna
-POST {{Nordiska.FrontendApi_HostAddress}}/api/auth/login
+POST {{HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -28,17 +28,27 @@ Content-Type: application/json
 @authToken = {{loginAnna.response.body.token}}
 
 ### 4. Access protected endpoint with valid JWT token (Should return 200 OK and show claims)
-GET {{Nordiska.FrontendApi_HostAddress}}/api/test/secure
+GET {{HostAddress}}/api/test/secure
 Authorization: Bearer {{authToken}}
 Accept: application/json
 
 ###
 
 ### 5. Log in with wrong credentials (Should return 401 Unauthorized)
-POST {{Nordiska.FrontendApi_HostAddress}}/api/auth/login
+POST {{HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
   "email": "anna@example.com",
   "password": "wrongpassword"
 }
+
+###
+
+### 6. CORS Preflight OPTIONS request from React Vite frontend (Should return 204/200 with Access-Control-Allow-Origin)
+OPTIONS {{HostAddress}}/api/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: authorization, content-type
+
+

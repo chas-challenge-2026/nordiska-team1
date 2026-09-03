@@ -1,12 +1,46 @@
-# Environment files & Secrets
+# ==========================================
+# Nordiska Portal v2 - Master .gitignore
+# ==========================================
+
+# 1. Environment files, Secrets & Certificates
 .env
 .env.*
 *.local
 *.secret
+secrets.json
+*.pem
+*.key
+*.pfx
+*.p12
 
-# OS & IDE
+# 2. .NET & C# Build Output
+[Bb]in/
+[Oo]bj/
+[Aa]rtifacts/
+[Tt]est[Rr]esults/
+*.user
+*.suo
+*.userosv
+*.sln.docstates
+
+# 3. Node.js & Frontend Build Output
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 4. OS & IDE Files
 .DS_Store
 Thumbs.db
+desktop.ini
 .vs/
 .vscode/
-*.user
+.idea/
+
+# 5. Local Databases & Logs
+*.sqlite
+*.log
+postgres_data/

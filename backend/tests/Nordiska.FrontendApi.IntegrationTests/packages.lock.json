@@ -2,6 +2,27 @@
   "version": 2,
   "dependencies": {
     "net8.0": {
+      "ActiveLogin.Authentication.BankId.AspNetCore": {
+        "type": "Direct",
+        "requested": "[11.1.3, )",
+        "resolved": "11.1.3",
+        "contentHash": "/gYQXvxRZh/7DsejLCQN8zj95r/1E9IE4JkpSqWReh29z1upcR5OKQN0bKC2X39WeX7gEv49a6vfzfzZTij47g==",
+        "dependencies": {
+          "ActiveLogin.Authentication.BankId.Api": "11.1.3",
+          "ActiveLogin.Authentication.BankId.Core": "11.1.3",
+          "ActiveLogin.Identity.Swedish": "3.0.0",
+          "Microsoft.Extensions.Http": "8.0.1"
+        }
+      },
+      "ActiveLogin.Identity.Swedish": {
+        "type": "Direct",
+        "requested": "[3.2.0, )",
+        "resolved": "3.2.0",
+        "contentHash": "V6ZJKCBgUNo612EUQDfvSUXzGx6FM/EiJHWBUmofB5u99sM5MNMP+UbY+wH4eSe3WrjUjOqBB/KDIVAFz3YPXg==",
+        "dependencies": {
+          "FSharp.Core": "10.1.201"
+        }
+      },
       "coverlet.collector": {
         "type": "Direct",
         "requested": "[6.0.4, )",
@@ -61,6 +82,25 @@
         "resolved": "3.1.4",
         "contentHash": "5mj99LvCqrq3CNi06xYdyIAXOEh+5b33F2nErCzI5zWiDdLHXiPXEWFSUAF8zlIv0ZWqjZNCwHTQeAPYbF3pCg=="
       },
+      "ActiveLogin.Authentication.BankId.Api": {
+        "type": "Transitive",
+        "resolved": "11.1.3",
+        "contentHash": "rctV78kF/h9KzMfekPcvcRDf20wGdspQmGX6mgvZwDJmD+kiBTNgm8nOS3ishRNtHXuL58qZOWcqXUQV0YVc6Q==",
+        "dependencies": {
+          "System.Text.Json": "8.0.5"
+        }
+      },
+      "ActiveLogin.Authentication.BankId.Core": {
+        "type": "Transitive",
+        "resolved": "11.1.3",
+        "contentHash": "V1vfvgfOdxVaFOsxlE2tbfxJ+HJYW2jWK/U+Nwx2JjcmDd2L3exsvW/U9ptY8wp4p6M1GaHsPofWsEOyyQNRWg==",
+        "dependencies": {
+          "ActiveLogin.Authentication.BankId.Api": "11.1.3",
+          "ActiveLogin.Identity.Swedish": "3.0.0",
+          "Microsoft.Extensions.Http": "8.0.1",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
+        }
+      },
       "Castle.Core": {
         "type": "Transitive",
         "resolved": "5.1.1",
@@ -68,6 +108,11 @@
         "dependencies": {
           "System.Diagnostics.EventLog": "6.0.0"
         }
+      },
+      "FSharp.Core": {
+        "type": "Transitive",
+        "resolved": "10.1.201",
+        "contentHash": "s5w9LWYurZ9yZdIppoIaYLkRadyT5s3u0wbQCb0J4bQd3ubIlIWQ3Nd5+ll1y3pv5OnTS373dP8T1S/BP46QXg=="
       },
       "Microsoft.AspNetCore.TestHost": {
         "type": "Transitive",
@@ -254,6 +299,19 @@
           "Microsoft.Extensions.Diagnostics.Abstractions": "8.0.1",
           "Microsoft.Extensions.FileProviders.Abstractions": "8.0.0",
           "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
+        }
+      },
+      "Microsoft.Extensions.Http": {
+        "type": "Transitive",
+        "resolved": "8.0.1",
+        "contentHash": "kDYeKJUzh0qeg/AI+nSr3ffthmXYQTEb0nS9qRC7YhSbbuN4M4NPbaB77AJwtkTnCV9XZ7qYj3dkZaNcyl73EA==",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Diagnostics": "8.0.1",
+          "Microsoft.Extensions.Logging": "8.0.1",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Options": "8.0.2"
         }
       },
       "Microsoft.Extensions.Logging": {
@@ -469,6 +527,11 @@
           "System.Collections.Immutable": "8.0.0"
         }
       },
+      "System.Text.Json": {
+        "type": "Transitive",
+        "resolved": "8.0.5",
+        "contentHash": "0f1B50Ss7rqxXiaBJyzUu9bWFOO2/zSlifZ/UNMdiIpDYe4cY4LQQicP4nirK1OS31I43rn062UIJ1Q9bpmHpg=="
+      },
       "xunit.abstractions": {
         "type": "Transitive",
         "resolved": "2.0.3",
@@ -518,6 +581,8 @@
       "nordiska.frontendapi": {
         "type": "Project",
         "dependencies": {
+          "ActiveLogin.Authentication.BankId.AspNetCore": "[11.1.3, )",
+          "ActiveLogin.Identity.Swedish": "[3.2.0, )",
           "FluentValidation": "[11.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[8.0.30, )",
           "Nordiska.Modules.Banking": "[1.0.0, )",

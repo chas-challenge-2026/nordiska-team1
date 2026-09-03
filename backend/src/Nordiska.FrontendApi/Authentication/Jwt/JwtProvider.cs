@@ -3,28 +3,36 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.FrontendApi.Authentication.Jwt;
 
 public class JwtProvider : IJwtProvider
 {
     private readonly JwtOptions _options;
+    readonly UserManager<Customer> _userManager;
 
-    public JwtProvider(IOptions<JwtOptions> options)
+    public JwtProvider(IOptions<JwtOptions> options,  UserManager<Customer> userManager)
     {
         _options = options.Value;
+        _userManager = userManager;
     }
+    
 
-    public string Generate(long customerId, string email, string role)
+    public async Task<string> Generate(Customer customer)
     {
+        
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, customerId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(ClaimTypes.Role, role)
+            new Claim(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, customer.Email),
         };
+        
+        var roles = await _userManager.GetRolesAsync(customer);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var key = Encoding.UTF8.GetBytes(_options.SecretKey);
         var signingCredentials = new SigningCredentials(
