@@ -17,4 +17,10 @@
     <UserSecretsId>0376a5cb-ee2a-4b9c-b42a-c12b974709d8</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+
+
 </Project>
