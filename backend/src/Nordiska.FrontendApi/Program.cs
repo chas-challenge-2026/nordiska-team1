@@ -5,6 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Extensions;
 
+using ActiveLogin.Authentication.BankId.Api;
+using ActiveLogin.Authentication.BankId.Core;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Register JWT configuration options
@@ -35,6 +38,24 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 
 // Register controller services
 builder.Services.AddControllers();
+
+
+// Get environment from app settings 
+var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
+// Service for bank id  
+builder.Services.AddBankId(bankId =>
+{
+    
+    if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
+    {
+        bankId.UseSimulatedEnvironment();
+    }
+    else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
+    {
+        bankId.UseTestEnvironment();
+        // Add real certificate, ex from azure key vault below. 
+    }
+});
 
 // Configure strict CORS policy for the React 18 SPA (NOR-66)
 // Whitelists trusted frontend origins without AllowAnyOrigin.
