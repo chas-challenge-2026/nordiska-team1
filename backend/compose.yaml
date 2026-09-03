@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:15
+
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    environment:
+      POSTGRES_DB: nordiska
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

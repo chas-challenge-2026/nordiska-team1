@@ -1,10 +1,33 @@
 using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication.Jwt;
+using Nordiska.Modules.Banking.Infrastructure;
+using Nordiska.Modules.Banking.Infrastructure.DbConfigs;
+using Nordiska.Modules.Faq.Domain;
+using Nordiska.Modules.Faq.Infrastructure.DbConfigs;
+using Nordiska.Modules.Reporting.Infrastructure;
+using Nordiska.Modules.Reporting.Infrastructure.DbConfigs;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+
+
+builder.Services.AddBankingModuleInfrastructure(
+    builder.Configuration);
+
+builder.Services.AddReportingModuleInfrastructure(
+    builder.Configuration);
+
+builder.Services.AddFaqModuleInfrastructure(
+    builder.Configuration);
+
+
+
 
 // Register JWT configuration options
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
@@ -45,28 +68,43 @@ app.UseAuthorization();
 // Map controllers
 app.MapControllers();
 
-// Keep default weather forecast endpoint
-var summaries = new[]
+ if (app.Environment.IsDevelopment())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-});
+      app.MapGet("/config-test", (IConfiguration configuration) =>
+    {
+        return Results.Ok(new
+        {
+            BankingDatabase =
+                !string.IsNullOrWhiteSpace(
+                    configuration.GetConnectionString("BankingDatabase")),
+
+            ReportingDatabase =
+                !string.IsNullOrWhiteSpace(
+                    configuration.GetConnectionString("ReportingDatabase")),
+
+            FaqDatabase =
+                !string.IsNullOrWhiteSpace(
+                    configuration.GetConnectionString("FaqDatabase"))
+        });
+    });
+
+    app.MapGet("/db-test", async (
+        BankingDbContext banking,
+        ReportDbContext reporting,
+        FaqDbContext faq) =>
+    {
+        return Results.Ok(new
+        {
+            Banking = await banking.Database.CanConnectAsync(),
+            Reporting = await reporting.Database.CanConnectAsync(),
+            Faq = await faq.Database.CanConnectAsync()
+        });
+    });
+}
+
+ 
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+ 

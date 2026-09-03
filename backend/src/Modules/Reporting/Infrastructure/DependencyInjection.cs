@@ -8,7 +8,7 @@ namespace Nordiska.Modules.Reporting.Infrastructure;
  
 public static class DependencyInjection
 {
-    public static IServiceCollection AddBankingModuleInfrastructure(
+    public static IServiceCollection AddReportingModuleInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
     {

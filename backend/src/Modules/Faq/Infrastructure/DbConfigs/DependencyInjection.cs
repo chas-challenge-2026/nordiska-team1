@@ -9,7 +9,7 @@ namespace Nordiska.Modules.Banking.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddBankingModuleInfrastructure(
+    public static IServiceCollection AddFaqModuleInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
     {
