@@ -39,7 +39,7 @@ export default function Collapsible({
           type="button"
           onClick={toggle}
           aria-expanded={isOpen}
-          className="flex w-full items-center justify-between"
+          className="flex w-full items-center justify-between cursor-pointer"
         >
           <span>{title}</span>
           <span className="flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-nordiska-blue">
