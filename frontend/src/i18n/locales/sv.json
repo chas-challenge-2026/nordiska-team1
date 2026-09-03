@@ -5,17 +5,33 @@
         "edit": "Ändra",
         "handle": "Hantera",
         "show-all": "Visa alla",
-        "add": "Lägg till"
+        "add": "Lägg till",
+
+        "account": "Konto",
+        "savings-account": "Sparkonto",
+        "interest": "Ränta"
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan."
     },
-    "account": {
-        "interest": "Ränta",
-        "savings": "Sparkonto"
+
+
+
+    "welcome-route": {
+        "title": "Kundportalen",
+        "paragraph": "För en samlad överblick över dina konton och ditt sparande.",
+        "button": "Logga in"
     },
-    "header-navigation": {
-        "customer": "Hjälpcenter",
+    "inactivity-route": {
+        "title": "Du är utloggad",
+        "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
+        "button": "Logga in igen"
+    },
+
+
+
+    "page-header": {
+        "help-center": "Hjälpcenter",
         "settings": "Inställningar",
         "logout": "Logga ut"
     },
@@ -25,22 +41,13 @@
         "transactions": "Transaktioner",
         "payments": "Överföringar"
     },
-    "welcome": {
-        "title": "Kundportalen",
-        "paragraph": "För en samlad överblick över dina konton och ditt sparande.",
-        "button": "Logga in"
-    },
-    "inactivity": {
-        "title": "Du är utloggad",
-        "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
-        "button": "Logga in igen"
-    },
+
     "table": {
         "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
         "latest-transactions": "Senaste transaktioner"
     },
-    "form": {
+    "forms": {
         "email": "E-post",
         "email-placeholder": "Ange e-post",
         "email-confirm": "Upprepa e-post",

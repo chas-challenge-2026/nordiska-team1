@@ -14,7 +14,7 @@ import en from "./locales/en.json";
  *    const {t} = useTranslation();
  * 
  * 3. Use t() with the translation key:
- *    t("key.key") ex. t("welcome.title")
+ *    t("key.key") ex. t("welcome-route.title")
  * 
  * 4. To add a new text, add the same key to BOTH language files:
  *    sv.json & en.json

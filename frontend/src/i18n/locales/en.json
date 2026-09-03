@@ -5,24 +5,36 @@
         "edit": "Edit",
         "handle": "Manage",
         "show-all": "Show all",
-        "add": "Add"
-    },
+        "add": "Add",
 
+        "account": "Account",
+        "savings-account": "Savings account",
+        "interest": "Interest"
+    },
     "errors": {
         "loading": "Something went wrong while loading the data."
     },
 
-    "account": {
-        "interest": "Interest",
-        "savings": "Savings account"
+
+
+    "welcome-route": {
+        "title": "Customer Portal",
+        "paragraph": "For a complete overview of your accounts and savings.",
+        "button": "Log in"
+    },
+    "inactivity-route": {
+        "title": "You have been logged out",
+        "paragraph": "Due to inactivity, you have been logged out for security reasons.",
+        "button": "Log in again"
     },
 
-    "header-navigation": {
-        "customer": "Help center",
+
+
+    "page-header": {
+        "help-center": "Help Center",
         "settings": "Settings",
         "logout": "Log out"
     },
-
     "page-navigation": {
         "overview": "Overview",
         "accounts": "Bank accounts",
@@ -30,32 +42,19 @@
         "payments": "Transfers"
     },
 
-    "welcome": {
-        "title": "Customer portal",
-        "paragraph": "For a comprehensive overview of your accounts and savings.",
-        "button": "Log in"
-    },
-
-    "inactivity": {
-        "title": "You have been logged out",
-        "paragraph": "Due to inactivity, you have been logged out for security reasons.",
-        "button": "Log in again"
-    },
-
     "table": {
         "my-accounts": "My accounts",
-        "planned-transactions": "Scheduled transfers",
+        "planned-transactions": "Planned transfers",
         "latest-transactions": "Latest transactions"
     },
-
-    "form": {
+    "forms": {
         "email": "Email",
         "email-placeholder": "Enter email",
         "email-confirm": "Confirm email",
-        "email-confirm-placeholder": "Re-enter email",
+        "email-confirm-placeholder": "Repeat email",
         "email-error": "Email addresses do not match",
         "phone": "Phone number",
         "phone-placeholder": "Enter phone number",
-        "phone-error": "Enter a valid phone number in the format 07xxxxxxxx"
+        "phone-error": "Enter a valid format: 07xxxxxxxx"
     }
 }
