@@ -42,3 +42,12 @@ Content-Type: application/json
   "email": "anna@example.com",
   "password": "wrongpassword"
 }
+
+###
+
+### 6. CORS Preflight OPTIONS request from React Vite frontend (Should return 204/200 with Access-Control-Allow-Origin)
+OPTIONS {{Nordiska.FrontendApi_HostAddress}}/api/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: authorization, content-type
+
