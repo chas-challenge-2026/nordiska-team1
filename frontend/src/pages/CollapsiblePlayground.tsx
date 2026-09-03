@@ -16,7 +16,27 @@ export default function CollapsiblePlayground() {
   );
   // Bara ett fält kan vara öppet åt gången (accordion).
   const [openField, setOpenField] = useState<OpenField>(null);
-  const [faqOpen, setFaqOpen] = useState(false);
+
+  const faqItems = [
+    {
+        question: "FAQ Test 1",
+        answer:
+            "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Iste perspiciatis ipsum esse praesentium nam non velit ducimus itaque quidem eos.",
+    },
+    {
+        question: "FAQ Test 2",
+        answer:
+            "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Iste perspiciatis ipsum esse praesentium nam non velit ducimus itaque quidem eos.",
+    },
+    {
+        question: "FAQ Test 3",
+        answer:
+            "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Iste perspiciatis ipsum esse praesentium nam non velit ducimus itaque quidem eos.",
+    },
+];
+
+const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
 
   return (
     <div className="mx-auto mt-20 max-w-xl px-4">
@@ -57,20 +77,21 @@ export default function CollapsiblePlayground() {
       </Collapsible>
 
       <div className="mx-auto mt-20 max-w-xl px-4">
-        <Collapsible
-          title="FAQ Test"
-          isOpen={faqOpen}
-          onOpenChange={setFaqOpen}
-        >
-          {() => (
-            <p className="font-montserrat text-secondary">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Iste
-              perspiciatis ipsum esse praesentium nam non velit ducimus itaque
-              quidem eos.
-            </p>
-          )}
-        </Collapsible>
+        {faqItems.map((faq, index) => (
+          <Collapsible
+            key={index}
+            title={faq.question}
+            isOpen={openFaqIndex === index}
+            onOpenChange={(open) => setOpenFaqIndex(open ? index : null)}
+          >
+            {() => (
+              <p className="font-montserrat text-secondary">{faq.answer}</p>
+            )}
+          </Collapsible>
+        ))}
       </div>
+
+      
     </div>
   );
 }
