@@ -34,35 +34,34 @@ export default function Collapsible({
 
   return (
     <div className="w-full border-b border-nordiska-orange py-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-montserrat text-lg font-bold text-dark-navy">
-          {title}
-        </h3>
-
+      <h3 className="font-montserrat text-lg font-bold text-dark-navy">
         <button
           type="button"
           onClick={toggle}
           aria-expanded={isOpen}
-          className="flex items-center gap-1 font-montserrat text-sm font-semibold uppercase tracking-wide text-nordiska-blue"
+          className="flex w-full items-center justify-between"
         >
-          {label}
-          <svg
-            className={`h-3 w-3 transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
-            }`}
-            viewBox="0 0 12 8"
-            fill="none"
-          >
-            <path
-              d="M1 1L6 6L11 1"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <span>{title}</span>
+          <span className="flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-nordiska-blue">
+            {label}
+            <svg
+              className={`h-3 w-3 transition-transform duration-200 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+              viewBox="0 0 12 8"
+              fill="none"
+            >
+              <path
+                d="M1 1L6 6L11 1"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
         </button>
-      </div>
+      </h3>
 
       {isOpen ? (
         <div className="mt-4">{children(close)}</div>
