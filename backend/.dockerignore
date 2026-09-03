@@ -1,13 +1,35 @@
-bin/
-obj/
-artifacts/
+# ==========================================
+# Docker Build Ignore - Backend
+# ==========================================
 
+# 1. Build Outputs
+**/bin/
+**/obj/
+**/artifacts/
+**/TestResults/
+
+# 2. Version Control & IDEs
 .git/
 .vs/
-
+.vscode/
+.idea/
 *.user
 *.suo
+*.userosv
 
+# 3. Secrets & Keys
+.env
+.env.*
+*.secret
+*.local
+secrets.json
+*.pem
+*.key
+*.pfx
+*.p12
+
+# 4. Misc
 Dockerfile*
 docker-compose*
 README.md
+*.log
