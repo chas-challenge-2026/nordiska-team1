@@ -1,0 +1,61 @@
+{
+    "generic": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "handle": "Manage",
+        "show-all": "Show all",
+        "add": "Add"
+    },
+
+    "errors": {
+        "loading": "Something went wrong while loading the data."
+    },
+
+    "account": {
+        "interest": "Interest",
+        "savings": "Savings account"
+    },
+
+    "header-navigation": {
+        "customer": "Help center",
+        "settings": "Settings",
+        "logout": "Log out"
+    },
+
+    "page-navigation": {
+        "overview": "Overview",
+        "accounts": "Bank accounts",
+        "transactions": "Transactions",
+        "payments": "Transfers"
+    },
+
+    "welcome": {
+        "title": "Customer portal",
+        "paragraph": "For a comprehensive overview of your accounts and savings.",
+        "button": "Log in"
+    },
+
+    "inactivity": {
+        "title": "You have been logged out",
+        "paragraph": "Due to inactivity, you have been logged out for security reasons.",
+        "button": "Log in again"
+    },
+
+    "table": {
+        "my-accounts": "My accounts",
+        "planned-transactions": "Scheduled transfers",
+        "latest-transactions": "Latest transactions"
+    },
+
+    "form": {
+        "email": "Email",
+        "email-placeholder": "Enter email",
+        "email-confirm": "Confirm email",
+        "email-confirm-placeholder": "Re-enter email",
+        "email-error": "Email addresses do not match",
+        "phone": "Phone number",
+        "phone-placeholder": "Enter phone number",
+        "phone-error": "Enter a valid phone number in the format 07xxxxxxxx"
+    }
+}
