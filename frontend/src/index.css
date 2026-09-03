@@ -16,33 +16,10 @@
 
   --font-montserrat-alternates: "Montserrat Alternates", sans-serif; 
   --font-montserrat: "Montserrat", sans-serif; 
-
+  --animate-bounce-right: bounce-right 0.6s ease-in-out infinite;
 }
 
-@utility nav-link {
-  position: relative;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-@utility nav-link::after {
-  content: "";
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  transform-origin: center;
-  width: 32px;
-  height: 2px;
-  background: #bfa48c;
-  transition: transform 0.2s ease;
-}
-
-@utility nav-link:hover::after {
-  transform: translateX(-50%) scaleX(1);
+@keyframes bounce-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
 }
