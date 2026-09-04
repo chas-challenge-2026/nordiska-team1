@@ -4,6 +4,12 @@ using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.Modules.Banking.Infrastructure.DbConfigs;
 
+/*
+    Each domain has their own configuration file. 
+    Its possible to just map it automatically with ".ToTable". 
+    However I decided to explicitly declare each field to make it more robust and scalable. 
+    
+*/
 public sealed class CustomerConfiguration
     : IEntityTypeConfiguration<Customer>
 {

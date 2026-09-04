@@ -3,12 +3,9 @@ using Nordiska.Modules.Reporting.Domain;
 
 namespace Nordiska.Modules.Reporting.Infrastructure.DbConfigs;
 
-public sealed class ReportDbContext : DbContext
+public sealed class ReportDbContext(
+    DbContextOptions<ReportDbContext> options) : DbContext(options)
 {
-    public ReportDbContext(
-        DbContextOptions<ReportDbContext> options)
-        : base(options) {}
-
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<TaxReport> TaxReports => Set<TaxReport>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)

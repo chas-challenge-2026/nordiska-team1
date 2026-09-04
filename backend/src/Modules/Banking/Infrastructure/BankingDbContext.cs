@@ -3,6 +3,11 @@ using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.Modules.Banking.Infrastructure.DbConfigs;
 
+
+/*
+    The module owns its own schema/data structure. 
+    This file expresses which tables exists and schema names
+*/
 public sealed class BankingDbContext : DbContext
 {
     public BankingDbContext(

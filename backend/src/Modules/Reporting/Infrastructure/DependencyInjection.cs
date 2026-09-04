@@ -12,11 +12,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString =
-            configuration.GetConnectionString(
-                ReportDbConstants.ConnectionString)
-            ?? throw new InvalidOperationException(
-                $"Connection string '{ReportDbConstants.ConnectionString}' was not found.");
+        var connectionString = configuration.GetConnectionString(ReportDbConstants.ConnectionString)
+                                ?? throw new InvalidCastException();
 
         services.AddDbContext<ReportDbContext>(options =>
         {

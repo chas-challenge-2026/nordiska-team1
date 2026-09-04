@@ -3,12 +3,9 @@ using Nordiska.Modules.Faq.Domain;
 
 namespace Nordiska.Modules.Faq.Infrastructure.DbConfigs;
 
-public sealed class FaqDbContext : DbContext
+public sealed class FaqDbContext(
+    DbContextOptions<FaqDbContext> options) : DbContext(options)
 {
-    public FaqDbContext(
-        DbContextOptions<FaqDbContext> options)
-        : base(options) {}
-
     public DbSet<FaqEntry> FaqEnties => Set<FaqEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

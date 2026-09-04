@@ -13,11 +13,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString =
-            configuration.GetConnectionString(
-                FaqDbConstants.ConnectionString)
-            ?? throw new InvalidOperationException(
-                $"Connection string '{FaqDbConstants.ConnectionString}' was not found.");
+        var connectionString = configuration.GetConnectionString(FaqDbConstants.ConnectionString)
+                                ?? throw new InvalidCastException();
 
         services.AddDbContext<FaqDbContext>(options =>
         {
