@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Nordiska.FrontendApi.Authentication.Jwt;
+using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.FrontendApi.Controllers;
 
@@ -8,33 +10,29 @@ namespace Nordiska.FrontendApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IJwtProvider _jwtProvider;
+    private readonly UserManager<Customer> _userManager;
 
-    public AuthController(IJwtProvider jwtProvider)
+    public AuthController(IJwtProvider jwtProvider,
+        UserManager<Customer> userManager)
     {
         _jwtProvider = jwtProvider;
+        _userManager = userManager;
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
     {
-        // Mock users matching test credentials in README.md
-        if (request.Email == "anna@example.com" && request.Password == "password123")
-        {
-            // Generate token with ID 1 (bigint) and Customer role
-            var token = _jwtProvider.Generate(1, "anna@example.com", "Customer");
-            return Ok(new LoginResponse(token));
-        }
+        var customer = await _userManager.FindByEmailAsync(request.Email);
+        if(customer is null) 
+            return Unauthorized(new {Message = "Invalid email or password."});
+        var validPassword = await _userManager.CheckPasswordAsync(customer, request.Password);
+        if(!validPassword) 
+            return Unauthorized(new {Message = "Invalid email or password."});
 
-        if (request.Email == "erik@example.com" && request.Password == "password123")
-        {
-            // Generate token with ID 2 (bigint) and Customer role
-            var token = _jwtProvider.Generate(2, "erik@example.com", "Customer");
-            return Ok(new LoginResponse(token));
-        }
-
-        return Unauthorized(new { Message = "Invalid email or password." });
+        // Generate JWT using the authenticated customers identity and roles
+        var token = await _jwtProvider.Generate(customer);
+        return Ok(new LoginResponse(token));
     }
 }
-
 public record LoginRequest(string Email, string Password);
 public record LoginResponse(string Token);
