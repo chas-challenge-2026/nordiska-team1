@@ -24,6 +24,12 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>
+            runtime; build; native; contentfiles; analyzers; buildtransitive
+        </IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 
