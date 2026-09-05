@@ -8,3 +8,5 @@ public record FaqEntryResponse(
     int HelpfulCount,
     string Keywords
 );
+
+public sealed record FaqCreatedResponse(int Id);

@@ -3,6 +3,11 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication.Jwt;
+using Nordiska.Modules.Faq.Infrastructure.Db;
+using Nordiska.Modules.Banking.Infrastructure.Db;
+using Nordiska.Modules.Reporting.Infrastructure.Db;
+using Nordiska.Modules.Faq.Application;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,16 +31,46 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("faq:manage", policy =>
+    {
+        policy.AddAuthenticationSchemes(
+            JwtBearerDefaults.AuthenticationScheme);
 
+        policy.RequireAuthenticatedUser();
+
+        policy.RequireClaim(
+            "permission",
+            "faq:manage");
+    });
+});
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 
 // Register controller services
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] =
+            System.Diagnostics.Activity.Current?.Id
+            ?? context.HttpContext.TraceIdentifier;
+    };
+});
 
 var app = builder.Build();
-
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 // Enable authentication and authorization middleware in the pipeline
@@ -45,28 +80,38 @@ app.UseAuthorization();
 // Map controllers
 app.MapControllers();
 
-// Keep default weather forecast endpoint
-var summaries = new[]
+if (app.Environment.IsDevelopment())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    app.MapSwagger("/openapi/{documentName}.json");
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-});
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Nordiska API");
+
+        // These optional features aren't needed for local API testing.
+        options.DisableAgent();
+        options.DisableDefaultFonts();
+
+        // Show C# HttpClient examples by default.
+        options.WithDefaultHttpClient(
+            ScalarTarget.CSharp,
+            ScalarClient.HttpClient);
+    });
+    app.MapGet("/health/database", async (
+        BankingDbContext db,
+        CancellationToken cancellationToken) =>
+    {
+        var connected = await db.Database.CanConnectAsync(
+            cancellationToken);
+
+        return connected
+            ? Results.Ok(new { status = "connected" })
+            : Results.Json(
+                new { status = "unavailable" },
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+    });
+}
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+

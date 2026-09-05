@@ -1,0 +1,26 @@
+vad som behövs: 
+
+
+1. skapa en env fil med lösenord och användarnamn till user (se även för att hämta lösenord eftreråt) - lägg in båda i .env
+2. se om du kan spara i  user secretrs med
+
+
+
+
+flow för users:
+
+cd <cloned-repository-folder>
+docker compose up -d
+docker compose ps
+docker compose logs db --tail 50
+docker compose exec db psql -U <username-from-env> -d <database-name>
+
+
+Inside PostgreSQL:
+\dt
+\q
+
+
+Then create/update tables from EF Core migrations:
+dotnet restore
+dotnet ef database update

@@ -1,0 +1,31 @@
+name: nordiska-v2
+
+services:
+  db:
+    image: postgres:16.13-bookworm
+    restart: unless-stopped
+    shm_size: 128mb
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_DB: nordiska_v2
+      POSTGRES_USER: nordiska_bootstrap
+      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD:?Set POSTGRES_BOOTSTRAP_PASSWORD in infra/v2/.env}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      NORDISKA_MIGRATOR_PASSWORD: ${NORDISKA_MIGRATOR_PASSWORD:?Set NORDISKA_MIGRATOR_PASSWORD in infra/v2/.env}
+      NORDISKA_API_PASSWORD: ${NORDISKA_API_PASSWORD:?Set NORDISKA_API_PASSWORD in infra/v2/.env}
+      NORDISKA_REPORTING_WORKER_PASSWORD: ${NORDISKA_REPORTING_WORKER_PASSWORD:?Set NORDISKA_REPORTING_WORKER_PASSWORD in infra/v2/.env}
+    volumes:
+      - postgres_v2_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./postgres/permissions/post-migration-permissions.sql:/opt/nordiska/post-migration-permissions.sql:ro
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  postgres_v2_data:
