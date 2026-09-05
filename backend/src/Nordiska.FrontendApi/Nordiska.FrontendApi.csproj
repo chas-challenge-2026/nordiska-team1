@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="ActiveLogin.Identity.Swedish" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
   </ItemGroup>
 
   <ItemGroup>

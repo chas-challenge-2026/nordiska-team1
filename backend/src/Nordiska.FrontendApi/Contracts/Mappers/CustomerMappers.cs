@@ -13,5 +13,5 @@ public static class CustomerMappers
     }
 
     public static CustomerResponse ToResponse(this Customer c)
-        => new(c.Id, c.PersonalNum, c.Name, c.Email, c.CreatedAt);
+        => new(c.Id, c.PersonalNum, c.Name, c.Email ?? string.Empty , c.CreatedAt);
 }
