@@ -10,6 +10,9 @@ using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.FrontendApi.Authentication.Jwt;
 
+/// <summary>
+/// Produces JSON Web Tokens for authenticated customers.
+/// </summary>
 public class JwtProvider : IJwtProvider
 {
     private readonly JwtOptions _options;
@@ -22,6 +25,11 @@ public class JwtProvider : IJwtProvider
     }
     
 
+    /// <summary>
+    /// Generates a signed JWT for the provided customer.
+    /// </summary>
+    /// <param name="customer">Customer to generate token for.</param>
+    /// <returns>JWT as a string.</returns>
     public async Task<string> Generate(Customer customer)
     {
         
