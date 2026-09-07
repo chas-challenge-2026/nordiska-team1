@@ -88,6 +88,94 @@ static int test_key_loader_destroy_multiple_times(void) {
   return 0;
 }
 
+static int test_key_loader_pkcs11_missing_module_path(void) {
+  key_loader_config_t config = {
+      .pkcs11_enabled = true,
+      .pkcs11_provider_name = "pkcs11",
+      .pkcs11_module_path = NULL,
+  };
+
+  key_loader_t *loader = key_loader_create(&config);
+
+  CHECK(loader == NULL);
+
+  return 0;
+}
+
+static int test_key_loader_pkcs11_null(void) {
+  key_loader_t *loader = key_loader_create(NULL);
+  CHECK(loader != NULL);
+
+  key_loader_destroy(loader);
+
+  return 0;
+}
+
+static int test_key_load_unencrypted_pem(void) {
+  key_loader_t *loader = key_loader_create(NULL);
+  CHECK(loader != NULL);
+
+  key_spec_t spec = {
+      .source = KEY_SOURCE_FILE,
+      .u.file.path = "tests/data/private_key.pem",
+  };
+
+  key_handle_t handle = {0};
+
+  bool ok = key_load(loader, &spec, NULL, &handle);
+
+  CHECK(ok == true);
+  CHECK(handle.pkey != NULL);
+
+  key_dispose(&handle);
+  key_loader_destroy(loader);
+
+  return 0;
+}
+
+static int test_key_load_missing_pem(void) {
+  key_loader_t *loader = key_loader_create(NULL);
+  CHECK(loader != NULL);
+
+  key_spec_t spec = {
+      .source = KEY_SOURCE_FILE,
+      .u.file.path = "invalid/data/path/private_key.pem",
+  };
+
+  key_handle_t handle = {0};
+
+  bool ok = key_load(loader, &spec, NULL, &handle);
+
+  CHECK(ok == false);
+  CHECK(handle.pkey == NULL);
+
+  key_dispose(&handle);
+  key_loader_destroy(loader);
+
+  return 0;
+}
+
+static int test_key_load_invalid_source(void) {
+  key_loader_t *loader = key_loader_create(NULL);
+  CHECK(loader != NULL);
+
+  key_spec_t spec = {
+      .source = (key_source_t)999,
+      .u.file.path = "tests/data/private_key.pem",
+  };
+
+  key_handle_t handle = {0};
+
+  bool ok = key_load(loader, &spec, NULL, &handle);
+  CHECK(ok == false);
+  CHECK(handle.pkey == NULL);
+
+  key_dispose(&handle);
+  key_loader_destroy(loader);
+
+  return 0;
+}
+
 int main(void) {
   int failed = 0;
 
@@ -99,6 +187,11 @@ int main(void) {
   failed += test_key_loader_create_null_config();
   failed += test_key_loader_destroy();
   failed += test_key_loader_destroy_multiple_times();
+  failed += test_key_loader_pkcs11_missing_module_path();
+  failed += test_key_loader_pkcs11_null();
+  failed += test_key_load_unencrypted_pem();
+  failed += test_key_load_missing_pem();
+  failed += test_key_load_invalid_source();
 
   if (failed != 0) {
     fprintf(stderr, "%d tests failed\n", failed);
