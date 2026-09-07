@@ -25,6 +25,11 @@
     "paragraph": "Due to inactivity, you have been logged out for security reasons.",
     "button": "Log in again"
   },
+  "404-route": {
+    "title": "Page not found.",
+    "paragraph": "The page you are looking for could not be found.",
+    "button": "Back to home"
+  },
 
   "page-header": {
     "help-center": "Help Center",
