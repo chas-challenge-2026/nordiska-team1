@@ -7,6 +7,7 @@ using Nordiska.FrontendApi.Extensions;
 
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
+using Nordiska.Modules.Banking.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,8 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 
 // Register controller services
 builder.Services.AddControllers();
+// Register concrete banking services from the Infrastructure project
+builder.Services.AddBankingServices<SavingsAccountService, TransactionService>();
 
 
 // Get environment from app settings 
