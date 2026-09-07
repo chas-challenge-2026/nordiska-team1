@@ -9,6 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 find_package(unofficial-libharu CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -59,6 +61,11 @@ target_link_libraries(nordiska_document_composition PUBLIC nordiska_document_ren
 
 add_library(nordiska_document_c_api SHARED
     src/c_api/document_c_api.cpp
+)
+set_target_properties(nordiska_document_c_api PROPERTIES
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
 )
 target_include_directories(nordiska_document_c_api PUBLIC include)
 target_compile_features(nordiska_document_c_api PUBLIC cxx_std_23)
