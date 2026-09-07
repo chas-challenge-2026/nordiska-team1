@@ -4,4 +4,4 @@ artifacts/
 .env
 .vs/
 *.user
-tools/*
+ 
