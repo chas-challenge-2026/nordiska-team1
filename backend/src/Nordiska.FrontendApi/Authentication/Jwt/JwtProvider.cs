@@ -13,7 +13,7 @@ namespace Nordiska.FrontendApi.Authentication.Jwt;
 public class JwtProvider : IJwtProvider
 {
     private readonly JwtOptions _options;
-    readonly UserManager<Customer> _userManager;
+    private readonly UserManager<Customer> _userManager;
 
     public JwtProvider(IOptions<JwtOptions> options,  UserManager<Customer> userManager)
     {
@@ -28,7 +28,7 @@ public class JwtProvider : IJwtProvider
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, customer.Email),
+            new Claim(JwtRegisteredClaimNames.Email, customer.Email ?? string.Empty),
         };
         
         var roles = await _userManager.GetRolesAsync(customer);
