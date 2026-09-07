@@ -29,6 +29,12 @@
     "title": "Log in",
     "paragraph": "Please identify yourself with BankID to continue to the customer portal."
   },
+  "404-route": {
+    "title": "Page not found.",
+    "paragraph": "The page you are looking for could not be found.",
+    "button": "Back to home"
+  },
+
   "page-header": {
     "help-center": "Help Center",
     "settings": "Settings",
