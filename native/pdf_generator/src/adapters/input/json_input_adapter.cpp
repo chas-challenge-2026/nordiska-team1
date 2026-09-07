@@ -86,6 +86,39 @@ std::vector<std::string> optional_string_array(const Json& object, const char* k
     return result;
 }
 
+Report parse_single_report(const Json& document, const std::string& context) {
+    if (!document.is_object()) {
+        throw std::runtime_error("Report JSON value must be an object: " + context);
+    }
+    Report report;
+    report.account_number = required_string(document, "account_number", context);
+    if (document.contains("title")) {
+        report.title = required_string(document, "title", context);
+    }
+    report.summary_lines = optional_string_array(document, "summary_lines", context);
+
+    const Json& transactions = required_member(document, "transactions", context);
+    if (!transactions.is_array()) {
+        throw std::runtime_error("JSON field must be an array: " + context + ".transactions");
+    }
+
+    report.transactions.reserve(transactions.size());
+    for (std::size_t index = 0; index < transactions.size(); ++index) {
+        const Json& transaction = transactions.at(index);
+        const std::string tx_context = context + ".transactions[" + std::to_string(index) + "]";
+        if (!transaction.is_object()) {
+            throw std::runtime_error("JSON transaction must be an object: " + tx_context);
+        }
+
+        report.transactions.push_back(
+            Transaction{required_string(transaction, "date", tx_context),
+                        required_string(transaction, "type", tx_context),
+                        required_string(transaction, "currency", tx_context),
+                        required_integer(transaction, "amount_minor", tx_context)});
+    }
+    return report;
+}
+
 } // namespace
 
 Report JsonInputAdapter::import(const std::filesystem::path& input_path) const {
@@ -93,44 +126,37 @@ Report JsonInputAdapter::import(const std::filesystem::path& input_path) const {
 }
 
 Report JsonInputAdapter::import_text(std::string_view contents) const {
+    const auto reports = import_reports_text(contents);
+    if (reports.empty()) {
+        throw JsonInputError("No reports found in JSON");
+    }
+    return reports.front();
+}
+
+std::vector<Report>
+JsonInputAdapter::import_reports(const std::filesystem::path& input_path) const {
+    return import_reports_text(read_text_file(input_path));
+}
+
+std::vector<Report> JsonInputAdapter::import_reports_text(std::string_view contents) const {
     try {
         const Json document = Json::parse(contents);
-        if (!document.is_object()) {
-            throw std::runtime_error("Report JSON root must be an object");
-        }
-        // JJ: OK so we are actually  creating the report here I thought that
-        // was created in the output ? or is this actually the translation to the internal
-        // representation Because in my mind I was thinking that report was gonna be the thing we
-        // output and the report is constructed from the internal representation
-        Report report;
-        // JJ: ok why are we not validating the fields before importing?
-        // JJ: in general, seems we are not validating hte input at all?
-        report.account_number = required_string(document, "account_number", "report");
-        if (document.contains("title")) {
-            report.title = required_string(document, "title", "report");
-        }
-        report.summary_lines = optional_string_array(document, "summary_lines", "report");
-
-        const Json& transactions = required_member(document, "transactions", "report");
-        if (!transactions.is_array()) {
-            throw std::runtime_error("JSON field must be an array: report.transactions");
-        }
-
-        report.transactions.reserve(transactions.size());
-        for (std::size_t index = 0; index < transactions.size(); ++index) {
-            const Json& transaction = transactions.at(index);
-            const std::string context = "report.transactions[" + std::to_string(index) + "]";
-            if (!transaction.is_object()) {
-                throw std::runtime_error("JSON transaction must be an object: " + context);
+        if (document.is_array()) {
+            if (document.empty()) {
+                throw std::runtime_error("Report JSON array must not be empty");
             }
-
-            report.transactions.push_back(
-                Transaction{required_string(transaction, "date", context),
-                            required_string(transaction, "type", context),
-                            required_string(transaction, "currency", context),
-                            required_integer(transaction, "amount_minor", context)});
+            std::vector<Report> reports;
+            reports.reserve(document.size());
+            for (std::size_t index = 0; index < document.size(); ++index) {
+                reports.push_back(parse_single_report(document.at(index),
+                                                      "report[" + std::to_string(index) + "]"));
+            }
+            return reports;
         }
-        return report;
+        if (document.is_object()) {
+            return {parse_single_report(document, "report")};
+        }
+        throw std::runtime_error("Report JSON root must be an object or an array of objects");
     } catch (const Json::exception& error) {
         throw JsonInputError("Invalid JSON: " + std::string(error.what()));
     } catch (const std::runtime_error& error) {

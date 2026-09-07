@@ -1,6 +1,7 @@
 #include "nordiska/adapters/input/json_input_adapter.hpp"
 #include "nordiska/adapters/output/byte_sinks.hpp"
 #include "nordiska/adapters/renderers/pdf/pdf_renderer.hpp"
+#include "nordiska/application/generate_documents.hpp"
 #include "nordiska/diagnostics/benchmark_metrics.hpp"
 #include "nordiska/domain/report.hpp"
 #include "nordiska/ports/document_renderer.hpp"
@@ -59,14 +60,18 @@ std::unique_ptr<nordiska::IDocumentRenderer> make_renderer(std::string_view name
     if (name == "haru") {
         return nordiska::make_pdf_renderer(nordiska::PdfEngine::haru);
     }
-    throw std::invalid_argument("this benchmark currently supports only the Haru renderer");
+    if (name == "cairo") {
+        return nordiska::make_pdf_renderer(nordiska::PdfEngine::cairo);
+    }
+    throw std::invalid_argument("unsupported renderer: " + std::string(name));
 }
 
 Options parse_options(int argc, char* argv[]) {
     if (argc < 2) {
         throw std::invalid_argument(
-            "Usage: pdf_generator_benchmark <input-dir> [--iterations N] [--warmups N] "
-            "[--limit N] [--sample-count N] [--output-dir DIR] [--delete-output]");
+            "Usage: pdf_generator_benchmark <input-dir> [--renderer haru|cairo|all] "
+            "[--iterations N] [--warmups N] [--limit N] [--sample-count N] [--output-dir DIR] "
+            "[--delete-output]");
     }
     Options options{.input_directory = argv[1]};
     for (int index = 2; index < argc; ++index) {
@@ -102,8 +107,8 @@ Options parse_options(int argc, char* argv[]) {
     if (options.iterations == 0) {
         throw std::invalid_argument("--iterations must be positive");
     }
-    if (options.renderer != "haru") {
-        throw std::invalid_argument("this benchmark currently supports only the Haru renderer");
+    if (options.renderer != "haru" && options.renderer != "cairo" && options.renderer != "all") {
+        throw std::invalid_argument("--renderer must be haru, cairo, or all");
     }
     return options;
 }
@@ -199,6 +204,20 @@ std::vector<NamedMetrics> measure(const std::string& renderer_name,
                                nordiska::NullByteSink sink;
                                render_to_sink(report, *renderer, sink);
                            }
+                       })});
+
+    std::vector<nordiska::DocumentRequest> requests;
+    requests.reserve(corpus.reports.size());
+    for (const auto& report : corpus.reports) {
+        requests.push_back({report});
+    }
+
+    results.push_back({"parallel_memory_render", timed(corpus, bytes, [&] {
+                           nordiska::CallbackOutputDestination callback_dest(
+                               [](std::span<const std::byte>, std::size_t) {});
+                           nordiska::GenerateDocuments generator(
+                               [&] { return make_renderer(renderer_name); });
+                           generator.execute(requests, callback_dest);
                        })});
 
     const auto persistence_dir =
@@ -329,14 +348,15 @@ void write_human_report(const std::filesystem::path& path, const Options& option
 std::filesystem::path write_samples(const std::vector<std::filesystem::path>& paths,
                                     const Options& options,
                                     const std::filesystem::path& run_directory) {
-    const auto sample_directory = run_directory / "samples" / "haru";
+    const std::string engine_name = options.renderer == "cairo" ? "cairo" : "haru";
+    const auto sample_directory = run_directory / "samples" / engine_name;
     const std::size_t count = std::min(options.sample_count, paths.size());
     if (count == 0) {
         return sample_directory;
     }
     std::filesystem::create_directories(sample_directory);
     nordiska::JsonInputAdapter adapter;
-    auto renderer = make_renderer("haru");
+    auto renderer = make_renderer(engine_name);
     for (std::size_t index = 0; index < count; ++index) {
         const Report report = adapter.import(paths[index]);
         nordiska::FileByteSink sink(sample_directory /
@@ -350,10 +370,10 @@ void print_execution_plan(const Options& options, const std::vector<std::string>
                           std::size_t report_count) {
     const std::size_t runs_per_renderer = options.warmups + options.iterations;
     const std::size_t total_runs = renderers.size() * runs_per_renderer;
-    const std::size_t measured_rows = renderers.size() * options.iterations * 5;
-    const std::size_t all_phase_executions = total_runs * 5;
+    const std::size_t measured_rows = renderers.size() * options.iterations * 6;
+    const std::size_t all_phase_executions = total_runs * 6;
     const std::size_t corpus_loads = total_runs * 2;
-    const std::size_t pdf_renders = total_runs * report_count * 4;
+    const std::size_t pdf_renders = total_runs * report_count * 5;
     const std::size_t pdf_writes = total_runs * report_count * 2;
 
     std::cout << "Nordiska native PDF benchmark plan\n"
@@ -396,7 +416,12 @@ int main(int argc, char* argv[]) {
         }
         csv << "renderer,iteration,phase,seconds,reports,transactions,reports_per_second,"
                "transactions_per_second,output_bytes\n";
-        const std::vector<std::string> renderers{"haru"};
+        std::vector<std::string> renderers;
+        if (options.renderer == "all") {
+            renderers = {"haru", "cairo"};
+        } else {
+            renderers = {options.renderer};
+        }
         print_execution_plan(options, renderers, paths.size());
         std::vector<RecordedResult> records;
         for (const auto& renderer : renderers) {

@@ -2,6 +2,7 @@
 
 #include <cairo/cairo-pdf.h>
 #include <exception>
+#include <memory>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -16,6 +17,25 @@ void check(cairo_t* context, const char* operation) {
                                  " failed: " + cairo_status_to_string(status));
     }
 }
+
+struct CairoDeleter {
+    void operator()(cairo_t* context) const noexcept {
+        if (context != nullptr) {
+            cairo_destroy(context);
+        }
+    }
+};
+
+struct CairoSurfaceDeleter {
+    void operator()(cairo_surface_t* surface) const noexcept {
+        if (surface != nullptr) {
+            cairo_surface_destroy(surface);
+        }
+    }
+};
+
+using UniqueCairo = std::unique_ptr<cairo_t, CairoDeleter>;
+using UniqueCairoSurface = std::unique_ptr<cairo_surface_t, CairoSurfaceDeleter>;
 
 struct SinkWriter {
     IByteSink& sink;
@@ -38,59 +58,44 @@ class CairoEngine final : public IPdfEngine {
   public:
     void render(const Document& document, IByteSink& sink) override {
         SinkWriter writer{sink};
-        cairo_surface_t* surface =
-            cairo_pdf_surface_create_for_stream(write_to_sink, &writer, 612, 792);
-        if (surface == nullptr || cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
+        UniqueCairoSurface surface(
+            cairo_pdf_surface_create_for_stream(write_to_sink, &writer, 612, 792));
+        if (!surface || cairo_surface_status(surface.get()) != CAIRO_STATUS_SUCCESS) {
             const auto status =
-                surface == nullptr ? CAIRO_STATUS_NO_MEMORY : cairo_surface_status(surface);
-            if (surface != nullptr) {
-                cairo_surface_destroy(surface);
-            }
+                !surface ? CAIRO_STATUS_NO_MEMORY : cairo_surface_status(surface.get());
             throw std::runtime_error(std::string("Cairo PDF surface failed: ") +
                                      cairo_status_to_string(status));
         }
 
-        cairo_t* context = cairo_create(surface);
-        try {
-            check(context, "create context");
-            cairo_select_font_face(context, "Helvetica", CAIRO_FONT_SLANT_NORMAL,
-                                   CAIRO_FONT_WEIGHT_NORMAL);
-            cairo_set_source_rgb(context, 0, 0, 0);
+        UniqueCairo context(cairo_create(surface.get()));
+        check(context.get(), "create context");
+        cairo_select_font_face(context.get(), "Helvetica", CAIRO_FONT_SLANT_NORMAL,
+                               CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_set_source_rgb(context.get(), 0, 0, 0);
 
-            for (const Page& page : document.pages) {
-                double y = 52;
-                for (const TextLine& line : page.lines) {
-                    cairo_set_font_size(context, line.style == TextStyle::title ? 18 : 12);
-                    cairo_move_to(context, 72, y);
-                    cairo_show_text(context, line.text.c_str());
-                    check(context, "write text");
-                    y += line.style == TextStyle::title ? 30 : 18;
-                }
-                cairo_show_page(context);
-                check(context, "finish page");
+        for (const Page& page : document.pages) {
+            double y = 52;
+            for (const TextLine& line : page.lines) {
+                cairo_set_font_size(context.get(), line.style == TextStyle::title ? 18 : 12);
+                cairo_move_to(context.get(), 72, y);
+                cairo_show_text(context.get(), line.text.c_str());
+                check(context.get(), "write text");
+                y += line.style == TextStyle::title ? 30 : 18;
             }
+            cairo_show_page(context.get());
+            check(context.get(), "finish page");
+        }
 
-            cairo_destroy(context);
-            context = nullptr;
-            cairo_surface_finish(surface);
-            const cairo_status_t status = cairo_surface_status(surface);
-            cairo_surface_destroy(surface);
-            surface = nullptr;
-            if (status != CAIRO_STATUS_SUCCESS) {
-                throw std::runtime_error(std::string("Cairo PDF output failed: ") +
-                                         cairo_status_to_string(status));
-            }
-            if (writer.failure != nullptr) {
-                std::rethrow_exception(writer.failure);
-            }
-        } catch (...) {
-            if (context != nullptr) {
-                cairo_destroy(context);
-            }
-            if (surface != nullptr) {
-                cairo_surface_destroy(surface);
-            }
-            throw;
+        context.reset();
+        cairo_surface_finish(surface.get());
+        const cairo_status_t status = cairo_surface_status(surface.get());
+        surface.reset();
+        if (status != CAIRO_STATUS_SUCCESS) {
+            throw std::runtime_error(std::string("Cairo PDF output failed: ") +
+                                     cairo_status_to_string(status));
+        }
+        if (writer.failure != nullptr) {
+            std::rethrow_exception(writer.failure);
         }
     }
 };

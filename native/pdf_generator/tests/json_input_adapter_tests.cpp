@@ -109,6 +109,48 @@ void integers_outside_int64_are_rejected(const std::filesystem::path& directory)
     require_failure(path, "int64 range");
 }
 
+void batch_reports_are_parsed_correctly(const std::filesystem::path& directory) {
+    const auto path = directory / "batch.json";
+    write_file(path, R"([
+        {
+            "account_number": "ACC-1",
+            "transactions": [
+                {
+                    "date": "2026-01-05",
+                    "type": "deposit",
+                    "currency": "SEK",
+                    "amount_minor": 1000
+                }
+            ]
+        },
+        {
+            "account_number": "ACC-2",
+            "transactions": [
+                {
+                    "date": "2026-01-06",
+                    "type": "withdrawal",
+                    "currency": "EUR",
+                    "amount_minor": -500
+                }
+            ]
+        }
+    ])");
+
+    const nordiska::JsonInputAdapter json_input_adapter;
+    const auto reports = json_input_adapter.import_reports(path);
+    require(reports.size() == 2, "wrong batch reports count");
+    require(reports[0].account_number == "ACC-1", "wrong first account");
+    require(reports[0].transactions[0].amount_minor == 1000, "wrong first amount");
+    require(reports[1].account_number == "ACC-2", "wrong second account");
+    require(reports[1].transactions[0].amount_minor == -500, "wrong second amount");
+}
+
+void empty_batch_array_is_rejected(const std::filesystem::path& directory) {
+    const auto path = directory / "empty-array.json";
+    write_file(path, R"([])");
+    require_failure(path, "Report JSON array must not be empty");
+}
+
 } // namespace
 
 int main() {
@@ -122,6 +164,8 @@ int main() {
         malformed_json_is_rejected(directory);
         wrong_types_and_missing_fields_are_rejected(directory);
         integers_outside_int64_are_rejected(directory);
+        batch_reports_are_parsed_correctly(directory);
+        empty_batch_array_is_rejected(directory);
     } catch (...) {
         std::filesystem::remove_all(directory);
         throw;

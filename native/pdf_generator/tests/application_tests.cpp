@@ -61,9 +61,22 @@ int main() {
                     "document output was not created");
         }
 
+        nordiska::Report swedish_report{"SE-123-åäö",
+                                        {{"2026-01-05", "Löneinsättning", "SEK", 100000}},
+                                        "Nordiska Årsrapport",
+                                        {"Skatt på ränta (30%): 300.00 SEK"}};
+
+        auto haru_renderer = nordiska::make_pdf_renderer(nordiska::PdfEngine::haru);
+        nordiska::MemoryByteSink haru_output;
+        haru_renderer->render(swedish_report, haru_output);
+        haru_output.finish();
+        require(haru_output.bytes().size() > 8, "Haru output was empty");
+        require(std::memcmp(haru_output.bytes().data(), "%PDF-", 5) == 0,
+                "Haru output is not a PDF");
+
         auto cairo_renderer = nordiska::make_pdf_renderer(nordiska::PdfEngine::cairo);
         nordiska::MemoryByteSink cairo_output;
-        cairo_renderer->render(valid_report("cairo"), cairo_output);
+        cairo_renderer->render(swedish_report, cairo_output);
         cairo_output.finish();
         require(cairo_output.bytes().size() > 8, "Cairo output was empty");
         require(std::memcmp(cairo_output.bytes().data(), "%PDF-", 5) == 0,

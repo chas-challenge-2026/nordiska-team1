@@ -75,6 +75,15 @@ add_library(nordiska_document_diagnostics STATIC
 target_include_directories(nordiska_document_diagnostics PUBLIC include)
 target_compile_features(nordiska_document_diagnostics PUBLIC cxx_std_23)
 
+add_executable(pdf_generator src/cli/main.cpp)
+target_link_libraries(pdf_generator PRIVATE
+    nordiska_document_core
+    nordiska_document_input_json
+    nordiska_document_output
+    nordiska_document_renderer_pdf
+    nordiska_document_composition
+)
+
 add_executable(pdf_generator_benchmark src/benchmark/main.cpp)
 target_link_libraries(pdf_generator_benchmark PRIVATE
     nordiska_document_core
