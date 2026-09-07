@@ -1,5 +1,6 @@
 import PageHeader from '../components/PageHeader';
 import { useTranslation } from 'react-i18next';
+import { Link } from "react-router";
 
 type pageProps = {
     inactive?: boolean
@@ -24,10 +25,12 @@ export default function LandingPage({ inactive = false }: pageProps) {
                             t("inactivity-route.paragraph")
                             : t("welcome-route.paragraph")}
                     </p>
-                    <button className='group flex justify-between items-center hover:bg-login-bg cursor-pointer p-8 font-montserrat bg-nordiska-blue w-[60%] text-2xl font-bold h-14 rounded-tr-[10px] rounded-br-[10px] rounded-bl-[10px]'>
+                    <Link 
+                        to="/login"
+                        className='group flex justify-between items-center hover:bg-login-bg cursor-pointer p-8 font-montserrat bg-nordiska-blue w-[60%] text-2xl font-bold h-14 rounded-tr-[10px] rounded-br-[10px] rounded-bl-[10px]'>
                         {inactive ? t("inactivity-route.button") : t("welcome-route.button")}
                         <span><img src="icons/arrow-right.svg" alt="" className='invert w-[36px] group-hover:animate-bounce-right' /></span>
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>
