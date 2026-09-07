@@ -11,6 +11,12 @@ public class SavingsAccountsController : ControllerBase
 {
     private readonly ISavingsAccountService _service;
 
+    // Dependency injection of the ISavingsAccountService
+    // This controller handles HTTP requests related to savings accounts.
+    // It has get, get by id, and post endpoints for querying and creating savings accounts.
+
+    // TODO: Add authentication and authorization to ensure that only authorized users can access these endpoints.
+    // TODO: Add pagination and filtering to the GetAll endpoint.
     public SavingsAccountsController(ISavingsAccountService service)
     {
         _service = service;

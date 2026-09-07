@@ -9,8 +9,14 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 [Route("api/transactions")]
 public class TransactionsController : ControllerBase
 {
+    // This controller handles HTTP requests related to banking transactions.
+    // It has get, get by id, and post endpoints for querying and creating transactions.
+
+    // TODO: Add authentication and authorization to ensure that only authorized users can access these endpoints.
+    // TODO: Add pagination and filtering to the GetAll endpoint.
     private readonly ITransactionService _service;
 
+    //Dependency injection of the ITransactionService
     public TransactionsController(ITransactionService service)
     {
         _service = service;
