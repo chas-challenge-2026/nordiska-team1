@@ -523,6 +523,14 @@
           "Microsoft.IdentityModel.Logging": "7.7.3"
         }
       },
+      "Microsoft.OpenApi": {
+        "type": "Transitive",
+        "resolved": "2.7.5",
+        "contentHash": "0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w==",
+        "dependencies": {
+          "System.Text.Json": "8.0.5"
+        }
+      },
       "Microsoft.TestPlatform.ObjectModel": {
         "type": "Transitive",
         "resolved": "17.14.1",
@@ -545,12 +553,12 @@
         "resolved": "13.0.3",
         "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       },
-      "Npgsql": {
+      "Swashbuckle.AspNetCore.Swagger": {
         "type": "Transitive",
-        "resolved": "8.0.6",
-        "contentHash": "KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
+        "resolved": "10.2.3",
+        "contentHash": "1jUUs3WQnrS0FUtaZPLSy1yYMEwS1zlvDmvQ2/eldPHUANX0LJSLVZecCMgSMdeGiRqeaRrIXLtSz++TCiTMww==",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+          "Microsoft.OpenApi": "2.7.5"
         }
       },
       "System.Collections.Immutable": {
@@ -646,7 +654,9 @@
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[8.0.30, )",
           "Nordiska.Modules.Banking": "[1.0.0, )",
           "Nordiska.Modules.Faq": "[1.0.0, )",
-          "Nordiska.Modules.Reporting": "[1.0.0, )"
+          "Nordiska.Modules.Reporting": "[1.0.0, )",
+          "Scalar.AspNetCore": "[2.17.2, )",
+          "Swashbuckle.AspNetCore.SwaggerGen": "[10.2.3, )"
         }
       },
       "nordiska.modules.banking": {
@@ -726,6 +736,15 @@
           "Microsoft.Extensions.Options": "8.0.2"
         }
       },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[8.0.6, )",
+        "resolved": "8.0.6",
+        "contentHash": "KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+        }
+      },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[8.0.11, )",
@@ -736,6 +755,21 @@
           "Microsoft.EntityFrameworkCore.Abstractions": "8.0.11",
           "Microsoft.EntityFrameworkCore.Relational": "8.0.11",
           "Npgsql": "8.0.6"
+        }
+      },
+      "Scalar.AspNetCore": {
+        "type": "CentralTransitive",
+        "requested": "[2.17.2, )",
+        "resolved": "2.17.2",
+        "contentHash": "ciW2HuRWJgNEecophHN9DvoRlTs/+8TNPhB6tQW1gmJWh/eoAIO0ys8XIxx7irUpIu3KRHZyxyuHstqqrTn1Tw=="
+      },
+      "Swashbuckle.AspNetCore.SwaggerGen": {
+        "type": "CentralTransitive",
+        "requested": "[10.2.3, )",
+        "resolved": "10.2.3",
+        "contentHash": "y7t4coDRAeFYChmvlMRiH2OjbiRrm9AVIDgt17fQfs3x9PVAI5PiwWYOhg+4F13R4Q36WDc9lqfoOnNa3tNbGg==",
+        "dependencies": {
+          "Swashbuckle.AspNetCore.Swagger": "10.2.3"
         }
       }
     }

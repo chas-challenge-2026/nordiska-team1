@@ -3,8 +3,15 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication.Jwt;
+using Nordiska.Modules.Faq.Infrastructure.Db;
+using Nordiska.Modules.Banking.Infrastructure.Db;
+using Nordiska.Modules.Reporting.Infrastructure.Db;
+using Nordiska.Modules.Faq.Application;
+using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
-
+using Microsoft.AspNetCore.Identity;
+using Nordiska.Modules.Banking.Domain;
+using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
 
@@ -30,14 +37,47 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Configure authorization policies (if needed) this came from the default template, but you can customize it as needed
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("faq:manage", policy =>
+    {
+        policy.AddAuthenticationSchemes(
+            JwtBearerDefaults.AuthenticationScheme);
 
+        policy.RequireAuthenticatedUser();
+
+        policy.RequireClaim(
+            "permission",
+            "faq:manage");
+    });
+});
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 
 // Register controller services
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
+ 
+builder.Services
+    .AddIdentityCore<Customer>()
+    .AddRoles<IdentityRole<long>>()
+    .AddEntityFrameworkStores<BankingDbContext>();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] =
+            System.Diagnostics.Activity.Current?.Id
+            ?? context.HttpContext.TraceIdentifier;
+    };
+});
 
 
 // Get environment from app settings 
@@ -56,7 +96,12 @@ builder.Services.AddBankId(bankId =>
         // Add real certificate, ex from azure key vault below. 
     }
 });
-
+builder.Services
+    .AddAuthentication()
+    .AddBankIdAuth(bankId =>
+    {
+        bankId.AddSameDevice();
+    });
 // Configure strict CORS policy for the React 18 SPA (NOR-66)
 // Whitelists trusted frontend origins without AllowAnyOrigin.
 // Enables Authorization header for JWT tokens and exposes Content-Disposition for PDF downloads.
@@ -87,7 +132,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddErrorHandling();
 
 var app = builder.Build();
-
 //look out for the order of middleware, it matters.
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
@@ -100,6 +144,39 @@ app.UseCors(StrictFrontendCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapSwagger("/openapi/{documentName}.json");
+
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Nordiska API");
+
+        // These optional features aren't needed for local API testing.
+        options.DisableAgent();
+        options.DisableDefaultFonts();
+
+        // Show C# HttpClient examples by default.
+        options.WithDefaultHttpClient(
+            ScalarTarget.CSharp,
+            ScalarClient.HttpClient);
+    });
+    app.MapGet("/health/database", async (
+        BankingDbContext db,
+        CancellationToken cancellationToken) =>
+    {
+        var connected = await db.Database.CanConnectAsync(
+            cancellationToken);
+
+        return connected
+            ? Results.Ok(new { status = "connected" })
+            : Results.Json(
+                new { status = "unavailable" },
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+    });
+}
+
 app.Run();
 
 // Expose Program class for integration testing with WebApplicationFactory
