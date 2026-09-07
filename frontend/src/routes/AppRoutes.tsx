@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router";
 import ProtectedRoute from "./ProtectedRoute";
 
 // Open
+import LoginPage from "../pages/LoginPage";
 import LandingPage from "../pages/LandingPage";
 import CollapsiblePlayground from "../pages/CollapsiblePlayground";
 
@@ -13,8 +14,7 @@ export default function AppRoutes() {
 
     return (
         <Routes>
-
-            {/* <Route path="/login" element={<LogInPage />} /> */}
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/welcome" element={<LandingPage />} />
             <Route path="/inactive" element={<LandingPage inactive />} />
             <Route path="/dev/collapsible" element={<CollapsiblePlayground />} />
