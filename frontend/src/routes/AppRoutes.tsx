@@ -4,6 +4,7 @@ import ProtectedRoute from "./ProtectedRoute";
 // Open
 import LandingPage from "../pages/LandingPage";
 import CollapsiblePlayground from "../pages/CollapsiblePlayground";
+import PageNotFound from "../pages/PageNotFound";
 
 //Protected
 import DesktopLayout from "../layouts/DesktopLayout";
@@ -18,6 +19,7 @@ export default function AppRoutes() {
             <Route path="/welcome" element={<LandingPage />} />
             <Route path="/inactive" element={<LandingPage inactive />} />
             <Route path="/dev/collapsible" element={<CollapsiblePlayground />} />
+            <Route path="*" element={<PageNotFound />} />
 
             {/* PROTECTED ROUTES HÄR */}
             <Route element={<ProtectedRoute/>}>
