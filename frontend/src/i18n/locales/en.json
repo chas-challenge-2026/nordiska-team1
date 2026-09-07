@@ -25,7 +25,10 @@
     "paragraph": "Due to inactivity, you have been logged out for security reasons.",
     "button": "Log in again"
   },
-
+  "login-route": {
+    "title": "Log in",
+    "paragraph": "Please identify yourself with BankID to continue to the customer portal."
+  },
   "page-header": {
     "help-center": "Help Center",
     "settings": "Settings",

@@ -25,7 +25,10 @@
     "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
     "button": "Logga in igen"
   },
-
+  "login-route": {
+    "title": "Logga in",
+    "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen."
+  },
   "page-header": {
     "help-center": "Hjälpcenter",
     "settings": "Inställningar",
