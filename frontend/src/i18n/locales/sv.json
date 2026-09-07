@@ -6,10 +6,12 @@
     "handle": "Hantera",
     "show-all": "Visa alla",
     "add": "Lägg till",
+    "reset": "Återställ",
 
     "account": "Konto",
     "savings-account": "Sparkonto",
-    "interest": "Ränta"
+    "interest": "Ränta",
+    "filter": "Filtrera"
   },
   "errors": {
     "loading": "Någonting gick fel vid hämtning av datan."
@@ -24,6 +26,20 @@
     "title": "Du är utloggad",
     "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
     "button": "Logga in igen"
+  },
+  "transactions-route": {
+      "account-select": "Styr vilka transaktioner som visas i listan till vänster. Bocka ur ett konto för att dölja dess transaktioner.",
+      "all-accounts": "Alla konton",
+      "tax-info": "Hämta skatteunderlag för konton markerade ovan.",
+      "tax": "Hämta skatteunderlag",
+      "search": "Sök efter transaktion",
+      "from": "Från datum",
+      "to": "Till datum",
+      "deposites": "Endast insättningar",
+      "withdraws": "Endast uttag",
+      "transactions": "Senaste transaktioner",
+      "all-transactions": "Visa fler transaktioner",
+      "less-transactions": "Visa färre transaktioner"
   },
 
   "page-header": {
