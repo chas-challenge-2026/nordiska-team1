@@ -64,8 +64,7 @@ builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
-builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
-
+ 
 builder.Services
     .AddIdentityCore<Customer>()
     .AddRoles<IdentityRole<long>>()
