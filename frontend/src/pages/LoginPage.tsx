@@ -2,20 +2,25 @@ import PageHeader from "../components/PageHeader";
 import { useTranslation } from "react-i18next";
 import InputField from "../components/InputField";
 import { useState } from "react";
-import login from "../services/authService";
+import { useLogin } from "../hooks/useLogin";
 import { useNavigate } from "react-router";
 
 export default function LoginPage() {
     const { t } = useTranslation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const {mutate, isPending, isError, error } = useLogin();
     const navigate = useNavigate();
 
-    async function handleSubmit(e) {
+    function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        await login(email, password);
-        navigate("/");
-
+        mutate(
+            {email, password},
+            {
+                onSuccess: () => navigate("/"),
+                onError: (err) => console.error(err),
+            }
+        );
     }
 
     return (
@@ -38,8 +43,9 @@ export default function LoginPage() {
                         <form onSubmit={(e) => handleSubmit(e)}>
                             <InputField name="email" type="email" lable="email" placeholder="email" value={email} onChange={setEmail}/>
                             <InputField name="password" type="password" lable="password" placeholder="password" value={password} onChange={setPassword}/>
-                            <button type="submit">login</button>
+                            <button type="submit" disabled={isPending}>{isPending ? "loggas in..." : "logga in"}</button>
                         </form>
+                        {isError && <p className="text-red-500">{error.message}</p>}
 
                         <p>Inlogg med BankID här</p>
                     </div>

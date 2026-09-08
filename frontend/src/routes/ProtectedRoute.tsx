@@ -1,9 +1,9 @@
 import { Navigate, Outlet } from "react-router";
+import { useUserStore } from "../store/userStore";
 
 export default function ProtectedRoute() {
-    // ÄNDRA NÄR INLOGG ÄR PÅ PLATS
-    // useAuth context? Eller useUser context?
-    const isAuthenticated = sessionStorage.getItem("token");
+    const user = useUserStore((state) => state.user);
+    const isAuthenticated = !!user;
 
     if (!isAuthenticated) {
         return <Navigate to="/welcome" replace />;
