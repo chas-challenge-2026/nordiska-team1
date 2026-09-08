@@ -15,7 +15,11 @@ public static class DependencyInjection
          services.AddModulePostgresDbContext<FaqDbContext>(
             configuration,
             FaqDatabase.Details);
-        services.AddScoped<IFaqRepository, FaqRepository>();
+        // Register an in-memory cache and a cached repository wrapper for FAQ entries
+        services.AddMemoryCache();
+        services.AddScoped<FaqRepository>();
+        services.AddScoped<CachedFaqRepository>();
+        services.AddScoped<IFaqRepository>(sp => sp.GetRequiredService<CachedFaqRepository>());
         services.AddScoped<FaqService>();
         return services;
     }

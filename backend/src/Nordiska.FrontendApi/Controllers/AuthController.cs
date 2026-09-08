@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.Modules.Banking.Domain;
 
@@ -23,6 +24,7 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="request">Login request containing email and password.</param>
     [HttpPost("login")]
+    [EnableRateLimiting("LoginPolicy")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (request.Email == "anna@example.com" &&

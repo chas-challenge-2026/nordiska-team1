@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -46,6 +47,8 @@ public class TransactionsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Created transaction response.</returns>
     [HttpPost]
+    // Apply withdrawal sliding-window policy. To get per-account limits, clients must set header X-Account-Id with the account id.
+    [EnableRateLimiting("WithdrawalPolicy")]
     public async Task<ActionResult<TransactionResponse>> Create([FromBody] TransactionRequest request, CancellationToken cancellationToken)
     {
         var created = await _service.ExecuteAsync(request, cancellationToken);

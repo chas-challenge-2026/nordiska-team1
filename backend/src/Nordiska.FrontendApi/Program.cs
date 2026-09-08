@@ -11,6 +11,8 @@ using System.IO;
 using System.Reflection;
 using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Nordiska.Modules.Banking.Domain;
 using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
@@ -61,6 +63,40 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 
 // Register controller services
 builder.Services.AddControllers();
+// Configure rate limiting policies for sensitive endpoints
+builder.Services.AddRateLimiter(options =>
+{
+    // Limit login attempts per IP: 5 per minute
+    options.AddPolicy("LoginPolicy", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "global",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Sliding-window limiter for withdrawals, partitioned per-account when header X-Account-Id is provided,
+    // otherwise falls back to remote IP. This provides per-account rate limiting for withdrawals.
+    options.AddPolicy("WithdrawalPolicy", context =>
+    {
+        // Key selector: prefer account id header for per-account limits
+        string partitionKey = context.Request.Headers["X-Account-Id"].FirstOrDefault()
+            ?? context.Connection.RemoteIpAddress?.ToString()
+            ?? "global";
+
+        return RateLimitPartition.GetSlidingWindowLimiter(partitionKey, _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 5, // default: 5 withdrawals per window per account
+            Window = TimeSpan.FromMinutes(1),
+            SegmentsPerWindow = 6, // more segments gives smoother sliding behavior
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        });
+    });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -181,6 +217,10 @@ var app = builder.Build();
 //look out for the order of middleware, it matters.
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+// Register middleware that extracts account id from withdrawal requests and sets X-Account-Id header
+app.UseMiddleware<Nordiska.FrontendApi.Middleware.AccountIdExtractionMiddleware>();
+// Enable rate limiting middleware (runs after the account-id extraction middleware)
+app.UseRateLimiter();
 
 // Enable authentication and authorization middleware in the pipeline
 app.UseRouting();
