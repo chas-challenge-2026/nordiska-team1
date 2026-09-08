@@ -2,6 +2,7 @@ using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
@@ -21,13 +22,15 @@ public class BankIdAuthController : ControllerBase
      private readonly IBankIdAppApiClient _bankIdAppApiClient;
      private readonly BankingDbContext _db; 
      private readonly IJwtProvider _jwtProvider;
+     private readonly JwtOptions _jwtOptions;
 
      public BankIdAuthController(IBankIdAppApiClient bankIdAppApiClient, BankingDbContext db,
-         IJwtProvider jwtProvider)
+         IJwtProvider jwtProvider, Microsoft.Extensions.Options.IOptions<JwtOptions> jwtOptions)
      {
          _db = db;
          _bankIdAppApiClient = bankIdAppApiClient;
          _jwtProvider = jwtProvider;
+         _jwtOptions = jwtOptions.Value;
      }
      
      /// <summary>
@@ -109,11 +112,11 @@ public class BankIdAuthController : ControllerBase
                  
              // if customer is found generate jwt token
              var token = await _jwtProvider.Generate(customer);
+             Response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
              
              return Ok(new
              {
                  status = "COMPLETE",
-                 token,
                  customer = new { id = customer.Id, email = customer.Email, name = customer.Name}
              });
 

@@ -4,6 +4,30 @@
         <name>Nordiska.FrontendApi</name>
     </assembly>
     <members>
+        <member name="T:Nordiska.FrontendApi.Authentication.AuthCookieExtensions">
+            <summary>
+            Helper extensions for setting and removing HTTP-only authentication cookies.
+            </summary>
+        </member>
+        <member name="F:Nordiska.FrontendApi.Authentication.AuthCookieExtensions.CookieName">
+            <summary>
+            The standard cookie name used for JWT authentication.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.AuthCookieExtensions.AppendAuthCookie(Microsoft.AspNetCore.Http.HttpResponse,System.String,System.Int32)">
+            <summary>
+            Appends a secure, HttpOnly cookie containing the JWT to the response.
+            </summary>
+            <param name="response">The current HTTP response.</param>
+            <param name="token">The generated JWT token string.</param>
+            <param name="lifetimeInMinutes">Token validity duration in minutes.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.AuthCookieExtensions.DeleteAuthCookie(Microsoft.AspNetCore.Http.HttpResponse)">
+            <summary>
+            Deletes the authentication cookie from the client browser.
+            </summary>
+            <param name="response">The current HTTP response.</param>
+        </member>
         <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.SecretKey">
             <summary>
             Secret key used to sign JWT tokens. Keep this secure.
@@ -43,9 +67,19 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Controllers.LoginRequest)">
             <summary>
-            Performs a demo login and returns a JWT for the matched demo user.
+            Performs a demo login, sets an HTTP-only JWT cookie, and returns the authenticated user info.
             </summary>
             <param name="request">Login request containing email and password.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser">
+            <summary>
+            Returns the currently authenticated user's profile information extracted from the JWT.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Logout">
+            <summary>
+            Logs out the user by clearing the HTTP-only authentication cookie.
+            </summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Controllers.BankIdAuthController">
             <summary>
