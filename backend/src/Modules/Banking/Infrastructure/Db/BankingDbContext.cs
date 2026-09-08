@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Nordiska.Modules.Banking.Domain;
 
@@ -5,7 +7,7 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db;
 
 public sealed class BankingDbContext(
     DbContextOptions<BankingDbContext> options)
-    : DbContext(options)
+    : IdentityDbContext<Customer, IdentityRole<long>, long>(options)
 {
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<SavingsAccount> SavingsAccounts => Set<SavingsAccount>();

@@ -100,7 +100,19 @@ builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
  
 builder.Services
-    .AddIdentityCore<Customer>()
+    .AddIdentityCore<Customer>(options =>
+    {
+        // Customer log in with bank ID, we do not need to store password in database when creating new customer. 
+        options.Password.RequireDigit = false;
+        options.Password.RequiredLength = 1;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequiredUniqueChars = 0;
+        
+        // Email must be unique
+        options.User.RequireUniqueEmail = true;
+    })
     .AddRoles<IdentityRole<long>>()
     .AddEntityFrameworkStores<BankingDbContext>();
 builder.Services.AddProblemDetails(options =>
