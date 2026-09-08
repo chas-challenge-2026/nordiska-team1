@@ -46,7 +46,6 @@
     "transactions": "Transactions",
     "transfers": "Transfers"
   },
-
   "table": {
     "my-accounts": "My accounts",
     "planned-transactions": "Planned transfers",
@@ -62,13 +61,15 @@
     "phone-placeholder": "Enter phone number",
     "phone-error": "Enter a valid format: 07xxxxxxxx"
   },
-
-  "footer": {
+  "page-footer": {
     "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
     "allRightsReserved": "All rights reserved",
     "privacyPolicy": "Privacy policy",
     "accessibility": "Accessibility",
     "cookies": "Cookies",
     "cookieSettings": "Cookie settings"
+  },
+  "get-pdf-button": {
+    "text": "Show PDF"
   }
 }
