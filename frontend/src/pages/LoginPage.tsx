@@ -1,8 +1,22 @@
 import PageHeader from "../components/PageHeader";
 import { useTranslation } from "react-i18next";
+import InputField from "../components/InputField";
+import { useState } from "react";
+import login from "../services/authService";
+import { useNavigate } from "react-router";
 
 export default function LoginPage() {
     const { t } = useTranslation();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const navigate = useNavigate();
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        await login(email, password);
+        navigate("/");
+
+    }
 
     return (
         <div className="fixed z-[-2] bg-login-bg min-h-screen w-full">
@@ -21,6 +35,12 @@ export default function LoginPage() {
                 </section>
                 <section className="border-l-2 border-[#F6B900] pl-12">
                     <div className="h-[30vh] w-[320px] bg-white rounded-tr-[20px] rounded-br-[20px]">
+                        <form onSubmit={(e) => handleSubmit(e)}>
+                            <InputField name="email" type="email" lable="email" placeholder="email" value={email} onChange={setEmail}/>
+                            <InputField name="password" type="password" lable="password" placeholder="password" value={password} onChange={setPassword}/>
+                            <button type="submit">login</button>
+                        </form>
+
                         <p>Inlogg med BankID här</p>
                     </div>
                 </section>
