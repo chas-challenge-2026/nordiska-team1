@@ -44,11 +44,13 @@ export default function AccountPickerModal({
             <div className="relative flex max-h-[620px] w-[560px] flex-col overflow-hidden rounded-xl bg-white shadow-modal">
                 <div className="border-b border-border-light px-7 py-6 pb-[18px]">
                     <div className="flex items-center justify-between gap-4">
-                        <h3 className="m-0 text-xl font-semibold text-dark-navy">{title}</h3>
+                        <h3 className="m-0 text-xl font-semibold text-dark-navy">
+                            {title}
+                        </h3>
                         <button
                             type="button"
                             onClick={onClose}
-                            aria-label={t("transfer.modal.close")}
+                            aria-label={t("page-transfer.modal.close")}
                             className="cursor-pointer border-0 bg-none px-2 py-1 text-2xl leading-none text-meta"
                         >
                             ×
@@ -58,7 +60,9 @@ export default function AccountPickerModal({
                         type="text"
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        placeholder={t("transfer.modal.search-placeholder")}
+                        placeholder={t(
+                            "page-transfer.modal.search-placeholder",
+                        )}
                         className="mt-4 w-full rounded-md border border-selector-ring px-3 py-2.5 text-base text-dark-navy"
                     />
                 </div>
@@ -78,18 +82,26 @@ export default function AccountPickerModal({
                                 >
                                     <span
                                         className={`mt-0.5 flex h-4.5 w-4.5 flex-none items-center justify-center rounded-full border-2 ${
-                                            item.selected ? "border-nordiska-blue" : "border-selector-ring"
+                                            item.selected
+                                                ? "border-nordiska-blue"
+                                                : "border-selector-ring"
                                         }`}
                                     >
                                         <span
                                             className={`h-2 w-2 rounded-full ${
-                                                item.selected ? "bg-nordiska-blue" : "bg-transparent"
+                                                item.selected
+                                                    ? "bg-nordiska-blue"
+                                                    : "bg-transparent"
                                             }`}
                                         />
                                     </span>
                                     <span className="min-w-0">
-                                        <span className="block text-[15px] font-bold text-dark-navy">{item.name}</span>
-                                        <span className="mt-0.5 block text-[13px] text-meta">{item.meta}</span>
+                                        <span className="block text-[15px] font-bold text-dark-navy">
+                                            {item.name}
+                                        </span>
+                                        <span className="mt-0.5 block text-[13px] text-meta">
+                                            {item.meta}
+                                        </span>
                                     </span>
                                 </button>
                             ))}
@@ -97,7 +109,9 @@ export default function AccountPickerModal({
                     ))}
 
                     {isEmpty && (
-                        <p className="my-7 text-sm text-meta">{t("transfer.modal.empty")}</p>
+                        <p className="my-7 text-sm text-meta">
+                            {t("page-transfer.modal.empty")}
+                        </p>
                     )}
                 </div>
 
@@ -106,7 +120,7 @@ export default function AccountPickerModal({
                     onClick={onAddNew}
                     className="absolute right-6 bottom-[22px] cursor-pointer rounded-full border-0 bg-nordiska-orange px-[22px] py-[13px] text-sm font-bold text-dark-navy shadow-floating hover:bg-nordiska-orange-hover"
                 >
-                    {t("transfer.modal.add-new")}
+                    {t("page-transfer.modal.add-new")}
                 </button>
             </div>
         </div>

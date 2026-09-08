@@ -11,7 +11,12 @@ type TransferDoneProps = {
  * Lugn bekräftelsevy efter genomförd överföring. Ersätter formuläret i
  * vänsterkolumnen. Ingen konfetti, ingen gamification.
  */
-export default function TransferDone({ summaryLine, fromName, toName, onReset }: TransferDoneProps) {
+export default function TransferDone({
+    summaryLine,
+    fromName,
+    toName,
+    onReset,
+}: TransferDoneProps) {
     const { t } = useTranslation();
 
     return (
@@ -39,27 +44,33 @@ export default function TransferDone({ summaryLine, fromName, toName, onReset }:
                 </svg>
                 <div>
                     <h2 className="m-0 text-2xl font-semibold text-dark-navy">
-                        {t("transfer.done.heading")}
+                        {t("page-transfer.done.heading")}
                     </h2>
-                    <p className="mt-1.5 text-sm text-secondary">{summaryLine}</p>
+                    <p className="mt-1.5 text-sm text-secondary">
+                        {summaryLine}
+                    </p>
                 </div>
             </div>
 
             <div className="mt-8 flex max-w-[520px] items-center gap-4">
                 <div className="flex-1 rounded-lg border border-border-light bg-white px-4 py-3.5">
                     <div className="text-xs tracking-[0.08em] text-meta uppercase">
-                        {t("transfer.done.from")}
+                        {t("page-transfer.done.from")}
                     </div>
-                    <div className="text-[15px] font-bold text-dark-navy">{fromName}</div>
+                    <div className="text-[15px] font-bold text-dark-navy">
+                        {fromName}
+                    </div>
                 </div>
                 <div className="relative h-0.5 w-28 flex-none bg-border-light">
                     <div className="animate-dot-travel absolute -top-1 left-0 h-2.5 w-2.5 rounded-full bg-nordiska-orange" />
                 </div>
                 <div className="flex-1 rounded-lg border border-border-light bg-white px-4 py-3.5">
                     <div className="text-xs tracking-[0.08em] text-meta uppercase">
-                        {t("transfer.done.to")}
+                        {t("page-transfer.done.to")}
                     </div>
-                    <div className="text-[15px] font-bold text-dark-navy">{toName}</div>
+                    <div className="text-[15px] font-bold text-dark-navy">
+                        {toName}
+                    </div>
                 </div>
             </div>
 
@@ -68,7 +79,7 @@ export default function TransferDone({ summaryLine, fromName, toName, onReset }:
                 onClick={onReset}
                 className="mt-9 cursor-pointer rounded-md border border-nordiska-blue bg-white px-6 py-3 text-sm font-bold text-nordiska-blue hover:bg-hover-bg"
             >
-                {t("transfer.done.new-transfer")}
+                {t("page-transfer.done.new-transfer")}
             </button>
         </div>
     );

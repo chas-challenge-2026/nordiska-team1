@@ -16,13 +16,20 @@ import {
     FAVORITE_ACCOUNT_IDS,
     PLANNED_TRANSFERS,
 } from "../constants/transferAccounts";
-import type { Payee, PlannedTransfer, TransferAccount } from "../constants/transferAccounts";
+import type {
+    Payee,
+    PlannedTransfer,
+    TransferAccount,
+} from "../constants/transferAccounts";
 
 type ModalKind = "from" | "to" | null;
 type Step = "form" | "add" | "bankid" | "done";
 
 function formatSek(amount: number) {
-    return amount.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount.toLocaleString("sv-SE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 function parseAmount(raw: string) {
@@ -46,23 +53,34 @@ type AccountTriggerButtonProps = {
     onClick: () => void;
 };
 
-function AccountTriggerButton({ label, name, meta, onClick }: AccountTriggerButtonProps) {
+function AccountTriggerButton({
+    label,
+    name,
+    meta,
+    onClick,
+}: AccountTriggerButtonProps) {
     const { t } = useTranslation();
 
     return (
         <div>
-            <label className="mb-1.5 block text-[13px] font-bold text-dark-navy">{label}</label>
+            <label className="mb-1.5 block text-[13px] font-bold text-dark-navy">
+                {label}
+            </label>
             <button
                 type="button"
                 onClick={onClick}
                 className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-md border border-nordiska-blue bg-white px-3.5 py-2.5 text-left"
             >
                 <span className="min-w-0">
-                    <span className="block truncate text-[15px] font-semibold text-dark-navy">{name}</span>
-                    <span className="block truncate text-xs text-meta">{meta}</span>
+                    <span className="block truncate text-[15px] font-semibold text-dark-navy">
+                        {name}
+                    </span>
+                    <span className="block truncate text-xs text-meta">
+                        {meta}
+                    </span>
                 </span>
                 <span className="text-xs font-bold whitespace-nowrap text-primary-blue uppercase tracking-[0.08em]">
-                    {t("transfer.select")}
+                    {t("page-transfer.select")}
                 </span>
             </button>
         </div>
@@ -82,9 +100,15 @@ export default function TransferPage() {
     const [search, setSearch] = useState("");
     const [step, setStep] = useState<Step>("form");
     const [customs, setCustoms] = useState<Payee[]>([]);
-    const [plannedTransfers, setPlannedTransfers] = useState<PlannedTransfer[]>(PLANNED_TRANSFERS);
+    const [plannedTransfers, setPlannedTransfers] =
+        useState<PlannedTransfer[]>(PLANNED_TRANSFERS);
 
-    const allAccounts: TransferAccount[] = [...OWN_ACCOUNTS, ...BG_PG_PAYEES, ...BANK_PAYEES, ...customs];
+    const allAccounts: TransferAccount[] = [
+        ...OWN_ACCOUNTS,
+        ...BG_PG_PAYEES,
+        ...BANK_PAYEES,
+        ...customs,
+    ];
     const fromAccount = OWN_ACCOUNTS.find((a) => a.id === fromId) ?? null;
     const toAccount = allAccounts.find((a) => a.id === toId) ?? null;
 
@@ -93,25 +117,43 @@ export default function TransferPage() {
     const afterBalance = fromAccount ? fromAccount.balance - amountValue : 0;
     const isExternal = !!toAccount && !toAccount.own;
 
-    const goalOn = !!toAccount && toAccount.own && !!toAccount.goal && amountValue > 0;
-    const goalPercent = goalOn && toAccount?.own && toAccount.goal
-        ? Math.min(100, Math.round(((toAccount.balance + amountValue) / toAccount.goal) * 100))
-        : 0;
+    const goalOn =
+        !!toAccount && toAccount.own && !!toAccount.goal && amountValue > 0;
+    const goalPercent =
+        goalOn && toAccount?.own && toAccount.goal
+            ? Math.min(
+                  100,
+                  Math.round(
+                      ((toAccount.balance + amountValue) / toAccount.goal) *
+                          100,
+                  ),
+              )
+            : 0;
 
-    const canSubmit = !!name.trim() && !!fromAccount && !!toAccount && amountValue > 0 && !over;
+    const canSubmit =
+        !!name.trim() &&
+        !!fromAccount &&
+        !!toAccount &&
+        amountValue > 0 &&
+        !over;
 
     const ctaHint = canSubmit
         ? isExternal
-            ? t("transfer.cta-hint-external")
-            : t("transfer.cta-hint-internal")
-        : t("transfer.cta-hint-incomplete");
+            ? t("page-transfer.cta-hint-external")
+            : t("page-transfer.cta-hint-internal")
+        : t("page-transfer.cta-hint-incomplete");
 
     const doneSummary = toAccount
-        ? t(recurring ? "transfer.done.summary-recurring" : "transfer.done.summary", {
-              amount: formatSek(amountValue),
-              name: toAccount.name,
-              date,
-          })
+        ? t(
+              recurring
+                  ? "transfer.done.summary-recurring"
+                  : "transfer.done.summary",
+              {
+                  amount: formatSek(amountValue),
+                  name: toAccount.name,
+                  date,
+              },
+          )
         : "";
 
     const query = search.trim().toLowerCase();
@@ -121,21 +163,51 @@ export default function TransferPage() {
         const wrap = (accounts: TransferAccount[]) =>
             accounts
                 .filter((a) => matchesSearch(a, query))
-                .map((a) => ({ id: a.id, name: a.name, meta: a.meta, selected: a.id === selectedId }));
+                .map((a) => ({
+                    id: a.id,
+                    name: a.name,
+                    meta: a.meta,
+                    selected: a.id === selectedId,
+                }));
 
         let groups: AccountPickerGroup[] = [];
 
         if (modal === "from") {
-            groups = [{ title: t("transfer.modal.group-own"), items: wrap(OWN_ACCOUNTS) }];
-        } else if (modal === "to") {
-            const favorites = allAccounts.filter((a) => FAVORITE_ACCOUNT_IDS.includes(a.id));
-            const bgAccounts = [...BG_PG_PAYEES, ...customs.filter((c) => c.kind === "bg")];
-            const bankAccounts = [...BANK_PAYEES, ...customs.filter((c) => c.kind === "bank")];
             groups = [
-                { title: t("transfer.modal.group-favorites"), items: wrap(favorites) },
-                { title: t("transfer.modal.group-own"), items: wrap(OWN_ACCOUNTS) },
-                { title: t("transfer.modal.group-bg"), items: wrap(bgAccounts) },
-                { title: t("transfer.modal.group-bank"), items: wrap(bankAccounts) },
+                {
+                    title: t("page-transfer.modal.group-own"),
+                    items: wrap(OWN_ACCOUNTS),
+                },
+            ];
+        } else if (modal === "to") {
+            const favorites = allAccounts.filter((a) =>
+                FAVORITE_ACCOUNT_IDS.includes(a.id),
+            );
+            const bgAccounts = [
+                ...BG_PG_PAYEES,
+                ...customs.filter((c) => c.kind === "bg"),
+            ];
+            const bankAccounts = [
+                ...BANK_PAYEES,
+                ...customs.filter((c) => c.kind === "bank"),
+            ];
+            groups = [
+                {
+                    title: t("page-transfer.modal.group-favorites"),
+                    items: wrap(favorites),
+                },
+                {
+                    title: t("page-transfer.modal.group-own"),
+                    items: wrap(OWN_ACCOUNTS),
+                },
+                {
+                    title: t("page-transfer.modal.group-bg"),
+                    items: wrap(bgAccounts),
+                },
+                {
+                    title: t("page-transfer.modal.group-bank"),
+                    items: wrap(bankAccounts),
+                },
             ];
         }
 
@@ -158,9 +230,13 @@ export default function TransferPage() {
     };
 
     const handleSaveAdd = (values: NewAccountValues) => {
-        const resolvedType = values.type.trim() || t("transfer.add-account.default-type");
+        const resolvedType =
+            values.type.trim() || t("page-transfer.add-account.default-type");
         const kind = /giro/i.test(resolvedType) ? "bg" : "bank";
-        const meta = [resolvedType, [values.clearing, values.number].filter(Boolean).join(", ")]
+        const meta = [
+            resolvedType,
+            [values.clearing, values.number].filter(Boolean).join(", "),
+        ]
             .filter(Boolean)
             .join(" ")
             .trim();
@@ -169,7 +245,9 @@ export default function TransferPage() {
             id,
             own: false,
             kind,
-            name: values.name.trim() || t("transfer.add-account.default-name"),
+            name:
+                values.name.trim() ||
+                t("page-transfer.add-account.default-name"),
             meta,
         };
         setCustoms((prev) => [...prev, account]);
@@ -180,11 +258,14 @@ export default function TransferPage() {
     const commitTransfer = () => {
         if (!toAccount) return;
         const note = recurring
-            ? t("transfer.recurring-label")
+            ? t("page-transfer.recurring-label")
             : toAccount.own
-                ? t("transfer.planned.note-internal")
-                : t("transfer.planned.note-to", { name: toAccount.name });
-        setPlannedTransfers((prev) => [{ date, name, note, sum: amountValue }, ...prev]);
+              ? t("page-transfer.planned.note-internal")
+              : t("page-transfer.planned.note-to", { name: toAccount.name });
+        setPlannedTransfers((prev) => [
+            { date, name, note, sum: amountValue },
+            ...prev,
+        ]);
     };
 
     const handleSubmit = () => {
@@ -216,28 +297,42 @@ export default function TransferPage() {
                         <div>
                             <div className="flex items-end justify-between border-b-[3px] border-nordiska-orange pb-2.5">
                                 <h2 className="m-0 text-[26px] font-semibold text-dark-navy">
-                                    {t("transfer.heading")}
+                                    {t("page-transfer.heading")}
                                 </h2>
                             </div>
                             <p className="mt-3.5 mb-6.5 max-w-[44ch] text-sm text-secondary">
-                                {t("transfer.help-text")}
+                                {t("page-transfer.help-text")}
                             </p>
 
                             <div className="flex flex-col gap-5.5">
                                 <InputField
                                     name="transferName"
                                     type="text"
-                                    label={t("transfer.name-label")}
-                                    placeholder={t("transfer.name-placeholder")}
+                                    label={t("page-transfer.name-label")}
+                                    placeholder={t(
+                                        "page-transfer.name-placeholder",
+                                    )}
                                     value={name}
                                     onChange={setName}
                                 />
 
                                 <div className="grid grid-cols-2 gap-5">
                                     <AccountTriggerButton
-                                        label={t("transfer.from-label")}
-                                        name={fromAccount ? fromAccount.name : t("transfer.select-account-placeholder")}
-                                        meta={fromAccount ? fromAccount.meta : t("transfer.from-meta-placeholder")}
+                                        label={t("page-transfer.from-label")}
+                                        name={
+                                            fromAccount
+                                                ? fromAccount.name
+                                                : t(
+                                                      "page-transfer.select-account-placeholder",
+                                                  )
+                                        }
+                                        meta={
+                                            fromAccount
+                                                ? fromAccount.meta
+                                                : t(
+                                                      "page-transfer.from-meta-placeholder",
+                                                  )
+                                        }
                                         onClick={() => {
                                             setModal("from");
                                             setSearch("");
@@ -245,9 +340,21 @@ export default function TransferPage() {
                                     />
                                     <div>
                                         <AccountTriggerButton
-                                            label={t("transfer.to-label")}
-                                            name={toAccount ? toAccount.name : t("transfer.select-recipient-placeholder")}
-                                            meta={toAccount ? toAccount.meta : t("transfer.to-meta-placeholder")}
+                                            label={t("page-transfer.to-label")}
+                                            name={
+                                                toAccount
+                                                    ? toAccount.name
+                                                    : t(
+                                                          "page-transfer.select-recipient-placeholder",
+                                                      )
+                                            }
+                                            meta={
+                                                toAccount
+                                                    ? toAccount.meta
+                                                    : t(
+                                                          "page-transfer.to-meta-placeholder",
+                                                      )
+                                            }
                                             onClick={() => {
                                                 setModal("to");
                                                 setSearch("");
@@ -264,13 +371,27 @@ export default function TransferPage() {
                                                 >
                                                     <span
                                                         className={`h-1.5 w-1.5 rounded-full ${
-                                                            isExternal ? "bg-pill-external-fg" : "bg-nordiska-blue"
+                                                            isExternal
+                                                                ? "bg-pill-external-fg"
+                                                                : "bg-nordiska-blue"
                                                         }`}
                                                     />
-                                                    {isExternal ? t("transfer.kind-external") : t("transfer.kind-internal")}
+                                                    {isExternal
+                                                        ? t(
+                                                              "page-transfer.kind-external",
+                                                          )
+                                                        : t(
+                                                              "page-transfer.kind-internal",
+                                                          )}
                                                 </span>
                                                 <span className="text-xs text-meta">
-                                                    {isExternal ? t("transfer.kind-external-help") : t("transfer.kind-internal-help")}
+                                                    {isExternal
+                                                        ? t(
+                                                              "page-transfer.kind-external-help",
+                                                          )
+                                                        : t(
+                                                              "page-transfer.kind-internal-help",
+                                                          )}
                                                 </span>
                                             </div>
                                         )}
@@ -281,24 +402,47 @@ export default function TransferPage() {
                                     <InputField
                                         name="transferAmount"
                                         type="text"
-                                        label={t("transfer.amount-label")}
-                                        placeholder={t("transfer.amount-placeholder")}
+                                        label={t("page-transfer.amount-label")}
+                                        placeholder={t(
+                                            "page-transfer.amount-placeholder",
+                                        )}
                                         value={amount}
-                                        onChange={(value) => setAmount(value.replace(/[^\d ,]/g, ""))}
-                                        suffix={t("transfer.amount-suffix")}
-                                        error={over ? t("transfer.amount-error", { account: fromAccount?.name ?? "" }) : undefined}
+                                        onChange={(value) =>
+                                            setAmount(
+                                                value.replace(/[^\d ,]/g, ""),
+                                            )
+                                        }
+                                        suffix={t(
+                                            "page-transfer.amount-suffix",
+                                        )}
+                                        error={
+                                            over
+                                                ? t(
+                                                      "page-transfer.amount-error",
+                                                      {
+                                                          account:
+                                                              fromAccount?.name ??
+                                                              "",
+                                                      },
+                                                  )
+                                                : undefined
+                                        }
                                     />
                                     <p className="mt-2 text-sm text-secondary">
-                                        {t("transfer.balance-after")}{" "}
-                                        <strong className="text-dark-navy">{formatSek(afterBalance)} sek</strong>
+                                        {t("page-transfer.balance-after")}{" "}
+                                        <strong className="text-dark-navy">
+                                            {formatSek(afterBalance)} sek
+                                        </strong>
                                     </p>
                                     {goalOn && (
                                         <p className="mt-1.5 text-sm text-secondary">
-                                            {t("transfer.goal-progress", { percent: goalPercent })}
+                                            {t("page-transfer.goal-progress", {
+                                                percent: goalPercent,
+                                            })}
                                         </p>
                                     )}
                                     <div className="mt-3.5 border-l-2 border-border-light pl-3 text-xs text-muted">
-                                        {t("transfer.reserved-notice")}
+                                        {t("page-transfer.reserved-notice")}
                                     </div>
                                 </div>
 
@@ -306,7 +450,7 @@ export default function TransferPage() {
                                     <InputField
                                         name="transferDate"
                                         type="date"
-                                        label={t("transfer.date-label")}
+                                        label={t("page-transfer.date-label")}
                                         placeholder=""
                                         value={date}
                                         onChange={setDate}
@@ -315,10 +459,12 @@ export default function TransferPage() {
                                         <input
                                             type="checkbox"
                                             checked={recurring}
-                                            onChange={(e) => setRecurring(e.target.checked)}
+                                            onChange={(e) =>
+                                                setRecurring(e.target.checked)
+                                            }
                                             className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-nordiska-blue)]"
                                         />
-                                        {t("transfer.recurring-label")}
+                                        {t("page-transfer.recurring-label")}
                                     </label>
                                 </div>
 
@@ -328,18 +474,27 @@ export default function TransferPage() {
                                         onClick={handleSubmit}
                                         disabled={!canSubmit}
                                         className={`cursor-pointer rounded-md border-0 bg-nordiska-blue px-7.5 py-3.5 text-[15px] font-bold text-white hover:bg-login-bg disabled:cursor-not-allowed ${
-                                            canSubmit ? "opacity-100" : "opacity-[0.45]"
+                                            canSubmit
+                                                ? "opacity-100"
+                                                : "opacity-[0.45]"
                                         }`}
                                     >
-                                        {t("transfer.cta-submit")}
+                                        {t("page-transfer.cta-submit")}
                                     </button>
-                                    <span className="text-sm text-meta">{ctaHint}</span>
+                                    <span className="text-sm text-meta">
+                                        {ctaHint}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {step === "add" && <AddAccountForm onCancel={() => setStep("form")} onSave={handleSaveAdd} />}
+                    {step === "add" && (
+                        <AddAccountForm
+                            onCancel={() => setStep("form")}
+                            onSave={handleSaveAdd}
+                        />
+                    )}
 
                     {step === "done" && (
                         <TransferDone
@@ -365,13 +520,19 @@ export default function TransferPage() {
                             />
                         ))}
                     </Table>
-                    <p className="mt-5.5 max-w-[42ch] text-xs text-muted">{t("transfer.planned.footnote")}</p>
+                    <p className="mt-5.5 max-w-[42ch] text-xs text-muted">
+                        {t("page-transfer.planned.footnote")}
+                    </p>
                 </div>
             </div>
 
             {modal !== null && (
                 <AccountPickerModal
-                    title={modal === "from" ? t("transfer.modal.from-title") : t("transfer.modal.to-title")}
+                    title={
+                        modal === "from"
+                            ? t("page-transfer.modal.from-title")
+                            : t("page-transfer.modal.to-title")
+                    }
                     search={search}
                     onSearchChange={setSearch}
                     groups={groups}

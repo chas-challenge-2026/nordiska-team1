@@ -72,7 +72,7 @@
     "cookieSettings": "Cookie settings"
   },
 
-  "transfer": {
+  "page-transfer": {
     "heading": "New transfer",
     "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
     "name-label": "What should the transfer be called?",

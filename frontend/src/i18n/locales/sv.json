@@ -72,7 +72,7 @@
     "cookieSettings": "Cookie-inställningar"
   },
 
-  "transfer": {
+  "page-transfer": {
     "heading": "Ny överföring",
     "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
     "name-label": "Vad ska överföringen heta?",
