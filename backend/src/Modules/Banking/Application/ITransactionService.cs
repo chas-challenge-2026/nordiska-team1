@@ -22,4 +22,9 @@ public interface ITransactionService
     /// Executes a transaction (deposit or withdrawal).
     /// </summary>
     Task<TransactionResponse> ExecuteAsync(TransactionRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Computes the current balance of a savings account by summing all verified ledger entries.
+    /// </summary>
+    Task<decimal> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default);
 }

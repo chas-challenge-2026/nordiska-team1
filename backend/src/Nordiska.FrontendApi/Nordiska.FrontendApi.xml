@@ -132,6 +132,14 @@
             <param name="cancellationToken">Cancellation token.</param>
             <returns>Created transaction response.</returns>
         </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetBalance(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Gets the current verified balance for an account computed from all ledger entries.
+            </summary>
+            <param name="accountId">Account id.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The calculated balance amount.</returns>
+        </member>
         <member name="T:Nordiska.FrontendApi.Extensions.BankingServiceCollectionExtensions">
             <summary>
             Extension methods for registering banking services into the DI container.

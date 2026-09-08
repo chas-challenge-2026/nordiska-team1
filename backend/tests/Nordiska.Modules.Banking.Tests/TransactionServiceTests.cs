@@ -29,11 +29,11 @@ public class TransactionServiceTests
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
-        public Task<int> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+        public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
             entity.Id = _next++;
             _store.Add(entity);
-            return Task.FromResult((int)entity.Id);
+            return Task.FromResult(entity.Id);
         }
 
         public Task UpdateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
@@ -68,12 +68,14 @@ public class TransactionServiceTests
         public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
 
-        public Task<int> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
         {
             entry.Id = _next++;
             _store.Add(entry);
-            return Task.FromResult((int)entry.Id);
+            return Task.FromResult(entry.Id);
         }
+
+        public int Count => _store.Count;
     }
 
     [Fact]
@@ -82,7 +84,7 @@ public class TransactionServiceTests
         var seed = new[]
         {
             new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100, CreatedAt = DateTime.UtcNow },
-            new LedgerEntry { Id = 2, AccountId = 2, Type = "withdrawal", Amount = 50, CreatedAt = DateTime.UtcNow }
+            new LedgerEntry { Id = 2, AccountId = 2, Type = "withdrawal", Amount = -50, CreatedAt = DateTime.UtcNow }
         };
 
         var txRepo = new FakeTxRepo(seed);
@@ -96,31 +98,102 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task Execute_Deposit_UpdatesAccountAndCreatesEntry()
+    public async Task GetBalance_ReturnsSumOfAllLedgerEntries()
     {
-        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", Balance = 100m };
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "SE100" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 1000m, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 2, AccountId = 1, Type = "withdrawal", Amount = -250m, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 3, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
         var accRepo = new FakeSavingsRepo(new[] { acc });
-        var txRepo = new FakeTxRepo();
+        var txRepo = new FakeTxRepo(seedTx);
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
-        var req = new TransactionRequest(1, "deposit", 50m);
-        var res = await svc.ExecuteAsync(req);
+        var balance = await svc.GetBalanceAsync(1);
 
-        Assert.Equal(150m, (await accRepo.GetByIdAsync(1))!.Balance);
-        Assert.Equal(1, res.AccountId);
-        Assert.Equal(50m, res.Amount);
+        Assert.Equal(1250m, balance);
     }
 
     [Fact]
-    public async Task Execute_Withdrawal_Insufficient_Throws()
+    public async Task Execute_Deposit_CreatesPositiveLedgerEntryAndIncreasesBalance()
     {
-        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", Balance = 10m };
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
-        var req = new TransactionRequest(1, "withdrawal", 50m);
+        var req = new TransactionRequest(1, "deposit", 150m);
+        var res = await svc.ExecuteAsync(req);
+
+        Assert.Equal(1, res.AccountId);
+        Assert.Equal(150m, res.Amount);
+        Assert.Equal("deposit", res.Type);
+
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(150m, balance);
+    }
+
+    [Fact]
+    public async Task Execute_Withdrawal_WhenSufficientFunds_CreatesNegativeLedgerEntryAndDecreasesBalance()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "withdrawal", 200m);
+        var res = await svc.ExecuteAsync(req);
+
+        Assert.Equal(1, res.AccountId);
+        Assert.Equal(-200m, res.Amount);
+        Assert.Equal("withdrawal", res.Type);
+
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(300m, balance);
+    }
+
+    [Fact]
+    public async Task Execute_Withdrawal_WhenInsufficientFunds_ThrowsAndCreatesNoEntry()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 50m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "withdrawal", 100m);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => svc.ExecuteAsync(req));
+
+        Assert.Equal(1, txRepo.Count); // No new entry created
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(50m, balance);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public async Task Execute_InvalidAmount_ThrowsArgumentException(decimal invalidAmount)
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "deposit", invalidAmount);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.ExecuteAsync(req));
     }
 }

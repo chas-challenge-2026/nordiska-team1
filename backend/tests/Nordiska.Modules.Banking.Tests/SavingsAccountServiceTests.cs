@@ -30,11 +30,11 @@ public class SavingsAccountServiceTests
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
-        public Task<int> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+        public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
             entity.Id = _next++;
             _store.Add(entity);
-            return Task.FromResult((int)entity.Id);
+            return Task.FromResult(entity.Id);
         }
 
         public Task UpdateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
