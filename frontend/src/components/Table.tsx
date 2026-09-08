@@ -30,7 +30,7 @@ export default function Table({tableType, children, handleClick}: TableProps) {
             return (
                 <div className="font-montserrat flex flex-col gap-8">
                     <div className="border-b-nordiska-orange border-b-3 flex justify-between">
-                        <h1 className="font-semibold text-4xl">Planerade överföringar</h1>
+                        <h1 className="font-semibold text-[26px]">Planerade överföringar</h1>
                         <button className="uppercase text-primary-blue hover:text-nordiska-blue" onClick={() => handleClick()}>hantera</button>
                     </div>
                     {children}

@@ -26,6 +26,7 @@ type PlannedRow = {
     plannedDate: string;
     plannedName: string;
     plannedSum: number;
+    plannedNote?: string;
 };
 
 type RowProps = BaseRowProps & (TransactionRow | AccountRow | PlannedRow);
@@ -56,9 +57,12 @@ export default function TableRow(props: RowProps) {
             )
         case "planned":
             return (
-                <div className="border-b border-primary-blue font-montserrat">
-                    <p className="flex uppercase text-xs pb-4">{props.plannedDate}</p>
-                    <p className="flex justify-between text-xl font-semibold pb-4"><span>{props.plannedName}</span><span>{props.plannedSum.toLocaleString()} sek</span></p>
+                <div className="border-b border-primary-blue font-montserrat pb-4">
+                    <p className="flex uppercase text-xs tracking-[0.08em]">{props.plannedDate}</p>
+                    <p className="flex justify-between text-[15px] font-bold"><span>{props.plannedName}</span><span>{props.plannedSum.toLocaleString()} sek</span></p>
+                    {props.plannedNote && (
+                        <p className="text-xs text-meta">{props.plannedNote}</p>
+                    )}
                 </div>
             )
         case "account":

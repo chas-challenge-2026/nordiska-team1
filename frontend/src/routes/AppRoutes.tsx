@@ -8,6 +8,7 @@ import CollapsiblePlayground from "../pages/CollapsiblePlayground";
 //Protected
 import DesktopLayout from "../layouts/DesktopLayout";
 import OverviewPage from "../pages/OverviewPage";
+import TransferPage from "../pages/TransferPage";
 
 export default function AppRoutes() {
 
@@ -17,12 +18,13 @@ export default function AppRoutes() {
             {/* <Route path="/login" element={<LogInPage />} /> */}
             <Route path="/welcome" element={<LandingPage />} />
             <Route path="/inactive" element={<LandingPage inactive />} />
-            <Route path="/dev/collapsible" element={<CollapsiblePlayground />} />
+            <Route path="/collapsible" element={<CollapsiblePlayground />} />
 
             {/* PROTECTED ROUTES HÄR */}
             <Route element={<ProtectedRoute/>}>
                 <Route path="/" element={<DesktopLayout />}>
                     <Route index element={<OverviewPage />} />
+                    <Route path="/transfer" element={<TransferPage />} />
                 </Route>
             </Route>
         </Routes>

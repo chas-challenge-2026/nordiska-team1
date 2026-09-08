@@ -9,6 +9,7 @@ type InputFieldProps = {
     required?: boolean;
     onChange: (value: string) => void;
     error?: string;
+    suffix?: string;
 }
 
 /**
@@ -25,6 +26,7 @@ export default function InputField({
         required = false,
         onChange,
         error,
+        suffix,
     }: InputFieldProps) {
 
     return (
@@ -34,20 +36,27 @@ export default function InputField({
                     {capitalize(label)} {required && <span className="text-red-600 font-light"> *</span>}
                 </label>
                 {error && (
-                    <span className="text-sm text-red-600">{capitalize(error)}</span>
+                    <span className="text-sm text-error">{capitalize(error)}</span>
                 )}
             </div>
 
-            <input 
-                id = {name}
-                name = {name}
-                type = {type}
-                placeholder = {capitalize(placeholder)}
-                value = {value}
-                required = {required}
-                onChange={(e) => onChange(e.target.value)}
-                className="mt-1 w-full rounded-md border border-nordiska-blue px-3 py-2 placeholder:text-gray-400"
-                />    
+            <div className="relative mt-1">
+                <input
+                    id = {name}
+                    name = {name}
+                    type = {type}
+                    placeholder = {capitalize(placeholder)}
+                    value = {value}
+                    required = {required}
+                    onChange={(e) => onChange(e.target.value)}
+                    className={`w-full rounded-md border ${error ? "border-error" : "border-nordiska-blue"} px-3 py-2 ${suffix ? "pr-12" : ""} placeholder:text-gray-400`}
+                    />
+                {suffix && (
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-meta">
+                        {suffix}
+                    </span>
+                )}
+            </div>
         </div>
     );
 };

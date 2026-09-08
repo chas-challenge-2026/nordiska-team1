@@ -12,14 +12,57 @@
   --color-secondary: #515C6E;
   --color-nordiska-blue: #134663;
   --color-nordiska-orange: #EDA91B;
+  --color-nordiska-orange-hover: #D9990F;
   --color-login-bg: #0F3644;
 
-  --font-montserrat-alternates: "Montserrat Alternates", sans-serif; 
-  --font-montserrat: "Montserrat", sans-serif; 
+  --color-border-light: #E5EAF0;
+  --color-hairline: #EEF1F4;
+  --color-meta: #7A8699;
+  --color-muted: #93A0B0;
+  --color-selector-ring: #C4CDD8;
+  --color-error: #C4291C;
+  --color-hover-bg: #F7F9FB;
+  --color-pill-internal-bg: #E7EEF3;
+  --color-pill-external-bg: #FDF3DF;
+  --color-pill-external-fg: #8A6108;
+  --color-overlay: rgb(0 16 43 / 0.45);
+
+  --shadow-card: 0 1px 3px rgb(0 16 43 / 0.08);
+  --shadow-modal: 0 24px 60px rgb(0 16 43 / 0.32);
+  --shadow-floating: 0 8px 20px rgb(0 16 43 / 0.22);
+
+  --font-montserrat-alternates: "Montserrat Alternates", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
   --animate-bounce-right: bounce-right 0.6s ease-in-out infinite;
+  --animate-rise: rise 0.25s ease-out both;
+  --animate-ring-draw: ring-draw 0.7s ease-out both;
+  --animate-check-draw: check-draw 0.45s 0.55s ease-out both;
+  --animate-dot-travel: dot-travel 1.8s ease-in-out infinite;
 }
 
 @keyframes bounce-right {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(6px); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ring-draw {
+  from { stroke-dashoffset: 214; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes check-draw {
+  from { stroke-dashoffset: 44; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes dot-travel {
+  0% { transform: translateX(0); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(112px); opacity: 0; }
 }

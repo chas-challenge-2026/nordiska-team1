@@ -61,5 +61,89 @@
     "accessibility": "Tillgänglighet",
     "cookies": "Cookies",
     "cookieSettings": "Cookie-inställningar"
+  },
+
+  "transfer": {
+    "heading": "Ny överföring",
+    "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
+    "name-label": "Vad ska överföringen heta?",
+    "name-placeholder": "T.ex. Hyra september",
+    "from-label": "Från vilket konto?",
+    "to-label": "Vart ska pengarna?",
+    "select": "Välj",
+    "select-account-placeholder": "Välj konto",
+    "select-recipient-placeholder": "Välj mottagare",
+    "from-meta-placeholder": "Bland dina egna konton",
+    "to-meta-placeholder": "Egna konton, BG/PG eller bankkonto",
+    "kind-internal": "Internt",
+    "kind-external": "Externt",
+    "kind-internal-help": "Mellan dina egna konton",
+    "kind-external-help": "Kräver signering med BankID",
+    "amount-label": "Hur mycket vill du föra över?",
+    "amount-placeholder": "0,00",
+    "amount-suffix": "sek",
+    "amount-error": "Belopp överstiger saldo på {{account}}",
+    "balance-after": "Saldo efter överföring:",
+    "goal-progress": "Denna överföring tar dig till {{percent}}% av ditt mål 🎯",
+    "reserved-notice": "Här visas framtida meddelanden om gränser och avgifter.",
+    "date-label": "När ska den genomföras?",
+    "recurring-label": "Återkommande varje månad",
+    "cta-submit": "Granska överföring",
+    "cta-hint-external": "Du signerar med BankID i nästa steg.",
+    "cta-hint-internal": "Du får granska innan den genomförs.",
+    "cta-hint-incomplete": "Fyll i namn, konton och belopp.",
+
+    "add-account": {
+      "heading": "Lägg till nytt konto",
+      "help-text": "Kontot sparas bland dina mottagare och fylls i direkt i överföringen.",
+      "type-label": "Kontotyp",
+      "type-placeholder": "Bankkonto, Bankgiro eller Plusgiro",
+      "clearing-label": "Clearingnummer",
+      "clearing-placeholder": "4 siffror",
+      "number-label": "Kontonummer",
+      "number-placeholder": "Utan bindestreck",
+      "name-label": "Namn på mottagaren",
+      "name-placeholder": "T.ex. Olle Persson",
+      "default-type": "Bankkonto",
+      "default-name": "Nytt konto"
+    },
+
+    "modal": {
+      "from-title": "Från vilket konto?",
+      "to-title": "Vart ska pengarna?",
+      "close": "Stäng",
+      "search-placeholder": "Sök på namn",
+      "group-own": "Mina konton",
+      "group-favorites": "Favoriter / Senaste",
+      "group-bg": "BG/PG",
+      "group-bank": "Bankkonto",
+      "empty": "Inga konton matchar din sökning.",
+      "add-new": "+ Lägg till nytt konto"
+    },
+
+    "bankid": {
+      "heading": "Godkänn överföringen",
+      "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
+      "amount": "Belopp",
+      "to": "Till",
+      "from": "Från",
+      "date": "Datum",
+      "approve": "Godkänn med BankID"
+    },
+
+    "done": {
+      "heading": "Överföringen är genomförd",
+      "summary": "{{amount}} sek till {{name}} · {{date}}",
+      "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
+      "from": "Från",
+      "to": "Till",
+      "new-transfer": "Ny överföring"
+    },
+
+    "planned": {
+      "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
+      "note-to": "Till {{name}}",
+      "note-internal": "Mellan egna konton"
+    }
   }
 }

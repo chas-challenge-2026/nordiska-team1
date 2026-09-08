@@ -61,5 +61,89 @@
     "accessibility": "Accessibility",
     "cookies": "Cookies",
     "cookieSettings": "Cookie settings"
+  },
+
+  "transfer": {
+    "heading": "New transfer",
+    "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
+    "name-label": "What should the transfer be called?",
+    "name-placeholder": "E.g. Rent September",
+    "from-label": "From which account?",
+    "to-label": "Where should the money go?",
+    "select": "Select",
+    "select-account-placeholder": "Select account",
+    "select-recipient-placeholder": "Select recipient",
+    "from-meta-placeholder": "Among your own accounts",
+    "to-meta-placeholder": "Own accounts, BG/PG or bank account",
+    "kind-internal": "Internal",
+    "kind-external": "External",
+    "kind-internal-help": "Between your own accounts",
+    "kind-external-help": "Requires signing with BankID",
+    "amount-label": "How much do you want to transfer?",
+    "amount-placeholder": "0.00",
+    "amount-suffix": "sek",
+    "amount-error": "Amount exceeds the balance on {{account}}",
+    "balance-after": "Balance after transfer:",
+    "goal-progress": "This transfer takes you to {{percent}}% of your goal 🎯",
+    "reserved-notice": "Future messages about limits and fees will appear here.",
+    "date-label": "When should it be carried out?",
+    "recurring-label": "Recurring every month",
+    "cta-submit": "Review transfer",
+    "cta-hint-external": "You'll sign with BankID in the next step.",
+    "cta-hint-internal": "You'll get to review it before it's carried out.",
+    "cta-hint-incomplete": "Fill in name, accounts and amount.",
+
+    "add-account": {
+      "heading": "Add new account",
+      "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
+      "type-label": "Account type",
+      "type-placeholder": "Bank account, Bankgiro or Plusgiro",
+      "clearing-label": "Clearing number",
+      "clearing-placeholder": "4 digits",
+      "number-label": "Account number",
+      "number-placeholder": "Without dashes",
+      "name-label": "Recipient name",
+      "name-placeholder": "E.g. Olle Persson",
+      "default-type": "Bank account",
+      "default-name": "New account"
+    },
+
+    "modal": {
+      "from-title": "From which account?",
+      "to-title": "Where should the money go?",
+      "close": "Close",
+      "search-placeholder": "Search by name",
+      "group-own": "My accounts",
+      "group-favorites": "Favorites / Recent",
+      "group-bg": "BG/PG",
+      "group-bank": "Bank account",
+      "empty": "No accounts match your search.",
+      "add-new": "+ Add new account"
+    },
+
+    "bankid": {
+      "heading": "Approve the transfer",
+      "help-text": "The recipient is an external account. Sign with BankID to complete it.",
+      "amount": "Amount",
+      "to": "To",
+      "from": "From",
+      "date": "Date",
+      "approve": "Approve with BankID"
+    },
+
+    "done": {
+      "heading": "The transfer is complete",
+      "summary": "{{amount}} sek to {{name}} · {{date}}",
+      "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
+      "from": "From",
+      "to": "To",
+      "new-transfer": "New transfer"
+    },
+
+    "planned": {
+      "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
+      "note-to": "To {{name}}",
+      "note-internal": "Between your own accounts"
+    }
   }
 }
