@@ -7,6 +7,8 @@ using Nordiska.Modules.Faq.Infrastructure.Db;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Faq.Application;
+using System.IO;
+using System.Reflection;
 using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +16,7 @@ using Nordiska.Modules.Banking.Domain;
 using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
+using Nordiska.Modules.Banking.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,7 +60,16 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 // Register controller services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // include XML comments so Scalar/Swagger can show summaries and parameter docs
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 

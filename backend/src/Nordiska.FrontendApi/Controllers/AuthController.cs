@@ -4,6 +4,9 @@ using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.FrontendApi.Controllers;
 
+/// <summary>
+/// Authentication endpoints for local/demo login flows.
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
@@ -15,6 +18,10 @@ public class AuthController : ControllerBase
         _jwtProvider = jwtProvider;
     }
 
+    /// <summary>
+    /// Performs a demo login and returns a JWT for the matched demo user.
+    /// </summary>
+    /// <param name="request">Login request containing email and password.</param>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {

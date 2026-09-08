@@ -27,6 +27,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>0376a5cb-ee2a-4b9c-b42a-c12b974709d8</UserSecretsId>
+    <!-- Generate XML documentation for Swagger/Scalar -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Place XML next to assembly in output folder -->
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <!-- Avoid treating missing XML comment warnings as errors for third-party / legacy code -->
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

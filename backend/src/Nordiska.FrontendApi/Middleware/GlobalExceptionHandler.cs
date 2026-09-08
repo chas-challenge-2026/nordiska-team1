@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Nordiska.FrontendApi.Middleware;
 
+/// <summary>
+/// Handles exceptions thrown during request processing and converts them to ProblemDetails responses.
+/// </summary>
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
@@ -13,7 +16,9 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         _logger = logger;
     }
 
-    // This method handles exceptions and returns appropriate HTTP responses based on the exception type.
+    /// <summary>
+    /// Attempts to handle an exception and write a ProblemDetails response.
+    /// </summary>
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,

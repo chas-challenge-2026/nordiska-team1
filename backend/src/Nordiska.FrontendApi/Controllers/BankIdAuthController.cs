@@ -8,6 +8,9 @@ using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.FrontendApi.Controllers;
 
+/// <summary>
+/// Endpoints for initiating and collecting BankID authentication flows.
+/// </summary>
 [ApiController]
 [Route("api/auth/bankid")]
 public class BankIdAuthController : ControllerBase
@@ -24,7 +27,10 @@ public class BankIdAuthController : ControllerBase
          _jwtProvider = jwtProvider;
      }
      
-     // Log in 
+     /// <summary>
+     /// Initiates a BankID authentication request for the provided personal number.
+     /// </summary>
+     /// <param name="request">BankId initiate request containing the personal number.</param>
      [HttpPost("Initiate")]
      public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
      {
@@ -56,7 +62,10 @@ public class BankIdAuthController : ControllerBase
          }
      }
      
-     // we use /collect to ask BankId how the login is going. 
+     /// <summary>
+     /// Polls BankID collect endpoint to determine the status of an in-progress authentication flow.
+     /// </summary>
+     /// <param name="request">Collect request containing the order reference.</param>
      [HttpPost("Collect")]
      public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
      {
