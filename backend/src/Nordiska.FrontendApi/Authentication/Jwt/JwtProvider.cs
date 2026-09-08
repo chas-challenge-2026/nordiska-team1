@@ -39,8 +39,23 @@ public class JwtProvider : IJwtProvider
             new Claim(JwtRegisteredClaimNames.Email, customer.Email ?? string.Empty),
         };
         
-        var roles = await _userManager.GetRolesAsync(customer);
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        try
+        {
+            var roles = await _userManager.GetRolesAsync(customer);
+            if (roles.Count > 0)
+            {
+                claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+            }
+            else
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Customer"));
+            }
+        }
+        catch
+        {
+            // Fallback when Identity tables are not mapped in DbContext or customer is in-memory
+            claims.Add(new Claim(ClaimTypes.Role, "Customer"));
+        }
 
         var key = Encoding.UTF8.GetBytes(_options.SecretKey);
         var signingCredentials = new SigningCredentials(

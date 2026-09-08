@@ -18,6 +18,8 @@ using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
 using Nordiska.Modules.Banking.Infrastructure;
 
+using Microsoft.OpenApi;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Register JWT configuration options
@@ -69,6 +71,26 @@ builder.Services.AddSwaggerGen(options =>
     {
         options.IncludeXmlComments(xmlPath);
     }
+
+    // Configure JWT Bearer authentication in Swagger / Scalar UI
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Klistra in ditt JWT-token här (utan 'Bearer ' prefix)."
+    };
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    options.AddSecurityRequirement((doc) => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer"),
+            new List<string>()
+        }
+    });
 });
 
 builder.Services.AddFaqModuleInfrastructure(builder.Configuration);

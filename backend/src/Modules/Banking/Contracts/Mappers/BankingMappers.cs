@@ -20,17 +20,17 @@ public static class BankingMappers
     public static void ApplyUpdate(this SavingsAccount target, UpdateSavingsAccountRequest req)
     {
         if (!string.IsNullOrWhiteSpace(req.AccountType)) target.AccountType = req.AccountType!;
-        if (req.Balance.HasValue) target.Balance = req.Balance.Value;
+        // Balance is immutable via update according to ADR 0001 (must go through verified Ledger transactions)
         if (req.InterestRate.HasValue) target.InterestRate = req.InterestRate.Value;
     }
 
-    public static SavingsAccountResponse ToResponse(this SavingsAccount acc)
+    public static SavingsAccountResponse ToResponse(this SavingsAccount acc, decimal? calculatedBalance = null)
         => new(
             acc.Id,
             acc.CustomerId,
             acc.AccountNumber,
             acc.AccountType,
-            acc.Balance,
+            calculatedBalance ?? acc.Balance,
             acc.InterestRate,
             acc.CreatedAt
         );

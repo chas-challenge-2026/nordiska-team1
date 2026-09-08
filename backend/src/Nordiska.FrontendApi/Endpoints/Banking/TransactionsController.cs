@@ -51,4 +51,17 @@ public class TransactionsController : ControllerBase
         var created = await _service.ExecuteAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
+
+    /// <summary>
+    /// Gets the current verified balance for an account computed from all ledger entries.
+    /// </summary>
+    /// <param name="accountId">Account id.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The calculated balance amount.</returns>
+    [HttpGet("balance/{accountId}")]
+    public async Task<ActionResult<decimal>> GetBalance(long accountId, CancellationToken cancellationToken)
+    {
+        var balance = await _service.GetBalanceAsync(accountId, cancellationToken);
+        return Ok(balance);
+    }
 }
