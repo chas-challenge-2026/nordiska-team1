@@ -1,30 +1,39 @@
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Api.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Banking.Infrastructure.Db;
 
 
 namespace Nordiska.FrontendApi.Controllers;
 
+/// <summary>
+/// Endpoints for initiating and collecting BankID authentication flows.
+/// </summary>
 [ApiController]
 [Route("api/auth/bankid")]
 public class BankIdAuthController : ControllerBase
 {
     // ActiveLogins client to communicate with BankID 
      private readonly IBankIdAppApiClient _bankIdAppApiClient;
-     //private readonly ApplicationDbContext _db; // TODO (When DB i set add ApplicationDbContext _db to the constructor )
+     private readonly BankingDbContext _db; 
      private readonly IJwtProvider _jwtProvider;
 
-     public BankIdAuthController(IBankIdAppApiClient bankIdAppApiClient,
+     public BankIdAuthController(IBankIdAppApiClient bankIdAppApiClient, BankingDbContext db,
          IJwtProvider jwtProvider)
      {
+         _db = db;
          _bankIdAppApiClient = bankIdAppApiClient;
          _jwtProvider = jwtProvider;
      }
      
-     // Log in 
+     /// <summary>
+     /// Initiates a BankID authentication request for the provided personal number.
+     /// </summary>
+     /// <param name="request">BankId initiate request containing the personal number.</param>
      [HttpPost("Initiate")]
      public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
      {
@@ -56,7 +65,10 @@ public class BankIdAuthController : ControllerBase
          }
      }
      
-     // we use /collect to ask BankId how the login is going. 
+     /// <summary>
+     /// Polls BankID collect endpoint to determine the status of an in-progress authentication flow.
+     /// </summary>
+     /// <param name="request">Collect request containing the order reference.</param>
      [HttpPost("Collect")]
      public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
      {
@@ -76,10 +88,9 @@ public class BankIdAuthController : ControllerBase
              // Get customers personal nummer 
              var personalNumber = collectResponse.CompletionData?.User.PersonalIdentityNumber;
              // when the customer has logged in with bankId, look up user in the databas
-             // TODO: use the line below when DB is set up and remove mockad data
-             //var customer = await _db.Customers.FirstOrDefaultAsync(c => c.person_num == personalNumber);
+             var customer = await _db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == personalNumber);
              
-             // MOCKAD CUSTOMER 
+             /* MOCKAD CUSTOMER 
              var customer = new Customer
              {
                  Id = 1L,
@@ -89,6 +100,7 @@ public class BankIdAuthController : ControllerBase
                  CreatedAt = DateTime.Now,
 
              };
+             */
 
              if (customer == null)
              {

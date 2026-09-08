@@ -25,6 +25,15 @@
     "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
     "button": "Logga in igen"
   },
+  "login-route": {
+    "title": "Logga in",
+    "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen."
+  },
+  "404-route": {
+    "title": "Sidan kunde inte hittas.",
+    "paragraph": "Sidan du letar efter kunde inte hittas.",
+    "button": "Tillbaka till hem"
+  },
 
   "page-header": {
     "help-center": "Hjälpcenter",

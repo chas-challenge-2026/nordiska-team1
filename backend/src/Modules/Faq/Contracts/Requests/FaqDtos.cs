@@ -3,19 +3,19 @@ using System.ComponentModel.DataAnnotations;
 namespace Nordiska.Modules.Faq.Contracts.Requests;
 
 public record CreateFaqRequest(
-    [property: Required]
-    [property: StringLength(500, MinimumLength = 5)]
+    [Required]
+    [StringLength(500, MinimumLength = 5)]
     string Question,
 
-    [property: Required]
-    [property: StringLength(2000, MinimumLength = 1)]
+    [Required]
+    [StringLength(2000, MinimumLength = 1)]
     string Answer,
 
-    [property: StringLength(200)]
-    string? Category,
+    [StringLength(200)]
+    string? Category = null,
 
-    [property: StringLength(500)]
-    string? Keywords
+    [StringLength(500)]
+    string? Keywords = null
 );
 
 public record UpdateFaqRequest(
