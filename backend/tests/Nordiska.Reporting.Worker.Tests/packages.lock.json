@@ -361,14 +361,6 @@
         "resolved": "13.0.3",
         "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       },
-      "Npgsql": {
-        "type": "Transitive",
-        "resolved": "8.0.6",
-        "contentHash": "KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
-        }
-      },
       "System.Collections.Immutable": {
         "type": "Transitive",
         "resolved": "8.0.0",
@@ -482,6 +474,15 @@
           "Microsoft.Extensions.Logging.EventLog": "8.0.1",
           "Microsoft.Extensions.Logging.EventSource": "8.0.1",
           "Microsoft.Extensions.Options": "8.0.2"
+        }
+      },
+      "Npgsql": {
+        "type": "CentralTransitive",
+        "requested": "[8.0.6, )",
+        "resolved": "8.0.6",
+        "contentHash": "KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
         }
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {

@@ -44,6 +44,15 @@
       "all-transactions": "Visa fler transaktioner",
       "less-transactions": "Visa färre transaktioner"
   },
+  "login-route": {
+    "title": "Logga in",
+    "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen."
+  },
+  "404-route": {
+    "title": "Sidan kunde inte hittas.",
+    "paragraph": "Sidan du letar efter kunde inte hittas.",
+    "button": "Tillbaka till hem"
+  },
 
   "page-header": {
     "help-center": "Hjälpcenter",
@@ -56,7 +65,6 @@
     "transactions": "Transaktioner",
     "transfers": "Överföringar"
   },
-
   "table": {
     "my-accounts": "Mina konton",
     "planned-transactions": "Planerade överföringar",
@@ -72,13 +80,15 @@
     "phone-placeholder": "Ange Telefonnummer",
     "phone-error": "Ange enligt format 07xxxxxxxx"
   },
-
-  "footer": {
+  "page-footer": {
     "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
     "allRightsReserved": "Alla rättigheter förbehållna",
     "privacyPolicy": "Integritetspolicy",
     "accessibility": "Tillgänglighet",
     "cookies": "Cookies",
     "cookieSettings": "Cookie-inställningar"
+  },
+  "get-pdf-button": {
+    "text": "Visa PDF"
   }
 }

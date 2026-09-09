@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Nordiska.FrontendApi</name>
+    </assembly>
+    <members>
+        <member name="T:Nordiska.FrontendApi.Authentication.AuthCookieExtensions">
+            <summary>
+            Helper extensions for setting and removing HTTP-only authentication cookies.
+            </summary>
+        </member>
+        <member name="F:Nordiska.FrontendApi.Authentication.AuthCookieExtensions.CookieName">
+            <summary>
+            The standard cookie name used for JWT authentication.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.AuthCookieExtensions.AppendAuthCookie(Microsoft.AspNetCore.Http.HttpResponse,System.String,System.Int32)">
+            <summary>
+            Appends a secure, HttpOnly cookie containing the JWT to the response.
+            </summary>
+            <param name="response">The current HTTP response.</param>
+            <param name="token">The generated JWT token string.</param>
+            <param name="lifetimeInMinutes">Token validity duration in minutes.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.AuthCookieExtensions.DeleteAuthCookie(Microsoft.AspNetCore.Http.HttpResponse)">
+            <summary>
+            Deletes the authentication cookie from the client browser.
+            </summary>
+            <param name="response">The current HTTP response.</param>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.SecretKey">
+            <summary>
+            Secret key used to sign JWT tokens. Keep this secure.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.Issuer">
+            <summary>
+            Token issuer identifier.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.Audience">
+            <summary>
+            Token audience identifier.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.TokenLifetimeInMinutes">
+            <summary>
+            Lifetime of the token in minutes.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Authentication.Jwt.JwtProvider">
+            <summary>
+            Produces JSON Web Tokens for authenticated customers.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Jwt.JwtProvider.Generate(Nordiska.Modules.Banking.Domain.Customer)">
+            <summary>
+            Generates a signed JWT for the provided customer.
+            </summary>
+            <param name="customer">Customer to generate token for.</param>
+            <returns>JWT as a string.</returns>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Controllers.AuthController">
+            <summary>
+            Authentication endpoints for local/demo login flows.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Controllers.LoginRequest)">
+            <summary>
+            Performs a demo login, sets an HTTP-only JWT cookie, and returns the authenticated user info.
+            </summary>
+            <param name="request">Login request containing email and password.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser">
+            <summary>
+            Returns the currently authenticated user's profile information extracted from the JWT.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Logout">
+            <summary>
+            Logs out the user by clearing the HTTP-only authentication cookie.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Controllers.BankIdAuthController">
+            <summary>
+            Endpoints for initiating and collecting BankID authentication flows.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.BankIdAuthController.Initiate(Nordiska.FrontendApi.Contracts.Requests.BankIdInitiateRequest)">
+            <summary>
+            Initiates a BankID authentication request for the provided personal number.
+            </summary>
+            <param name="request">BankId initiate request containing the personal number.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.BankIdAuthController.Collect(Nordiska.FrontendApi.Contracts.Requests.BankIdCollectRequest)">
+            <summary>
+            Polls BankID collect endpoint to determine the status of an in-progress authentication flow.
+            </summary>
+            <param name="request">Collect request containing the order reference.</param>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Controllers.TestController">
+            <summary>
+            Controller providing test endpoints for authenticated scenarios.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.TestController.GetSecureData">
+            <summary>
+            Returns information extracted from the authenticated user's JWT claims.
+            </summary>
+            <returns>Basic user info and all claims.</returns>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.SavingsAccountsController">
+            <summary>
+            API endpoints for managing savings accounts.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsAccountsController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all savings accounts.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>List of savings account responses.</returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsAccountsController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a savings account by id.
+            </summary>
+            <param name="id">Savings account id.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Savings account response.</returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsAccountsController.Create(Nordiska.Modules.Banking.Contracts.Requests.OpenSavingsAccountRequest,System.Threading.CancellationToken)">
+            <summary>
+            Opens a new savings account.
+            </summary>
+            <param name="request">Open savings account request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Created savings account.</returns>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController">
+            <summary>
+            API endpoints for querying and executing transactions.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetAll(System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            Queries transactions, optionally filtered by account id.
+            </summary>
+            <param name="accountId">Optional account id to filter by.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>List of transaction responses.</returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a transaction by id.
+            </summary>
+            <param name="id">Transaction id.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Transaction response.</returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.Create(Nordiska.Modules.Banking.Contracts.Requests.TransactionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Executes a transaction (deposit or withdrawal) on an account.
+            </summary>
+            <param name="request">Transaction request payload.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Created transaction response.</returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetBalance(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Gets the current verified balance for an account computed from all ledger entries.
+            </summary>
+            <param name="accountId">Account id.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The calculated balance amount.</returns>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Extensions.BankingServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering banking services into the DI container.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Extensions.BankingServiceCollectionExtensions.AddBankingServices``2(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers the concrete savings and transaction service implementations.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Extensions.ServiceCollectionExtensions">
+            <summary>
+            Convenience extension methods for IServiceCollection used by the Frontend API.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Extensions.ServiceCollectionExtensions.AddErrorHandling(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers problem details and the global exception handler.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Middleware.GlobalExceptionHandler">
+            <summary>
+            Handles exceptions thrown during request processing and converts them to ProblemDetails responses.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Middleware.GlobalExceptionHandler.TryHandleAsync(Microsoft.AspNetCore.Http.HttpContext,System.Exception,System.Threading.CancellationToken)">
+            <summary>
+            Attempts to handle an exception and write a ProblemDetails response.
+            </summary>
+        </member>
+    </members>
+</doc>
