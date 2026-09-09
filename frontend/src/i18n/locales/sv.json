@@ -11,7 +11,10 @@
     "account": "Konto",
     "savings-account": "Sparkonto",
     "interest": "Ränta",
-    "filter": "Filtrera"
+    "filter": "Filtrera",
+    "showing": "Visar",
+    "of": "av",
+    "transactions": "transaktioner"
   },
   "errors": {
     "loading": "Någonting gick fel vid hämtning av datan."

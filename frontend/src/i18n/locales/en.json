@@ -11,7 +11,11 @@
     "account": "Account",
     "savings-account": "Savings account",
     "interest": "Interest",
-    "filter": "Filter"
+    "filter": "Filter",
+
+    "showing": "Showing",
+    "of": "of",
+    "transactions": "transactions"
   },
   "errors": {
     "loading": "Something went wrong while loading the data."
