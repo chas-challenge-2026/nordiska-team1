@@ -61,6 +61,7 @@ type AccountTriggerButtonProps = {
     label: string;
     name: string;
     meta: string;
+    balance?: string;
     onClick: () => void;
 };
 
@@ -68,6 +69,7 @@ function AccountTriggerButton({
     label,
     name,
     meta,
+    balance,
     onClick,
 }: AccountTriggerButtonProps) {
     const { t } = useTranslation();
@@ -80,18 +82,25 @@ function AccountTriggerButton({
             <button
                 type="button"
                 onClick={onClick}
-                className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-md border border-nordiska-blue bg-white px-3.5 py-2.5 text-left"
+                className="flex min-h-11 w-full cursor-pointer flex-col justify-center gap-0.5 rounded-md border border-nordiska-blue bg-white px-3.5 py-2.5 text-left"
             >
-                <span className="min-w-0">
-                    <span className="block truncate text-[15px] font-semibold text-dark-navy">
+                <span className="flex items-baseline justify-between gap-3">
+                    <span className="truncate text-[15px] font-semibold text-dark-navy">
                         {name}
                     </span>
-                    <span className="block truncate text-xs text-secondary">
+                    {balance && (
+                        <span className="flex-none text-[15px] font-bold text-dark-navy">
+                            {balance}
+                        </span>
+                    )}
+                </span>
+                <span className="flex items-center justify-between gap-3">
+                    <span className="truncate text-xs text-secondary">
                         {meta}
                     </span>
-                </span>
-                <span className="text-xs font-bold whitespace-nowrap text-primary-blue uppercase tracking-[0.08em]">
-                    {t("page-transfer.select")}
+                    <span className="flex-none text-xs font-bold whitespace-nowrap text-primary-blue uppercase tracking-[0.08em]">
+                        {t("page-transfer.select")}
+                    </span>
                 </span>
             </button>
         </div>
@@ -172,9 +181,7 @@ export default function TransferPage() {
                     id: a.id,
                     name: a.name,
                     meta: a.meta,
-                    balance: t("page-transfer.modal.available-balance", {
-                        amount: formatSek(a.balance),
-                    }),
+                    balance: `${formatSek(a.balance)} sek`,
                     selected: a.id === selectedId,
                 }));
 
@@ -350,6 +357,11 @@ export default function TransferPage() {
                                                 : t(
                                                       "page-transfer.from-meta-placeholder",
                                                   )
+                                        }
+                                        balance={
+                                            fromAccount
+                                                ? `${formatSek(fromAccount.balance)} sek`
+                                                : undefined
                                         }
                                         onClick={() => {
                                             setModal("from");

@@ -122,8 +122,7 @@
       "group-bg": "BG/PG",
       "group-bank": "Bankkonto",
       "empty": "Inga konton matchar din sökning.",
-      "add-new": "+ Lägg till nytt konto",
-      "available-balance": "{{amount}} sek tillgängligt"
+      "add-new": "+ Lägg till nytt konto"
     },
 
     "bankid": {
