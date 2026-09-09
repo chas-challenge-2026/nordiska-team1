@@ -122,7 +122,7 @@ export default function TransferPage() {
     const ctaHint = canSubmit
         ? isExternal
             ? t("page-transfer.cta-hint-external")
-            : t("page-transfer.cta-hint-internal")
+            : ""
         : t("page-transfer.cta-hint-incomplete");
 
     const doneSummary = toAccount
@@ -310,64 +310,27 @@ export default function TransferPage() {
                                             setSearch("");
                                         }}
                                     />
-                                    <div>
-                                        <AccountTriggerButton
-                                            label={t("page-transfer.to-label")}
-                                            name={
-                                                toAccount
-                                                    ? toAccount.name
-                                                    : t(
-                                                          "page-transfer.select-recipient-placeholder",
-                                                      )
-                                            }
-                                            meta={
-                                                toAccount
-                                                    ? toAccount.meta
-                                                    : t(
-                                                          "page-transfer.to-meta-placeholder",
-                                                      )
-                                            }
-                                            onClick={() => {
-                                                setModal("to");
-                                                setSearch("");
-                                            }}
-                                        />
-                                        {toAccount && (
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <span
-                                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[11px] font-bold tracking-[0.08em] uppercase ${
-                                                        isExternal
-                                                            ? "bg-nordiska-orange/20 text-dark-navy"
-                                                            : "bg-light-blue-accent/20 text-nordiska-blue"
-                                                    }`}
-                                                >
-                                                    <span
-                                                        className={`h-1.5 w-1.5 rounded-full ${
-                                                            isExternal
-                                                                ? "bg-nordiska-orange"
-                                                                : "bg-nordiska-blue"
-                                                        }`}
-                                                    />
-                                                    {isExternal
-                                                        ? t(
-                                                              "page-transfer.kind-external",
-                                                          )
-                                                        : t(
-                                                              "page-transfer.kind-internal",
-                                                          )}
-                                                </span>
-                                                <span className="text-xs text-secondary">
-                                                    {isExternal
-                                                        ? t(
-                                                              "page-transfer.kind-external-help",
-                                                          )
-                                                        : t(
-                                                              "page-transfer.kind-internal-help",
-                                                          )}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <AccountTriggerButton
+                                        label={t("page-transfer.to-label")}
+                                        name={
+                                            toAccount
+                                                ? toAccount.name
+                                                : t(
+                                                      "page-transfer.select-recipient-placeholder",
+                                                  )
+                                        }
+                                        meta={
+                                            toAccount
+                                                ? toAccount.meta
+                                                : t(
+                                                      "page-transfer.to-meta-placeholder",
+                                                  )
+                                        }
+                                        onClick={() => {
+                                            setModal("to");
+                                            setSearch("");
+                                        }}
+                                    />
                                 </div>
 
                                 <div>
@@ -449,6 +412,26 @@ export default function TransferPage() {
                                 />
 
                                 <div className="flex items-center gap-4.5 pt-1.5">
+                                    {toAccount && (
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[11px] font-bold tracking-[0.08em] uppercase ${
+                                                isExternal
+                                                    ? "bg-nordiska-orange/20 text-dark-navy"
+                                                    : "bg-light-blue-accent/20 text-nordiska-blue"
+                                            }`}
+                                        >
+                                            <span
+                                                className={`h-1.5 w-1.5 rounded-full ${
+                                                    isExternal
+                                                        ? "bg-nordiska-orange"
+                                                        : "bg-nordiska-blue"
+                                                }`}
+                                            />
+                                            {isExternal
+                                                ? t("page-transfer.kind-external")
+                                                : t("page-transfer.kind-internal")}
+                                        </span>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={handleSubmit}
@@ -459,11 +442,15 @@ export default function TransferPage() {
                                                 : "opacity-[0.45]"
                                         }`}
                                     >
-                                        {t("page-transfer.cta-submit")}
+                                        {isExternal
+                                            ? t("page-transfer.cta-submit-external")
+                                            : t("page-transfer.cta-submit-internal")}
                                     </button>
-                                    <span className="text-sm text-secondary">
-                                        {ctaHint}
-                                    </span>
+                                    {ctaHint && (
+                                        <span className="text-sm text-secondary">
+                                            {ctaHint}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
