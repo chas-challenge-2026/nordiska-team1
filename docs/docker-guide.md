@@ -8,15 +8,16 @@ This guide is for everyone on the team (whether you are running Windows, macOS, 
 
 ### Prerequisites
 * Docker Desktop (Windows/Mac) or Docker Engine (Linux) must be installed and running.
+* **If you previously ran `DevSetup` / `infra/v2`:** Stop the existing database container first to free port 5433:
+  ```bash
+  docker compose -f infra/v2/docker-compose.yml down
+  ```
 
 ### Start Everything
 Open a terminal in the repository root and run:
 
 ```bash
 cd infra
-```
-
-```bash
 docker compose up --build
 ```
 
@@ -69,14 +70,15 @@ docker compose up --build
 <details>
 <summary><b>Problem 1: Bind for 127.0.0.1:5433 failed: port is already allocated</b></summary>
 
-* **Cause:** An existing PostgreSQL instance or Docker container is already running on port 5433 (or 5432).
+* **Cause:** A previous PostgreSQL instance from `DevSetup` (`infra/v2`) or another container is already running on port 5433 (or 5432).
 * **Solution:**
-  1. Check running containers:
+  1. If you ran `DevSetup` previously, run:
+  ```bash
+  docker compose -f infra/v2/docker-compose.yml down
+  ```
+  2. Or check and stop any remaining container:
   ```bash
   docker ps
-  ```
-  2. Stop the conflicting container:
-  ```bash
   docker stop <CONTAINER_ID>
   ```
 </details>
