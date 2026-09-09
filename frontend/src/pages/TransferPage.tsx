@@ -117,19 +117,6 @@ export default function TransferPage() {
     const afterBalance = fromAccount ? fromAccount.balance - amountValue : 0;
     const isExternal = !!toAccount && !toAccount.own;
 
-    const goalOn =
-        !!toAccount && toAccount.own && !!toAccount.goal && amountValue > 0;
-    const goalPercent =
-        goalOn && toAccount?.own && toAccount.goal
-            ? Math.min(
-                  100,
-                  Math.round(
-                      ((toAccount.balance + amountValue) / toAccount.goal) *
-                          100,
-                  ),
-              )
-            : 0;
-
     const canSubmit = !!fromAccount && !!toAccount && amountValue > 0 && !over;
 
     const ctaHint = canSubmit
@@ -141,8 +128,8 @@ export default function TransferPage() {
     const doneSummary = toAccount
         ? t(
               recurring
-                  ? "transfer.done.summary-recurring"
-                  : "transfer.done.summary",
+                  ? "page-transfer.done.summary-recurring"
+                  : "page-transfer.done.summary",
               {
                   amount: formatSek(amountValue),
                   name: toAccount.name,
@@ -419,13 +406,6 @@ export default function TransferPage() {
                                             {formatSek(afterBalance)} sek
                                         </strong>
                                     </p>
-                                    {goalOn && (
-                                        <p className="mt-1.5 text-sm text-secondary">
-                                            {t("page-transfer.goal-progress", {
-                                                percent: goalPercent,
-                                            })}
-                                        </p>
-                                    )}
                                     <div className="mt-3.5 border-l-2 border-border-light pl-3 text-xs text-muted">
                                         {t("page-transfer.reserved-notice")}
                                     </div>

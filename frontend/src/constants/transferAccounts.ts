@@ -8,7 +8,6 @@ export type OwnAccount = {
     name: string;
     meta: string;
     balance: number;
-    goal?: number;
 };
 
 export type Payee = {
@@ -30,9 +29,9 @@ export type PlannedTransfer = {
 
 export const OWN_ACCOUNTS: OwnAccount[] = [
     { id: "a1", own: true, type: "Bankkonto", number: "NKM-20001", name: "Lön Baby", meta: "Bankkonto NKM-20001", balance: 47225.0 },
-    { id: "a2", own: true, type: "Sparkonto", number: "NKM-211-8", name: "Yoghurtfonden", meta: "Sparkonto NKM-211-8", balance: 23657.08, goal: 25000 },
-    { id: "a3", own: true, type: "Sparkonto", number: "903 578 211-8", name: "Köp ny tv", meta: "Sparkonto 903 578 211-8", balance: 3.56, goal: 8000 },
-    { id: "a4", own: true, type: "Fondkonto", number: "903 578 211-8", name: "Spend when old", meta: "Fondkonto 903 578 211-8", balance: 310433.56, goal: 500000 },
+    { id: "a2", own: true, type: "Sparkonto", number: "NKM-211-8", name: "Yoghurtfonden", meta: "Sparkonto NKM-211-8", balance: 23657.08 },
+    { id: "a3", own: true, type: "Sparkonto", number: "903 578 211-8", name: "Köp ny tv", meta: "Sparkonto 903 578 211-8", balance: 3.56 },
+    { id: "a4", own: true, type: "Fondkonto", number: "903 578 211-8", name: "Spend when old", meta: "Fondkonto 903 578 211-8", balance: 310433.56 },
 ];
 
 export const BG_PG_PAYEES: Payee[] = [

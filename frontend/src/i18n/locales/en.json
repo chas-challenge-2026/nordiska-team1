@@ -97,7 +97,6 @@
     "amount-suffix": "sek",
     "amount-error": "Amount exceeds the balance on {{account}}",
     "balance-after": "Balance after transfer:",
-    "goal-progress": "This transfer takes you to {{percent}}% of your goal 🎯",
     "reserved-notice": "Future messages about limits and fees will appear here.",
     "date-label": "When should it be carried out?",
     "recurring-label": "Recurring every month",

@@ -97,7 +97,6 @@
     "amount-suffix": "sek",
     "amount-error": "Belopp överstiger saldo på {{account}}",
     "balance-after": "Saldo efter överföring:",
-    "goal-progress": "Denna överföring tar dig till {{percent}}% av ditt mål 🎯",
     "reserved-notice": "Här visas framtida meddelanden om gränser och avgifter.",
     "date-label": "När ska den genomföras?",
     "recurring-label": "Återkommande varje månad",
