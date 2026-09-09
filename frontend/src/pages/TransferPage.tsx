@@ -10,6 +10,7 @@ import AddAccountForm from "../components/modals/AddAccountForm";
 import type { NewAccountValues } from "../components/modals/AddAccountForm";
 import BankIdConfirm from "../components/modals/BankIdConfirm";
 import TransferDone from "../components/TransferDone";
+import type { TransferPhase } from "../components/TransferDone";
 import {
     OWN_ACCOUNTS,
     BG_PG_PAYEES,
@@ -45,6 +46,15 @@ function todayIso() {
 function matchesSearch(account: TransferAccount, query: string) {
     if (!query) return true;
     return `${account.name} ${account.meta}`.toLowerCase().includes(query);
+}
+
+// Ingen backend än — simulerar överföringen med en fördröjning. Skriv "fail"
+// i notisfältet för att medvetet trigga ett misslyckande under test. Byt ut
+// mot ett riktigt API-anrop här den dagen backend finns.
+const SIMULATED_TRANSFER_DELAY_MS = 2500;
+
+function shouldSimulateFailure(transferName: string) {
+    return transferName.trim().toLowerCase().includes("fail");
 }
 
 type AccountTriggerButtonProps = {
@@ -101,6 +111,8 @@ export default function TransferPage() {
     const [search, setSearch] = useState("");
     const [addAccountOpen, setAddAccountOpen] = useState(false);
     const [step, setStep] = useState<Step>("form");
+    const [transferPhase, setTransferPhase] =
+        useState<TransferPhase>("processing");
     const [customs, setCustoms] = useState<Payee[]>([]);
     const [plannedTransfers, setPlannedTransfers] =
         useState<PlannedTransfer[]>(PLANNED_TRANSFERS);
@@ -139,6 +151,10 @@ export default function TransferPage() {
               },
           )
         : "";
+
+    const upcomingTransfers = plannedTransfers.filter(
+        (p) => p.date >= todayIso(),
+    );
 
     const query = search.trim().toLowerCase();
     const selectedId = modal === "from" ? fromId : toId;
@@ -258,13 +274,26 @@ export default function TransferPage() {
         ]);
     };
 
+    const startTransfer = () => {
+        setStep("done");
+        setTransferPhase("processing");
+        const willFail = shouldSimulateFailure(name);
+        setTimeout(() => {
+            if (willFail) {
+                setTransferPhase("failure");
+            } else {
+                commitTransfer();
+                setTransferPhase("success");
+            }
+        }, SIMULATED_TRANSFER_DELAY_MS);
+    };
+
     const handleSubmit = () => {
         if (!canSubmit) return;
         if (isExternal) {
             setStep("bankid");
         } else {
-            commitTransfer();
-            setStep("done");
+            startTransfer();
         }
     };
 
@@ -278,10 +307,11 @@ export default function TransferPage() {
         setSearch("");
         setAddAccountOpen(false);
         setStep("form");
+        setTransferPhase("processing");
     };
 
     return (
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
             <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] rounded-[10px] border border-[#E5EAF0] bg-white shadow-card">
                 <div className="px-10 pt-8 pb-10">
                     {(step === "form" || step === "bankid") && (
@@ -466,6 +496,7 @@ export default function TransferPage() {
 
                     {step === "done" && (
                         <TransferDone
+                            phase={transferPhase}
                             summaryLine={doneSummary}
                             fromName={fromAccount ? fromAccount.name : ""}
                             toName={toAccount ? toAccount.name : ""}
@@ -476,7 +507,7 @@ export default function TransferPage() {
 
                 <div className="border-l border-[#E5EAF0] px-10 pt-8 pb-10">
                     <Table tableType="planned" handleClick={() => {}}>
-                        {plannedTransfers.map((planned, index) => (
+                        {upcomingTransfers.map((planned, index) => (
                             <TableRow
                                 key={`${planned.date}-${index}`}
                                 id={`${planned.date}-${index}`}
@@ -534,10 +565,7 @@ export default function TransferPage() {
                         toMeta={toAccount.meta}
                         fromName={fromAccount ? fromAccount.name : ""}
                         date={date}
-                        onApprove={() => {
-                            commitTransfer();
-                            setStep("done");
-                        }}
+                        onApprove={startTransfer}
                         onCancel={() => setStep("form")}
                     />
                 </Modal>

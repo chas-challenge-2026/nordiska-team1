@@ -138,10 +138,13 @@
     },
 
     "done": {
+      "processing": "Överföringen behandlas...",
       "heading": "Överföringen är genomförd",
       "summary": "{{amount}} sek till {{name}} · {{date}}",
       "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
-      "new-transfer": "Ny överföring"
+      "new-transfer": "Ny överföring",
+      "failure-heading": "Överföring misslyckades",
+      "back-to-transfers": "Tillbaka till överföringar"
     },
 
     "planned": {
