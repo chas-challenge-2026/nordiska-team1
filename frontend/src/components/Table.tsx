@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 type TableProps = {
     tableType: "transaction" | "account" | "planned";
     children: React.ReactNode;
@@ -15,6 +17,8 @@ type TableProps = {
  */
 
 export default function Table({tableType, children, handleClick}: TableProps) {
+    const { t } = useTranslation();
+
     switch (tableType) {
         case "account": 
             return (
@@ -30,8 +34,8 @@ export default function Table({tableType, children, handleClick}: TableProps) {
             return (
                 <div className="font-montserrat flex flex-col gap-8">
                     <div className="border-b-nordiska-orange border-b-3 flex justify-between">
-                        <h1 className="font-semibold text-[26px]">Planerade överföringar</h1>
-                        <button className="uppercase text-primary-blue hover:text-nordiska-blue" onClick={() => handleClick()}>hantera</button>
+                        <h1 className="font-semibold text-[26px]">{t("table.planned-transactions")}</h1>
+                        <button className="uppercase text-primary-blue hover:text-nordiska-blue" onClick={() => handleClick()}>{t("generic.handle")}</button>
                     </div>
                     {children}
                 </div>
