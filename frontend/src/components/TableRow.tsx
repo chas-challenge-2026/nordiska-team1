@@ -61,7 +61,7 @@ export default function TableRow(props: RowProps) {
                     <p className="flex uppercase text-xs tracking-[0.08em]">{props.plannedDate}</p>
                     <p className="flex justify-between text-[15px] font-bold"><span>{props.plannedName}</span><span>{props.plannedSum.toLocaleString()} sek</span></p>
                     {props.plannedNote && (
-                        <p className="text-xs text-meta">{props.plannedNote}</p>
+                        <p className="text-xs text-secondary">{props.plannedNote}</p>
                     )}
                 </div>
             )

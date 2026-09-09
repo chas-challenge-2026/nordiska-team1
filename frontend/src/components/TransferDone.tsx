@@ -53,19 +53,19 @@ export default function TransferDone({
             </div>
 
             <div className="mt-8 flex max-w-[520px] items-center gap-4">
-                <div className="flex-1 rounded-lg border border-border-light bg-white px-4 py-3.5">
-                    <div className="text-xs tracking-[0.08em] text-meta uppercase">
+                <div className="flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
+                    <div className="text-xs tracking-[0.08em] text-secondary uppercase">
                         {t("generic.from")}
                     </div>
                     <div className="text-[15px] font-bold text-dark-navy">
                         {fromName}
                     </div>
                 </div>
-                <div className="relative h-0.5 w-28 flex-none bg-border-light">
+                <div className="relative h-0.5 w-28 flex-none bg-[#E5EAF0]">
                     <div className="animate-dot-travel absolute -top-1 left-0 h-2.5 w-2.5 rounded-full bg-nordiska-orange" />
                 </div>
-                <div className="flex-1 rounded-lg border border-border-light bg-white px-4 py-3.5">
-                    <div className="text-xs tracking-[0.08em] text-meta uppercase">
+                <div className="flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
+                    <div className="text-xs tracking-[0.08em] text-secondary uppercase">
                         {t("generic.to")}
                     </div>
                     <div className="text-[15px] font-bold text-dark-navy">
@@ -77,7 +77,7 @@ export default function TransferDone({
             <button
                 type="button"
                 onClick={onReset}
-                className="mt-9 cursor-pointer rounded-md border border-nordiska-blue bg-white px-6 py-3 text-sm font-bold text-nordiska-blue hover:bg-hover-bg"
+                className="mt-9 cursor-pointer rounded-md border border-nordiska-blue bg-white px-6 py-3 text-sm font-bold text-nordiska-blue hover:bg-nordiska-blue hover:text-white"
             >
                 {t("page-transfer.done.new-transfer")}
             </button>

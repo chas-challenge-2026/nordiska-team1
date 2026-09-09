@@ -75,7 +75,7 @@ function AccountTriggerButton({
                     <span className="block truncate text-[15px] font-semibold text-dark-navy">
                         {name}
                     </span>
-                    <span className="block truncate text-xs text-meta">
+                    <span className="block truncate text-xs text-secondary">
                         {meta}
                     </span>
                 </span>
@@ -274,7 +274,7 @@ export default function TransferPage() {
 
     return (
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
-            <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] rounded-[10px] border border-border-light bg-white shadow-card">
+            <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] rounded-[10px] border border-[#E5EAF0] bg-white shadow-card">
                 <div className="px-10 pt-8 pb-10">
                     {step === "form" && (
                         <div>
@@ -337,14 +337,14 @@ export default function TransferPage() {
                                                 <span
                                                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[11px] font-bold tracking-[0.08em] uppercase ${
                                                         isExternal
-                                                            ? "bg-pill-external-bg text-pill-external-fg"
-                                                            : "bg-pill-internal-bg text-nordiska-blue"
+                                                            ? "bg-nordiska-orange/20 text-dark-navy"
+                                                            : "bg-light-blue-accent/20 text-nordiska-blue"
                                                     }`}
                                                 >
                                                     <span
                                                         className={`h-1.5 w-1.5 rounded-full ${
                                                             isExternal
-                                                                ? "bg-pill-external-fg"
+                                                                ? "bg-nordiska-orange"
                                                                 : "bg-nordiska-blue"
                                                         }`}
                                                     />
@@ -356,7 +356,7 @@ export default function TransferPage() {
                                                               "page-transfer.kind-internal",
                                                           )}
                                                 </span>
-                                                <span className="text-xs text-meta">
+                                                <span className="text-xs text-secondary">
                                                     {isExternal
                                                         ? t(
                                                               "page-transfer.kind-external-help",
@@ -406,7 +406,7 @@ export default function TransferPage() {
                                             {formatSek(afterBalance)} sek
                                         </strong>
                                     </p>
-                                    <div className="mt-3.5 border-l-2 border-border-light pl-3 text-xs text-muted">
+                                    <div className="mt-3.5 border-l-2 border-[#E5EAF0] pl-3 text-xs text-secondary">
                                         {t("page-transfer.reserved-notice")}
                                     </div>
                                 </div>
@@ -461,7 +461,7 @@ export default function TransferPage() {
                                     >
                                         {t("page-transfer.cta-submit")}
                                     </button>
-                                    <span className="text-sm text-meta">
+                                    <span className="text-sm text-secondary">
                                         {ctaHint}
                                     </span>
                                 </div>
@@ -486,7 +486,7 @@ export default function TransferPage() {
                     )}
                 </div>
 
-                <div className="border-l border-border-light px-10 pt-8 pb-10">
+                <div className="border-l border-[#E5EAF0] px-10 pt-8 pb-10">
                     <Table tableType="planned" handleClick={() => {}}>
                         {plannedTransfers.map((planned, index) => (
                             <TableRow
@@ -500,7 +500,7 @@ export default function TransferPage() {
                             />
                         ))}
                     </Table>
-                    <p className="mt-5.5 max-w-[42ch] text-xs text-muted">
+                    <p className="mt-5.5 max-w-[42ch] text-xs text-secondary">
                         {t("page-transfer.planned.footnote")}
                     </p>
                 </div>

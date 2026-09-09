@@ -26,7 +26,7 @@ export default function BankIdConfirm({
     const { t } = useTranslation();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-navy/45 p-10">
             <div className="animate-rise w-[480px] rounded-xl bg-white p-8 shadow-modal">
                 <h3 className="m-0 text-[22px] font-semibold text-dark-navy">
                     {t("page-transfer.bankid.heading")}
@@ -35,31 +35,31 @@ export default function BankIdConfirm({
                     {t("page-transfer.bankid.help-text")}
                 </p>
 
-                <div className="flex flex-col gap-3 rounded-lg border border-border-light px-5 py-4.5">
+                <div className="flex flex-col gap-3 rounded-lg border border-[#E5EAF0] px-5 py-4.5">
                     <div className="flex justify-between gap-4">
-                        <span className="text-sm text-meta">
+                        <span className="text-sm text-secondary">
                             {t("page-transfer.bankid.amount")}
                         </span>
                         <span className="text-xl font-bold text-dark-navy">
                             {amountFormatted} sek
                         </span>
                     </div>
-                    <div className="h-px bg-hairline" />
+                    <div className="h-px bg-[#EEF1F4]" />
                     <div className="flex justify-between gap-4">
-                        <span className="text-sm text-meta">
+                        <span className="text-sm text-secondary">
                             {t("generic.to")}
                         </span>
                         <span className="text-right">
                             <span className="block text-[15px] font-bold text-dark-navy">
                                 {toName}
                             </span>
-                            <span className="block text-sm text-meta">
+                            <span className="block text-sm text-secondary">
                                 {toMeta}
                             </span>
                         </span>
                     </div>
                     <div className="flex justify-between gap-4">
-                        <span className="text-sm text-meta">
+                        <span className="text-sm text-secondary">
                             {t("generic.from")}
                         </span>
                         <span className="text-[15px] font-bold text-dark-navy">
@@ -67,7 +67,7 @@ export default function BankIdConfirm({
                         </span>
                     </div>
                     <div className="flex justify-between gap-4">
-                        <span className="text-sm text-meta">
+                        <span className="text-sm text-secondary">
                             {t("generic.date")}
                         </span>
                         <span className="text-[15px] font-bold text-dark-navy">

@@ -36,7 +36,7 @@ export default function InputField({
                     {capitalize(label)} {required && <span className="text-red-600 font-light"> *</span>}
                 </label>
                 {error && (
-                    <span className="text-sm text-error">{capitalize(error)}</span>
+                    <span className="text-sm text-[#C4291C]">{capitalize(error)}</span>
                 )}
             </div>
 
@@ -49,10 +49,10 @@ export default function InputField({
                     value = {value}
                     required = {required}
                     onChange={(e) => onChange(e.target.value)}
-                    className={`w-full rounded-md border ${error ? "border-error" : "border-nordiska-blue"} px-3 py-2 ${suffix ? "pr-12" : ""} placeholder:text-gray-400`}
+                    className={`w-full rounded-md border ${error ? "border-[#C4291C]" : "border-nordiska-blue"} px-3 py-2 ${suffix ? "pr-12" : ""} placeholder:text-gray-400`}
                     />
                 {suffix && (
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-meta">
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-secondary">
                         {suffix}
                     </span>
                 )}
