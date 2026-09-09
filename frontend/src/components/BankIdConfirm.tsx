@@ -47,7 +47,7 @@ export default function BankIdConfirm({
                     <div className="h-px bg-hairline" />
                     <div className="flex justify-between gap-4">
                         <span className="text-sm text-meta">
-                            {t("page-transfer.bankid.to")}
+                            {t("generic.to")}
                         </span>
                         <span className="text-right">
                             <span className="block text-[15px] font-bold text-dark-navy">
@@ -60,7 +60,7 @@ export default function BankIdConfirm({
                     </div>
                     <div className="flex justify-between gap-4">
                         <span className="text-sm text-meta">
-                            {t("page-transfer.bankid.from")}
+                            {t("generic.from")}
                         </span>
                         <span className="text-[15px] font-bold text-dark-navy">
                             {fromName}
@@ -68,7 +68,7 @@ export default function BankIdConfirm({
                     </div>
                     <div className="flex justify-between gap-4">
                         <span className="text-sm text-meta">
-                            {t("page-transfer.bankid.date")}
+                            {t("generic.date")}
                         </span>
                         <span className="text-[15px] font-bold text-dark-navy">
                             {date}

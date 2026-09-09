@@ -55,7 +55,7 @@ export default function TransferDone({
             <div className="mt-8 flex max-w-[520px] items-center gap-4">
                 <div className="flex-1 rounded-lg border border-border-light bg-white px-4 py-3.5">
                     <div className="text-xs tracking-[0.08em] text-meta uppercase">
-                        {t("page-transfer.done.from")}
+                        {t("generic.from")}
                     </div>
                     <div className="text-[15px] font-bold text-dark-navy">
                         {fromName}
@@ -66,7 +66,7 @@ export default function TransferDone({
                 </div>
                 <div className="flex-1 rounded-lg border border-border-light bg-white px-4 py-3.5">
                     <div className="text-xs tracking-[0.08em] text-meta uppercase">
-                        {t("page-transfer.done.to")}
+                        {t("generic.to")}
                     </div>
                     <div className="text-[15px] font-bold text-dark-navy">
                         {toName}

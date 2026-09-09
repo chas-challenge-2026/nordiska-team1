@@ -6,6 +6,10 @@
     "handle": "Hantera",
     "show-all": "Visa alla",
     "add": "Lägg till",
+    "close": "Stäng",
+    "to": "Till",
+    "from": "Från",
+    "date": "Datum",
 
     "account": "Konto",
     "savings-account": "Sparkonto",
@@ -73,8 +77,10 @@
   "page-transfer": {
     "heading": "Ny överföring",
     "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
-    "name-label": "Vad ska överföringen heta?",
+    "name-label": "Egen notis",
+    "name-label-recurring": "Namnge överföringen",
     "name-placeholder": "T.ex. Hyra september",
+    "default-name": "Överföring",
     "from-label": "Från vilket konto?",
     "to-label": "Vart ska pengarna?",
     "select": "Välj",
@@ -98,7 +104,7 @@
     "cta-submit": "Granska överföring",
     "cta-hint-external": "Du signerar med BankID i nästa steg.",
     "cta-hint-internal": "Du får granska innan den genomförs.",
-    "cta-hint-incomplete": "Fyll i namn, konton och belopp.",
+    "cta-hint-incomplete": "Fyll i konton och belopp.",
 
     "add-account": {
       "heading": "Lägg till nytt konto",
@@ -118,7 +124,6 @@
     "modal": {
       "from-title": "Från vilket konto?",
       "to-title": "Vart ska pengarna?",
-      "close": "Stäng",
       "search-placeholder": "Sök på namn",
       "group-own": "Mina konton",
       "group-favorites": "Favoriter / Senaste",
@@ -132,9 +137,6 @@
       "heading": "Godkänn överföringen",
       "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
       "amount": "Belopp",
-      "to": "Till",
-      "from": "Från",
-      "date": "Datum",
       "approve": "Godkänn med BankID"
     },
 
@@ -142,8 +144,6 @@
       "heading": "Överföringen är genomförd",
       "summary": "{{amount}} sek till {{name}} · {{date}}",
       "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
-      "from": "Från",
-      "to": "Till",
       "new-transfer": "Ny överföring"
     },
 

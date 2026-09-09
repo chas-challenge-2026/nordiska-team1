@@ -50,7 +50,7 @@ export default function AccountPickerModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            aria-label={t("page-transfer.modal.close")}
+                            aria-label={t("generic.close")}
                             className="cursor-pointer border-0 bg-none px-2 py-1 text-2xl leading-none text-meta"
                         >
                             ×

@@ -130,12 +130,7 @@ export default function TransferPage() {
               )
             : 0;
 
-    const canSubmit =
-        !!name.trim() &&
-        !!fromAccount &&
-        !!toAccount &&
-        amountValue > 0 &&
-        !over;
+    const canSubmit = !!fromAccount && !!toAccount && amountValue > 0 && !over;
 
     const ctaHint = canSubmit
         ? isExternal
@@ -262,8 +257,9 @@ export default function TransferPage() {
             : toAccount.own
               ? t("page-transfer.planned.note-internal")
               : t("page-transfer.planned.note-to", { name: toAccount.name });
+        const transferName = name.trim() || t("page-transfer.default-name");
         setPlannedTransfers((prev) => [
-            { date, name, note, sum: amountValue },
+            { date, name: transferName, note, sum: amountValue },
             ...prev,
         ]);
     };
@@ -305,17 +301,6 @@ export default function TransferPage() {
                             </p>
 
                             <div className="flex flex-col gap-5.5">
-                                <InputField
-                                    name="transferName"
-                                    type="text"
-                                    label={t("page-transfer.name-label")}
-                                    placeholder={t(
-                                        "page-transfer.name-placeholder",
-                                    )}
-                                    value={name}
-                                    onChange={setName}
-                                />
-
                                 <div className="grid grid-cols-2 gap-5">
                                     <AccountTriggerButton
                                         label={t("page-transfer.from-label")}
@@ -467,6 +452,21 @@ export default function TransferPage() {
                                         {t("page-transfer.recurring-label")}
                                     </label>
                                 </div>
+
+                                <InputField
+                                    name="transferName"
+                                    type="text"
+                                    label={t(
+                                        recurring
+                                            ? "page-transfer.name-label-recurring"
+                                            : "page-transfer.name-label",
+                                    )}
+                                    placeholder={t(
+                                        "page-transfer.name-placeholder",
+                                    )}
+                                    value={name}
+                                    onChange={setName}
+                                />
 
                                 <div className="flex items-center gap-4.5 pt-1.5">
                                     <button
