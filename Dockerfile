@@ -9,7 +9,7 @@ COPY frontend/package*.json ./
 RUN npm install
 
 COPY frontend/ ./
-RUN npm run build
+RUN VITE_API_BASE_URL=/api npm run build
 
 # Stage 2: Build .NET 8 Web API
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-builder
