@@ -77,6 +77,10 @@ jobs:
 
       - name: Run Unit and Integration Tests
         run: dotnet test backend/np.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx"
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          Jwt__SecretKey: "ci_testing_super_secret_jwt_key_that_is_long_enough_12345"
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgres"
 
   # Smoke test production container build
   docker-build-check:

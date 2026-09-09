@@ -63,7 +63,8 @@ public static class PostgreSqlExtensions
             connectionStringName);
 
         var connectionString =
-            configuration.GetConnectionString(connectionStringName);
+            configuration.GetConnectionString(connectionStringName)
+            ?? configuration.GetConnectionString("DefaultConnection");
 
         return !string.IsNullOrWhiteSpace(connectionString)
             ? connectionString
