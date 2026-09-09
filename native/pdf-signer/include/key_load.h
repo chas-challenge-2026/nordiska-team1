@@ -81,7 +81,7 @@ typedef struct {
   const char *pkcs11_provider_name; // NULL may be used to select module default
                                     // provider
   const char *pkcs11_module_path;
-  bool pkcs11_no_deinit;
+  bool pkcs11_no_deinit; // Temporary workaround for SoftHSM keys
 } key_loader_config_t;
 
 /*

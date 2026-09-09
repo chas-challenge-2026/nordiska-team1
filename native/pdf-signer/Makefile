@@ -24,7 +24,7 @@ test-unit: $(UNIT_BIN)
 	./$(UNIT_BIN)
 
 test-pkcs11: $(PKCS11_BIN)
-	./$(PKCS11_BIN)
+	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(PKCS11_BIN)
 
 clean:
 	rm -f $(UNIT_BIN) $(PKCS11_BIN)
