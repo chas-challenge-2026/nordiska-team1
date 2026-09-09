@@ -20,8 +20,8 @@ export default function TransactionsPage() {
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
 
     return (
-        <div className='flex gap-8 w-screen p-6 font-montserrat'>
-            <TransactionFilter onChange={setFilters} />
+        <div className='flex gap-8 w-screen max-h-screen p-6 font-montserrat'>
+            <TransactionFilter onChange={setFilters} onReset={() => setFilters(initialFilters)} />
 
             <TransactionTable
                 selectedAccountIds={selectedAccountIds}

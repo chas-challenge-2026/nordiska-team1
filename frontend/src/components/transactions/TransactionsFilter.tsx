@@ -11,6 +11,7 @@ export interface TransactionFilters {
 
 interface TransactionFilterProps {
     onChange: (filters: TransactionFilters) => void;
+    onReset: () => void;
 }
 
 const initialFilters: TransactionFilters = {
@@ -21,7 +22,7 @@ const initialFilters: TransactionFilters = {
     onlyWithdrawals: false,
 };
 
-export default function TransactionFilter({ onChange }: TransactionFilterProps) {
+export default function TransactionFilter({ onChange, onReset }: TransactionFilterProps) {
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const { t } = useTranslation();
 
@@ -33,13 +34,14 @@ export default function TransactionFilter({ onChange }: TransactionFilterProps) 
 
     function resetFilter() {
         setFilters(initialFilters);
+        onReset();
     }
 
     return (
         <div className="bg-white p-4">
             <h3 className="font-semibold text-sm mb-3 border-b-1 border-nordiska-orange">{t("generic.filter")}</h3>
 
-            <label className="block text-xs text-gray-500 mb-1">{t("transactions-route.search")}</label>
+            <label className="block text-xs text-secondary mb-1">{t("transactions-route.search")}</label>
             <input
                 type="text"
                 value={filters.search}
@@ -49,7 +51,7 @@ export default function TransactionFilter({ onChange }: TransactionFilterProps) 
 
             <div className="flex flex-col gap-2 mb-4">
                 <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">{t("transactions-route.from")}</label>
+                    <label className="block text-xs text-secondary mb-1">{t("transactions-route.from")}</label>
                     <input
                         type="date"
                         value={filters.dateFrom}
@@ -58,7 +60,7 @@ export default function TransactionFilter({ onChange }: TransactionFilterProps) 
                     />
                 </div>
                 <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">{t("transactions-route.to")}</label>
+                    <label className="block text-xs text-secondary mb-1">{t("transactions-route.to")}</label>
                     <input
                         type="date"
                         value={filters.dateTo}
@@ -70,7 +72,7 @@ export default function TransactionFilter({ onChange }: TransactionFilterProps) 
 
             <label className="flex items-center gap-2 text-sm mb-2">
                 <input
-                    type="radio"
+                    type="checkbox"
                     checked={filters.onlyDeposits}
                     onChange={e => update({ onlyDeposits: e.target.checked, onlyWithdrawals: false })}
                 />
@@ -79,14 +81,14 @@ export default function TransactionFilter({ onChange }: TransactionFilterProps) 
 
             <label className="flex items-center gap-2 text-sm">
                 <input
-                    type="radio"
+                    type="checkbox"
                     checked={filters.onlyWithdrawals}
                     onChange={e => update({ onlyWithdrawals: e.target.checked, onlyDeposits: false })}
                 />
                 {t("transactions-route.withdraws")}
             </label>
 
-            <button onClick={() => resetFilter()} className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-gray-50 mt-4">
+            <button onClick={() => resetFilter()} className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue mt-4 bg-primary-blue text-white font-semibold">
             {t("generic.reset")}
             </button>
         </div>

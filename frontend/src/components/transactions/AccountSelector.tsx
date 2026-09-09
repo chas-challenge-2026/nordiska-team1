@@ -26,7 +26,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange }: Acc
     return (
         <div className="bg-white p-4 w-64">
             <h3 className="font-semibold text-sm mb-1 border-b-1 border-nordiska-orange">{t("generic.account")}</h3>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-secondary mb-3">
                 {t("transactions-route.account-select")}
             </p>
 
@@ -48,7 +48,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange }: Acc
                             <span>
                                 {acc.name}
                                 <br />
-                                <span className="text-gray-500">
+                                <span className="text-secondary">
                                     {acc.balance.toLocaleString('sv-SE', { minimumFractionDigits: 2 })} sek
                                 </span>
                             </span>
@@ -57,10 +57,10 @@ export default function AccountSelector({ accounts, selectedIds, onChange }: Acc
                 ))}
             </ul>
 
-            <p className="text-xs text-gray-500 mt-4 mb-2">
+            <p className="text-xs text-secondary mt-4 mb-2">
                 {t("transactions-route.tax-info")}
             </p>
-            <button className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-gray-50">
+            <button className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue bg-primary-blue text-white font-semibold">
                 {t("transactions-route.tax")}
             </button>
         </div>
