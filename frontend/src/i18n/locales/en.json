@@ -92,8 +92,6 @@
     "amount-placeholder": "0.00",
     "amount-suffix": "sek",
     "amount-error": "Amount exceeds the balance on {{account}}",
-    "balance-after": "Balance after transfer:",
-    "reserved-notice": "Future messages about limits and fees will appear here.",
     "date-label": "Transfer date",
     "recurring-label": "Recurring every month",
     "cta-submit-internal": "Confirm transfer",
@@ -124,7 +122,8 @@
       "group-bg": "BG/PG",
       "group-bank": "Bank account",
       "empty": "No accounts match your search.",
-      "add-new": "+ Add new account"
+      "add-new": "+ Add new account",
+      "available-balance": "{{amount}} sek available"
     },
 
     "bankid": {

@@ -128,7 +128,6 @@ export default function TransferPage() {
 
     const amountValue = parseAmount(amount);
     const over = !!fromAccount && amountValue > fromAccount.balance;
-    const afterBalance = fromAccount ? fromAccount.balance - amountValue : 0;
     const isExternal = !!toAccount && !toAccount.own;
 
     const canSubmit = !!fromAccount && !!toAccount && amountValue > 0 && !over;
@@ -166,13 +165,26 @@ export default function TransferPage() {
                     selected: a.id === selectedId,
                 }));
 
+        const wrapFrom = (accounts: typeof OWN_ACCOUNTS) =>
+            accounts
+                .filter((a) => matchesSearch(a, query))
+                .map((a) => ({
+                    id: a.id,
+                    name: a.name,
+                    meta: a.meta,
+                    balance: t("page-transfer.modal.available-balance", {
+                        amount: formatSek(a.balance),
+                    }),
+                    selected: a.id === selectedId,
+                }));
+
         let groups: AccountPickerGroup[] = [];
 
         if (modal === "from") {
             groups = [
                 {
                     title: t("page-transfer.modal.group-own"),
-                    items: wrap(OWN_ACCOUNTS),
+                    items: wrapFrom(OWN_ACCOUNTS),
                 },
             ];
         } else if (modal === "to") {
@@ -397,15 +409,6 @@ export default function TransferPage() {
                                                 : undefined
                                         }
                                     />
-                                    <p className="mt-2 text-sm text-secondary">
-                                        {t("page-transfer.balance-after")}{" "}
-                                        <strong className="text-dark-navy">
-                                            {formatSek(afterBalance)} sek
-                                        </strong>
-                                    </p>
-                                    <div className="mt-3.5 border-l-2 border-[#E5EAF0] pl-3 text-xs text-secondary">
-                                        {t("page-transfer.reserved-notice")}
-                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 items-end gap-5">

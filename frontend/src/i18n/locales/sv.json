@@ -92,8 +92,6 @@
     "amount-placeholder": "0,00",
     "amount-suffix": "sek",
     "amount-error": "Belopp överstiger saldo på {{account}}",
-    "balance-after": "Saldo efter överföring:",
-    "reserved-notice": "Här visas framtida meddelanden om gränser och avgifter.",
     "date-label": "Överföringsdatum",
     "recurring-label": "Återkommande varje månad",
     "cta-submit-internal": "Bekräfta överföring",
@@ -124,7 +122,8 @@
       "group-bg": "BG/PG",
       "group-bank": "Bankkonto",
       "empty": "Inga konton matchar din sökning.",
-      "add-new": "+ Lägg till nytt konto"
+      "add-new": "+ Lägg till nytt konto",
+      "available-balance": "{{amount}} sek tillgängligt"
     },
 
     "bankid": {

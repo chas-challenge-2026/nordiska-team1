@@ -4,6 +4,7 @@ export type AccountPickerItem = {
     id: string;
     name: string;
     meta: string;
+    balance?: string;
     selected: boolean;
 };
 
@@ -98,6 +99,11 @@ export default function AccountPickerModal({
                                     <span className="block text-[15px] font-bold text-dark-navy">
                                         {item.name}
                                     </span>
+                                    {item.balance && (
+                                        <span className="mt-0.5 block text-[13px] text-secondary">
+                                            {item.balance}
+                                        </span>
+                                    )}
                                     <span className="mt-0.5 block text-[13px] text-secondary">
                                         {item.meta}
                                     </span>
