@@ -2,6 +2,7 @@ import PageLink from "./PageLink";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import LogoutButton from "./LogoutButton";
+import winterForrestImg from "../assets/img/winter_forrest.webp";
 
 type PageHeaderProps = {
     navLinks?: boolean;
@@ -30,7 +31,10 @@ export default function PageHeader({ navLinks = true, login = false, fixedPos = 
     }, []);
 
     return (
-        <header className={`${fixedPos ? "fixed top-0 z-[1001]" : ""} w-screen h-[100px] flex items-end justify-between ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-10 pb-5`}>
+        <header 
+            className={`${fixedPos ? "fixed top-0 z-[1001]" : ""} w-screen h-[100px] flex items-end justify-between ${login ? "bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-10 pb-5`}
+            style={login ? { backgroundImage: `url(${winterForrestImg})` } : undefined}
+        >
 
             {/* LOGO */}
             <a

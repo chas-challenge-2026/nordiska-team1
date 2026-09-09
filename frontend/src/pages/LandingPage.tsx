@@ -1,6 +1,7 @@
 import PageHeader from '../components/PageHeader';
 import { useTranslation } from 'react-i18next';
 import { Link } from "react-router";
+import mountainViewImg from '../assets/img/mountain_view.webp';
 
 type pageProps = {
     inactive?: boolean
@@ -12,7 +13,10 @@ export default function LandingPage({ inactive = false }: pageProps) {
 
     return (
         <div className='fixed z-[-2] bg-nordiska-blue'>
-            <div className='fixed z-[-1] bg-[url("src/assets/img/mountain_view.webp")] bg-cover bg-center h-[100vh] w-[100vw] opacity-65'>
+            <div 
+                className='fixed z-[-1] bg-cover bg-center h-[100vh] w-[100vw] opacity-65'
+                style={{ backgroundImage: `url(${mountainViewImg})` }}
+            >
             </div>
             <PageHeader navLinks={false} fixedPos />
             <div className='flex items-center h-[100vh] w-[100vw]'>
