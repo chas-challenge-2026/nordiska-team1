@@ -25,7 +25,7 @@ type AccountPickerModalProps = {
 
 /**
  * Innehållet i kontoväljar-modalen (renderas inuti `Modal`). Listan grupperas
- * av föräldern (t.ex. Favoriter/Senaste, Mina konton, BG/PG, Bankkonto).
+ * av föräldern (t.ex. Favoriter, Mina konton, BG/PG, Bankkonto).
  * "Lägg till nytt konto" visas bara när `onAddNew` skickas in (dvs. inte i
  * "Från"-vyn, där det inte är meningsfullt att lägga till ett externt konto).
  */
