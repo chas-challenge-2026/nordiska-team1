@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
@@ -192,6 +193,27 @@ builder.Services.AddCors(options =>
 builder.Services.AddErrorHandling();
 
 var app = builder.Build();
+
+// Automatic database migrations on startup (Banking, FAQ, Reporting)
+try
+{
+    using var scope = app.Services.CreateScope();
+
+    var bankingDb = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
+    await bankingDb.Database.MigrateAsync();
+
+    var faqDb = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+    await faqDb.Database.MigrateAsync();
+
+    var reportingDb = scope.ServiceProvider.GetRequiredService<ReportingDbContext>();
+    await reportingDb.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    // If the database is unreachable (e.g. during unit tests), log a warning
+    app.Logger.LogWarning(ex, "Automatic database migration could not be completed at startup: {Message}", ex.Message);
+}
+
 //look out for the order of middleware, it matters.
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
@@ -200,6 +222,10 @@ app.UseHttpsRedirection();
 app.UseRouting();
 // Enable CORS middleware before Authentication and Authorization
 app.UseCors(StrictFrontendCorsPolicy);
+
+// Enable static files (for React frontend in wwwroot) and default files
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -236,6 +262,9 @@ if (app.Environment.IsDevelopment())
                 statusCode: StatusCodes.Status503ServiceUnavailable);
     });
 }
+
+// Fallback to React index.html for non-API client-side routes (SPA routing)
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
