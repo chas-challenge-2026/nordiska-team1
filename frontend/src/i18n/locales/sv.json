@@ -88,8 +88,6 @@
     "select-recipient-placeholder": "Välj mottagare",
     "from-meta-placeholder": "Bland dina egna konton",
     "to-meta-placeholder": "Egna konton, BG/PG eller bankkonto",
-    "kind-internal": "Internt",
-    "kind-external": "Externt",
     "amount-label": "Summa",
     "amount-placeholder": "0,00",
     "amount-suffix": "sek",
@@ -100,7 +98,6 @@
     "recurring-label": "Återkommande varje månad",
     "cta-submit-internal": "Bekräfta överföring",
     "cta-submit-external": "Bekräfta med BankID",
-    "cta-hint-external": "Du signerar med BankID i nästa steg.",
     "cta-hint-incomplete": "Fyll i konton och belopp.",
 
     "add-account": {

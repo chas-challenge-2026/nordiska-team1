@@ -88,8 +88,6 @@
     "select-recipient-placeholder": "Select recipient",
     "from-meta-placeholder": "Among your own accounts",
     "to-meta-placeholder": "Own accounts, BG/PG or bank account",
-    "kind-internal": "Internal",
-    "kind-external": "External",
     "amount-label": "Amount",
     "amount-placeholder": "0.00",
     "amount-suffix": "sek",
@@ -100,7 +98,6 @@
     "recurring-label": "Recurring every month",
     "cta-submit-internal": "Confirm transfer",
     "cta-submit-external": "Confirm with BankID",
-    "cta-hint-external": "You'll sign with BankID in the next step.",
     "cta-hint-incomplete": "Fill in accounts and amount.",
 
     "add-account": {
