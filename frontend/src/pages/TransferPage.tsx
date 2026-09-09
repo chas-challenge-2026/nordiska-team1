@@ -498,17 +498,19 @@ export default function TransferPage() {
 
                 <div className="border-l border-[#E5EAF0] px-10 pt-8 pb-10">
                     <Table tableType="planned" handleClick={() => {}}>
-                        {upcomingTransfers.map((planned, index) => (
-                            <TableRow
-                                key={`${planned.date}-${index}`}
-                                id={`${planned.date}-${index}`}
-                                rowType="planned"
-                                plannedDate={planned.date}
-                                plannedName={planned.name}
-                                plannedNote={planned.note}
-                                plannedSum={planned.sum}
-                            />
-                        ))}
+                        <div className="max-h-[420px] overflow-y-auto">
+                            {upcomingTransfers.map((planned, index) => (
+                                <TableRow
+                                    key={`${planned.date}-${index}`}
+                                    id={`${planned.date}-${index}`}
+                                    rowType="planned"
+                                    plannedDate={planned.date}
+                                    plannedName={planned.name}
+                                    plannedNote={planned.note}
+                                    plannedSum={planned.sum}
+                                />
+                            ))}
+                        </div>
                     </Table>
                     <p className="mt-5.5 max-w-[42ch] text-xs text-secondary">
                         {t("page-transfer.planned.footnote")}
