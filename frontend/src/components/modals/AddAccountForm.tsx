@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { useTranslation } from "react-i18next";
-import InputField from "./InputField";
-import { CollapsibleFormBtns } from "./Buttons";
+import InputField from "../InputField";
+import { CollapsibleFormBtns } from "../Buttons";
 
 export type NewAccountValues = {
     type: string;
@@ -17,13 +17,11 @@ type AddAccountFormProps = {
 };
 
 /**
- * Ersätter överföringsformuläret i vänsterkolumnen när användaren lägger
- * till ett nytt mottagarkonto från kontoväljar-modalen.
+ * Innehållet i "lägg till nytt konto"-vyn (renderas inuti `Modal`, i samma
+ * modal som kontoväljaren). `onCancel` går tillbaka till kontolistan i
+ * samma modal — den stänger inte modalen.
  */
-export default function AddAccountForm({
-    onCancel,
-    onSave,
-}: AddAccountFormProps) {
+export default function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
     const { t } = useTranslation();
     const [type, setType] = useState("");
     const [clearing, setClearing] = useState("");
@@ -36,20 +34,20 @@ export default function AddAccountForm({
     };
 
     return (
-        <div className="animate-rise">
-            <div className="flex items-end justify-between border-b-[3px] border-nordiska-orange pb-2.5">
-                <h2 className="m-0 text-[26px] font-semibold text-dark-navy">
+        <>
+            <div className="border-b border-[#E5EAF0] px-7 py-6 pb-[18px]">
+                <h3 className="m-0 text-xl font-semibold text-dark-navy">
                     {t("page-transfer.add-account.heading")}
-                </h2>
+                </h3>
             </div>
-            <p className="mt-3.5 mb-6.5 text-sm text-secondary">
-                {t("page-transfer.add-account.help-text")}
-            </p>
 
             <form
                 onSubmit={handleSubmit}
-                className="flex max-w-[460px] flex-col gap-5"
+                className="flex flex-1 flex-col gap-5 overflow-y-auto px-7 py-6"
             >
+                <p className="m-0 text-sm text-secondary">
+                    {t("page-transfer.add-account.help-text")}
+                </p>
                 <InputField
                     name="newAccountType"
                     type="text"
@@ -93,6 +91,6 @@ export default function AddAccountForm({
 
                 <CollapsibleFormBtns onClose={onCancel} />
             </form>
-        </div>
+        </>
     );
 }

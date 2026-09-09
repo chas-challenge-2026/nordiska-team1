@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next";
 import Table from "../components/Table";
 import TableRow from "../components/TableRow";
 import InputField from "../components/InputField";
-import AccountPickerModal from "../components/AccountPickerModal";
-import type { AccountPickerGroup } from "../components/AccountPickerModal";
-import AddAccountForm from "../components/AddAccountForm";
-import type { NewAccountValues } from "../components/AddAccountForm";
-import BankIdConfirm from "../components/BankIdConfirm";
+import Modal from "../components/modals/Modal";
+import AccountPickerModal from "../components/modals/AccountPickerModal";
+import type { AccountPickerGroup } from "../components/modals/AccountPickerModal";
+import AddAccountForm from "../components/modals/AddAccountForm";
+import type { NewAccountValues } from "../components/modals/AddAccountForm";
+import BankIdConfirm from "../components/modals/BankIdConfirm";
 import TransferDone from "../components/TransferDone";
 import {
     OWN_ACCOUNTS,
@@ -23,7 +24,7 @@ import type {
 } from "../constants/transferAccounts";
 
 type ModalKind = "from" | "to" | null;
-type Step = "form" | "add" | "bankid" | "done";
+type Step = "form" | "bankid" | "done";
 
 function formatSek(amount: number) {
     return amount.toLocaleString("sv-SE", {
@@ -98,6 +99,7 @@ export default function TransferPage() {
     const [recurring, setRecurring] = useState(false);
     const [modal, setModal] = useState<ModalKind>(null);
     const [search, setSearch] = useState("");
+    const [addAccountOpen, setAddAccountOpen] = useState(false);
     const [step, setStep] = useState<Step>("form");
     const [customs, setCustoms] = useState<Payee[]>([]);
     const [plannedTransfers, setPlannedTransfers] =
@@ -206,9 +208,14 @@ export default function TransferPage() {
         setSearch("");
     };
 
-    const handleOpenAdd = () => {
+    const handleCloseModal = () => {
         setModal(null);
-        setStep("add");
+        setSearch("");
+        setAddAccountOpen(false);
+    };
+
+    const handleOpenAdd = () => {
+        setAddAccountOpen(true);
     };
 
     const handleSaveAdd = (values: NewAccountValues) => {
@@ -234,7 +241,7 @@ export default function TransferPage() {
         };
         setCustoms((prev) => [...prev, account]);
         setToId(id);
-        setStep("form");
+        handleCloseModal();
     };
 
     const commitTransfer = () => {
@@ -269,14 +276,15 @@ export default function TransferPage() {
         setRecurring(false);
         setModal(null);
         setSearch("");
+        setAddAccountOpen(false);
         setStep("form");
     };
 
     return (
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3">
             <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] rounded-[10px] border border-[#E5EAF0] bg-white shadow-card">
                 <div className="px-10 pt-8 pb-10">
-                    {step === "form" && (
+                    {(step === "form" || step === "bankid") && (
                         <div>
                             <div className="flex items-end justify-between border-b-[3px] border-nordiska-orange pb-2.5">
                                 <h2 className="m-0 text-[26px] font-semibold text-dark-navy">
@@ -456,13 +464,6 @@ export default function TransferPage() {
                         </div>
                     )}
 
-                    {step === "add" && (
-                        <AddAccountForm
-                            onCancel={() => setStep("form")}
-                            onSave={handleSaveAdd}
-                        />
-                    )}
-
                     {step === "done" && (
                         <TransferDone
                             summaryLine={doneSummary}
@@ -494,38 +495,52 @@ export default function TransferPage() {
             </div>
 
             {modal !== null && (
-                <AccountPickerModal
-                    title={
-                        modal === "from"
-                            ? t("page-transfer.modal.from-title")
-                            : t("page-transfer.modal.to-title")
-                    }
-                    search={search}
-                    onSearchChange={setSearch}
-                    groups={groups}
-                    isEmpty={isEmpty}
-                    onSelect={handleSelectAccount}
-                    onClose={() => {
-                        setModal(null);
-                        setSearch("");
-                    }}
-                    onAddNew={handleOpenAdd}
-                />
+                <Modal
+                    onClose={handleCloseModal}
+                    widthClassName="w-[560px]"
+                    maxHeightClassName="max-h-[620px]"
+                >
+                    {addAccountOpen ? (
+                        <AddAccountForm
+                            onCancel={() => setAddAccountOpen(false)}
+                            onSave={handleSaveAdd}
+                        />
+                    ) : (
+                        <AccountPickerModal
+                            title={
+                                modal === "from"
+                                    ? t("page-transfer.modal.from-title")
+                                    : t("page-transfer.modal.to-title")
+                            }
+                            search={search}
+                            onSearchChange={setSearch}
+                            groups={groups}
+                            isEmpty={isEmpty}
+                            onSelect={handleSelectAccount}
+                            onClose={handleCloseModal}
+                            onAddNew={
+                                modal === "to" ? handleOpenAdd : undefined
+                            }
+                        />
+                    )}
+                </Modal>
             )}
 
             {step === "bankid" && toAccount && (
-                <BankIdConfirm
-                    amountFormatted={formatSek(amountValue)}
-                    toName={toAccount.name}
-                    toMeta={toAccount.meta}
-                    fromName={fromAccount ? fromAccount.name : ""}
-                    date={date}
-                    onApprove={() => {
-                        commitTransfer();
-                        setStep("done");
-                    }}
-                    onCancel={() => setStep("form")}
-                />
+                <Modal onClose={() => setStep("form")} widthClassName="w-[480px]">
+                    <BankIdConfirm
+                        amountFormatted={formatSek(amountValue)}
+                        toName={toAccount.name}
+                        toMeta={toAccount.meta}
+                        fromName={fromAccount ? fromAccount.name : ""}
+                        date={date}
+                        onApprove={() => {
+                            commitTransfer();
+                            setStep("done");
+                        }}
+                        onCancel={() => setStep("form")}
+                    />
+                </Modal>
             )}
         </div>
     );
