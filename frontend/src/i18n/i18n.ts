@@ -19,6 +19,12 @@ import en from "./locales/en.json";
  * 4. To add a new text, add the same key to BOTH language files:
  *    sv.json & en.json
  */
+// Håller <html lang> i synk med aktivt språk (WCAG 3.1.1) — annars läser
+// skärmläsare t.ex. svensk text med engelska uttalsregler efter språkbyte.
+i18n.on("languageChanged", (lng) => {
+    document.documentElement.lang = lng;
+});
+
 export default i18n
     .use(LanguageDetector)
     .use(initReactI18next)

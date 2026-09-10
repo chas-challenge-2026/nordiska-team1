@@ -31,6 +31,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+design_handoff_overforingar/
 
 # 4. OS & IDE Files
 .DS_Store

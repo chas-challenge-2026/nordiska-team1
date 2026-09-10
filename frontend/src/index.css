@@ -5,21 +5,69 @@
 @tailwind components;
 @tailwind utilities;
 
+
+/* fallback font that everything will default to if not explicitly overwritten */
+body {
+  font-family: var(--font-montserrat);
+}
+
 @theme {
   --color-dark-navy: #00102B;
   --color-primary-blue: #0052BD;
   --color-light-blue-accent: #88BCFF;
   --color-secondary: #515C6E;
+  --color-light-gray: #ECEBE9;
   --color-nordiska-blue: #134663;
   --color-nordiska-orange: #EDA91B;
+  --color-nordiska-orange-hover: #D9990F;
   --color-login-bg: #0F3644;
 
-  --font-montserrat-alternates: "Montserrat Alternates", sans-serif; 
-  --font-montserrat: "Montserrat", sans-serif; 
+  --shadow-card: 0 1px 3px rgb(0 16 43 / 0.08);
+  --shadow-modal: 0 24px 60px rgb(0 16 43 / 0.32);
+  --shadow-floating: 0 8px 20px rgb(0 16 43 / 0.22);
+
+  --font-montserrat-alternates: "Montserrat Alternates", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
   --animate-bounce-right: bounce-right 0.6s ease-in-out infinite;
+  --animate-rise: rise 0.25s ease-out both;
 }
+
+/*
+ * ring-draw, check-draw, x-draw och dot-travel används just nu bara av
+ * TransferDone.tsx. @keyframes måste ligga i en global stylesheet (det
+ * finns inget scopat CSS i det här projektet), men de registreras inte som
+ * delade --animate-*-tokens eftersom de inte är avsedda att återanvändas —
+ * TransferDone.tsx refererar dem direkt via Tailwinds arbiträra syntax.
+ */
 
 @keyframes bounce-right {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(6px); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ring-draw {
+  from { stroke-dashoffset: 214; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes check-draw {
+  from { stroke-dashoffset: 44; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes x-draw {
+  from { stroke-dashoffset: 64; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes dot-travel {
+  0% { transform: translateX(0); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(112px); opacity: 0; }
 }
