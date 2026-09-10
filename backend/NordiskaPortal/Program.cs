@@ -1,10 +1,7 @@
-using NordiskaPortal.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // TODO: should use env vars but hardcoding is fine for now
 builder.Services.AddRazorPages();
-builder.Services.AddSingleton<NativePdfGenerator>();
 
 builder.Services.AddSession(options =>
 {
