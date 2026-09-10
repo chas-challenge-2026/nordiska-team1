@@ -27,18 +27,8 @@ public sealed class CustomerConfiguration
             .IsRequired()
             .HasMaxLength(200);
 
-        builder.Property<string>("NormalizedEmail")
-            .HasMaxLength(254)
-            .HasComputedColumnSql(
-                "lower(btrim(\"Email\"))",
-                stored: true);
-
-        builder.HasIndex("NormalizedEmail")
-            .IsUnique()
-            .HasDatabaseName("UX_customers_NormalizedEmail");
-
         builder.Property(x => x.PasswordHash)
-            .IsRequired()
+            .IsRequired(false)
             .HasMaxLength(512);
 
         builder.Property(x => x.CreatedAt)

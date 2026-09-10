@@ -655,6 +655,7 @@
       "nordiska.modules.banking": {
         "type": "Project",
         "dependencies": {
+          "ActiveLogin.Authentication.BankId.AspNetCore": "[11.1.3, )",
           "FluentValidation": "[11.6.0, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[8.0.30, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )"

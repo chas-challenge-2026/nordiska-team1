@@ -2,82 +2,66 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Nordiska.FrontendApi.Authentication;
-using Nordiska.FrontendApi.Authentication.Jwt;
-using Nordiska.Modules.Banking.Domain;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.Modules.Banking.Application;
 
 namespace Nordiska.FrontendApi.Controllers;
 
-/// <summary>
-/// Authentication endpoints for local/demo login flows.
-/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IJwtProvider _jwtProvider;
-    private readonly JwtOptions _jwtOptions;
+    private readonly IAuthService _authService;
 
-    public AuthController(IJwtProvider jwtProvider, IOptions<JwtOptions> jwtOptions)
+    public AuthController(IAuthService authService)
     {
-        _jwtProvider = jwtProvider;
-        _jwtOptions = jwtOptions.Value;
+        _authService = authService;
     }
 
-    /// <summary>
-    /// Performs a demo login, sets an HTTP-only JWT cookie, and returns the authenticated user info.
-    /// </summary>
-    /// <param name="request">Login request containing email and password.</param>
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [HttpPost("bankid/initiate")]
+    public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
     {
-        if (request.Email == "anna@example.com" &&
-            request.Password == "password123")
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var result = await _authService.InitiateBankIdAsync(request, clientIp);
+
+        if (!result.IsSuccess)
         {
-            var customer = new Customer
-            {
-                Id = 1,
-                Email = "anna@example.com",
-                UserName = "anna@example.com",
-                Name = "Anna"
-            };
-
-            var token = await _jwtProvider.Generate(customer);
-            Response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-
-            return Ok(new
-            {
-                message = "Login successful",
-                customer = new { id = customer.Id, email = customer.Email, name = customer.Name }
-            });
+            return BadRequest(new { message = result.ErrorMessage });
         }
 
-        if (request.Email == "erik@example.com" &&
-            request.Password == "password123")
+        return Ok(result.InitiateData);
+    }
+
+    [HttpPost("bankid/collect")]
+    public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
+    {
+        var result = await _authService.CollectBankIdAsync(request, Response);
+
+        if (!result.IsSuccess)
         {
-            var customer = new Customer
-            {
-                Id = 2,
-                Email = "erik@example.com",
-                UserName = "erik@example.com",
-                Name = "Erik"
-            };
-
-            var token = await _jwtProvider.Generate(customer);
-            Response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-
-            return Ok(new
-            {
-                message = "Login successful",
-                customer = new { id = customer.Id, email = customer.Email, name = customer.Name }
-            });
+            return Unauthorized(new { message = result.ErrorMessage });
         }
 
-        return Unauthorized(new
+        return Ok(result.CollectData);
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestDto request)
+    {
+        var result = await _authService.RegisterCustomerAsync(request, Response);
+
+        if (!result.IsSuccess)
         {
-            Message = "Invalid email or password."
-        });
+            if (result.Errors != null)
+            {
+                return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
+            }
+
+            return BadRequest(new { message = result.ErrorMessage });
+        }
+
+        return Ok(new { token = result.Token });
     }
 
     /// <summary>
@@ -111,8 +95,3 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 }
-
-public record LoginRequest(
-    string Email,
-    string Password);
-
