@@ -36,7 +36,7 @@ export default function InputField({
                     {capitalize(label)} {required && <span className="text-red-600 font-light"> *</span>}
                 </label>
                 {error && (
-                    <span className="text-sm text-[#C4291C]">{capitalize(error)}</span>
+                    <span id={`${name}-error`} className="text-sm text-[#C4291C]">{capitalize(error)}</span>
                 )}
             </div>
 
@@ -49,6 +49,8 @@ export default function InputField({
                     value = {value}
                     required = {required}
                     onChange={(e) => onChange(e.target.value)}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? `${name}-error` : undefined}
                     className={`w-full rounded-md border ${error ? "border-[#C4291C]" : "border-nordiska-blue"} px-3 py-2 ${suffix ? "pr-12" : ""} placeholder:text-gray-400`}
                     />
                 {suffix && (

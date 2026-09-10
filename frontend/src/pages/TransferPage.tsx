@@ -521,6 +521,13 @@ export default function TransferPage() {
             {modal !== null && (
                 <Modal
                     onClose={handleCloseModal}
+                    title={
+                        addAccountOpen
+                            ? t("page-transfer.add-account.heading")
+                            : modal === "from"
+                              ? t("page-transfer.modal.from-title")
+                              : t("page-transfer.modal.to-title")
+                    }
                     widthClassName="w-[560px]"
                     maxHeightClassName="max-h-[620px]"
                 >
@@ -551,7 +558,11 @@ export default function TransferPage() {
             )}
 
             {step === "bankid" && toAccount && (
-                <Modal onClose={() => setStep("form")} widthClassName="w-[480px]">
+                <Modal
+                    onClose={() => setStep("form")}
+                    title={t("page-transfer.bankid.heading")}
+                    widthClassName="w-[480px]"
+                >
                     <BankIdConfirm
                         amountFormatted={formatSek(amountValue)}
                         toName={toAccount.name}

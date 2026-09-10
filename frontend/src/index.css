@@ -5,6 +5,8 @@
 @tailwind components;
 @tailwind utilities;
 
+
+/* fallback font that everything will default to if not explicitly overwritten */
 body {
   font-family: var(--font-montserrat);
 }

@@ -63,7 +63,7 @@ export default function AccountPickerModal({
                     value={search}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder={t("page-transfer.modal.search-placeholder")}
-                    className="mt-4 w-full rounded-md border border-[#C4CDD8] px-3 py-2.5 text-base text-dark-navy"
+                    className="mt-4 w-full rounded-md border border-[#7E8996] px-3 py-2.5 text-base text-dark-navy"
                 />
             </div>
 
@@ -84,7 +84,7 @@ export default function AccountPickerModal({
                                     className={`mt-0.5 flex h-4.5 w-4.5 flex-none items-center justify-center rounded-full border-2 ${
                                         item.selected
                                             ? "border-nordiska-blue"
-                                            : "border-[#C4CDD8]"
+                                            : "border-[#7E8996]"
                                     }`}
                                 >
                                     <span

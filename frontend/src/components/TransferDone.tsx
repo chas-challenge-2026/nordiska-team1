@@ -66,7 +66,13 @@ export default function TransferDone({
             {!isProcessing && (
                 <div className="animate-rise">
                     <div className="flex items-center gap-4">
-                        <svg width="56" height="56" viewBox="0 0 76 76" fill="none">
+                        <svg
+                            width="56"
+                            height="56"
+                            viewBox="0 0 76 76"
+                            fill="none"
+                            aria-hidden="true"
+                        >
                             <circle
                                 cx="38"
                                 cy="38"
