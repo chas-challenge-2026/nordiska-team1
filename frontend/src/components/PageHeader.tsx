@@ -2,22 +2,14 @@ import PageLink from "./PageLink";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import LogoutButton from "./LogoutButton";
+import { useLocation } from "react-router";
+import {motion} from "motion/react";
 
-type PageHeaderProps = {
-    navLinks?: boolean;
-    login?: boolean;
-    fixedPos?: boolean;
-};
-
-/**
- * Header för applikationen.
- * navLinks styr om navigationen visas.
- * login ändrar headerns styling för login-sidan.
- */
-export default function PageHeader({ navLinks = true, login = false, fixedPos = false }: PageHeaderProps) {
+export default function PageHeader() {
     const { i18n, t } = useTranslation();
     const [languageOpen, setLanguageOpen] = useState(false);
     const languageRef = useRef<HTMLDivElement>(null);
+    const location = useLocation();
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -29,15 +21,51 @@ export default function PageHeader({ navLinks = true, login = false, fixedPos = 
         return () => { document.removeEventListener("mousedown", handleClickOutside); };
     }, []);
 
+    const LARGE_HEADER_ROUTES = [
+        "/welcome",
+        "/inactive",
+        "/login",
+        "/logout",
+    ];
+
+    const isLargeHeader = LARGE_HEADER_ROUTES.includes(location.pathname);
+    const isLogin = location.pathname === "/login";
+
+    const headerHight = isLargeHeader ? "h-[150px]" : "h-[95px]";
+    const navLinks = !isLargeHeader;
+    const topPosition = isLargeHeader ? "fixed top-0" : "sticky top-0";
+    const languageSelect = isLargeHeader ? "top-[145px]" : "top-[90px]";
+    const logoSize = isLargeHeader ? "text-6xl" : "text-5xl";
+
+    const headerBackground = isLogin
+        ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center"
+        : "bg-nordiska-blue";
+
+    const languageSelectBg = isLogin ? "" : "bg-nordiska-blue";
+    const dotColor = isLogin ? "text-white" : "text-nordiska-orange";
+
+    const animateHeader = ["/welcome", "/inactive", "/login", "/logout",].includes(location.pathname);
+    // const animateHeader = ["/accounts", "/transactions", "/transfer",].includes(location.pathname);
+
     return (
-        <header className={`${fixedPos ? "fixed top-0 z-[1001]" : ""} w-screen h-[100px] flex items-end justify-between ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-10 pb-5`}>
+        <>
+        <motion.header 
+            key={location.pathname}
+            initial={animateHeader ? { y: "-100%" } : false}
+            animate={{ y: 0 }}
+            transition={{
+                duration: 0.5,
+                ease: "easeOut",
+            }}
+            className={`${topPosition} z-[1001] w-screen ${headerHight} flex items-end justify-between ${headerBackground}
+            ${location.pathname === "/login" ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-10 pb-5`}>
 
             {/* LOGO */}
             <a
                 href="/"
-                className="font-montserrat-alternates text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer"
+                className={`font-montserrat-alternates ${logoSize} text-white font-bold tracking-wider whitespace-nowrap cursor-pointer}`}
             >
-                nordiska<span className={login ? "text-white" : "text-nordiska-orange"}>.</span>
+                nordiska<span className={dotColor}>.</span>
             </a>
 
             <div className="flex gap-15">
@@ -59,19 +87,19 @@ export default function PageHeader({ navLinks = true, login = false, fixedPos = 
                         <img
                             className="h-[19px] w-[24px] invert"
                             src="icons/lang-icon.svg"
-                            alt=""
+                            alt="globe icon"
                         />
                         {i18n.language}
                     </button>
 
                     {languageOpen && (
-                        <div className={`fixed top-[90px] w-35 h-15 flex items-center justify-center right-0 ${login ? "" : "bg-nordiska-blue"} rounded-bl-2xl font-regular`}>
+                        <div className={`fixed ${languageSelect}  w-35 h-17 flex items-center justify-center right-0 ${languageSelectBg} rounded-bl-2xl font-regular`}>
                             <button
                                 onClick={() => {
                                     i18n.changeLanguage(i18n.language === "sv" ? "en" : "sv");
                                     setLanguageOpen(false);
                                 }}
-                                className=" px-3 py-2 uppercase font-montserrat tracking-[0.18em] text-white cursor-pointer"
+                                className=" px-3 py-2 ml-[7px] uppercase font-montserrat tracking-[0.18em] text-white cursor-pointer"
                             >
                                 {i18n.language === "sv" ? "English" : "Svenska"}
                             </button>
@@ -79,6 +107,7 @@ export default function PageHeader({ navLinks = true, login = false, fixedPos = 
                     )}
                 </div>
             </div>
-        </header>
+        </motion.header>
+        </>
     )
 }
