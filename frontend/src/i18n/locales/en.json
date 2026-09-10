@@ -10,10 +10,16 @@
     "to": "To",
     "from": "From",
     "date": "Date",
+    "reset": "Reset",
 
     "account": "Account",
     "savings-account": "Savings account",
-    "interest": "Interest"
+    "interest": "Interest",
+    "filter": "Filter",
+
+    "showing": "Showing",
+    "of": "of",
+    "transactions": "transactions"
   },
   "errors": {
     "loading": "Something went wrong while loading the data."
@@ -28,6 +34,20 @@
     "title": "You have been logged out",
     "paragraph": "Due to inactivity, you have been logged out for security reasons.",
     "button": "Log in again"
+  },
+  "transactions-route": {
+      "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
+      "all-accounts": "All accounts",
+      "tax-info": "Download tax information for the accounts selected above.",
+      "tax": "Download",
+      "search": "Search transactions",
+      "from": "From date",
+      "to": "To date",
+      "deposites": "Deposites only",
+      "withdraws": "Withdraws only",
+      "transactions": "Latest transactions",
+      "all-transactions": "Show more transactions",
+      "less-transactions": "Show fewer transactions"
   },
   "login-route": {
     "title": "Log in",

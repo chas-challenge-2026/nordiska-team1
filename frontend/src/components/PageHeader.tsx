@@ -1,6 +1,7 @@
 import PageLink from "./PageLink";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
+import LogoutButton from "./LogoutButton";
 
 type PageHeaderProps = {
     navLinks?: boolean;
@@ -13,8 +14,8 @@ type PageHeaderProps = {
  * navLinks styr om navigationen visas.
  * login ändrar headerns styling för login-sidan.
  */
-export default function PageHeader({navLinks = true, login = false, fixedPos = false}: PageHeaderProps) {
-    const {i18n, t} = useTranslation();
+export default function PageHeader({ navLinks = true, login = false, fixedPos = false }: PageHeaderProps) {
+    const { i18n, t } = useTranslation();
     const [languageOpen, setLanguageOpen] = useState(false);
     const languageRef = useRef<HTMLDivElement>(null);
 
@@ -25,27 +26,27 @@ export default function PageHeader({navLinks = true, login = false, fixedPos = f
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {document.removeEventListener("mousedown", handleClickOutside);};
+        return () => { document.removeEventListener("mousedown", handleClickOutside); };
     }, []);
 
     return (
         <header className={`${fixedPos ? "fixed top-0 z-[1001]" : ""} w-screen h-[100px] flex items-end justify-between ${login ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-10 pb-5`}>
-            
+
             {/* LOGO */}
             <a
                 href="/"
                 className="font-montserrat-alternates text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer"
             >
-                nordiska<span className={login ? "text-white": "text-nordiska-orange"}>.</span>
+                nordiska<span className={login ? "text-white" : "text-nordiska-orange"}>.</span>
             </a>
 
             <div className="flex gap-15">
                 {/* NAVIGATION */}
                 {navLinks && (
                     <nav className="flex gap-10 text-white uppercase tracking-[0.18em]">
-                        <PageLink title={t("page-header.help-center")} route="/help"/>
+                        <PageLink title={t("page-header.help-center")} route="/help" />
                         <PageLink title={t("page-header.settings")} route="/settings" />
-                        <PageLink title={t("page-header.logout")} route="/logout" />
+                        <LogoutButton title={t("page-header.logout")} />
                     </nav>
                 )}
 

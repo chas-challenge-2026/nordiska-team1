@@ -11,6 +11,7 @@ import PageNotFound from "../pages/PageNotFound";
 import DesktopLayout from "../layouts/DesktopLayout";
 import OverviewPage from "../pages/OverviewPage";
 import TransferPage from "../pages/TransferPage";
+import TransactionsPage from "../pages/TransactionsPage";
 
 export default function AppRoutes() {
 
@@ -26,6 +27,7 @@ export default function AppRoutes() {
                 <Route path="/" element={<DesktopLayout />}>
                     <Route index element={<OverviewPage />} />
                     <Route path="/transfer" element={<TransferPage />} />
+                    <Route path="/transactions" element={<TransactionsPage />} />
                 </Route>
             </Route>
         </Routes>

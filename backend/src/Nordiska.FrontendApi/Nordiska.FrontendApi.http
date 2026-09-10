@@ -45,10 +45,24 @@ Content-Type: application/json
 
 ###
 
-### 6. CORS Preflight OPTIONS request from React Vite frontend (Should return 204/200 with Access-Control-Allow-Origin)
+### 6. Get current authenticated user profile via cookie or Bearer token
+GET {{HostAddress}}/api/auth/me
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### 7. Log out (clears auth cookie)
+POST {{HostAddress}}/api/auth/logout
+Accept: application/json
+
+###
+
+### 8. CORS Preflight OPTIONS request from React Vite frontend (Should return 204/200 with Access-Control-Allow-Origin)
 OPTIONS {{HostAddress}}/api/auth/login
 Origin: http://localhost:5173
 Access-Control-Request-Method: POST
 Access-Control-Request-Headers: authorization, content-type
+
 
 
