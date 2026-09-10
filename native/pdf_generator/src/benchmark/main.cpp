@@ -68,10 +68,9 @@ std::unique_ptr<nordiska::IDocumentRenderer> make_renderer(std::string_view name
 
 Options parse_options(int argc, char* argv[]) {
     if (argc < 2) {
-        throw std::invalid_argument(
-            "Usage: pdf_generator_benchmark <input-dir> [--renderer haru|cairo|all] "
-            "[--iterations N] [--warmups N] [--limit N] [--sample-count N] [--output-dir DIR] "
-            "[--delete-output]");
+        throw std::invalid_argument("Usage: pdf_generator_benchmark <input-dir> [--renderer haru|cairo|all] "
+                                    "[--iterations N] [--warmups N] [--limit N] [--sample-count N] [--output-dir DIR] "
+                                    "[--delete-output]");
     }
     Options options{.input_directory = argv[1]};
     for (int index = 2; index < argc; ++index) {
@@ -101,8 +100,7 @@ Options parse_options(int argc, char* argv[]) {
         }
     }
     if (!std::filesystem::is_directory(options.input_directory)) {
-        throw std::runtime_error("input directory does not exist: " +
-                                 options.input_directory.string());
+        throw std::runtime_error("input directory does not exist: " + options.input_directory.string());
     }
     if (options.iterations == 0) {
         throw std::invalid_argument("--iterations must be positive");
@@ -143,8 +141,7 @@ LoadedCorpus load(const std::vector<std::filesystem::path>& paths) {
 }
 
 template <typename Function>
-PhaseMetrics timed(const LoadedCorpus& corpus, std::optional<std::size_t> output_bytes,
-                   Function&& function) {
+PhaseMetrics timed(const LoadedCorpus& corpus, std::optional<std::size_t> output_bytes, Function&& function) {
     const auto started = Clock::now();
     function();
     const double seconds = std::chrono::duration<double>(Clock::now() - started).count();
@@ -154,28 +151,24 @@ PhaseMetrics timed(const LoadedCorpus& corpus, std::optional<std::size_t> output
             .output_bytes = output_bytes};
 }
 
-void render_to_sink(const Report& report, nordiska::IDocumentRenderer& renderer,
-                    nordiska::IByteSink& sink) {
+void render_to_sink(const Report& report, nordiska::IDocumentRenderer& renderer, nordiska::IByteSink& sink) {
     nordiska::validate_report(report);
     renderer.render(report, sink);
     sink.finish();
 }
 
-std::vector<std::byte> render_to_memory(const Report& report,
-                                        nordiska::IDocumentRenderer& renderer) {
+std::vector<std::byte> render_to_memory(const Report& report, nordiska::IDocumentRenderer& renderer) {
     nordiska::MemoryByteSink sink;
     render_to_sink(report, renderer, sink);
     return {sink.bytes().begin(), sink.bytes().end()};
 }
 
-std::vector<NamedMetrics> measure(const std::string& renderer_name,
-                                  const std::vector<std::filesystem::path>& paths,
+std::vector<NamedMetrics> measure(const std::string& renderer_name, const std::vector<std::filesystem::path>& paths,
                                   const Options& options, std::size_t iteration) {
     LoadedCorpus corpus;
     const auto input_started = Clock::now();
     corpus = load(paths);
-    const double input_seconds =
-        std::chrono::duration<double>(Clock::now() - input_started).count();
+    const double input_seconds = std::chrono::duration<double>(Clock::now() - input_started).count();
     auto renderer = make_renderer(renderer_name);
     std::vector<std::vector<std::byte>> rendered;
     rendered.reserve(corpus.reports.size());
@@ -215,18 +208,16 @@ std::vector<NamedMetrics> measure(const std::string& renderer_name,
     results.push_back({"parallel_memory_render", timed(corpus, bytes, [&] {
                            nordiska::CallbackOutputDestination callback_dest(
                                [](std::span<const std::byte>, std::size_t) {});
-                           nordiska::GenerateDocuments generator(
-                               [&] { return make_renderer(renderer_name); });
+                           nordiska::GenerateDocuments generator([&] { return make_renderer(renderer_name); });
                            generator.execute(requests, callback_dest);
                        })});
 
-    const auto persistence_dir =
-        options.output_directory / renderer_name / ("iteration-" + std::to_string(iteration));
+    const auto persistence_dir = options.output_directory / renderer_name / ("iteration-" + std::to_string(iteration));
     std::filesystem::create_directories(persistence_dir);
     results.push_back({"persistence", timed(corpus, bytes, [&] {
                            for (std::size_t index = 0; index < rendered.size(); ++index) {
-                               nordiska::FileByteSink sink(
-                                   persistence_dir / ("report-" + std::to_string(index) + ".pdf"));
+                               nordiska::FileByteSink sink(persistence_dir /
+                                                           ("report-" + std::to_string(index) + ".pdf"));
                                sink.write(rendered[index]);
                                sink.finish();
                            }
@@ -235,8 +226,7 @@ std::vector<NamedMetrics> measure(const std::string& renderer_name,
                            nordiska::JsonInputAdapter adapter;
                            for (std::size_t index = 0; index < corpus.paths.size(); ++index) {
                                const Report report = adapter.import(corpus.paths[index]);
-                               nordiska::FileByteSink sink(
-                                   persistence_dir / ("e2e-" + std::to_string(index) + ".pdf"));
+                               nordiska::FileByteSink sink(persistence_dir / ("e2e-" + std::to_string(index) + ".pdf"));
                                render_to_sink(report, *renderer, sink);
                            }
                        })});
@@ -249,10 +239,9 @@ std::vector<NamedMetrics> measure(const std::string& renderer_name,
 void write_csv_row(std::ostream& output, const std::string& renderer, std::size_t iteration,
                    const NamedMetrics& result) {
     const auto& metrics = result.metrics;
-    output << renderer << ',' << iteration << ',' << result.phase << ',' << std::fixed
-           << std::setprecision(6) << metrics.seconds << ',' << metrics.reports << ','
-           << metrics.transactions << ',' << metrics.reports_per_second() << ','
-           << metrics.transactions_per_second() << ',';
+    output << renderer << ',' << iteration << ',' << result.phase << ',' << std::fixed << std::setprecision(6)
+           << metrics.seconds << ',' << metrics.reports << ',' << metrics.transactions << ','
+           << metrics.reports_per_second() << ',' << metrics.transactions_per_second() << ',';
     if (metrics.output_bytes) {
         output << *metrics.output_bytes;
     } else {
@@ -268,8 +257,7 @@ std::string format_bytes(std::optional<std::size_t> bytes) {
     std::ostringstream formatted;
     const double value = static_cast<double>(*bytes);
     if (value >= 1024.0 * 1024.0 * 1024.0) {
-        formatted << std::fixed << std::setprecision(2) << value / (1024.0 * 1024.0 * 1024.0)
-                  << " GiB";
+        formatted << std::fixed << std::setprecision(2) << value / (1024.0 * 1024.0 * 1024.0) << " GiB";
     } else if (value >= 1024.0 * 1024.0) {
         formatted << std::fixed << std::setprecision(2) << value / (1024.0 * 1024.0) << " MiB";
     } else {
@@ -300,17 +288,15 @@ void write_summary(std::ostream& output, const std::vector<RecordedResult>& reco
               "--- | --- | ---: | ---: | ---: | ---:\n";
     for (const auto& [key, aggregate] : aggregates) {
         output << key.first << " | " << key.second << " | " << std::fixed << std::setprecision(3)
-               << aggregate.seconds / aggregate.count << " | "
-               << aggregate.reports_per_second / aggregate.count << " | "
-               << aggregate.transactions_per_second / aggregate.count << " | "
+               << aggregate.seconds / aggregate.count << " | " << aggregate.reports_per_second / aggregate.count
+               << " | " << aggregate.transactions_per_second / aggregate.count << " | "
                << format_bytes(aggregate.output_bytes) << "\n";
     }
 }
 
 void write_human_report(const std::filesystem::path& path, const Options& options,
-                        const std::filesystem::path& run_directory,
-                        const std::vector<RecordedResult>& records, std::size_t report_count,
-                        std::size_t transaction_count) {
+                        const std::filesystem::path& run_directory, const std::vector<RecordedResult>& records,
+                        std::size_t report_count, std::size_t transaction_count) {
     std::ofstream output(path);
     if (!output) {
         throw std::runtime_error("could not create benchmark report: " + path.string());
@@ -345,8 +331,7 @@ void write_human_report(const std::filesystem::path& path, const Options& option
     output << "\nRaw per-iteration measurements are in [`results.csv`](results.csv).\n";
 }
 
-std::filesystem::path write_samples(const std::vector<std::filesystem::path>& paths,
-                                    const Options& options,
+std::filesystem::path write_samples(const std::vector<std::filesystem::path>& paths, const Options& options,
                                     const std::filesystem::path& run_directory) {
     const std::string engine_name = options.renderer == "cairo" ? "cairo" : "haru";
     const auto sample_directory = run_directory / "samples" / engine_name;
@@ -359,15 +344,13 @@ std::filesystem::path write_samples(const std::vector<std::filesystem::path>& pa
     auto renderer = make_renderer(engine_name);
     for (std::size_t index = 0; index < count; ++index) {
         const Report report = adapter.import(paths[index]);
-        nordiska::FileByteSink sink(sample_directory /
-                                    ("sample-" + std::to_string(index + 1) + ".pdf"));
+        nordiska::FileByteSink sink(sample_directory / ("sample-" + std::to_string(index + 1) + ".pdf"));
         render_to_sink(report, *renderer, sink);
     }
     return sample_directory;
 }
 
-void print_execution_plan(const Options& options, const std::vector<std::string>& renderers,
-                          std::size_t report_count) {
+void print_execution_plan(const Options& options, const std::vector<std::string>& renderers, std::size_t report_count) {
     const std::size_t runs_per_renderer = options.warmups + options.iterations;
     const std::size_t total_runs = renderers.size() * runs_per_renderer;
     const std::size_t measured_rows = renderers.size() * options.iterations * 6;
@@ -404,9 +387,8 @@ int main(int argc, char* argv[]) {
         const auto paths = discover(options);
         std::filesystem::create_directories(options.output_directory);
         options.output_directory /=
-            "run-" + std::to_string(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                                        Clock::now().time_since_epoch())
-                                        .count());
+            "run-" + std::to_string(
+                         std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now().time_since_epoch()).count());
         std::filesystem::create_directories(options.output_directory);
         const auto csv_path = options.output_directory / "results.csv";
         const auto report_path = options.output_directory / "report.md";
@@ -442,16 +424,14 @@ int main(int argc, char* argv[]) {
         const std::size_t report_count = records.front().result.metrics.reports;
         const std::size_t transaction_count = records.front().result.metrics.transactions;
         const auto sample_directory = write_samples(paths, options, options.output_directory);
-        write_human_report(report_path, options, options.output_directory, records, report_count,
-                           transaction_count);
+        write_human_report(report_path, options, options.output_directory, records, report_count, transaction_count);
         std::cout << "\nNordiska native PDF benchmark\n"
-                  << "Corpus: " << report_count << " reports, " << transaction_count
-                  << " transactions\n\n";
+                  << "Corpus: " << report_count << " reports, " << transaction_count << " transactions\n\n";
         write_summary(std::cout, records);
         std::cout << "\nCSV: " << csv_path << "\nReport: " << report_path << '\n';
         if (options.sample_count != 0) {
-            std::cout << "Samples: " << sample_directory << " ("
-                      << std::min(options.sample_count, paths.size()) << " PDFs)\n";
+            std::cout << "Samples: " << sample_directory << " (" << std::min(options.sample_count, paths.size())
+                      << " PDFs)\n";
         }
         std::cerr << "Benchmark output directory: " << options.output_directory << '\n';
         if (options.delete_output) {

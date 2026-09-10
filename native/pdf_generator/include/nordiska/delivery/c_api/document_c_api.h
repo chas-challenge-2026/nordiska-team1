@@ -21,13 +21,11 @@ enum nordiska_document_status {
     NORDISKA_DOCUMENT_INTERNAL_ERROR = 4,
 };
 
-typedef int (*nordiska_document_callback)(const uint8_t* bytes, size_t length,
-                                          size_t document_index, void* context);
+typedef int (*nordiska_document_callback)(const uint8_t* bytes, size_t length, size_t document_index, void* context);
 
-NORDISKA_DOCUMENT_API int
-nordiska_document_generate_json(const uint8_t* json_utf8, size_t json_length,
-                                nordiska_document_callback callback, void* callback_context,
-                                char* error_buffer, size_t error_buffer_length);
+NORDISKA_DOCUMENT_API int nordiska_document_generate_json(const uint8_t* json_utf8, size_t json_length,
+                                                          nordiska_document_callback callback, void* callback_context,
+                                                          char* error_buffer, size_t error_buffer_length);
 
 NORDISKA_DOCUMENT_API const char* nordiska_document_version(void);
 

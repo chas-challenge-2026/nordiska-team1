@@ -15,6 +15,7 @@ namespace nordiska {
 
 struct DocumentRequest {
     Report report;
+    // struct in struct not as silly as it seems, here we will put metadata for the request
 };
 
 enum class DocumentFailure {

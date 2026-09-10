@@ -60,8 +60,8 @@ FileByteSink::FileByteSink(std::filesystem::path output_path)
     }
 
     static std::atomic<unsigned long long> sequence{0};
-    const auto suffix = std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id())) +
-                        "." + std::to_string(sequence.fetch_add(1));
+    const auto suffix = std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id())) + "." +
+                        std::to_string(sequence.fetch_add(1));
     temporary_path_ = output_path_.string() + ".tmp." + suffix;
     impl_->output.open(temporary_path_, std::ios::binary | std::ios::trunc);
     if (!impl_->output) {
@@ -81,8 +81,7 @@ void FileByteSink::write(std::span<const std::byte> bytes) {
     if (!impl_) {
         throw std::logic_error("file byte sink is already finished");
     }
-    impl_->output.write(reinterpret_cast<const char*>(bytes.data()),
-                        static_cast<std::streamsize>(bytes.size()));
+    impl_->output.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
     if (!impl_->output) {
         throw std::runtime_error("could not write output file: " + temporary_path_.string());
     }
@@ -111,8 +110,7 @@ void FileByteSink::finish() {
     impl_.reset();
 }
 
-FileOutputDestination::FileOutputDestination(PathFactory path_factory)
-    : path_factory_(std::move(path_factory)) {
+FileOutputDestination::FileOutputDestination(PathFactory path_factory) : path_factory_(std::move(path_factory)) {
     if (!path_factory_) {
         throw std::invalid_argument("path_factory must not be empty");
     }
@@ -130,9 +128,8 @@ CallbackOutputDestination::CallbackOutputDestination(CompletionCallback completi
 }
 
 std::unique_ptr<IByteSink> CallbackOutputDestination::open(DocumentMetadata metadata) {
-    return std::make_unique<CallbackByteSink>(
-        [callback = completion_callback_,
-         index = metadata.index](std::span<const std::byte> bytes) { callback(bytes, index); });
+    return std::make_unique<CallbackByteSink>([callback = completion_callback_, index = metadata.index](
+                                                  std::span<const std::byte> bytes) { callback(bytes, index); });
 }
 
 } // namespace nordiska

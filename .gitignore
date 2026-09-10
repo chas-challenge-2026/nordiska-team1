@@ -13,9 +13,9 @@ Desktop.ini
 .idea/
 .vscode/
 !.vscode/
-!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+.vscode/settings.json
 *.swp
 *.swo
 *~

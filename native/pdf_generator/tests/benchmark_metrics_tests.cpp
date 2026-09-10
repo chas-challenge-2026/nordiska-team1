@@ -12,8 +12,7 @@ int main() {
         throw std::runtime_error("benchmark metric accounting is incorrect");
     }
     const nordiska::benchmark::PhaseMetrics zero{0.0, 10, 50, std::nullopt};
-    if (zero.reports_per_second() != 0.0 || zero.transactions_per_second() != 0.0 ||
-        zero.output_bytes) {
+    if (zero.reports_per_second() != 0.0 || zero.transactions_per_second() != 0.0 || zero.output_bytes) {
         throw std::runtime_error("zero-duration metric accounting is incorrect");
     }
     std::cout << "benchmark metric tests passed\n";

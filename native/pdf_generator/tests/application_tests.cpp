@@ -17,8 +17,7 @@ namespace {
 class FakeRenderer final : public nordiska::IDocumentRenderer {
   public:
     void render(const nordiska::Report& report, nordiska::IByteSink& sink) override {
-        const std::string value =
-            report.account_number + "\n" + std::to_string(report.transactions.size()) + "\n";
+        const std::string value = report.account_number + "\n" + std::to_string(report.transactions.size()) + "\n";
         sink.write(std::as_bytes(std::span(value.data(), value.size())));
     }
 };
@@ -48,16 +47,14 @@ int main() {
             requests.push_back({valid_report("batch-" + std::to_string(index))});
         }
 
-        nordiska::FileOutputDestination destination([&](std::size_t index) {
-            return directory / ("document-" + std::to_string(index) + ".txt");
-        });
+        nordiska::FileOutputDestination destination(
+            [&](std::size_t index) { return directory / ("document-" + std::to_string(index) + ".txt"); });
         nordiska::GenerateDocuments generate([] { return std::make_unique<FakeRenderer>(); }, 2);
         const auto results = generate.execute(requests, destination);
         require(results.size() == requests.size(), "wrong result count");
         for (const auto& result : results) {
             require(result.succeeded, "valid document generation failed");
-            require(std::filesystem::is_regular_file(
-                        directory / ("document-" + std::to_string(result.index) + ".txt")),
+            require(std::filesystem::is_regular_file(directory / ("document-" + std::to_string(result.index) + ".txt")),
                     "document output was not created");
         }
 
@@ -71,16 +68,14 @@ int main() {
         haru_renderer->render(swedish_report, haru_output);
         haru_output.finish();
         require(haru_output.bytes().size() > 8, "Haru output was empty");
-        require(std::memcmp(haru_output.bytes().data(), "%PDF-", 5) == 0,
-                "Haru output is not a PDF");
+        require(std::memcmp(haru_output.bytes().data(), "%PDF-", 5) == 0, "Haru output is not a PDF");
 
         auto cairo_renderer = nordiska::make_pdf_renderer(nordiska::PdfEngine::cairo);
         nordiska::MemoryByteSink cairo_output;
         cairo_renderer->render(swedish_report, cairo_output);
         cairo_output.finish();
         require(cairo_output.bytes().size() > 8, "Cairo output was empty");
-        require(std::memcmp(cairo_output.bytes().data(), "%PDF-", 5) == 0,
-                "Cairo output is not a PDF");
+        require(std::memcmp(cairo_output.bytes().data(), "%PDF-", 5) == 0, "Cairo output is not a PDF");
 
         requests.push_back({nordiska::Report{}});
         const auto failure_results = generate.execute(requests, destination);

@@ -154,8 +154,7 @@ void empty_batch_array_is_rejected(const std::filesystem::path& directory) {
 } // namespace
 
 int main() {
-    const auto directory =
-        std::filesystem::temp_directory_path() / "nordiska-json-report-reader-tests";
+    const auto directory = std::filesystem::temp_directory_path() / "nordiska-json-report-reader-tests";
     std::filesystem::remove_all(directory);
     std::filesystem::create_directories(directory);
 

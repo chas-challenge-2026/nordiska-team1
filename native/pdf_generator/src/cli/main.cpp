@@ -138,15 +138,14 @@ int main(int argc, char* argv[]) {
                 return single_output_file;
             }
             const std::string& account = reports[index].account_number;
-            const std::string filename = account.empty()
-                                             ? ("report-" + std::to_string(index) + ".pdf")
-                                             : (account + "-" + std::to_string(index) + ".pdf");
+            const std::string filename = account.empty() ? ("report-" + std::to_string(index) + ".pdf")
+                                                         : (account + "-" + std::to_string(index) + ".pdf");
             return output_directory / filename;
         };
 
         nordiska::FileOutputDestination destination(path_factory);
-        nordiska::GenerateDocuments generator(
-            [renderer = options.renderer] { return make_renderer(renderer); }, options.workers);
+        nordiska::GenerateDocuments generator([renderer = options.renderer] { return make_renderer(renderer); },
+                                              options.workers);
 
         const auto results = generator.execute(requests, destination);
 
@@ -154,14 +153,13 @@ int main(int argc, char* argv[]) {
         for (const auto& result : results) {
             if (!result.succeeded) {
                 ++failures;
-                std::cerr << "Error: report " << result.index << " failed: " << result.error
-                          << "\n";
+                std::cerr << "Error: report " << result.index << " failed: " << result.error << "\n";
             }
         }
 
         if (failures > 0) {
-            std::cerr << "Generated " << (results.size() - failures) << " of " << results.size()
-                      << " documents (" << failures << " failed)\n";
+            std::cerr << "Generated " << (results.size() - failures) << " of " << results.size() << " documents ("
+                      << failures << " failed)\n";
             return EXIT_FAILURE;
         }
 

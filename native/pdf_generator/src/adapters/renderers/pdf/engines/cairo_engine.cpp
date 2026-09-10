@@ -13,8 +13,7 @@ namespace {
 void check(cairo_t* context, const char* operation) {
     const cairo_status_t status = cairo_status(context);
     if (status != CAIRO_STATUS_SUCCESS) {
-        throw std::runtime_error(std::string("Cairo ") + operation +
-                                 " failed: " + cairo_status_to_string(status));
+        throw std::runtime_error(std::string("Cairo ") + operation + " failed: " + cairo_status_to_string(status));
     }
 }
 
@@ -45,8 +44,7 @@ struct SinkWriter {
 cairo_status_t write_to_sink(void* closure, const unsigned char* data, unsigned int length) {
     auto& writer = *static_cast<SinkWriter*>(closure);
     try {
-        writer.sink.write(
-            std::span<const std::byte>(reinterpret_cast<const std::byte*>(data), length));
+        writer.sink.write(std::span<const std::byte>(reinterpret_cast<const std::byte*>(data), length));
         return CAIRO_STATUS_SUCCESS;
     } catch (...) {
         writer.failure = std::current_exception();
@@ -58,19 +56,15 @@ class CairoEngine final : public IPdfEngine {
   public:
     void render(const Document& document, IByteSink& sink) override {
         SinkWriter writer{sink};
-        UniqueCairoSurface surface(
-            cairo_pdf_surface_create_for_stream(write_to_sink, &writer, 612, 792));
+        UniqueCairoSurface surface(cairo_pdf_surface_create_for_stream(write_to_sink, &writer, 612, 792));
         if (!surface || cairo_surface_status(surface.get()) != CAIRO_STATUS_SUCCESS) {
-            const auto status =
-                !surface ? CAIRO_STATUS_NO_MEMORY : cairo_surface_status(surface.get());
-            throw std::runtime_error(std::string("Cairo PDF surface failed: ") +
-                                     cairo_status_to_string(status));
+            const auto status = !surface ? CAIRO_STATUS_NO_MEMORY : cairo_surface_status(surface.get());
+            throw std::runtime_error(std::string("Cairo PDF surface failed: ") + cairo_status_to_string(status));
         }
 
         UniqueCairo context(cairo_create(surface.get()));
         check(context.get(), "create context");
-        cairo_select_font_face(context.get(), "Helvetica", CAIRO_FONT_SLANT_NORMAL,
-                               CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_select_font_face(context.get(), "Helvetica", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_source_rgb(context.get(), 0, 0, 0);
 
         for (const Page& page : document.pages) {
@@ -91,8 +85,7 @@ class CairoEngine final : public IPdfEngine {
         const cairo_status_t status = cairo_surface_status(surface.get());
         surface.reset();
         if (status != CAIRO_STATUS_SUCCESS) {
-            throw std::runtime_error(std::string("Cairo PDF output failed: ") +
-                                     cairo_status_to_string(status));
+            throw std::runtime_error(std::string("Cairo PDF output failed: ") + cairo_status_to_string(status));
         }
         if (writer.failure != nullptr) {
             std::rethrow_exception(writer.failure);

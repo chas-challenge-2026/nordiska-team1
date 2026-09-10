@@ -6,11 +6,6 @@ line wrapping, braces, include ordering, and comment reflow.
 
 ## Required conventions
 
-- Use four spaces for indentation. Tabs are forbidden.
-- Keep lines at 100 columns or fewer unless a generated string or an external
-  API makes that impractical.
-- Use attached braces for every control-flow body and do not put short
-  control-flow statements on one line.
 - Put the directly related project header first in an implementation file,
   followed by other project headers and then standard or third-party headers.
 - Use `PascalCase` for types, `snake_case` for functions and local variables,
@@ -26,7 +21,7 @@ line wrapping, braces, include ordering, and comment reflow.
   constraints. Do not use comments to restate obvious code.
 - Every behavior change requires focused tests and a passing native CTest run.
 
-The standard applies to hand-written C++ under `include/`, `src/`, and
+The standard applies to `include/`, `src/`, and
 `tests/`. Vendored dependencies, generated benchmark data, PDFs, and the
 separate Python or shell tools are not reformatted by the C++ formatter.
 

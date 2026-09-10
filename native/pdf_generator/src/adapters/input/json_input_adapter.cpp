@@ -51,8 +51,7 @@ std::int64_t required_integer(const Json& object, const char* key, const std::st
     try {
         if (value.is_number_unsigned()) {
             const auto unsigned_value = value.get<std::uint64_t>();
-            if (unsigned_value >
-                static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
+            if (unsigned_value > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
                 throw std::out_of_range("unsigned JSON integer does not fit int64");
             }
             return static_cast<std::int64_t>(unsigned_value);
@@ -65,8 +64,7 @@ std::int64_t required_integer(const Json& object, const char* key, const std::st
     }
 }
 
-std::vector<std::string> optional_string_array(const Json& object, const char* key,
-                                               const std::string& context) {
+std::vector<std::string> optional_string_array(const Json& object, const char* key, const std::string& context) {
     if (!object.contains(key)) {
         return {};
     }
@@ -78,8 +76,8 @@ std::vector<std::string> optional_string_array(const Json& object, const char* k
     result.reserve(values.size());
     for (std::size_t index = 0; index < values.size(); ++index) {
         if (!values.at(index).is_string()) {
-            throw std::runtime_error("JSON array value must be a string: " + context + "." + key +
-                                     "[" + std::to_string(index) + "]");
+            throw std::runtime_error("JSON array value must be a string: " + context + "." + key + "[" +
+                                     std::to_string(index) + "]");
         }
         result.push_back(values.at(index).get<std::string>());
     }
@@ -110,11 +108,10 @@ Report parse_single_report(const Json& document, const std::string& context) {
             throw std::runtime_error("JSON transaction must be an object: " + tx_context);
         }
 
-        report.transactions.push_back(
-            Transaction{required_string(transaction, "date", tx_context),
-                        required_string(transaction, "type", tx_context),
-                        required_string(transaction, "currency", tx_context),
-                        required_integer(transaction, "amount_minor", tx_context)});
+        report.transactions.push_back(Transaction{required_string(transaction, "date", tx_context),
+                                                  required_string(transaction, "type", tx_context),
+                                                  required_string(transaction, "currency", tx_context),
+                                                  required_integer(transaction, "amount_minor", tx_context)});
     }
     return report;
 }
@@ -133,8 +130,7 @@ Report JsonInputAdapter::import_text(std::string_view contents) const {
     return reports.front();
 }
 
-std::vector<Report>
-JsonInputAdapter::import_reports(const std::filesystem::path& input_path) const {
+std::vector<Report> JsonInputAdapter::import_reports(const std::filesystem::path& input_path) const {
     return import_reports_text(read_text_file(input_path));
 }
 
@@ -148,8 +144,7 @@ std::vector<Report> JsonInputAdapter::import_reports_text(std::string_view conte
             std::vector<Report> reports;
             reports.reserve(document.size());
             for (std::size_t index = 0; index < document.size(); ++index) {
-                reports.push_back(parse_single_report(document.at(index),
-                                                      "report[" + std::to_string(index) + "]"));
+                reports.push_back(parse_single_report(document.at(index), "report[" + std::to_string(index) + "]"));
             }
             return reports;
         }

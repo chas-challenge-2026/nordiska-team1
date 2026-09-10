@@ -22,8 +22,7 @@ std::span<const std::byte> as_bytes(const std::string& value) {
 } // namespace
 
 int main() {
-    const std::filesystem::path directory =
-        std::filesystem::temp_directory_path() / "nordiska-byte-sink-tests";
+    const std::filesystem::path directory = std::filesystem::temp_directory_path() / "nordiska-byte-sink-tests";
     std::filesystem::remove_all(directory);
     std::filesystem::create_directories(directory);
 
@@ -32,8 +31,7 @@ int main() {
         memory.write(as_bytes("hello "));
         memory.write(as_bytes("world"));
         memory.finish();
-        const std::string value(reinterpret_cast<const char*>(memory.bytes().data()),
-                                memory.bytes().size());
+        const std::string value(reinterpret_cast<const char*>(memory.bytes().data()), memory.bytes().size());
         require(value == "hello world", "memory sink did not retain bytes");
 
         const auto output = directory / "output.bin";
@@ -47,14 +45,12 @@ int main() {
         require(persisted == "pdf bytes", "file sink did not persist bytes");
 
         std::string callback_output;
-        nordiska::CallbackByteSink callback_sink(
-            [&callback_output](std::span<const std::byte> bytes) {
-                callback_output.assign(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-            });
+        nordiska::CallbackByteSink callback_sink([&callback_output](std::span<const std::byte> bytes) {
+            callback_output.assign(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        });
         callback_sink.write(as_bytes("callback bytes"));
         callback_sink.finish();
-        require(callback_output == "callback bytes",
-                "callback sink did not publish completed bytes");
+        require(callback_output == "callback bytes", "callback sink did not publish completed bytes");
 
         const auto failed_output = directory / "failed.bin";
         {

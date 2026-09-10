@@ -34,36 +34,44 @@ class CallbackRejected final : public std::runtime_error {
 } // namespace
 
 extern "C" int nordiska_document_generate_json(const uint8_t* json_utf8, size_t json_length,
-                                               nordiska_document_callback callback,
-                                               void* callback_context, char* error_buffer,
-                                               size_t error_buffer_length) {
+                                               nordiska_document_callback callback, void* callback_context,
+                                               char* error_buffer, size_t error_buffer_length) {
     if (error_buffer != nullptr && error_buffer_length > 0) {
         error_buffer[0] = '\0';
     }
     if (json_utf8 == nullptr || json_length == 0 || callback == nullptr) {
-        write_error(error_buffer, error_buffer_length,
-                    "json_utf8, json_length, and callback are required");
+        write_error(error_buffer, error_buffer_length, "json_utf8, json_length, and callback are required");
         return NORDISKA_DOCUMENT_INVALID_ARGUMENT;
     }
 
     try {
-        const std::string_view json(reinterpret_cast<const char*>(json_utf8), json_length);
+        // Transform json as char* array to internal representation
+        // string_view here enables us to look straight into the memory allocated by the caller
+        const std::string_view json{reinterpret_cast<const char*>(json_utf8), json_length};
         nordiska::JsonInputAdapter input;
-        const nordiska::Report report = input.import_text(json);
-        const std::vector<nordiska::DocumentRequest> requests{{std::move(report)}};
+        const nordiska::Report report = input.import_text(json); // Converts json string to internal domain model
+        std::vector<nordiska::DocumentRequest> requests;
+        requests.push_back(nordiska::DocumentRequest{.report = std::move(report)});
         bool callback_failed = false;
-        nordiska::CallbackOutputDestination destination(
-            [callback, callback_context, &callback_failed](std::span<const std::byte> bytes,
-                                                           std::size_t index) {
-                const int callback_status = callback(reinterpret_cast<const uint8_t*>(bytes.data()),
-                                                     bytes.size(), index, callback_context);
+
+        // setting up destination lambda
+        const nordiska::CallbackOutputDestination::CompletionCallback on_pdf_ready =
+            [callback, callback_context, &callback_failed](std::span<const std::byte> bytes, std::size_t index) {
+                const int callback_status =
+                    callback(reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), index, callback_context);
                 if (callback_status != 0) {
                     callback_failed = true;
                     throw CallbackRejected();
                 }
-            });
-        nordiska::GenerateDocuments generate(
-            [] { return nordiska::make_default_document_renderer(); }, 1);
+            };
+
+        // Wrap callback in an output destination adapter
+        nordiska::CallbackOutputDestination destination{on_pdf_ready};
+
+        // Configure generator pipeline (1 worker thread)
+        nordiska::GenerateDocuments generate([] { return nordiska::make_default_document_renderer(); }, 1);
+
+        // Execute rendering and dispatch output to callback
         const auto results = generate.execute(requests, destination);
         if (!results.front().succeeded) {
             if (callback_failed) {
@@ -75,6 +83,7 @@ extern "C" int nordiska_document_generate_json(const uint8_t* json_utf8, size_t 
             throw std::runtime_error(results.front().error);
         }
         return NORDISKA_DOCUMENT_OK;
+
     } catch (const CallbackRejected& error) {
         write_error(error_buffer, error_buffer_length, error.what());
         return NORDISKA_DOCUMENT_CALLBACK_FAILED;

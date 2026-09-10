@@ -17,14 +17,13 @@ using pdf::detail::TextStyle;
 
 std::string format_minor_units(std::int64_t amount_minor, const std::string& currency) {
     const bool negative = amount_minor < 0;
-    const std::uint64_t absolute = negative ? static_cast<std::uint64_t>(-(amount_minor + 1)) + 1
-                                            : static_cast<std::uint64_t>(amount_minor);
+    const std::uint64_t absolute =
+        negative ? static_cast<std::uint64_t>(-(amount_minor + 1)) + 1 : static_cast<std::uint64_t>(amount_minor);
     std::ostringstream formatted;
     if (negative) {
         formatted << '-';
     }
-    formatted << absolute / 100 << '.' << std::setw(2) << std::setfill('0') << absolute % 100 << ' '
-              << currency;
+    formatted << absolute / 100 << '.' << std::setw(2) << std::setfill('0') << absolute % 100 << ' ' << currency;
     return formatted.str();
 }
 
@@ -71,8 +70,7 @@ class PdfRenderer::Impl {
     std::unique_ptr<pdf::detail::IPdfEngine> engine_;
 };
 
-PdfRenderer::PdfRenderer(std::unique_ptr<Impl> implementation)
-    : implementation_(std::move(implementation)) {}
+PdfRenderer::PdfRenderer(std::unique_ptr<Impl> implementation) : implementation_(std::move(implementation)) {}
 
 PdfRenderer::~PdfRenderer() = default;
 
@@ -87,8 +85,7 @@ std::unique_ptr<PdfRenderer> make_pdf_renderer(PdfEngine engine) {
     } else {
         pdf_engine = pdf::detail::make_cairo_engine();
     }
-    return std::unique_ptr<PdfRenderer>(
-        new PdfRenderer(std::make_unique<PdfRenderer::Impl>(std::move(pdf_engine))));
+    return std::unique_ptr<PdfRenderer>(new PdfRenderer(std::make_unique<PdfRenderer::Impl>(std::move(pdf_engine))));
 }
 
 } // namespace nordiska
