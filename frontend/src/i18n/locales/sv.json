@@ -1,5 +1,5 @@
 {
-  "generic": {
+"generic": {
     "save": "Spara",
     "cancel": "Avbryt",
     "edit": "Ändra",
@@ -19,62 +19,67 @@
     "showing": "Visar",
     "of": "av",
     "transactions": "transaktioner"
-  },
-  "errors": {
+},
+"errors": {
     "loading": "Någonting gick fel vid hämtning av datan."
-  },
-
-  "welcome-route": {
+},
+"aria-label": {
+    "page-nav": "Huvudnavigation",
+    "mobile-menu-close": "Stäng meny",
+    "mobile-menu-open": "Öppna meny",
+    "mobile-nav": "Mobilnavigation"
+},
+"welcome-route": {
     "title": "Kundportalen",
     "paragraph": "För en samlad överblick över dina konton och ditt sparande.",
     "button": "Logga in"
-  },
-  "inactivity-route": {
+},
+"inactivity-route": {
     "title": "Du är utloggad",
     "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
     "button": "Logga in igen"
-  },
-  "transactions-route": {
-      "account-select": "Styr vilka transaktioner som visas i listan till vänster. Bocka ur ett konto för att dölja dess transaktioner.",
-      "all-accounts": "Alla konton",
-      "tax-info": "Hämta skatteunderlag för konton markerade ovan.",
-      "tax": "Hämta skatteunderlag",
-      "search": "Sök efter transaktion",
-      "from": "Från datum",
-      "to": "Till datum",
-      "deposites": "Endast insättningar",
-      "withdraws": "Endast uttag",
-      "transactions": "Senaste transaktioner",
-      "all-transactions": "Visa fler transaktioner",
-      "less-transactions": "Visa färre transaktioner"
-  },
-  "login-route": {
+},
+"transactions-route": {
+    "account-select": "Styr vilka transaktioner som visas i listan till vänster. Bocka ur ett konto för att dölja dess transaktioner.",
+    "all-accounts": "Alla konton",
+    "tax-info": "Hämta skatteunderlag för konton markerade ovan.",
+    "tax": "Hämta skatteunderlag",
+    "search": "Sök efter transaktion",
+    "from": "Från datum",
+    "to": "Till datum",
+    "deposites": "Endast insättningar",
+    "withdraws": "Endast uttag",
+    "transactions": "Senaste transaktioner",
+    "all-transactions": "Visa fler transaktioner",
+    "less-transactions": "Visa färre transaktioner"
+},
+"login-route": {
     "title": "Logga in",
     "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen."
-  },
-  "404-route": {
+},
+"404-route": {
     "title": "Sidan kunde inte hittas.",
     "paragraph": "Sidan du letar efter kunde inte hittas.",
     "button": "Tillbaka till hem"
-  },
-
-  "page-header": {
+},
+"page-header": {
     "help-center": "Hjälpcenter",
     "settings": "Inställningar",
-    "logout": "Logga ut"
-  },
-  "page-navigation": {
+    "logout": "Logga ut",
+    "my-nordiska": "Mitt nordiska"
+},
+"page-navigation": {
     "overview": "Översikt",
     "accounts": "Bankkonton",
     "transactions": "Transaktioner",
     "transfers": "Överföringar"
-  },
-  "table": {
+},
+"table": {
     "my-accounts": "Mina konton",
     "planned-transactions": "Planerade överföringar",
     "latest-transactions": "Senaste transaktioner"
-  },
-  "forms": {
+},
+"forms": {
     "email": "E-post",
     "email-placeholder": "Ange e-post",
     "email-confirm": "Upprepa e-post",
@@ -83,17 +88,16 @@
     "phone": "Telefonnummer",
     "phone-placeholder": "Ange Telefonnummer",
     "phone-error": "Ange enligt format 07xxxxxxxx"
-  },
-  "page-footer": {
+},
+"page-footer": {
     "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
     "allRightsReserved": "Alla rättigheter förbehållna",
     "privacyPolicy": "Integritetspolicy",
     "accessibility": "Tillgänglighet",
     "cookies": "Cookies",
     "cookieSettings": "Cookie-inställningar"
-  },
-
-  "page-transfer": {
+},
+"page-transfer": {
     "heading": "Ny överföring",
     "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
     "name-label": "Egen notis",
@@ -118,53 +122,60 @@
     "cta-hint-incomplete": "Fyll i konton och belopp.",
 
     "add-account": {
-      "heading": "Lägg till nytt konto",
-      "help-text": "Kontot sparas bland dina mottagare och fylls i direkt i överföringen.",
-      "type-label": "Kontotyp",
-      "type-placeholder": "Bankkonto, Bankgiro eller Plusgiro",
-      "clearing-label": "Clearingnummer",
-      "clearing-placeholder": "4 siffror",
-      "number-label": "Kontonummer",
-      "number-placeholder": "Utan bindestreck",
-      "name-label": "Namn på mottagaren",
-      "name-placeholder": "T.ex. Olle Persson",
-      "default-type": "Bankkonto",
-      "default-name": "Nytt konto"
+        "heading": "Lägg till nytt konto",
+        "help-text": "Kontot sparas bland dina mottagare och fylls i direkt i överföringen.",
+        "type-label": "Kontotyp",
+        "type-placeholder": "Bankkonto, Bankgiro eller Plusgiro",
+        "clearing-label": "Clearingnummer",
+        "clearing-placeholder": "4 siffror",
+        "number-label": "Kontonummer",
+        "number-placeholder": "Utan bindestreck",
+        "name-label": "Namn på mottagaren",
+        "name-placeholder": "T.ex. Olle Persson",
+        "default-type": "Bankkonto",
+        "default-name": "Nytt konto"
     },
-
     "modal": {
-      "from-title": "Välj konto?",
-      "to-title": "Välj mottagare",
-      "search-placeholder": "Sök på namn",
-      "group-own": "Mina konton",
-      "group-favorites": "Favoriter",
-      "group-bg": "BG/PG",
-      "group-bank": "Bankkonto",
-      "empty": "Inga konton matchar din sökning.",
-      "add-new": "+ Lägg till nytt konto"
+        "from-title": "Välj konto?",
+        "to-title": "Välj mottagare",
+        "search-placeholder": "Sök på namn",
+        "group-own": "Mina konton",
+        "group-favorites": "Favoriter",
+        "group-bg": "BG/PG",
+        "group-bank": "Bankkonto",
+        "empty": "Inga konton matchar din sökning.",
+        "add-new": "+ Lägg till nytt konto"
     },
-
     "bankid": {
-      "heading": "Godkänn överföringen",
-      "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
-      "amount": "Belopp",
-      "approve": "Godkänn med BankID"
+        "heading": "Godkänn överföringen",
+        "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
+        "amount": "Belopp",
+        "approve": "Godkänn med BankID"
     },
-
     "done": {
-      "processing": "Överföringen behandlas...",
-      "heading": "Överföringen är genomförd",
-      "summary": "{{amount}} sek till {{name}} · {{date}}",
-      "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
-      "new-transfer": "Ny överföring",
-      "failure-heading": "Överföring misslyckades",
-      "back-to-transfers": "Tillbaka till överföringar"
+        "processing": "Överföringen behandlas...",
+        "heading": "Överföringen är genomförd",
+        "summary": "{{amount}} sek till {{name}} · {{date}}",
+        "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
+        "new-transfer": "Ny överföring",
+        "failure-heading": "Överföring misslyckades",
+        "back-to-transfers": "Tillbaka till överföringar"
     },
-
     "planned": {
-      "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
-      "note-to": "Till {{name}}",
-      "note-internal": "Mellan egna konton"
+        "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
+        "note-to": "Till {{name}}",
+        "note-internal": "Mellan egna konton"
     }
-  }
+},
+"get-pdf-button": {
+    "text": "Visa PDF"
+},
+"settings-route": {
+    "page-title": "Inställningar",
+    "safe-title": "Dina uppgifter är trygga hos oss",
+    "safe-paragraph": "Din e-postadress och ditt telefonnummer används endast för kontakt i samband med dina ärenden hos oss. Vi delar inte dina kontaktuppgifter med tredje part.",
+    "help-title": "Hittar du inte det du söker efter?",
+    "help-link": "Besök vårt hjälpcenter",
+    "close": "Stäng inställningar"
+}
 }

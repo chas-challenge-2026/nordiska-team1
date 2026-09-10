@@ -1,5 +1,5 @@
 {
-  "generic": {
+"generic": {
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
@@ -20,62 +20,67 @@
     "showing": "Showing",
     "of": "of",
     "transactions": "transactions"
-  },
-  "errors": {
+},
+"errors": {
     "loading": "Something went wrong while loading the data."
-  },
-
-  "welcome-route": {
+},
+"aria-label": {
+    "page-nav": "Main navigation",
+    "mobile-menu-close": "Close menu",
+    "mobile-menu-open": "Open menu",
+    "mobile-nav": "Mobile navigation"
+},
+"welcome-route": {
     "title": "Customer Portal",
     "paragraph": "For a complete overview of your accounts and savings.",
     "button": "Log in"
-  },
-  "inactivity-route": {
+},
+"inactivity-route": {
     "title": "You have been logged out",
     "paragraph": "Due to inactivity, you have been logged out for security reasons.",
     "button": "Log in again"
-  },
-  "transactions-route": {
-      "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
-      "all-accounts": "All accounts",
-      "tax-info": "Download tax information for the accounts selected above.",
-      "tax": "Download",
-      "search": "Search transactions",
-      "from": "From date",
-      "to": "To date",
-      "deposites": "Deposites only",
-      "withdraws": "Withdraws only",
-      "transactions": "Latest transactions",
-      "all-transactions": "Show more transactions",
-      "less-transactions": "Show fewer transactions"
-  },
-  "login-route": {
+},
+"transactions-route": {
+    "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
+    "all-accounts": "All accounts",
+    "tax-info": "Download tax information for the accounts selected above.",
+    "tax": "Download",
+    "search": "Search transactions",
+    "from": "From date",
+    "to": "To date",
+    "deposites": "Deposites only",
+    "withdraws": "Withdraws only",
+    "transactions": "Latest transactions",
+    "all-transactions": "Show more transactions",
+    "less-transactions": "Show fewer transactions"
+},
+"login-route": {
     "title": "Log in",
     "paragraph": "Please identify yourself with BankID to continue to the customer portal."
-  },
-  "404-route": {
+},
+"404-route": {
     "title": "Page not found.",
     "paragraph": "The page you are looking for could not be found.",
     "button": "Back to home"
-  },
-
-  "page-header": {
+},
+"page-header": {
     "help-center": "Help Center",
     "settings": "Settings",
-    "logout": "Log out"
-  },
-  "page-navigation": {
+    "logout": "Log out",
+    "my-nordiska": "My nordiska"
+},
+"page-navigation": {
     "overview": "Overview",
     "accounts": "Bank accounts",
     "transactions": "Transactions",
     "transfers": "Transfers"
-  },
-  "table": {
+},
+"table": {
     "my-accounts": "My accounts",
     "planned-transactions": "Planned transfers",
     "latest-transactions": "Latest transactions"
-  },
-  "forms": {
+},
+"forms": {
     "email": "Email",
     "email-placeholder": "Enter email",
     "email-confirm": "Confirm email",
@@ -84,17 +89,16 @@
     "phone": "Phone number",
     "phone-placeholder": "Enter phone number",
     "phone-error": "Enter a valid format: 07xxxxxxxx"
-  },
-  "page-footer": {
+},
+"page-footer": {
     "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
     "allRightsReserved": "All rights reserved",
     "privacyPolicy": "Privacy policy",
     "accessibility": "Accessibility",
     "cookies": "Cookies",
     "cookieSettings": "Cookie settings"
-  },
-
-  "page-transfer": {
+},
+"page-transfer": {
     "heading": "New transfer",
     "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
     "name-label": "Personal note",
@@ -119,53 +123,60 @@
     "cta-hint-incomplete": "Fill in accounts and amount.",
 
     "add-account": {
-      "heading": "Add new account",
-      "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
-      "type-label": "Account type",
-      "type-placeholder": "Bank account, Bankgiro or Plusgiro",
-      "clearing-label": "Clearing number",
-      "clearing-placeholder": "4 digits",
-      "number-label": "Account number",
-      "number-placeholder": "Without dashes",
-      "name-label": "Recipient name",
-      "name-placeholder": "E.g. Olle Persson",
-      "default-type": "Bank account",
-      "default-name": "New account"
+        "heading": "Add new account",
+        "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
+        "type-label": "Account type",
+        "type-placeholder": "Bank account, Bankgiro or Plusgiro",
+        "clearing-label": "Clearing number",
+        "clearing-placeholder": "4 digits",
+        "number-label": "Account number",
+        "number-placeholder": "Without dashes",
+        "name-label": "Recipient name",
+        "name-placeholder": "E.g. Olle Persson",
+        "default-type": "Bank account",
+        "default-name": "New account"
     },
-
     "modal": {
-      "from-title": "Choose Account",
-      "to-title": "Choose recipient",
-      "search-placeholder": "Search by name",
-      "group-own": "My accounts",
-      "group-favorites": "Favorites",
-      "group-bg": "BG/PG",
-      "group-bank": "Bank account",
-      "empty": "No accounts match your search.",
-      "add-new": "+ Add new account"
+        "from-title": "Choose Account",
+        "to-title": "Choose recipient",
+        "search-placeholder": "Search by name",
+        "group-own": "My accounts",
+        "group-favorites": "Favorites",
+        "group-bg": "BG/PG",
+        "group-bank": "Bank account",
+        "empty": "No accounts match your search.",
+        "add-new": "+ Add new account"
     },
-
     "bankid": {
-      "heading": "Approve the transfer",
-      "help-text": "The recipient is an external account. Sign with BankID to complete it.",
-      "amount": "Amount",
-      "approve": "Approve with BankID"
+        "heading": "Approve the transfer",
+        "help-text": "The recipient is an external account. Sign with BankID to complete it.",
+        "amount": "Amount",
+        "approve": "Approve with BankID"
     },
-
     "done": {
-      "processing": "Processing the transfer...",
-      "heading": "The transfer is complete",
-      "summary": "{{amount}} sek to {{name}} · {{date}}",
-      "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
-      "new-transfer": "New transfer",
-      "failure-heading": "Transfer failed",
-      "back-to-transfers": "Back to transfers"
+        "processing": "Processing the transfer...",
+        "heading": "The transfer is complete",
+        "summary": "{{amount}} sek to {{name}} · {{date}}",
+        "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
+        "new-transfer": "New transfer",
+        "failure-heading": "Transfer failed",
+        "back-to-transfers": "Back to transfers"
     },
-
     "planned": {
-      "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
-      "note-to": "To {{name}}",
-      "note-internal": "Between your own accounts"
+        "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
+        "note-to": "To {{name}}",
+        "note-internal": "Between your own accounts"
     }
-  }
+},
+"get-pdf-button": {
+    "text": "Show PDF"
+},
+"settings-route": {
+    "page-title": "Settings",
+    "safe-title": "Your information is safe with us",
+    "safe-paragraph": "Your email address and phone number are only used to contact you regarding your cases with us. We do not share your contact information with third parties.",
+    "help-title": "Can't find what you're looking for?",
+    "help-link": "Visit our Help Center",
+    "close": "Close settings"
+}
 }
