@@ -31,11 +31,11 @@ export default function PageHeader() {
     const isLargeHeader = LARGE_HEADER_ROUTES.includes(location.pathname);
     const isLogin = location.pathname === "/login";
 
-    const headerHight = isLargeHeader ? "h-[150px]" : "h-[95px]";
+    const headerHight = isLargeHeader ? "h-[120px]" : "h-[75px]";
     const navLinks = !isLargeHeader;
     const topPosition = isLargeHeader ? "fixed top-0" : "sticky top-0";
-    const languageSelect = isLargeHeader ? "top-[145px]" : "top-[90px]";
-    const logoSize = isLargeHeader ? "text-6xl" : "text-5xl";
+    const languageSelect = isLargeHeader ? "top-[115px]" : "top-[70px]";
+    const logoSize = isLargeHeader ? "text-6xl" : "text-3xl";
 
     const headerBackground = isLogin
         ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center"
@@ -58,7 +58,7 @@ export default function PageHeader() {
                 ease: "easeOut",
             }}
             className={`${topPosition} z-[1001] w-screen ${headerHight} flex items-end justify-between ${headerBackground}
-            ${location.pathname === "/login" ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-10 pb-5`}>
+            ${location.pathname === "/login" ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center" : "bg-nordiska-blue"} gap-10 pt-0 px-5 pb-4`}>
 
             {/* LOGO */}
             <a
@@ -71,7 +71,7 @@ export default function PageHeader() {
             <div className="flex gap-15">
                 {/* NAVIGATION */}
                 {navLinks && (
-                    <nav className="flex gap-10 text-white uppercase tracking-[0.18em]">
+                    <nav className="flex gap-10 text-white uppercase text-[14px] tracking-[0.18em]">
                         <PageLink title={t("page-header.help-center")} route="/help" />
                         <PageLink title={t("page-header.settings")} route="/settings" />
                         <LogoutButton title={t("page-header.logout")} />
@@ -82,10 +82,10 @@ export default function PageHeader() {
                 <div ref={languageRef}>
                     <button
                         onClick={() => setLanguageOpen(!languageOpen)}
-                        className="flex cursor-pointer items-center text-lg uppercase tracking-[0.18em] text-white font-light"
+                        className="flex cursor-pointer items-center text-[14px] uppercase tracking-[0.18em] text-white font-light"
                     >
                         <img
-                            className="h-[19px] w-[24px] invert"
+                            className="h-[14px] w-[19px] invert"
                             src="icons/lang-icon.svg"
                             alt="globe icon"
                         />
@@ -93,13 +93,13 @@ export default function PageHeader() {
                     </button>
 
                     {languageOpen && (
-                        <div className={`fixed ${languageSelect}  w-35 h-17 flex items-center justify-center right-0 ${languageSelectBg} rounded-bl-2xl font-regular`}>
+                        <div className={`fixed ${languageSelect}  w-25 h-12 flex items-center justify-center right-0 ${languageSelectBg} rounded-bl-2xl font-regular`}>
                             <button
                                 onClick={() => {
                                     i18n.changeLanguage(i18n.language === "sv" ? "en" : "sv");
                                     setLanguageOpen(false);
                                 }}
-                                className=" px-3 py-2 ml-[7px] uppercase font-montserrat tracking-[0.18em] text-white cursor-pointer"
+                                className=" px-3 py-2 ml-[7px] uppercase font-montserrat tracking-[0.18em] text-white cursor-pointer text-[14px]"
                             >
                                 {i18n.language === "sv" ? "English" : "Svenska"}
                             </button>
