@@ -34,7 +34,6 @@ export default function LogoutButton({ title }: LogoutButtonProps) {
                 whitespace-nowrap
                 no-underline
                 font-montserrat
-                text-lg
                 cursor-pointer
                 transition-all
                 duration-200

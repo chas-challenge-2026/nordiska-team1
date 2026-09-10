@@ -15,11 +15,10 @@ export default function PageLink({ title, route }: PageLinkProps) {
                 flex
                 items-end
                 h-full
-                pb-[7px]
+                
                 whitespace-nowrap
                 no-underline
                 font-montserrat
-                text-lg
                 cursor-pointer
                 transition-all
                 duration-200
