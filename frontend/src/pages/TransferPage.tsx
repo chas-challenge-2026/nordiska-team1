@@ -89,7 +89,7 @@ function AccountTriggerButton({
                         {name}
                     </span>
                     {balance && (
-                        <span className="flex-none text-[15px] font-bold text-dark-navy">
+                        <span className="flex-none text-[15px] text-dark-navy">
                             {balance}
                         </span>
                     )}
