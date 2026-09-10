@@ -26,6 +26,8 @@ export default function LogoutButton({ title }: LogoutButtonProps) {
                 handleLogout();
             }}
             className="
+                flex
+                items-start
                 uppercase
                 relative
                 h-full

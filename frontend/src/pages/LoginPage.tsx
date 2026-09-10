@@ -41,8 +41,8 @@ export default function LoginPage() {
                 <section className="border-l-2 border-[#F6B900] pl-12">
                     <div className="h-[30vh] w-[320px] bg-white rounded-tr-[20px] rounded-br-[20px]">
                         <form onSubmit={(e) => handleSubmit(e)}>
-                            <InputField name="email" type="email" lable="email" placeholder="email" value={email} onChange={setEmail}/>
-                            <InputField name="password" type="password" lable="password" placeholder="password" value={password} onChange={setPassword}/>
+                            <InputField name="email" type="email" label="email" placeholder="email" value={email} onChange={setEmail}/>
+                            <InputField name="password" type="password" label="password" placeholder="password" value={password} onChange={setPassword}/>
                             <button type="submit" disabled={isPending}>{isPending ? "loggas in..." : "logga in"}</button>
                         </form>
                         {isError && <p className="text-red-500">{error.message}</p>}
