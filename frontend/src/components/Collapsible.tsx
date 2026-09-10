@@ -42,7 +42,7 @@ export default function Collapsible({
           className="flex w-full items-center justify-between cursor-pointer"
         >
           <span>{title}</span>
-          <span className="flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-nordiska-blue">
+          <span className="flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-primary-blue">
             {label}
             <svg
               className={`h-3 w-3 transition-transform duration-200 ${
