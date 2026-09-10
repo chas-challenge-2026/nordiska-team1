@@ -134,6 +134,14 @@ ctest --test-dir build --output-on-failure
   ./build/pdf_generator_benchmark ./tools/synthetic-input-generator/generated/realistic
   ```
 
+### Debugging in VS Code
+
+Because `libnordiska_document_c_api` compiles as a shared library (`.so` / `.dll`), it has no standalone `main()` entrypoint. To step through library code in a debugger:
+* Launch an executable test or CLI harness from the VS Code **Run & Debug** menu (`Ctrl+Shift+D` / `F5`):
+  * **Debug C API Tests (C++):** Runs `nordiska_document_c_api_tests`. Breakpoints set inside `src/c_api/document_c_api.cpp` or test files will hit immediately.
+  * **Debug PDF generator (C++):** Runs the CLI binary against `sample-input.json` and outputs `report.pdf`.
+* GDB pretty-printing is enabled in `.vscode/launch.json`, allowing inspection of STL containers (`std::string`, `std::vector`) and domain structs.
+
 ---
 
 ## Formatting and Code Standards

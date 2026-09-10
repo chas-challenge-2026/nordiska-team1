@@ -34,6 +34,25 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "Debug C API Tests (C++)",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "Build PDF generator",
+            "program": "${workspaceFolder}/native/pdf_generator/build/nordiska_document_c_api_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}/native/pdf_generator",
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }
