@@ -10,6 +10,7 @@ import PageNotFound from "../pages/PageNotFound";
 //Protected
 import DesktopLayout from "../layouts/DesktopLayout";
 import OverviewPage from "../pages/OverviewPage";
+import TransferPage from "../pages/TransferPage";
 import TransactionsPage from "../pages/TransactionsPage";
 
 export default function AppRoutes() {
@@ -26,12 +27,9 @@ export default function AppRoutes() {
             <Route element={<ProtectedRoute/>}>
 
                 <Route path="/" element={<DesktopLayout />}>
-                    <Route element={<ProtectedRoute/>} >
-
-                        <Route index element={<OverviewPage />} />
-                        <Route path="/transactions" element={<TransactionsPage />} />
-
-                    </Route>
+                    <Route index element={<OverviewPage />} />
+                    <Route path="/transfer" element={<TransferPage />} />
+                    <Route path="/transactions" element={<TransactionsPage />} />
                 </Route>
             </Route>
 
