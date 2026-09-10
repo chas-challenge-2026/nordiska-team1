@@ -17,9 +17,11 @@ using Nordiska.Modules.Banking.Domain;
 using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
+using Microsoft.EntityFrameworkCore;
 using Nordiska.Modules.Banking.Infrastructure;
 
 using Microsoft.OpenApi;
+using Nordiska.Modules.Banking.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +74,7 @@ builder.Services.AddAuthorization(options =>
 });
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Register controller services
 builder.Services.AddControllers();
@@ -236,6 +239,13 @@ if (app.Environment.IsDevelopment())
                 statusCode: StatusCodes.Status503ServiceUnavailable);
     });
 }
+
+// Seed Test Customer 
+if (app.Environment.IsDevelopment())
+{
+    await DbInitializer.SeedAsync(app.Services);
+}
+
 
 app.Run();
 

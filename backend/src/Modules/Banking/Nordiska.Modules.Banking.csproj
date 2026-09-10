@@ -10,7 +10,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="ActiveLogin.Authentication.BankId.AspNetCore" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

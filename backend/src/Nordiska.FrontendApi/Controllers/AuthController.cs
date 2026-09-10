@@ -1,118 +1,62 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Nordiska.FrontendApi.Authentication;
-using Nordiska.FrontendApi.Authentication.Jwt;
-using Nordiska.Modules.Banking.Domain;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.Modules.Banking.Application;
 
 namespace Nordiska.FrontendApi.Controllers;
 
-/// <summary>
-/// Authentication endpoints for local/demo login flows.
-/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IJwtProvider _jwtProvider;
-    private readonly JwtOptions _jwtOptions;
+    private readonly IAuthService _authService;
 
-    public AuthController(IJwtProvider jwtProvider, IOptions<JwtOptions> jwtOptions)
+    public AuthController(IAuthService authService)
     {
-        _jwtProvider = jwtProvider;
-        _jwtOptions = jwtOptions.Value;
+        _authService = authService;
     }
 
-    /// <summary>
-    /// Performs a demo login, sets an HTTP-only JWT cookie, and returns the authenticated user info.
-    /// </summary>
-    /// <param name="request">Login request containing email and password.</param>
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [HttpPost("bankid/initiate")]
+    public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
     {
-        if (request.Email == "anna@example.com" &&
-            request.Password == "password123")
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var result = await _authService.InitiateBankIdAsync(request, clientIp);
+
+        if (!result.IsSuccess)
         {
-            var customer = new Customer
-            {
-                Id = 1,
-                Email = "anna@example.com",
-                UserName = "anna@example.com",
-                Name = "Anna"
-            };
-
-            var token = await _jwtProvider.Generate(customer);
-            Response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-
-            return Ok(new
-            {
-                message = "Login successful",
-                customer = new { id = customer.Id, email = customer.Email, name = customer.Name }
-            });
+            return BadRequest(new { message = result.ErrorMessage });
         }
 
-        if (request.Email == "erik@example.com" &&
-            request.Password == "password123")
+        return Ok(result.InitiateData);
+    }
+
+    [HttpPost("bankid/collect")]
+    public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
+    {
+        var result = await _authService.CollectBankIdAsync(request, Response);
+
+        if (!result.IsSuccess)
         {
-            var customer = new Customer
-            {
-                Id = 2,
-                Email = "erik@example.com",
-                UserName = "erik@example.com",
-                Name = "Erik"
-            };
-
-            var token = await _jwtProvider.Generate(customer);
-            Response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-
-            return Ok(new
-            {
-                message = "Login successful",
-                customer = new { id = customer.Id, email = customer.Email, name = customer.Name }
-            });
+            return Unauthorized(new { message = result.ErrorMessage });
         }
 
-        return Unauthorized(new
-        {
-            Message = "Invalid email or password."
-        });
+        return Ok(result.CollectData);
     }
 
-    /// <summary>
-    /// Returns the currently authenticated user's profile information extracted from the JWT.
-    /// </summary>
-    [HttpGet("me")]
-    [Authorize]
-    public IActionResult GetCurrentUser()
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestDto request)
     {
-        var customerId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
-                         ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
-                    ?? User.FindFirst(ClaimTypes.Email)?.Value;
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var result = await _authService.RegisterCustomerAsync(request);
 
-        return Ok(new
+        if (!result.IsSuccess)
         {
-            id = customerId,
-            email = email,
-            role = role
-        });
-    }
+            if (result.Errors != null)
+            {
+                return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
+            }
 
-    /// <summary>
-    /// Logs out the user by clearing the HTTP-only authentication cookie.
-    /// </summary>
-    [HttpPost("logout")]
-    public IActionResult Logout()
-    {
-        Response.DeleteAuthCookie();
-        return Ok(new { message = "Logged out successfully" });
+            return BadRequest(new { message = result.ErrorMessage });
+        }
+
+        return Ok(new { token = result.Token });
     }
 }
-
-public record LoginRequest(
-    string Email,
-    string Password);
-
