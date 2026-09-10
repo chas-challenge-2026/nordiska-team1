@@ -1,4 +1,3 @@
-import PageHeader from "../components/PageHeader";
 import { useTranslation } from "react-i18next";
 import InputField from "../components/InputField";
 import { useState } from "react";
@@ -24,14 +23,12 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="fixed z-[-2] bg-login-bg min-h-screen w-full">
-            <PageHeader login navLinks={false} />
-            <main className="grid grid-cols-2 min-h-[calc(100vh-116px)] items-center">
-                <section className="flex flex-col items-end pr-12">
-                    <div className="text-right text-white">
-                        <h1 className="text-7xl font-bold font-montserrat-alternates">
-                            {t("login-route.title")}.
-                        </h1>
+        <main className="fixed z-[-2] bg-login-bg min-h-screen w-full grid grid-cols-2 min-h-[calc(100vh-116px)] items-center">
+            <section className="flex flex-col items-end pr-12">
+                <div className="text-right text-white">
+                    <h1 className="text-7xl font-bold font-montserrat-alternates">
+                        {t("login-route.title")}.
+                    </h1>
 
                         <p className="text-xl w-[500px] font-montserrat mt-5">
                             {t("login-route.paragraph")}
@@ -47,10 +44,9 @@ export default function LoginPage() {
                         </form>
                         {isError && <p className="text-red-500">{error.message}</p>}
 
-                        <p>Inlogg med BankID här</p>
-                    </div>
-                </section>
-            </main>
-        </div>
+                    <p>Inlogg med BankID här</p>
+                </div>
+            </section>
+        </main>
     );
 }
