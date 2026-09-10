@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import Table from "../components/Table";
-import TableRow from "../components/TableRow";
-import InputField from "../components/InputField";
-import Modal from "../components/modals/Modal";
-import AccountPickerModal from "../components/modals/AccountPickerModal";
+import TransferForm from "../components/transfer/TransferForm";
+import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
+import TransferModals from "../components/transfer/TransferModals";
+import type { ModalKind } from "../components/transfer/TransferModals";
 import type { AccountPickerGroup } from "../components/modals/AccountPickerModal";
-import AddAccountForm from "../components/modals/AddAccountForm";
 import type { NewAccountValues } from "../components/modals/AddAccountForm";
-import BankIdConfirm from "../components/modals/BankIdConfirm";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase } from "../components/TransferDone";
+import {
+    formatSek,
+    parseAmount,
+    todayIso,
+    matchesSearch,
+    shouldSimulateFailure,
+    SIMULATED_TRANSFER_DELAY_MS,
+} from "../components/transfer/transferHelpers";
 import {
     OWN_ACCOUNTS,
     BG_PG_PAYEES,
@@ -24,88 +29,7 @@ import type {
     TransferAccount,
 } from "../constants/transferAccounts";
 
-type ModalKind = "from" | "to" | null;
 type Step = "form" | "bankid" | "done";
-
-function formatSek(amount: number) {
-    return amount.toLocaleString("sv-SE", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-}
-
-function parseAmount(raw: string) {
-    const parsed = parseFloat(raw.replace(/\s/g, "").replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function todayIso() {
-    return new Date().toISOString().slice(0, 10);
-}
-
-function matchesSearch(account: TransferAccount, query: string) {
-    if (!query) return true;
-    return `${account.name} ${account.meta}`.toLowerCase().includes(query);
-}
-
-// Ingen backend än — simulerar överföringen med en fördröjning. Skriv "fail"
-// i notisfältet för att medvetet trigga ett misslyckande under test. Byt ut
-// mot ett riktigt API-anrop här den dagen backend finns.
-const SIMULATED_TRANSFER_DELAY_MS = 2500;
-
-function shouldSimulateFailure(transferName: string) {
-    return transferName.trim().toLowerCase().includes("fail");
-}
-
-type AccountTriggerButtonProps = {
-    label: string;
-    name: string;
-    meta: string;
-    balance?: string;
-    onClick: () => void;
-};
-
-function AccountTriggerButton({
-    label,
-    name,
-    meta,
-    balance,
-    onClick,
-}: AccountTriggerButtonProps) {
-    const { t } = useTranslation();
-
-    return (
-        <div>
-            <label className="mb-1.5 block text-[13px] font-bold text-dark-navy">
-                {label}
-            </label>
-            <button
-                type="button"
-                onClick={onClick}
-                className="flex min-h-11 w-full cursor-pointer flex-col justify-center gap-0.5 rounded-md border border-nordiska-blue bg-white px-3.5 py-2.5 text-left"
-            >
-                <span className="flex items-baseline justify-between gap-3">
-                    <span className="truncate text-[15px] font-semibold text-dark-navy">
-                        {name}
-                    </span>
-                    {balance && (
-                        <span className="flex-none text-[15px] text-dark-navy">
-                            {balance}
-                        </span>
-                    )}
-                </span>
-                <span className="flex items-center justify-between gap-3">
-                    <span className="truncate text-xs text-secondary">
-                        {meta}
-                    </span>
-                    <span className="flex-none text-xs font-bold whitespace-nowrap text-primary-blue uppercase tracking-[0.08em]">
-                        {t("page-transfer.select")}
-                    </span>
-                </span>
-            </button>
-        </div>
-    );
-}
 
 export default function TransferPage() {
     const { t } = useTranslation();
@@ -330,159 +254,31 @@ export default function TransferPage() {
             <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] rounded-[10px] border border-[#E5EAF0] bg-white shadow-card">
                 <div className="px-10 pt-8 pb-10">
                     {(step === "form" || step === "bankid") && (
-                        <div>
-                            <div className="flex items-end justify-between border-b-[3px] border-nordiska-orange pb-2.5">
-                                <h2 className="m-0 text-[26px] font-semibold text-dark-navy">
-                                    {t("page-transfer.heading")}
-                                </h2>
-                            </div>
-                            <p className="mt-3.5 mb-6.5 max-w-[44ch] text-sm text-secondary">
-                                {t("page-transfer.help-text")}
-                            </p>
-
-                            <div className="flex flex-col gap-5.5">
-                                <div className="grid grid-cols-2 gap-5">
-                                    <AccountTriggerButton
-                                        label={t("page-transfer.from-label")}
-                                        name={
-                                            fromAccount
-                                                ? fromAccount.name
-                                                : t(
-                                                      "page-transfer.select-account-placeholder",
-                                                  )
-                                        }
-                                        meta={
-                                            fromAccount
-                                                ? fromAccount.meta
-                                                : t(
-                                                      "page-transfer.from-meta-placeholder",
-                                                  )
-                                        }
-                                        balance={
-                                            fromAccount
-                                                ? `${formatSek(fromAccount.balance)} sek`
-                                                : undefined
-                                        }
-                                        onClick={() => {
-                                            setModal("from");
-                                            setSearch("");
-                                        }}
-                                    />
-                                    <AccountTriggerButton
-                                        label={t("page-transfer.to-label")}
-                                        name={
-                                            toAccount
-                                                ? toAccount.name
-                                                : t(
-                                                      "page-transfer.select-recipient-placeholder",
-                                                  )
-                                        }
-                                        meta={
-                                            toAccount
-                                                ? toAccount.meta
-                                                : t(
-                                                      "page-transfer.to-meta-placeholder",
-                                                  )
-                                        }
-                                        onClick={() => {
-                                            setModal("to");
-                                            setSearch("");
-                                        }}
-                                    />
-                                </div>
-
-                                <div>
-                                    <InputField
-                                        name="transferAmount"
-                                        type="text"
-                                        label={t("page-transfer.amount-label")}
-                                        placeholder={t(
-                                            "page-transfer.amount-placeholder",
-                                        )}
-                                        value={amount}
-                                        onChange={(value) =>
-                                            setAmount(
-                                                value.replace(/[^\d ,]/g, ""),
-                                            )
-                                        }
-                                        suffix={t(
-                                            "page-transfer.amount-suffix",
-                                        )}
-                                        error={
-                                            over
-                                                ? t(
-                                                      "page-transfer.amount-error",
-                                                      {
-                                                          account:
-                                                              fromAccount?.name ??
-                                                              "",
-                                                      },
-                                                  )
-                                                : undefined
-                                        }
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 items-end gap-5">
-                                    <InputField
-                                        name="transferDate"
-                                        type="date"
-                                        label={t("page-transfer.date-label")}
-                                        placeholder=""
-                                        value={date}
-                                        onChange={setDate}
-                                    />
-                                    <label className="flex cursor-pointer items-center gap-2.5 pb-2.5 text-sm text-dark-navy">
-                                        <input
-                                            type="checkbox"
-                                            checked={recurring}
-                                            onChange={(e) =>
-                                                setRecurring(e.target.checked)
-                                            }
-                                            className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-nordiska-blue)]"
-                                        />
-                                        {t("page-transfer.recurring-label")}
-                                    </label>
-                                </div>
-
-                                <InputField
-                                    name="transferName"
-                                    type="text"
-                                    label={t(
-                                        recurring
-                                            ? "page-transfer.name-label-recurring"
-                                            : "page-transfer.name-label",
-                                    )}
-                                    placeholder={t(
-                                        "page-transfer.name-placeholder",
-                                    )}
-                                    value={name}
-                                    onChange={setName}
-                                />
-
-                                <div className="flex flex-col items-end gap-2.5 pt-1.5">
-                                    {ctaHint && (
-                                        <span className="text-sm text-secondary">
-                                            {ctaHint}
-                                        </span>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={handleSubmit}
-                                        disabled={!canSubmit}
-                                        className={`cursor-pointer rounded-md border-0 bg-nordiska-blue px-7.5 py-3.5 text-[15px] font-bold text-white hover:bg-login-bg disabled:cursor-not-allowed ${
-                                            canSubmit
-                                                ? "opacity-100"
-                                                : "opacity-[0.45]"
-                                        }`}
-                                    >
-                                        {isExternal
-                                            ? t("page-transfer.cta-submit-external")
-                                            : t("page-transfer.cta-submit-internal")}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <TransferForm
+                            fromAccount={fromAccount}
+                            toAccount={toAccount}
+                            onOpenFromModal={() => {
+                                setModal("from");
+                                setSearch("");
+                            }}
+                            onOpenToModal={() => {
+                                setModal("to");
+                                setSearch("");
+                            }}
+                            amount={amount}
+                            onAmountChange={setAmount}
+                            over={over}
+                            date={date}
+                            onDateChange={setDate}
+                            recurring={recurring}
+                            onRecurringChange={setRecurring}
+                            name={name}
+                            onNameChange={setName}
+                            isExternal={isExternal}
+                            canSubmit={canSubmit}
+                            ctaHint={ctaHint}
+                            onSubmit={handleSubmit}
+                        />
                     )}
 
                     {step === "done" && (
@@ -496,84 +292,29 @@ export default function TransferPage() {
                     )}
                 </div>
 
-                <div className="border-l border-[#E5EAF0] px-10 pt-8 pb-10">
-                    <Table tableType="planned" handleClick={() => {}}>
-                        <div className="max-h-[420px] overflow-y-auto">
-                            {upcomingTransfers.map((planned, index) => (
-                                <TableRow
-                                    key={`${planned.date}-${index}`}
-                                    id={`${planned.date}-${index}`}
-                                    rowType="planned"
-                                    plannedDate={planned.date}
-                                    plannedName={planned.name}
-                                    plannedNote={planned.note}
-                                    plannedSum={planned.sum}
-                                />
-                            ))}
-                        </div>
-                    </Table>
-                    <p className="mt-5.5 max-w-[42ch] text-xs text-secondary">
-                        {t("page-transfer.planned.footnote")}
-                    </p>
-                </div>
+                <PlannedTransfersPanel upcomingTransfers={upcomingTransfers} />
             </div>
 
-            {modal !== null && (
-                <Modal
-                    onClose={handleCloseModal}
-                    title={
-                        addAccountOpen
-                            ? t("page-transfer.add-account.heading")
-                            : modal === "from"
-                              ? t("page-transfer.modal.from-title")
-                              : t("page-transfer.modal.to-title")
-                    }
-                    widthClassName="w-[560px]"
-                    maxHeightClassName="max-h-[620px]"
-                >
-                    {addAccountOpen ? (
-                        <AddAccountForm
-                            onCancel={() => setAddAccountOpen(false)}
-                            onSave={handleSaveAdd}
-                        />
-                    ) : (
-                        <AccountPickerModal
-                            title={
-                                modal === "from"
-                                    ? t("page-transfer.modal.from-title")
-                                    : t("page-transfer.modal.to-title")
-                            }
-                            search={search}
-                            onSearchChange={setSearch}
-                            groups={groups}
-                            isEmpty={isEmpty}
-                            onSelect={handleSelectAccount}
-                            onClose={handleCloseModal}
-                            onAddNew={
-                                modal === "to" ? handleOpenAdd : undefined
-                            }
-                        />
-                    )}
-                </Modal>
-            )}
-
-            {step === "bankid" && toAccount && (
-                <Modal
-                    onClose={() => setStep("form")}
-                    title={t("page-transfer.bankid.heading")}
-                    widthClassName="w-[480px]"
-                >
-                    <BankIdConfirm
-                        amountFormatted={formatSek(amountValue)}
-                        toName={toAccount.name}
-                        toMeta={toAccount.meta}
-                        fromName={fromAccount ? fromAccount.name : ""}
-                        date={date}
-                        onApprove={startTransfer}
-                        onCancel={() => setStep("form")}
-                    />
-                </Modal>
-            )}
+            <TransferModals
+                modal={modal}
+                addAccountOpen={addAccountOpen}
+                search={search}
+                onSearchChange={setSearch}
+                groups={groups}
+                isEmpty={isEmpty}
+                onSelectAccount={handleSelectAccount}
+                onCloseModal={handleCloseModal}
+                onOpenAdd={handleOpenAdd}
+                onCancelAdd={() => setAddAccountOpen(false)}
+                onSaveAdd={handleSaveAdd}
+                showBankId={step === "bankid"}
+                fromAccount={fromAccount}
+                toAccount={toAccount}
+                amountValue={amountValue}
+                date={date}
+                onApprove={startTransfer}
+                onCancelBankId={() => setStep("form")}
+            />
         </div>
     );
 }
