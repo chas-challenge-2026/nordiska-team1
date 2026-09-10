@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\..\BuildingBlocks\Database\Nordiska.BuildingBlocks.Database.csproj" />
@@ -12,7 +12,6 @@
   <ItemGroup>
     <PackageReference Include="ActiveLogin.Authentication.BankId.AspNetCore" />
     <PackageReference Include="FluentValidation" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

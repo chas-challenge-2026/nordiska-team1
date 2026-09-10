@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
@@ -40,9 +41,13 @@ public class AuthService : IAuthService
     {
         try
         {
+            var requirement = !string.IsNullOrWhiteSpace(request?.PersonalNum)
+                ? new Requirement(personalNumber: request.PersonalNum)
+                : null;
+
             var response = await _bankIdAppApiClient.AuthAsync(new AuthRequest(
                 endUserIp: clientIp,
-                requirement: new Requirement([request.PersonalNum])
+                requirement: requirement
             ));
 
             var initiateData = new BankIdInitiateResponseDto(
@@ -77,21 +82,25 @@ public class AuthService : IAuthService
                 return new AuthenticationResultDto(true, null, CollectData: pendingData);
             }
 
-            var personalNumber = collectResponse.CompletionData?.User.PersonalIdentityNumber;
+            var rawPersonalNumber = collectResponse.CompletionData?.User.PersonalIdentityNumber ?? string.Empty;
+            var cleanPersonalNumber = rawPersonalNumber.Replace("-", "").Trim();
             
-            if (string.IsNullOrEmpty(personalNumber))
+            if (string.IsNullOrEmpty(cleanPersonalNumber))
             {
                 return new AuthenticationResultDto(false, "Personal number missing from BankID completion data.");
             }
             
-            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == personalNumber);
+            var customer = await _db.Customers.FirstOrDefaultAsync(c => 
+                c.PersonalNum == cleanPersonalNumber || 
+                c.PersonalNum == rawPersonalNumber);
 
             if (customer == null)
             {
-                return new AuthenticationResultDto(false, "Could not find customer.");
+                return new AuthenticationResultDto(false, $"Could not find customer with personal number: '{cleanPersonalNumber}' (raw: '{rawPersonalNumber}').");
             }
 
             var token = await _jwtProvider.Generate(customer);
+            response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
 
             var completeData = new BankIdCollectResponseDto(
                 "COMPLETE",
@@ -107,7 +116,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request)
+    public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
     {
         var existingCustomer = await _userManager.FindByEmailAsync(request.Email);
         if (existingCustomer != null)
@@ -117,6 +126,7 @@ public class AuthService : IAuthService
 
         var newCustomer = new Customer
         {
+            UserName = request.Email,
             Name = request.Name,
             PersonalNum = request.PersonalNum,
             Email = request.Email,
@@ -133,6 +143,7 @@ public class AuthService : IAuthService
         }
 
         var token = await _jwtProvider.Generate(newCustomer);
+        response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
         return new AuthenticationResultDto(true, null, Token: token);
     }
 }

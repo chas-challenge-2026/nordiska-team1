@@ -60,17 +60,6 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
-        <member name="T:Nordiska.FrontendApi.Controllers.AuthController">
-            <summary>
-            Authentication endpoints for local/demo login flows.
-            </summary>
-        </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Controllers.LoginRequest)">
-            <summary>
-            Performs a demo login, sets an HTTP-only JWT cookie, and returns the authenticated user info.
-            </summary>
-            <param name="request">Login request containing email and password.</param>
-        </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser">
             <summary>
             Returns the currently authenticated user's profile information extracted from the JWT.
@@ -80,23 +69,6 @@
             <summary>
             Logs out the user by clearing the HTTP-only authentication cookie.
             </summary>
-        </member>
-        <member name="T:Nordiska.FrontendApi.Controllers.BankIdAuthController">
-            <summary>
-            Endpoints for initiating and collecting BankID authentication flows.
-            </summary>
-        </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.BankIdAuthController.Initiate(Nordiska.FrontendApi.Contracts.Requests.BankIdInitiateRequest)">
-            <summary>
-            Initiates a BankID authentication request for the provided personal number.
-            </summary>
-            <param name="request">BankId initiate request containing the personal number.</param>
-        </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.BankIdAuthController.Collect(Nordiska.FrontendApi.Contracts.Requests.BankIdCollectRequest)">
-            <summary>
-            Polls BankID collect endpoint to determine the status of an in-progress authentication flow.
-            </summary>
-            <param name="request">Collect request containing the order reference.</param>
         </member>
         <member name="T:Nordiska.FrontendApi.Controllers.TestController">
             <summary>

@@ -1,4 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Application;
 
@@ -45,7 +49,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestDto request)
     {
-        var result = await _authService.RegisterCustomerAsync(request);
+        var result = await _authService.RegisterCustomerAsync(request, Response);
 
         if (!result.IsSuccess)
         {
@@ -58,5 +62,36 @@ public class AuthController : ControllerBase
         }
 
         return Ok(new { token = result.Token });
+    }
+
+    /// <summary>
+    /// Returns the currently authenticated user's profile information extracted from the JWT.
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult GetCurrentUser()
+    {
+        var customerId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                         ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
+                    ?? User.FindFirst(ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new
+        {
+            id = customerId,
+            email = email,
+            role = role
+        });
+    }
+
+    /// <summary>
+    /// Logs out the user by clearing the HTTP-only authentication cookie.
+    /// </summary>
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.DeleteAuthCookie();
+        return Ok(new { message = "Logged out successfully" });
     }
 }

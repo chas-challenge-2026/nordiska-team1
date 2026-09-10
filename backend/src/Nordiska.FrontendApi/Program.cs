@@ -146,19 +146,14 @@ builder.Services.AddProblemDetails(options =>
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
 // Service for bank id  
-builder.Services.AddBankId(bankId =>
+if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
 {
-    
-    if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
-    {
-        bankId.UseSimulatedEnvironment();
-    }
-    else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
-    {
-        bankId.UseTestEnvironment();
-        // Add real certificate, ex from azure key vault below. 
-    }
-});
+    builder.Services.AddBankId(bankId => bankId.UseSimulatedEnvironment());
+}
+else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddBankId(bankId => bankId.UseTestEnvironment());
+}
 builder.Services
     .AddAuthentication()
     .AddBankIdAuth(bankId =>
