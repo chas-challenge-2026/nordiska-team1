@@ -1,7 +1,11 @@
+# Local development overrides
 services:
   app:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "8080:8080"
+
   db:
     ports:
-      - "5432:5432"
+      - "5433:5432"
