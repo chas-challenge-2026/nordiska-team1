@@ -41,11 +41,12 @@ export default function PageHeader() {
     const isLogin = location.pathname === "/login";
     const isDarkHeader = location.pathname.includes("/settings")
 
-    const headerHight = isLargeHeader ? "h-[120px]" : "h-[75px]";
+    const headerHeight = isLargeHeader ? "md:h-[120px] h-[75px]" : "h-[75px]";
     const navLinks = !isLargeHeader;
+    const showMobileMenu = true;
     const topPosition = isLargeHeader ? "fixed top-0" : "sticky top-0";
     const languageSelect = isLargeHeader ? "top-[115px]" : "top-[70px]";
-    const logoSize = isLargeHeader ? "text-6xl" : "text-3xl";
+    const logoSize = isLargeHeader ? "text-3xl md:text-6xl" : "text-3xl";
 
     const headerBackground = isLogin
         ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center"
@@ -53,6 +54,12 @@ export default function PageHeader() {
             ? "bg-dark-navy"
             : "bg-nordiska-blue";
 
+    const hamburgerBackground = isLogin
+        ? "bg-login-bg"
+        : isDarkHeader
+            ? "bg-dark-navy"
+            : "bg-nordiska-blue";
+    
     const languageSelectBg = isLogin ? "" : isDarkHeader
             ? "bg-dark-navy"
             : "bg-nordiska-blue";
@@ -73,7 +80,7 @@ export default function PageHeader() {
                 duration: 0.5,
                 ease: "easeOut",
             }}
-            className={`${topPosition} z-[1001] w-screen ${headerHight} flex items-end justify-between ${headerBackground} gap-10 pt-0 px-5 pb-4`}>
+            className={`${topPosition} z-[1001] w-screen ${headerHeight} flex items-end justify-between ${headerBackground} gap-10 pt-0 px-5 pb-4`}>
 
             {/* ----- LOGO ----- */}
             <a
@@ -84,17 +91,18 @@ export default function PageHeader() {
             </a>
 
             {/* ----- LÄNKAR ----- */}
-            {navLinks && (
                 <div className="hidden items-center gap-15 md:flex">
+                    {navLinks && (
                     <nav 
                         aria-label={t("aria-label.page-nav")}
                         className="flex gap-10 text-[14px] uppercase tracking-[0.18em] text-white"
                     >
-                        <PageLink route="/" title={t("page-header.my-nordiska")} />
-                        <PageLink route="/help" title={t("page-header.help-center")} />
-                        <PageLink route="/settings" title={t("page-header.settings")} />
+                        <PageLink route="/" title={t("page-header.my-nordiska")} header/>
+                        <PageLink route="/help" title={t("page-header.help-center")} header/>
+                        <PageLink route="/settings" title={t("page-header.settings")} header/>
                         <LogoutButton title={t("page-header.logout")} />
                     </nav>
+                    )}
 
                     {/* ----- SPRÅK ----- */}
                     <div ref={languageRef} className="relative">
@@ -106,7 +114,7 @@ export default function PageHeader() {
                             className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white"
                         >
                             <img
-                                className="h-[14px] w-[19px] invert"
+                                className="h-[14px] w-[19px] invert -mr-1.5"
                                 src="icons/lang-icon.svg"
                                 alt=""
                                 aria-hidden="true"
@@ -128,7 +136,7 @@ export default function PageHeader() {
                                         );
                                         setLanguageOpen(false);
                                     }}
-                                    className="cursor-pointer px-3 py-2 text-[14px] uppercase tracking-[0.18em] text-white"
+                                    className="cursor-pointer ml-2 px-3 py-2 text-[14px] uppercase tracking-[0.18em] text-white"
                                 >
                                     {i18n.language === "sv"
                                         ? "English"
@@ -138,13 +146,12 @@ export default function PageHeader() {
                         )}
                     </div>
                 </div>
-            )}
 
             {/* ----- MOBILE ----- */}
             {/* ------------------ */}
 
             {/* ----- HAMBURGER ----- */}
-            {navLinks && (
+            {showMobileMenu && (
                 <button
                     type="button"
                     onClick={() =>
@@ -176,54 +183,44 @@ export default function PageHeader() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`fixed inset-0 z-[1000] flex flex-col ${headerBackground} px-6 pb-10 pt-[110px] md:hidden`}
+                    className={`fixed inset-0 z-[1000] flex flex-col ${hamburgerBackground} px-6 pb-10 pt-[110px] md:hidden justify-end`}
                 >
-
+                    
                     {/* ----- LÄNKAR ----- */}
+                {navLinks && (
                     <nav
                         aria-label={t("aria-label.mobile-nav")}
-                        className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat"
+                        className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat text-white text-xl font-semibold uppercase tracking-wider"
                     >
                         <Link
                             to="/"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="text-xl font-semibold uppercase tracking-wider text-white"
                         >
                             {t("page-header.my-nordiska")}
                         </Link>
                         <Link
                             to="/help"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="text-xl font-semibold uppercase tracking-wider text-white"
                         >
                             {t("page-header.help-center")}
                         </Link>
                         <Link
                             to="/settings"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="text-xl font-semibold uppercase tracking-wider text-white"
                         >
                             {t("page-header.settings")}
                         </Link>
 
-                        {/* --------- !!!!!!!!!!! --------- */}
-                        {/* --------- !!!!!!!!!!! --------- */}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setMobileMenuOpen(false);
-                                {/* ------- INGEN FUNKTION FÖR LOG OUT ------- */}
-                            }}
-                            className="text-xl font-semibold uppercase tracking-wider text-white"
-                        >
-                            {t("page-header.logout")}
-                        </button>
-                        {/* --------- !!!!!!!!!!! --------- */}
-                        {/* --------- !!!!!!!!!!! --------- */}
+                        <div onClick={() => setMobileMenuOpen(false)}>
+                            <LogoutButton title={t("page-header.logout")} mobile={true} />
+                        </div>
                     </nav>
+                )}
 
                     {/* ----- SPRÅK ----- */}
-                    <div className="flex justify-center">
+                    <div
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex justify-center">
                         <button
                             type="button"
                             onClick={() =>
