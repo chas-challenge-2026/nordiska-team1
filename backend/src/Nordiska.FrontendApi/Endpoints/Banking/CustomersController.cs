@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
@@ -9,6 +10,7 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 
 [ApiController]
 [Route("api/customers")]
+[Authorize]
 public sealed class CustomersController : ControllerBase
 {
     private readonly ICustomerService _service;
@@ -37,6 +39,7 @@ public sealed class CustomersController : ControllerBase
     /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
+    [AllowAnonymous]
     [HttpPost]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status201Created)]
     public async Task<ActionResult<CustomerResponse>> Create([FromBody] CreateCustomerRequest request, CancellationToken cancellationToken)

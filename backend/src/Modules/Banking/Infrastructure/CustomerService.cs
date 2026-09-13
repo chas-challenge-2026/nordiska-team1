@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Nordiska.Modules.Banking.Domain;
@@ -10,11 +11,13 @@ public sealed class CustomerService : ICustomerService
 {
     private readonly BankingDbContext _db;
     private readonly ILogger<CustomerService> _logger;
+    private readonly UserManager<Customer> _userManager;
 
-    public CustomerService(BankingDbContext db, ILogger<CustomerService> logger)
+    public CustomerService(BankingDbContext db, ILogger<CustomerService> logger, UserManager<Customer> userManager)
     {
         _db = db;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<Customer> CreateAsync(string name, string email, string personalNum, CancellationToken cancellationToken = default)
@@ -29,8 +32,13 @@ public sealed class CustomerService : ICustomerService
             PasswordHash = string.Empty
         };
 
-        _db.Customers.Add(customer);
-        await _db.SaveChangesAsync(cancellationToken);
+        var result = await _userManager.CreateAsync(customer);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(';', result.Errors.Select(e => e.Description));
+            _logger.LogError("Failed to create user: {Errors}", errors);
+            throw new InvalidOperationException($"Unable to create user: {errors}");
+        }
 
         _logger.LogInformation("Created customer {Id}", customer.Id);
 
@@ -39,7 +47,8 @@ public sealed class CustomerService : ICustomerService
 
     public async Task<Customer> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        // Use UserManager to ensure we get Identity-managed user
+        var customer = await _userManager.FindByIdAsync(id.ToString());
         if (customer is null)
             throw new KeyNotFoundException($"Customer with id {id} was not found.");
 
@@ -48,7 +57,7 @@ public sealed class CustomerService : ICustomerService
 
     public async Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, CancellationToken cancellationToken = default)
     {
-        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        var customer = await _userManager.FindByIdAsync(id.ToString());
         if (customer is null)
             throw new KeyNotFoundException($"Customer with id {id} was not found.");
 
@@ -56,7 +65,13 @@ public sealed class CustomerService : ICustomerService
         if (!string.IsNullOrWhiteSpace(email)) customer.Email = email!;
         if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum!;
 
-        await _db.SaveChangesAsync(cancellationToken);
+        var result = await _userManager.UpdateAsync(customer);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(';', result.Errors.Select(e => e.Description));
+            _logger.LogError("Failed to update user {Id}: {Errors}", id, errors);
+            throw new InvalidOperationException($"Unable to update user: {errors}");
+        }
 
         _logger.LogInformation("Updated customer {Id}", id);
 

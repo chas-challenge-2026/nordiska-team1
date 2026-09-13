@@ -109,6 +109,30 @@
             </summary>
             <returns>Basic user info and all claims.</returns>
         </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a customer by id.
+            </summary>
+            <param name="id"></param>
+            <param name="cancellationToken"></param>
+            <returns>CustomerResponse</returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.Create(Nordiska.Modules.Banking.Contracts.Requests.CreateCustomerRequest,System.Threading.CancellationToken)">
+            <summary>
+                Creates a new customer.
+            </summary>
+            <param name="request"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.Update(Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest,System.Threading.CancellationToken)">
+            <summary>
+            Updates a customer.
+            </summary>
+            <param name="request"></param>
+            <param name="cancellationToken"></param>
+            <returns>CustomerResponse</returns>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.SavingsAccountsController">
             <summary>
             API endpoints for managing savings accounts.
