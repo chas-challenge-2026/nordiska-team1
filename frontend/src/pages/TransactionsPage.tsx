@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import TransactionTable from '../components/transactions/TransactionsTable';
 import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
@@ -19,12 +19,9 @@ export default function TransactionsPage() {
     const { data: transactions, isLoading: transactionsLoading, isError: transactionsError } = useTransactions();
     const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useAccounts();
 
-    const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
-    useEffect(() => {
-        if (accounts) {
-            setSelectedAccountIds(accounts.map(a => a.id));
-        }
-    }, [accounts])
+    const [selectedAccountIds, setSelectedAccountIds] = useState<number[] | null>(null);
+    const effectiveSelectedIds = selectedAccountIds ?? accounts?.map(a => a.id) ?? [];
+
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -44,7 +41,7 @@ export default function TransactionsPage() {
 
             <TransactionTable
                 transactions={transactions ?? []}
-                selectedAccountIds={selectedAccountIds}
+                selectedAccountIds={effectiveSelectedIds}
                 filters={filters}
                 isLoading={transactionsLoading}
                 isError={transactionsError}
@@ -53,7 +50,7 @@ export default function TransactionsPage() {
             <div className='hidden md:block'>
                 <AccountSelector
                     accounts={accounts ?? []}
-                    selectedIds={selectedAccountIds}
+                    selectedIds={effectiveSelectedIds}
                     onChange={setSelectedAccountIds}
                     isLoading={accountsLoading}
                     isError={accountsError}
@@ -70,7 +67,7 @@ export default function TransactionsPage() {
                         <TransactionFilter onChange={setFilters} onReset={() => setFilters(initialFilters)} />
                         <AccountSelector
                             accounts={accounts ?? []}
-                            selectedIds={selectedAccountIds}
+                            selectedIds={effectiveSelectedIds}
                             onChange={setSelectedAccountIds}
                             isLoading={accountsLoading}
                             isError={accountsError}
