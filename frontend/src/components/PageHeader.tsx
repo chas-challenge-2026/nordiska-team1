@@ -35,6 +35,7 @@ export default function PageHeader() {
         "/inactive",
         "/login",
         "/logout",
+        "/logged-out",
     ];
 
     const isLargeHeader = LARGE_HEADER_ROUTES.includes(location.pathname);

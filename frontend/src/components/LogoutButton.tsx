@@ -16,7 +16,7 @@ export default function LogoutButton({ title, mobile = false }: LogoutButtonProp
         mutate(undefined, {
             onSuccess: () => {
                 clearUser();
-                navigate("/login");
+                navigate("/logged-out");
             },
         });
     }
