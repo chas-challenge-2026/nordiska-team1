@@ -29,21 +29,22 @@ public class DbInitializer
         {
             var testCustomer = new Customer
             {
-                UserName = "anna@exempel.se",
+                UserName = "anna@example.com",
                 Name = "Anna Smith",
                 PersonalNum = testPersonalNum,
-                Email = "anna@exempel.se",
+                Email = "anna@example.com",
                 PhoneNumber = "+46700767029",
                 CreatedAt = DateTime.UtcNow
             };
 
             await userManager.CreateAsync(testCustomer);
         }
-        else if (string.IsNullOrEmpty(existingCustomer.UserName))
+        else
         {
-            existingCustomer.UserName = "anna@exempel.se";
-            existingCustomer.NormalizedUserName = "ANNA@EXEMPEL.SE";
-            existingCustomer.NormalizedEmail = "ANNA@EXEMPEL.SE";
+            existingCustomer.UserName = "anna@example.com";
+            existingCustomer.Email = "anna@example.com";
+            existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
+            existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
             await db.SaveChangesAsync();
         }
 
@@ -55,21 +56,22 @@ public class DbInitializer
         {
             var testErik = new Customer
             {
-                UserName = "erik@exempel.se",
+                UserName = "erik@example.com",
                 Name = "Erik Svensson",
                 PersonalNum = erikPersonalNum,
-                Email = "erik@exempel.se",
+                Email = "erik@example.com",
                 PhoneNumber = "+46700123456",
                 CreatedAt = DateTime.UtcNow
             };
 
             await userManager.CreateAsync(testErik);
         }
-        else if (string.IsNullOrEmpty(existingErik.UserName))
+        else
         {
-            existingErik.UserName = "erik@exempel.se";
-            existingErik.NormalizedUserName = "ERIK@EXEMPEL.SE";
-            existingErik.NormalizedEmail = "ERIK@EXEMPEL.SE";
+            existingErik.UserName = "erik@example.com";
+            existingErik.Email = "erik@example.com";
+            existingErik.NormalizedUserName = "ERIK@EXAMPLE.COM";
+            existingErik.NormalizedEmail = "ERIK@EXAMPLE.COM";
             await db.SaveChangesAsync();
         }
 

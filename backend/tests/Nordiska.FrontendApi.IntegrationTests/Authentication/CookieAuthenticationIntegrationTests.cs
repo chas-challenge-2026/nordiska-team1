@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -6,16 +8,159 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Nordiska.FrontendApi.Authentication;
+using Nordiska.FrontendApi.Authentication.Jwt;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Responses;
+using Nordiska.FrontendApi.Extensions;
+using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Domain;
 using Xunit;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Authentication;
 
-public class CookieAuthenticationIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class TestAuthService : IAuthService
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly IJwtProvider _jwtProvider;
+    private static readonly ConcurrentDictionary<string, Customer> _customers = new();
+    private static readonly ConcurrentDictionary<string, string> _orders = new();
 
-    public CookieAuthenticationIntegrationTests(WebApplicationFactory<Program> factory)
+    static TestAuthService()
+    {
+        var anna = new Customer
+        {
+            Id = 1,
+            Name = "Anna Smith",
+            Email = "anna@exempel.se",
+            PersonalNum = "198202116050",
+            PhoneNumber = "+46701112233"
+        };
+        var erik = new Customer
+        {
+            Id = 2,
+            Name = "Erik Svensson",
+            Email = "erik@exempel.se",
+            PersonalNum = "197903142380",
+            PhoneNumber = "+46702223344"
+        };
+
+        _customers[anna.PersonalNum] = anna;
+        _customers[anna.Email] = anna;
+        _customers["anna@example.com"] = anna;
+        _customers[erik.PersonalNum] = erik;
+        _customers[erik.Email] = erik;
+        _customers["erik@example.com"] = erik;
+    }
+
+    public TestAuthService(IJwtProvider jwtProvider)
+    {
+        _jwtProvider = jwtProvider;
+    }
+
+    public Task<AuthenticationResultDto> InitiateBankIdAsync(BankIdInitiateRequest request, string clientIp)
+    {
+        var cleanPersonalNum = request.PersonalNum?.Replace("-", "").Trim() ?? "198202116050";
+        var orderRef = Guid.NewGuid().ToString();
+        _orders[orderRef] = cleanPersonalNum;
+
+        var dto = new BankIdInitiateResponseDto(orderRef, "test-auto-start-token", "test-qr-code", "test-qr-secret");
+        return Task.FromResult(new AuthenticationResultDto(true, null, InitiateData: dto));
+    }
+
+    public async Task<AuthenticationResultDto> CollectBankIdAsync(BankIdCollectRequest request, HttpResponse response)
+    {
+        if (!_orders.TryGetValue(request.OrderRef, out var personalNum))
+        {
+            personalNum = "198202116050";
+        }
+
+        if (!_customers.TryGetValue(personalNum, out var customer))
+        {
+            customer = new Customer
+            {
+                Id = Random.Shared.Next(100, 9999),
+                Name = $"BankID User {personalNum}",
+                Email = $"user_{personalNum}@nordiska.se",
+                PersonalNum = personalNum,
+                PhoneNumber = "+46700000000"
+            };
+            _customers[personalNum] = customer;
+            _customers[customer.Email] = customer;
+        }
+
+        var token = await _jwtProvider.Generate(customer);
+        response.AppendAuthCookie(token, 15);
+
+        var completeData = new BankIdCollectResponseDto(
+            "COMPLETE",
+            null,
+            new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name)
+        );
+
+        return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
+    }
+
+    public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
+    {
+        var cleanPersonalNum = request.PersonalNum.Replace("-", "").Trim();
+        var customer = new Customer
+        {
+            Id = Random.Shared.Next(100, 9999),
+            Name = request.Name,
+            Email = request.Email,
+            PersonalNum = cleanPersonalNum,
+            PhoneNumber = request.PhoneNumber
+        };
+
+        _customers[cleanPersonalNum] = customer;
+        _customers[request.Email] = customer;
+
+        var token = await _jwtProvider.Generate(customer);
+        response.AppendAuthCookie(token, 15);
+
+        return new AuthenticationResultDto(true, null, Token: token);
+    }
+
+    public async Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response)
+    {
+        if (_customers.TryGetValue(request.Email, out var customer))
+        {
+            var token = await _jwtProvider.Generate(customer);
+            response.AppendAuthCookie(token, 15);
+            var completeData = new BankIdCollectResponseDto(
+                "COMPLETE",
+                null,
+                new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name)
+            );
+            return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
+        }
+
+        return new AuthenticationResultDto(false, "Ogiltig e-postadress eller lösenord.");
+    }
+}
+
+public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IAuthService>();
+            services.AddScoped<IAuthService, TestAuthService>();
+        });
+    }
+}
+
+public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebApplicationFactory>
+{
+    private readonly CustomAuthWebApplicationFactory _factory;
+
+    public CookieAuthenticationIntegrationTests(CustomAuthWebApplicationFactory factory)
     {
         _factory = factory;
     }

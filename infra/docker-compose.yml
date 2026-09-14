@@ -15,8 +15,8 @@ services:
     volumes:
       - postgres_v2_data:/var/lib/postgresql/data
       - ./v2/postgres/init:/docker-entrypoint-initdb.d:ro
-    expose:
-      - "5432"
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s

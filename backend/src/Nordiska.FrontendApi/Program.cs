@@ -24,6 +24,13 @@ using Nordiska.Modules.Banking.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns (NOR-78)
+builder.Host.UseDefaultServiceProvider((context, options) =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
 // Register JWT configuration options
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 

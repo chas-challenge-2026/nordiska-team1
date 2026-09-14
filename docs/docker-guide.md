@@ -31,17 +31,31 @@ Once the containers are built and started:
 
 ---
 
-## 2. BankID Authentication & Test Users
+## 2. Test Accounts and Authentication
 
-The backend uses **BankID** (`ActiveLogin`) for authentication with automatic JWT cookie generation.
+The portal supports two parallel authentication methods:
 
-### Available Test Personal Numbers:
+### A. Password Login (Email & Password)
+Seeded test accounts available out of the box:
 
-| Personal Number | Name | Email | Description |
+| Email | Password | Personal Number | Name |
 | :--- | :--- | :--- | :--- |
-| `199908072391` | BankID Simulerad | `simulated@bankid.se` | **Primary BankID Simulator user** (always returned by simulator on completion) |
-| `198202116050` | Anna Smith | `anna@exempel.se` | Seeded customer account |
-| `197903142380` | Erik Svensson | `erik@exempel.se` | Seeded customer account |
+| `anna@example.com` (or `anna@exempel.se`) | `password123` | `198202116050` | Anna Smith |
+| `erik@example.com` (or `erik@exempel.se`) | `password123` | `197903142380` | Erik Svensson |
+
+### B. BankID Login (Dynamic Mock)
+* You can log in using **any 12-digit Swedish personal number** (e.g. `199001011234`).
+* If the user does not exist in the database, a customer profile and primary savings account with initial balance are created dynamically.
+
+### C. Local Development Database Credentials (PostgreSQL)
+
+| Property | Value |
+| :--- | :--- |
+| **Host** | `localhost` (or `db` inside Docker network) |
+| **Port** | `5432` |
+| **Database** | `nordiska_v2` |
+| **Username** | `nordiska_migrator` |
+| **Password** | `migrator_secret_123` |
 
 ### How to Authenticate via BankID Simulator (in Scalar):
 
