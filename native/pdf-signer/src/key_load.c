@@ -23,6 +23,16 @@ struct key_loader
   OSSL_PROVIDER* pkcs11_provider;
 };
 
+typedef struct
+{
+  BIO*              bio;
+  OSSL_DECODER_CTX* decoder;
+  OSSL_STORE_CTX*   store;
+  OSSL_STORE_INFO*  store_info;
+  UI_METHOD*        ui_method;
+  EVP_PKEY*         pkey;
+} key_load_resources_t;
+
 struct file_passphrase_ctx
 {
   const key_credentials_t* credentials;
@@ -34,6 +44,7 @@ struct pkcs11_ui_ctx
   const key_credentials_t* credentials;
   const key_spec_t*        spec;
 };
+
 
 static void release_secret(unsigned char** secret_buf) {
   if (!secret_buf || !*secret_buf)
@@ -444,7 +455,9 @@ key_status_t key_load(key_loader_t* loader, const key_spec_t* spec,
     return KEY_STATUS_INVALID_ARGUMENT;
   }
 
-  out->pkey = NULL;
+  if (out->pkey != NULL) {
+    return KEY_STATUS_INVALID_ARGUMENT;
+  }
 
   switch (spec->source) {
   case KEY_SOURCE_FILE:

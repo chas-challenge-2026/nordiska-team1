@@ -85,25 +85,6 @@ typedef enum
   KEY_STATUS_INTERNAL_ERROR
 } key_status_t;
 
-
-/*
- *key_load_resources_t
- *  Sturct used to help simplify cleanup
- *  for external resources
- *
- *
- * */
-
-typedef struct
-{
-  BIO*              bio;
-  OSSL_DECODER_CTX* decoder;
-  OSSL_STORE_CTX*   store;
-  OSSL_STORE_INFO*  store_info;
-  UI_METHOD*        ui_method;
-  EVP_PKEY*         pkey;
-} key_load_resources_t;
-
 /*
  * key_loader_config_t
  *
