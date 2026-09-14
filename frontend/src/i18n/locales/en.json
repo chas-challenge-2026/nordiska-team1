@@ -58,7 +58,9 @@
       "transactions": "Latest transactions",
       "all-transactions": "Show more transactions",
       "less-transactions": "Show fewer transactions",
-      "filter-options": "Select deposites or withdrawls"
+      "filter-options": "Select deposites or withdrawls",
+      "loading-accounts": "Loading accounts...",
+      "accounts-error": "There was an issue loading accounts"
   },
   "login-route": {
     "title": "Log in",

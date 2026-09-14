@@ -56,7 +56,10 @@
     "withdraws": "Endast uttag",
     "transactions": "Senaste transaktioner",
     "all-transactions": "Visa fler transaktioner",
-    "less-transactions": "Visa färre transaktioner"
+    "less-transactions": "Visa färre transaktioner",
+    "filter-options": "Välj instättningar eller uttag",
+    "loading-accounts": "Laddar konton...",
+    "accounts-error": "Ett problem uppstod vid hämtning av konton"
 },
 "login-route": {
     "title": "Logga in",
