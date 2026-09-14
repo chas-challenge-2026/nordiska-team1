@@ -43,6 +43,42 @@ static void release_secret(unsigned char** secret_buf) {
   *secret_buf = NULL;
 }
 
+static void cleanup_key_load_resources(key_load_resources_t* resources) {
+  if (!resources) {
+    return;
+  }
+
+  if (resources->store_info) {
+    OSSL_STORE_INFO_free(resources->store_info);
+    resources->store_info = NULL;
+  }
+
+  if (resources->pkey) {
+    EVP_PKEY_free(resources->pkey);
+    resources->pkey = NULL;
+  }
+
+  if (resources->decoder) {
+    OSSL_DECODER_CTX_free(resources->decoder);
+    resources->decoder = NULL;
+  }
+
+  if (resources->bio) {
+    BIO_free(resources->bio);
+    resources->bio = NULL;
+  }
+
+  if (resources->store) {
+    OSSL_STORE_close(resources->store);
+    resources->store = NULL;
+  }
+
+  if (resources->ui_method) {
+    UI_destroy_method(resources->ui_method);
+    resources->ui_method = NULL;
+  }
+}
+
 static int file_passphrase_cb(char* pass, size_t pass_size, size_t* pass_len,
                               const OSSL_PARAM params[], void* arg) {
   (void)params;
@@ -180,22 +216,21 @@ static key_status_t load_file_key(key_loader_t* loader, const key_spec_t* spec,
     fprintf(stderr, "Invalid or missing path\n");
     return KEY_STATUS_INVALID_ARGUMENT;
   }
+  key_load_resources_t resources = {0};
 
-  BIO*      bio_in = NULL;
-  EVP_PKEY* pkey   = NULL;
-
-  bio_in = BIO_new_file(spec->u.file.path, "rb");
-  if (!bio_in) {
+  resources.bio = BIO_new_file(spec->u.file.path, "rb");
+  if (!resources.bio) {
     fprintf(stderr, "Failed to open key-file\n");
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_LOAD_FAILED;
   }
 
-  OSSL_DECODER_CTX* dctx = OSSL_DECODER_CTX_new_for_pkey(
-      &pkey, NULL, NULL, NULL, OSSL_KEYMGMT_SELECT_PRIVATE_KEY, loader->libctx, NULL);
+  resources.decoder = OSSL_DECODER_CTX_new_for_pkey(
+      &resources.pkey, NULL, NULL, NULL, OSSL_KEYMGMT_SELECT_PRIVATE_KEY, loader->libctx, NULL);
 
-  if (!dctx) {
+  if (!resources.decoder) {
     fprintf(stderr, "Failed to create decoder context\n");
-    BIO_free(bio_in);
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
 
@@ -205,40 +240,33 @@ static key_status_t load_file_key(key_loader_t* loader, const key_spec_t* spec,
   };
 
   if (credentials && credentials->callback) {
-    if (!OSSL_DECODER_CTX_set_passphrase_cb(dctx, file_passphrase_cb, &pass_ctx)) {
-      BIO_free(bio_in);
-      OSSL_DECODER_CTX_free(dctx);
+    if (!OSSL_DECODER_CTX_set_passphrase_cb(resources.decoder, file_passphrase_cb, &pass_ctx)) {
+      cleanup_key_load_resources(&resources);
       return KEY_STATUS_INTERNAL_ERROR;
     }
   }
-  if (OSSL_DECODER_from_bio(dctx, bio_in) != 1) {
+  if (OSSL_DECODER_from_bio(resources.decoder, resources.bio) != 1) {
     fprintf(stderr, "Failed to decode context\n");
-    EVP_PKEY_free(pkey);
-    OSSL_DECODER_CTX_free(dctx);
-    BIO_free(bio_in);
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_LOAD_FAILED;
   }
 
-  if (!pkey) {
+  if (!resources.pkey) {
     fprintf(stderr, "unable to retrieve pkey\n");
-    OSSL_DECODER_CTX_free(dctx);
-    BIO_free(bio_in);
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
 
-  out->pkey = pkey;
-  pkey      = NULL;
+  out->pkey      = resources.pkey;
+  resources.pkey = NULL;
 
-  OSSL_DECODER_CTX_free(dctx);
-  BIO_free(bio_in);
-
+  cleanup_key_load_resources(&resources);
   return KEY_STATUS_OK;
 }
 
 static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
                                     const key_credentials_t* credentials, key_handle_t* out) {
 
-  (void)credentials;
 
   if (!loader || !spec || !out) {
     fprintf(stderr, "invalid or missing argument\n");
@@ -252,19 +280,18 @@ static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec
     return KEY_STATUS_INVALID_ARGUMENT;
   }
 
-  OSSL_STORE_CTX* store = NULL;
-  EVP_PKEY*       pkey  = NULL;
+  key_load_resources_t resources = {0};
 
-  UI_METHOD* ui_method = UI_create_method("key-loader-pkcs11");
-  if (!ui_method) {
+  resources.ui_method = UI_create_method("key-loader-pkcs11");
+  if (!resources.ui_method) {
     fprintf(stderr, "Failed to create ui method\n");
-    OSSL_STORE_close(store);
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
 
-  if (UI_method_set_reader(ui_method, pkcs11_ui_reader) != 0) {
+  if (UI_method_set_reader(resources.ui_method, pkcs11_ui_reader) != 0) {
     fprintf(stderr, "Failed to set PKCS#11 UI reader\n");
-    OSSL_STORE_close(store);
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
 
@@ -273,54 +300,51 @@ static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec
       .spec        = spec,
   };
 
-  store = OSSL_STORE_open_ex(spec->u.pkcs11.uri, loader->libctx, NULL, ui_method, &ui_ctx, NULL,
-                             NULL, NULL);
+  resources.store = OSSL_STORE_open_ex(spec->u.pkcs11.uri, loader->libctx, NULL,
+                                       resources.ui_method, &ui_ctx, NULL, NULL, NULL);
 
-  if (!store) {
+  if (!resources.store) {
     fprintf(stderr, "Failed to open OSSL_store\n");
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_BACKEND_UNAVAILABLE;
   }
 
-  if (!OSSL_STORE_expect(store, OSSL_STORE_INFO_PKEY)) {
+  if (!OSSL_STORE_expect(resources.store, OSSL_STORE_INFO_PKEY)) {
     fprintf(stderr, "Failed to set expected store object type\n");
-    OSSL_STORE_close(store);
+    cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
 
 
-  while (!OSSL_STORE_eof(store)) {
-    OSSL_STORE_INFO* info = OSSL_STORE_load(store);
+  while (!OSSL_STORE_eof(resources.store)) {
+    resources.store_info = OSSL_STORE_load(resources.store);
 
-    if (!info) {
-      if (OSSL_STORE_error(store)) {
+    if (!resources.store_info) {
+      if (OSSL_STORE_error(resources.store)) {
         fprintf(stderr, "Failed to load object from store\n");
-
-        ERR_print_errors_fp(stderr);
-        OSSL_STORE_close(store);
-        UI_destroy_method(ui_method);
-
+        cleanup_key_load_resources(&resources);
         return KEY_STATUS_LOAD_FAILED;
       }
       continue;
     }
 
-    if (OSSL_STORE_INFO_get_type(info) == OSSL_STORE_INFO_PKEY) {
-      pkey = OSSL_STORE_INFO_get1_PKEY(info);
+    if (OSSL_STORE_INFO_get_type(resources.store_info) == OSSL_STORE_INFO_PKEY) {
+      resources.pkey = OSSL_STORE_INFO_get1_PKEY(resources.store_info);
 
-      OSSL_STORE_INFO_free(info);
-
-      if (!pkey) {
-        OSSL_STORE_close(store);
+      if (!resources.pkey) {
+        cleanup_key_load_resources(&resources);
         return KEY_STATUS_INTERNAL_ERROR;
       }
-      out->pkey = pkey;
-      OSSL_STORE_close(store);
+      out->pkey      = resources.pkey;
+      resources.pkey = NULL;
+      cleanup_key_load_resources(&resources);
       return KEY_STATUS_OK;
     }
-    OSSL_STORE_INFO_free(info);
+    OSSL_STORE_INFO_free(resources.store_info);
+    resources.store_info = NULL;
   }
 
-  OSSL_STORE_close(store);
+  cleanup_key_load_resources(&resources);
   return KEY_STATUS_KEY_NOT_FOUND;
 }
 
