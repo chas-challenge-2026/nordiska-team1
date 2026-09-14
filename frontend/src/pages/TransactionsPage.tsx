@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { accounts } from '../components/transactions/mockTransactions';
+import { useEffect, useState } from 'react';
 import TransactionTable from '../components/transactions/TransactionsTable';
 import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
 import type { TransactionFilters } from '../components/transactions/TransactionsFilter';
 import Modal from '../components/modals/Modal';
+import { useTransactions } from '../hooks/useTransactions';
+import { useAccounts } from '../hooks/useAccounts';
 
 const initialFilters: TransactionFilters = {
     search: '',
@@ -15,9 +16,15 @@ const initialFilters: TransactionFilters = {
 };
 
 export default function TransactionsPage() {
-    const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(
-        accounts.map(a => a.id)
-    );
+    const { data: transactions, isLoading: transactionsLoading, isError: transactionsError } = useTransactions();
+    const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useAccounts();
+
+    const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
+    useEffect(() => {
+        if (accounts) {
+            setSelectedAccountIds(accounts.map(a => a.id));
+        }
+    }, [accounts])
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -36,13 +43,14 @@ export default function TransactionsPage() {
             </button>
 
             <TransactionTable
+                transactions={transactions ?? []}
                 selectedAccountIds={selectedAccountIds}
                 filters={filters}
             />
 
             <div className='hidden md:block'>
                 <AccountSelector
-                    accounts={accounts}
+                    accounts={accounts ?? []}
                     selectedIds={selectedAccountIds}
                     onChange={setSelectedAccountIds}
                 />
@@ -57,7 +65,7 @@ export default function TransactionsPage() {
                     <div className='flex flex-col gap-4 overflow-y-auto p-6'>
                         <TransactionFilter onChange={setFilters} onReset={() => setFilters(initialFilters)} />
                         <AccountSelector
-                            accounts={accounts}
+                            accounts={accounts ?? []}
                             selectedIds={selectedAccountIds}
                             onChange={setSelectedAccountIds}
                         />
