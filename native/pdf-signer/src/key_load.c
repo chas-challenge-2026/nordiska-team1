@@ -166,19 +166,19 @@ static key_secret_result_t request_secret(const key_credentials_t* credentials,
   return KEY_SECRET_OK;
 }
 
-static bool load_file_key(key_loader_t* loader, const key_spec_t* spec,
-                          const key_credentials_t* credentials, key_handle_t* out) {
+static key_status_t load_file_key(key_loader_t* loader, const key_spec_t* spec,
+                                  const key_credentials_t* credentials, key_handle_t* out) {
 
   if (!loader || !spec || !out) {
     fprintf(stderr, "invalid or missing argument\n");
-    return false;
+    return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   out->pkey = NULL;
 
   if (spec->source != KEY_SOURCE_FILE || !spec->u.file.path) {
     fprintf(stderr, "Invalid or missing path\n");
-    return false;
+    return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   BIO*      bio_in = NULL;
@@ -187,7 +187,7 @@ static bool load_file_key(key_loader_t* loader, const key_spec_t* spec,
   bio_in = BIO_new_file(spec->u.file.path, "rb");
   if (!bio_in) {
     fprintf(stderr, "Failed to open key-file\n");
-    return false;
+    return KEY_STATUS_LOAD_FAILED;
   }
 
   OSSL_DECODER_CTX* dctx = OSSL_DECODER_CTX_new_for_pkey(
@@ -196,7 +196,7 @@ static bool load_file_key(key_loader_t* loader, const key_spec_t* spec,
   if (!dctx) {
     fprintf(stderr, "Failed to create decoder context\n");
     BIO_free(bio_in);
-    return false;
+    return KEY_STATUS_INTERNAL_ERROR;
   }
 
   struct file_passphrase_ctx pass_ctx = {
@@ -208,7 +208,7 @@ static bool load_file_key(key_loader_t* loader, const key_spec_t* spec,
     if (!OSSL_DECODER_CTX_set_passphrase_cb(dctx, file_passphrase_cb, &pass_ctx)) {
       BIO_free(bio_in);
       OSSL_DECODER_CTX_free(dctx);
-      return false;
+      return KEY_STATUS_INTERNAL_ERROR;
     }
   }
   if (OSSL_DECODER_from_bio(dctx, bio_in) != 1) {
@@ -216,14 +216,14 @@ static bool load_file_key(key_loader_t* loader, const key_spec_t* spec,
     EVP_PKEY_free(pkey);
     OSSL_DECODER_CTX_free(dctx);
     BIO_free(bio_in);
-    return false;
+    return KEY_STATUS_LOAD_FAILED;
   }
 
   if (!pkey) {
     fprintf(stderr, "unable to retrieve pkey\n");
     OSSL_DECODER_CTX_free(dctx);
     BIO_free(bio_in);
-    return false;
+    return KEY_STATUS_INTERNAL_ERROR;
   }
 
   out->pkey = pkey;
@@ -232,24 +232,24 @@ static bool load_file_key(key_loader_t* loader, const key_spec_t* spec,
   OSSL_DECODER_CTX_free(dctx);
   BIO_free(bio_in);
 
-  return true;
+  return KEY_STATUS_OK;
 }
 
-static bool load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
-                            const key_credentials_t* credentials, key_handle_t* out) {
+static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
+                                    const key_credentials_t* credentials, key_handle_t* out) {
 
   (void)credentials;
 
   if (!loader || !spec || !out) {
     fprintf(stderr, "invalid or missing argument\n");
-    return false;
+    return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   out->pkey = NULL;
 
   if (spec->source != KEY_SOURCE_PKCS11 || !spec->u.pkcs11.uri) {
     fprintf(stderr, "Invalid or missing PKCS#11 URI\n");
-    return false;
+    return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   OSSL_STORE_CTX* store = NULL;
@@ -259,13 +259,13 @@ static bool load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
   if (!ui_method) {
     fprintf(stderr, "Failed to create ui method\n");
     OSSL_STORE_close(store);
-    return false;
+    return KEY_STATUS_INTERNAL_ERROR;
   }
 
   if (UI_method_set_reader(ui_method, pkcs11_ui_reader) != 0) {
     fprintf(stderr, "Failed to set PKCS#11 UI reader\n");
     OSSL_STORE_close(store);
-    return false;
+    return KEY_STATUS_INTERNAL_ERROR;
   }
 
   struct pkcs11_ui_ctx ui_ctx = {
@@ -278,13 +278,13 @@ static bool load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
 
   if (!store) {
     fprintf(stderr, "Failed to open OSSL_store\n");
-    return false;
+    return KEY_STATUS_BACKEND_UNAVAILABLE;
   }
 
   if (!OSSL_STORE_expect(store, OSSL_STORE_INFO_PKEY)) {
     fprintf(stderr, "Failed to set expected store object type\n");
     OSSL_STORE_close(store);
-    return false;
+    return KEY_STATUS_INTERNAL_ERROR;
   }
 
 
@@ -299,7 +299,7 @@ static bool load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
         OSSL_STORE_close(store);
         UI_destroy_method(ui_method);
 
-        return false;
+        return KEY_STATUS_LOAD_FAILED;
       }
       continue;
     }
@@ -311,17 +311,17 @@ static bool load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec,
 
       if (!pkey) {
         OSSL_STORE_close(store);
-        return false;
+        return KEY_STATUS_INTERNAL_ERROR;
       }
       out->pkey = pkey;
       OSSL_STORE_close(store);
-      return true;
+      return KEY_STATUS_OK;
     }
     OSSL_STORE_INFO_free(info);
   }
 
   OSSL_STORE_close(store);
-  return false;
+  return KEY_STATUS_KEY_NOT_FOUND;
 }
 
 /*-----------------------------------------------------------*/
@@ -414,10 +414,10 @@ void key_loader_destroy(key_loader_t* loader) {
   free(loader);
 }
 
-bool key_load(key_loader_t* loader, const key_spec_t* spec, const key_credentials_t* credentials,
-              key_handle_t* out) {
+key_status_t key_load(key_loader_t* loader, const key_spec_t* spec,
+                      const key_credentials_t* credentials, key_handle_t* out) {
   if (!loader || !spec || !out) {
-    return false;
+    return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   out->pkey = NULL;
@@ -428,10 +428,10 @@ bool key_load(key_loader_t* loader, const key_spec_t* spec, const key_credential
   case KEY_SOURCE_PKCS11:
     return load_pkcs11_key(loader, spec, credentials, out);
   default:
-    return false;
+    return KEY_STATUS_UNSUPPORTED_SOURCE;
   }
 
-  return false;
+  return KEY_STATUS_UNSUPPORTED_SOURCE;
 }
 
 void key_dispose(key_handle_t* handle) {

@@ -153,7 +153,7 @@ static int test_key_loader_pkcs11_valid_key_load(void) {
 
 
   bool ok = key_load(loader, &spec, &credentials, &handle);
-  CHECK(ok == true);
+  CHECK(ok == KEY_STATUS_OK);
   CHECK(handle.pkey != NULL);
 
   key_dispose(&handle);
