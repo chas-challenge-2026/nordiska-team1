@@ -59,15 +59,17 @@ public static class PostgreSqlExtensions
         IConfiguration configuration,
         string connectionStringName)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            connectionStringName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
 
-        var connectionString =
-            configuration.GetConnectionString(connectionStringName)
-            ?? configuration.GetConnectionString("DefaultConnection");
+        var conn = configuration.GetConnectionString(connectionStringName);
+        if (string.IsNullOrWhiteSpace(conn) || conn.StartsWith("DEVELOPMENT_PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
+        {
+            conn = configuration.GetConnectionString("DefaultConnection")
+                   ?? configuration.GetConnectionString("Database");
+        }
 
-        return !string.IsNullOrWhiteSpace(connectionString)
-            ? connectionString
+        return !string.IsNullOrWhiteSpace(conn) && !conn.StartsWith("DEVELOPMENT_PLACEHOLDER", StringComparison.OrdinalIgnoreCase)
+            ? conn
             : throw new InvalidOperationException(
                 $"Connection string '{connectionStringName}' is missing.");
     }
