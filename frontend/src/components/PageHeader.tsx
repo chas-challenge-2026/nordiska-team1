@@ -151,20 +151,22 @@ export default function PageHeader() {
             {/* ------------------ */}
 
             {/* ----- HELP ----- */}
-            {showMobileMenu && (
+            {showMobileMenu && ( 
             <div className="flex items-end pb-0.5 md:hidden">
-                <Link
-                    to="/help"
-                    onClick={() =>
-                        setMobileMenuOpen(false)
-                    }
-                    aria-label={t("page-header.help-center")} 
-                    className="flex min-h-11 min-w-11 items-end justify-center text-white"
-                >
-                    <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
-                    {/* <span className="mt-0.5 text-[8px] uppercase tracking-wide"> {t("page-header.help-center")} </span> */}
-                </Link>
-
+                {navLinks && (
+                    <Link
+                        to="/help"
+                        onClick={() =>
+                            setMobileMenuOpen(false)
+                        }
+                        aria-label={t("page-header.help-center")} 
+                        className="flex min-h-11 min-w-11 items-end justify-center text-white"
+                    >
+                        <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
+                        {/* <span className="mt-0.5 text-[8px] uppercase tracking-wide"> {t("page-header.help-center")} </span> */}
+                    </Link>
+                )}
+                
             {/* ----- HAMBURGER ----- */}
                 <button
                     type="button"
