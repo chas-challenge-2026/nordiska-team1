@@ -8,7 +8,7 @@ export default function DesktopLayout() {
       <PageNavigation />
 
       {/* ANIMATION PÅ DETTA */}
-      <main className="flex flex-1 min-h-0 w-screen">
+      <main className="flex flex-1 min-h-0 w-screen mb-10">
         <Outlet />
       </main>
 
