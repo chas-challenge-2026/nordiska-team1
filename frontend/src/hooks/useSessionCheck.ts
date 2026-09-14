@@ -11,5 +11,5 @@ export function useSessionCheck() {
             setUser(user);
             setCheckingSession(false);
         });
-    }, []);
+    }, [setUser, setCheckingSession]);
 }
