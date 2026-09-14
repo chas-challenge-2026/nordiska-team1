@@ -14,6 +14,11 @@ public class DbInitializer
         var db = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Customer>>();
 
+        if (!await db.Database.CanConnectAsync())
+        {
+            return;
+        }
+
         var testPersonalNum = "198202116050";
 
         // Kontrollera om testkunden redan finns i databasen

@@ -262,7 +262,14 @@ if (app.Environment.IsDevelopment())
 // Seed Test Customer 
 if (app.Environment.IsDevelopment())
 {
-    await DbInitializer.SeedAsync(app.Services);
+    try
+    {
+        await DbInitializer.SeedAsync(app.Services);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Could not seed test data at startup: {Message}", ex.Message);
+    }
 }
 
 // Fallback to React index.html for non-API client-side routes (SPA routing)

@@ -60,6 +60,20 @@ jobs:
   backend-ci:
     name: Backend (.NET 8 Locked Restore, Build & Tests)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: nordiska_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -80,7 +94,8 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Development
           Jwt__SecretKey: "ci_testing_super_secret_jwt_key_that_is_long_enough_12345"
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgres"
+          ConnectionStrings__Database: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
 
   # Smoke test production container build
   docker-build-check:
