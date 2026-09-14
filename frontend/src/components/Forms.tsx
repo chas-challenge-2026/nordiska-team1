@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { SubmitEvent } from "react";
 import InputField from "./InputField";
 import { CollapsibleFormBtns } from "./Buttons";
-
+import { useTranslation } from "react-i18next";
 // -------------------------
 // COLLAPSIBLE FUNCTION PROP
 // -------------------------
@@ -17,12 +17,13 @@ export function EmailForm({ onClose }: CollapsibleFormProps) {
     const [email, setEmail] = useState("");
     const [confirmEmail, setConfirmEmail] = useState("");
     const [error, setError] = useState("");
+    const {t} = useTranslation();
 
     const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
-            setError("Email matchar inte");
+            setError(t("forms.email-error"));
             return;
         }
 
@@ -44,8 +45,8 @@ export function EmailForm({ onClose }: CollapsibleFormProps) {
             <InputField 
                 name = "email"
                 type = "email"
-                label = "email"
-                placeholder= "ange email"
+                label = {t("forms.email")}
+                placeholder= {t("forms.email-placeholder")}
                 value={email}
                 required
                 onChange={setEmail}
@@ -54,8 +55,8 @@ export function EmailForm({ onClose }: CollapsibleFormProps) {
             <InputField 
                 name = "emailConfirmation"
                 type = "email"
-                label = "upprepa email"
-                placeholder= "upprepa email"
+                label = {t("forms.email-confirm")}
+                placeholder= {t("forms.email-confirm-placeholder")}
                 value={confirmEmail}
                 required
                 onChange={setConfirmEmail}
@@ -73,6 +74,7 @@ export function EmailForm({ onClose }: CollapsibleFormProps) {
 export function PhoneForm({ onClose }: CollapsibleFormProps) {
     const [phone, setPhone] = useState("");
     const [error, setError] = useState("");
+    const {t} = useTranslation();
 
     const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -82,7 +84,7 @@ export function PhoneForm({ onClose }: CollapsibleFormProps) {
         setError("");
 
         if (!/^07\d{8}$/.test(trimmedPhone)) {
-            setError("Ange enligt format 07xxxxxxxx");
+            setError(t("forms.phone-error"));
             return;
         }
 
@@ -100,8 +102,8 @@ export function PhoneForm({ onClose }: CollapsibleFormProps) {
             <InputField 
                 name = "phone"
                 type = "tel"
-                label = "phone"
-                placeholder= "ange telefonnummer"
+                label = {t("forms.phone")}
+                placeholder= {t("forms.phone-placeholder")}
                 value={phone}
                 required
                 onChange={setPhone}

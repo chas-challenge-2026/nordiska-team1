@@ -26,13 +26,14 @@ export default function LogoutButton({ title }: LogoutButtonProps) {
                 handleLogout();
             }}
             className="
+                flex
+                items-start
                 uppercase
                 relative
                 h-full
                 whitespace-nowrap
                 no-underline
                 font-montserrat
-                text-lg
                 cursor-pointer
                 transition-all
                 duration-200

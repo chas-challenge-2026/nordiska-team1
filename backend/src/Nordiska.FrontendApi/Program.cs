@@ -19,8 +19,8 @@ using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
 using Nordiska.Modules.Banking.Infrastructure;
-
 using Microsoft.OpenApi;
+using Nordiska.Modules.Banking.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +73,7 @@ builder.Services.AddAuthorization(options =>
 });
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Register controller services
 builder.Services.AddControllers();
@@ -144,19 +145,14 @@ builder.Services.AddProblemDetails(options =>
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
 // Service for bank id  
-builder.Services.AddBankId(bankId =>
+if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
 {
-    
-    if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
-    {
-        bankId.UseSimulatedEnvironment();
-    }
-    else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
-    {
-        bankId.UseTestEnvironment();
-        // Add real certificate, ex from azure key vault below. 
-    }
-});
+    builder.Services.AddBankId(bankId => bankId.UseSimulatedEnvironment());
+}
+else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddBankId(bankId => bankId.UseTestEnvironment());
+}
 builder.Services
     .AddAuthentication()
     .AddBankIdAuth(bankId =>
@@ -261,6 +257,12 @@ if (app.Environment.IsDevelopment())
                 new { status = "unavailable" },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
     });
+}
+
+// Seed Test Customer 
+if (app.Environment.IsDevelopment())
+{
+    await DbInitializer.SeedAsync(app.Services);
 }
 
 // Fallback to React index.html for non-API client-side routes (SPA routing)
