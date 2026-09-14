@@ -150,8 +150,22 @@ export default function PageHeader() {
             {/* ----- MOBILE ----- */}
             {/* ------------------ */}
 
-            {/* ----- HAMBURGER ----- */}
+            {/* ----- HELP ----- */}
             {showMobileMenu && (
+            <div className="flex items-end pb-0.5 md:hidden">
+                <Link
+                    to="/help"
+                    onClick={() =>
+                        setMobileMenuOpen(false)
+                    }
+                    aria-label={t("page-header.help-center")} 
+                    className="flex min-h-11 min-w-11 items-end justify-center text-white"
+                >
+                    <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
+                    {/* <span className="mt-0.5 text-[8px] uppercase tracking-wide"> {t("page-header.help-center")} </span> */}
+                </Link>
+
+            {/* ----- HAMBURGER ----- */}
                 <button
                     type="button"
                     onClick={() =>
@@ -163,15 +177,18 @@ export default function PageHeader() {
                             : t("aria-label.mobile-menu-open")
                     }
                     aria-expanded={mobileMenuOpen}
-                    className="flex h-11 w-11 cursor-pointer items-center justify-center text-white md:hidden"
+                    className="flex h-11 w-11 cursor-pointer items-end justify-center text-white"
                 >
                     <span
                         aria-hidden="true"
                         className="text-4xl font-light leading-none"
                     >
-                        {mobileMenuOpen ? "×" : "☰"}
+                        {mobileMenuOpen 
+                            ? <img src="/icons/close.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" /> 
+                            : <img src="/icons/hamburger.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />}
                     </span>
                 </button>
+            </div>
             )}
         </motion.header>
 
