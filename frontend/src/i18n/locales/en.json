@@ -11,6 +11,7 @@
     "from": "From",
     "date": "Date",
     "reset": "Reset",
+    "all": "All",
 
     "account": "Account",
     "savings-account": "Savings account",
@@ -44,21 +45,22 @@
     "title": "You have logged out.",
     "paragraph": "You can safely close this page now."
 },
-"transactions-route": {
-    "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
-    "all-accounts": "All accounts",
-    "tax-info": "Download tax information for the accounts selected above.",
-    "tax": "Download",
-    "search": "Search transactions",
-    "from": "From date",
-    "to": "To date",
-    "deposites": "Deposites only",
-    "withdraws": "Withdraws only",
-    "transactions": "Latest transactions",
-    "all-transactions": "Show more transactions",
-    "less-transactions": "Show fewer transactions"
-},
-"login-route": {
+  "transactions-route": {
+      "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
+      "all-accounts": "All accounts",
+      "tax-info": "Download tax information for the accounts selected above.",
+      "tax": "Download",
+      "search": "Search transactions",
+      "from": "From date",
+      "to": "To date",
+      "deposites": "Deposites only",
+      "withdraws": "Withdraws only",
+      "transactions": "Latest transactions",
+      "all-transactions": "Show more transactions",
+      "less-transactions": "Show fewer transactions",
+      "filter-options": "Select deposites or withdrawls"
+  },
+  "login-route": {
     "title": "Log in",
     "paragraph": "Please identify yourself with BankID to continue to the customer portal."
 },
