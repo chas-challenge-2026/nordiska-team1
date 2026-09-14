@@ -4,44 +4,87 @@ This guide is for everyone on the team (whether you are running Windows, macOS, 
 
 ---
 
-## 1. Quickstart: Start the System
+## 1. Quickstart: Choose Your Workflow
 
-### Prerequisites
-* Docker Desktop (Windows/Mac) or Docker Engine (Linux) must be installed and running.
-* **If you previously ran `DevSetup` / `infra/v2`:** Stop the existing database container first to free port 5433:
-  ```bash
-  docker compose -f infra/v2/docker-compose.yml down
-  ```
+You can run the application in two ways depending on your needs:
 
-### Start Everything
-Open a terminal in the repository root and run:
+---
+
+### Workflow A: Local Development with Hot-Reload (Recommended for active coding)
+
+In this mode, PostgreSQL runs inside Docker while Backend and Frontend run locally with hot-reloading.
+
+#### 1. Start PostgreSQL Database
+```bash
+cd infra
+docker compose up -d db
+```
+
+#### 2. Start Backend API (runs on `http://localhost:5031`)
+Open a new terminal:
+```bash
+cd backend/src/Nordiska.FrontendApi
+dotnet run
+```
+*Migrations and seed data are applied automatically.*
+
+#### 3. Start Frontend React App (runs on `http://localhost:5173`)
+Open another terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+* **Frontend:** [http://localhost:5173](http://localhost:5173)
+* **Backend API:** [http://localhost:5031](http://localhost:5031)
+* **Scalar Docs:** [http://localhost:5031/scalar/v1](http://localhost:5031/scalar/v1)
+
+---
+
+### Workflow B: Full Docker (Runs everything in containers)
+
+In this mode, everything (DB, Backend, Frontend, Reverse Proxy) is packaged into containers. No local .NET or Node installation is required.
 
 ```bash
 cd infra
 docker compose up --build
 ```
 
-Once the containers are built and started:
-* Landing Page: [http://localhost:8080/welcome](http://localhost:8080/welcome)
-* Login Page: [http://localhost:8080/login](http://localhost:8080/login)
-* Transactions Page: [http://localhost:8080/transactions](http://localhost:8080/transactions)
-* Transfer Page: [http://localhost:8080/transfer](http://localhost:8080/transfer)
-* Settings Page: [http://localhost:8080/settings](http://localhost:8080/settings)
-* Scalar API Documentation: [http://localhost:8080/scalar/v1](http://localhost:8080/scalar/v1)
+* **Frontend:** [http://localhost:8080](http://localhost:8080)
+* **Login:** [http://localhost:8080/login](http://localhost:8080/login)
+* **Transactions:** [http://localhost:8080/transactions](http://localhost:8080/transactions)
+* **Transfer:** [http://localhost:8080/transfer](http://localhost:8080/transfer)
+* **Settings:** [http://localhost:8080/settings](http://localhost:8080/settings)
+* **Scalar API Docs:** [http://localhost:8080/scalar/v1](http://localhost:8080/scalar/v1)
 
 ---
 
-## 2. BankID Authentication & Test Users
+## 2. Test Accounts and Authentication
 
-The backend uses **BankID** (`ActiveLogin`) for authentication with automatic JWT cookie generation.
+The portal supports two parallel authentication methods:
 
-### Available Test Personal Numbers:
+### A. Password Login (Email & Password)
+Seeded test accounts available out of the box:
 
-| Personal Number | Name | Email | Description |
+| Email | Password | Personal Number | Name |
 | :--- | :--- | :--- | :--- |
-| `199908072391` | BankID Simulerad | `simulated@bankid.se` | **Primary BankID Simulator user** (always returned by simulator on completion) |
-| `198202116050` | Anna Smith | `anna@exempel.se` | Seeded customer account |
-| `197903142380` | Erik Svensson | `erik@exempel.se` | Seeded customer account |
+| `anna@example.com` | `password123` | `198202116050` | Anna Smith |
+| `erik@example.com` | `password123` | `197903142380` | Erik Svensson |
+
+### B. BankID Login (Dynamic Mock)
+* You can log in using **any 12-digit Swedish personal number** (e.g. `199001011234`).
+* If the user does not exist in the database, a customer profile and primary savings account with initial balance are created dynamically.
+
+### C. Local Development Database Credentials (PostgreSQL)
+
+| Property | Value |
+| :--- | :--- |
+| **Host** | `localhost` (or `db` inside Docker network) |
+| **Port** | `5432` |
+| **Database** | `nordiska_v2` |
+| **Username** | `nordiska_migrator` |
+| **Password** | `migrator_secret_123` |
 
 ### How to Authenticate via BankID Simulator (in Scalar):
 
