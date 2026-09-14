@@ -35,27 +35,29 @@ export default function AccountSelector({ accounts, selectedIds, onChange }: Acc
                 {t("transactions-route.all-accounts")}
             </label>
 
-            <ul className="space-y-2">
-                {accounts.map(acc => (
-                    <li key={acc.id}>
-                        <label className="flex items-start gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={selectedIds.includes(acc.id)}
-                                onChange={() => toggleOne(acc.id)}
-                                className="mt-0.5"
-                            />
-                            <span>
-                                {acc.name}
-                                <br />
-                                <span className="text-secondary">
-                                    {acc.balance.toLocaleString('sv-SE', { minimumFractionDigits: 2 })} sek
+            <fieldset>
+                <legend className="sr-only">{t("transactions-route.account-select")}</legend>
+                <ul className="space-y-2">
+                    {accounts.map(acc => (
+                        <li key={acc.id}>
+                            <label className="flex items-start gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.includes(acc.id)}
+                                    onChange={() => toggleOne(acc.id)}
+                                    className="mt-0.5"
+                                />
+                                <span className="flex flex-col">
+                                    <span>{acc.name}</span>
+                                    <span className="text-secondary">
+                                        {acc.balance.toLocaleString('sv-SE', { minimumFractionDigits: 2 })} sek
+                                    </span>
                                 </span>
-                            </span>
-                        </label>
-                    </li>
-                ))}
-            </ul>
+                            </label>
+                        </li>
+                    ))}
+                </ul>
+            </fieldset>
 
             <p className="text-xs text-secondary mt-4 mb-2">
                 {t("transactions-route.tax-info")}
