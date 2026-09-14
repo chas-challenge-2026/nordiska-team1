@@ -267,4 +267,40 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<WebApplication
         var email = jsonDoc.RootElement.GetProperty("email").GetString();
         email.Should().Be(customEmail);
     }
+
+    [Fact]
+    public async Task EmailPassword_Login_Sets_HttpOnly_AuthCookie_And_Returns_Customer()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        // Act 1: Login with seeded customer Anna
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "anna@exempel.se",
+            password = "password123"
+        });
+
+        // Assert 1: Successful login and auth cookie set
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        loginResponse.Headers.Contains("Set-Cookie").Should().BeTrue();
+
+        var content = await loginResponse.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var name = doc.RootElement.GetProperty("name").GetString();
+        name.Should().Be("Anna Smith");
+
+        // Act 2: Access protected /api/auth/me endpoint
+        var meResponse = await client.GetAsync("/api/auth/me");
+        meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var meContent = await meResponse.Content.ReadAsStringAsync();
+        using var meDoc = JsonDocument.Parse(meContent);
+        var email = meDoc.RootElement.GetProperty("email").GetString();
+        email.Should().Be("anna@exempel.se");
+    }
 }

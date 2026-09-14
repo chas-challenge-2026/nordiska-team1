@@ -10,4 +10,5 @@ public interface IAuthService
     Task<AuthenticationResultDto> InitiateBankIdAsync(BankIdInitiateRequest request, string clientIp);
     Task<AuthenticationResultDto> CollectBankIdAsync(BankIdCollectRequest request, HttpResponse response);
     Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response);  
+    Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response);
 }

@@ -60,6 +60,26 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="T:Nordiska.FrontendApi.Contracts.Requests.LoginRequest">
+            <summary>
+            Request payload for email and password authentication.
+            </summary>
+            <param name="Email">The user's registered email address.</param>
+            <param name="Password">The user's account password.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.LoginRequest.#ctor(System.String,System.String)">
+            <summary>
+            Request payload for email and password authentication.
+            </summary>
+            <param name="Email">The user's registered email address.</param>
+            <param name="Password">The user's account password.</param>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.LoginRequest.Email">
+            <summary>The user's registered email address.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.LoginRequest.Password">
+            <summary>The user's account password.</summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Controllers.AuthController">
             <summary>
             Authentication and session management endpoints using BankID and JWT cookies.
@@ -100,6 +120,18 @@
             <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
             <response code="200">Customer registered successfully and session established.</response>
             <response code="400">Registration validation failed or email already registered.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Contracts.Requests.LoginRequest)">
+            <summary>
+            Authenticates a customer using email and password.
+            </summary>
+            <remarks>
+            Performs email and password authentication and automatically sets the secure HttpOnly <c>access_token</c> authentication cookie on success.
+            Seeded demo accounts (e.g. <c>anna@exempel.se</c> or <c>erik@exempel.se</c>) can log in using password <c>password123</c>.
+            </remarks>
+            <param name="request">Login request payload containing email and password.</param>
+            <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
+            <response code="401">Invalid email or password.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser">
             <summary>

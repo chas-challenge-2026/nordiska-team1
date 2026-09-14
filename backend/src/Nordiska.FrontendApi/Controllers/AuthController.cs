@@ -106,6 +106,31 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Authenticates a customer using email and password.
+    /// </summary>
+    /// <remarks>
+    /// Performs email and password authentication and automatically sets the secure HttpOnly <c>access_token</c> authentication cookie on success.
+    /// Seeded demo accounts (e.g. <c>anna@exempel.se</c> or <c>erik@exempel.se</c>) can log in using password <c>password123</c>.
+    /// </remarks>
+    /// <param name="request">Login request payload containing email and password.</param>
+    /// <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
+    /// <response code="401">Invalid email or password.</response>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var result = await _authService.LoginAsync(request, Response);
+
+        if (!result.IsSuccess)
+        {
+            return Unauthorized(new { message = result.ErrorMessage });
+        }
+
+        return Ok(result.CollectData?.Customer);
+    }
+
+    /// <summary>
     /// Returns the currently authenticated user's profile information extracted from the JWT.
     /// </summary>
     /// <response code="200">The authenticated user's id, email, and role.</response>
