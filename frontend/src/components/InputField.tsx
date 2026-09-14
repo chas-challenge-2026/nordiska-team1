@@ -28,7 +28,6 @@ export default function InputField({
         error,
         suffix,
     }: InputFieldProps) {
-
     return (
         <div>
             <div className="flex items-center justify-between">

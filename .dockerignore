@@ -5,11 +5,15 @@
 # 1. Version Control & IDEs
 .git/
 .gitignore
+.gitattributes
 .vs/
 .vscode/
 .idea/
 *.user
 *.suo
+.DS_Store
+**/.DS_Store
+Thumbs.db
 
 # 2. Build Outputs & Packages
 **/bin/

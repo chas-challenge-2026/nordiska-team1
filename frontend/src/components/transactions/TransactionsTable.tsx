@@ -40,7 +40,8 @@ function filterTransactions(
 }
 
 export default function TransactionTable({ selectedAccountIds, filters }: TransactionTableProps) {
-    const [allMatches, setAllMatches] = useState<Transaction[]>([]);
+    const allMatches = useMemo(() => filterTransactions(selectedAccountIds, filters), [selectedAccountIds, filters]);
+    const [prevProps, setPrevProps] = useState({ selectedAccountIds, filters });
     const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
     const [expanded, setExpanded] = useState(false);
     const { t } = useTranslation();
@@ -48,12 +49,11 @@ export default function TransactionTable({ selectedAccountIds, filters }: Transa
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const matches = filterTransactions(selectedAccountIds, filters);
-        setAllMatches(matches);
+    if (prevProps.selectedAccountIds !== selectedAccountIds || prevProps.filters !== filters) {
+        setPrevProps({ selectedAccountIds, filters });
         setVisibleCount(INITIAL_COUNT);
         setExpanded(false);
-    }, [selectedAccountIds, filters]);
+    }
 
     const loadMore = useCallback(() => {
         setVisibleCount(prev => Math.min(prev + BATCH_SIZE, allMatches.length));
