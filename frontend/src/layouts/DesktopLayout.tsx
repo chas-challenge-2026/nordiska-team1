@@ -1,6 +1,6 @@
 import { Outlet } from "react-router";
 import PageNavigation from "../components/PageNavigation";
-import PageFooter from "../components/PageFooter";
+// import PageFooter from "../components/PageFooter";
 
 export default function DesktopLayout() {
   return (
@@ -12,7 +12,7 @@ export default function DesktopLayout() {
         <Outlet />
       </main>
 
-      <PageFooter />
+      {/* <PageFooter /> */}
     </div>
   );
 }
