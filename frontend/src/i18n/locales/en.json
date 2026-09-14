@@ -60,7 +60,9 @@
       "less-transactions": "Show fewer transactions",
       "filter-options": "Select deposites or withdrawls",
       "loading-accounts": "Loading accounts...",
-      "accounts-error": "There was an issue loading accounts"
+      "accounts-error": "There was an issue loading accounts",
+      "loading-transactions": "Loading transactions...",
+      "transactions-error": "There was an issue loading transactions"
   },
   "login-route": {
     "title": "Log in",

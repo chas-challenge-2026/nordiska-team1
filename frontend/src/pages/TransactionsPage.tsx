@@ -46,6 +46,8 @@ export default function TransactionsPage() {
                 transactions={transactions ?? []}
                 selectedAccountIds={selectedAccountIds}
                 filters={filters}
+                isLoading={transactionsLoading}
+                isError={transactionsError}
             />
 
             <div className='hidden md:block'>
@@ -53,6 +55,8 @@ export default function TransactionsPage() {
                     accounts={accounts ?? []}
                     selectedIds={selectedAccountIds}
                     onChange={setSelectedAccountIds}
+                    isLoading={accountsLoading}
+                    isError={accountsError}
                 />
             </div>
 
@@ -68,6 +72,8 @@ export default function TransactionsPage() {
                             accounts={accounts ?? []}
                             selectedIds={selectedAccountIds}
                             onChange={setSelectedAccountIds}
+                            isLoading={accountsLoading}
+                            isError={accountsError}
                         />
                     </div>
                 </Modal>
