@@ -24,16 +24,31 @@ docker compose up --build
 Once the containers are built and started:
 * Landing Page: [http://localhost:8080/welcome](http://localhost:8080/welcome)
 * Login Page: [http://localhost:8080/login](http://localhost:8080/login)
+* Transactions Page: [http://localhost:8080/transactions](http://localhost:8080/transactions)
+* Transfer Page: [http://localhost:8080/transfer](http://localhost:8080/transfer)
+* Settings Page: [http://localhost:8080/settings](http://localhost:8080/settings)
 * Scalar API Documentation: [http://localhost:8080/scalar/v1](http://localhost:8080/scalar/v1)
 
 ---
 
-## 2. Test Login Credentials (Demo Users)
+## 2. BankID Authentication & Test Users
 
-| Email | Password | Role |
-| :--- | :--- | :--- |
-| `anna@example.com` | `password123` | Customer (Anna Lindqvist) |
-| `erik@example.com` | `password123` | Customer (Erik Johansson) |
+The backend uses **BankID** (`ActiveLogin`) for authentication with automatic JWT cookie generation.
+
+### Available Test Personal Numbers:
+
+| Personal Number | Name | Email | Description |
+| :--- | :--- | :--- | :--- |
+| `199908072391` | BankID Simulerad | `simulated@bankid.se` | **Primary BankID Simulator user** (always returned by simulator on completion) |
+| `198202116050` | Anna Smith | `anna@exempel.se` | Seeded customer account |
+| `197903142380` | Erik Svensson | `erik@exempel.se` | Seeded customer account |
+
+### How to Authenticate via BankID Simulator (in Scalar):
+
+1. Open Scalar: [http://localhost:8080/scalar/v1](http://localhost:8080/scalar/v1)
+2. **Initiate:** Run `POST /api/auth/bankid/initiate` with `{"personalNum": "199908072391"}` and copy the returned `orderRef`.
+3. **Collect:** Run `POST /api/auth/bankid/collect` with `{"orderRef": "<your_orderRef>"}`. Click **Send** 1-2 times until status is `COMPLETE`.
+4. **Access Frontend:** Open [http://localhost:8080/transactions](http://localhost:8080/transactions) or [http://localhost:8080/transfer](http://localhost:8080/transfer) in the same browser.
 
 ---
 
