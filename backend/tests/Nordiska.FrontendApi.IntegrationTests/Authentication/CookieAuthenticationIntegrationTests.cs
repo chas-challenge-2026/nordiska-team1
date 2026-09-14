@@ -136,7 +136,7 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<WebApplication
         var meContent = await meResponse.Content.ReadAsStringAsync();
         using var jsonDoc = JsonDocument.Parse(meContent);
         var email = jsonDoc.RootElement.GetProperty("email").GetString();
-        email.Should().Be("simulated@bankid.se");
+        email.Should().Be("erik@exempel.se");
     }
 
     [Fact]
@@ -190,5 +190,81 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<WebApplication
         var setCookieHeader = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
         setCookieHeader.Should().NotBeNull();
         setCookieHeader.Should().Contain("access_token=");
+    }
+
+    [Fact]
+    public async Task Register_Then_BankIdLogin_LogsIn_Registered_Customer()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        var uniqueId = Guid.NewGuid().ToString("N")[..8];
+        var customPersonalNum = $"19910203{Random.Shared.Next(1000, 9999)}";
+        var customEmail = $"customer_{uniqueId}@example.com";
+
+        var registerPayload = new
+        {
+            name = $"New Customer {uniqueId}",
+            personalNum = customPersonalNum,
+            email = customEmail,
+            phoneNumber = "+46709998877"
+        };
+
+        // Act 1: Register customer
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", registerPayload);
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Act 2: Clear cookie via logout to simulate logging in fresh
+        await client.PostAsync("/api/auth/logout", null);
+
+        // Act 3: Initiate and Collect BankID with the newly registered customer's personal number
+        var initiateResponse = await client.PostAsJsonAsync("/api/auth/bankid/initiate", new
+        {
+            personalNum = customPersonalNum
+        });
+        initiateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var initiateContent = await initiateResponse.Content.ReadAsStringAsync();
+        using var initDoc = JsonDocument.Parse(initiateContent);
+        var orderRef = initDoc.RootElement.GetProperty("orderRef").GetString();
+
+        HttpResponseMessage collectResponse = null!;
+        for (var i = 0; i < 15; i++)
+        {
+            collectResponse = await client.PostAsJsonAsync("/api/auth/bankid/collect", new
+            {
+                orderRef = orderRef
+            });
+
+            var content = await collectResponse.Content.ReadAsStringAsync();
+            if (!collectResponse.IsSuccessStatusCode)
+            {
+                break;
+            }
+
+            using var doc = JsonDocument.Parse(content);
+            if (doc.RootElement.TryGetProperty("status", out var s) || doc.RootElement.TryGetProperty("Status", out s))
+            {
+                if (string.Equals(s.GetString(), "COMPLETE", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+            }
+            await Task.Delay(200);
+        }
+        collectResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Act 4: Query /api/auth/me to confirm it is the newly registered customer
+        var meResponse = await client.GetAsync("/api/auth/me");
+        meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var meContent = await meResponse.Content.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(meContent);
+        var email = jsonDoc.RootElement.GetProperty("email").GetString();
+        email.Should().Be(customEmail);
     }
 }

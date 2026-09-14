@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Api.Models;
 using Microsoft.AspNetCore.Http;
@@ -17,6 +18,8 @@ namespace Nordiska.Modules.Banking.Application;
 
 public class AuthService : IAuthService
 {
+    private static readonly ConcurrentDictionary<string, string> _simulatedOrderPersonalNumbers = new();
+
     private readonly IBankIdAppApiClient _bankIdAppApiClient;
     private readonly IJwtProvider _jwtProvider;
     private readonly JwtOptions _jwtOptions;
@@ -50,6 +53,11 @@ public class AuthService : IAuthService
                 requirement: requirement
             ));
 
+            if (!string.IsNullOrWhiteSpace(request?.PersonalNum))
+            {
+                _simulatedOrderPersonalNumbers[response.OrderRef] = request.PersonalNum.Replace("-", "").Trim();
+            }
+
             var initiateData = new BankIdInitiateResponseDto(
                 response.OrderRef,
                 response.AutoStartToken,
@@ -82,8 +90,16 @@ public class AuthService : IAuthService
                 return new AuthenticationResultDto(true, null, CollectData: pendingData);
             }
 
-            var rawPersonalNumber = collectResponse.CompletionData?.User.PersonalIdentityNumber ?? string.Empty;
-            var cleanPersonalNumber = rawPersonalNumber.Replace("-", "").Trim();
+            string cleanPersonalNumber;
+            if (_simulatedOrderPersonalNumbers.TryRemove(request.OrderRef, out var initiatedPersonalNum))
+            {
+                cleanPersonalNumber = initiatedPersonalNum;
+            }
+            else
+            {
+                var rawPersonalNumber = collectResponse.CompletionData?.User.PersonalIdentityNumber ?? string.Empty;
+                cleanPersonalNumber = rawPersonalNumber.Replace("-", "").Trim();
+            }
             
             if (string.IsNullOrEmpty(cleanPersonalNumber))
             {
@@ -91,12 +107,11 @@ public class AuthService : IAuthService
             }
             
             var customer = await _db.Customers.FirstOrDefaultAsync(c => 
-                c.PersonalNum == cleanPersonalNumber || 
-                c.PersonalNum == rawPersonalNumber);
+                c.PersonalNum == cleanPersonalNumber);
 
             if (customer == null)
             {
-                return new AuthenticationResultDto(false, $"Could not find customer with personal number: '{cleanPersonalNumber}' (raw: '{rawPersonalNumber}').");
+                return new AuthenticationResultDto(false, $"Could not find customer with personal number: '{cleanPersonalNumber}'.");
             }
 
             var token = await _jwtProvider.Generate(customer);
