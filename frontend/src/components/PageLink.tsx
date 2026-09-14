@@ -4,9 +4,10 @@ import capitalize from "../utils/capitalize";
 type PageLinkProps = {
     title: string;
     route: string;
+    header?: boolean;
 };
 
-export default function PageLink({ title, route }: PageLinkProps) {
+export default function PageLink({ title, route, header=false }: PageLinkProps) {
     return (
         <NavLink
             to={route}
@@ -15,7 +16,6 @@ export default function PageLink({ title, route }: PageLinkProps) {
                 flex
                 items-end
                 h-full
-                
                 whitespace-nowrap
                 no-underline
                 font-montserrat
@@ -23,7 +23,7 @@ export default function PageLink({ title, route }: PageLinkProps) {
                 transition-all
                 duration-200
                 ease-in-out
-                ${isActive ? "font-bold" : "font-regular"}
+                ${isActive ? header ? "font-semibold" :"font-bold" : "font-normal"}
             `}
         >
             {({ isActive }) => (
@@ -34,10 +34,10 @@ export default function PageLink({ title, route }: PageLinkProps) {
                     after:content-['']
                     after:absolute
                     after:top-full
-                    after:mt-1
+                    ${header ? "after:mt-0.5" : "after:mt-0"}
                     after:left-1/2
                     after:-translate-x-1/2
-                    after:h-[3px]
+                    ${header ? "after:h-[2px]" : "after:h-[4px]"}
                     after:bg-nordiska-orange
                     after:origin-center
                     after:transition-all

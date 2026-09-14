@@ -4,9 +4,10 @@ import { useNavigate } from "react-router";
 
 type LogoutButtonProps = {
     title: string;
+    mobile?: boolean;
 }
 
-export default function LogoutButton({ title }: LogoutButtonProps) {
+export default function LogoutButton({ title, mobile = false }: LogoutButtonProps) {
     const { mutate } = useLogout();
     const clearUser = useUserStore((state) => state.logout);
     const navigate = useNavigate();
@@ -25,43 +26,19 @@ export default function LogoutButton({ title }: LogoutButtonProps) {
             onClick={() => {
                 handleLogout();
             }}
-            className="
-                flex
-                items-start
-                uppercase
-                relative
-                h-full
-                whitespace-nowrap
-                no-underline
-                font-montserrat
-                cursor-pointer
-                transition-all
-                duration-200
-                ease-in-out
-                font-regular
-            "
+            className={
+                !mobile
+                    ? "flex items-start uppercase relative h-full whitespace-nowrap no-underline font-montserrat cursor-pointer transition-all duration-200 ease-in-out font-regular"
+                    : "text-xl font-normal uppercase tracking-wider text-white mt-30"
+            }
         >
-            <span className="
-                relative
-                inline-block
-
-                after:content-['']
-                after:absolute
-                after:top-full
-                after:mt-1
-                after:left-1/2
-                after:-translate-x-1/2
-                after:w-[70%]
-                after:h-[3px]
-                after:bg-nordiska-orange
-                after:origin-center
-                after:transition-transform
-                after:duration-200
-                after:ease-in-out
-                after:scale-x-0
-
-                hover:after:scale-x-100
-            ">
+            <span 
+                className={
+                    !mobile
+                        ? "relative inline-block after:content-[''] after:absolute after:top-full after:mt-1 after:left-1/2 after:-translate-x-1/2 after:w-[70%] after:h-[3px] after:bg-nordiska-orange after:origin-center after:transition-transform after:duration-200 after:ease-in-out after:scale-x-0 hover:after:scale-x-100"
+                        : ""
+                }
+            >
                 {title}
             </span>
         </button>
