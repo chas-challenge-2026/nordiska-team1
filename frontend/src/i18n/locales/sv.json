@@ -39,6 +39,10 @@
     "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
     "button": "Logga in igen"
 },
+"loggedout-route": {
+    "title": "Du har loggat ut.",
+    "paragraph": "Det är nu säkert att stänga denna sidan."
+},
 "transactions-route": {
     "account-select": "Styr vilka transaktioner som visas i listan till vänster. Bocka ur ett konto för att dölja dess transaktioner.",
     "all-accounts": "Alla konton",
