@@ -11,5 +11,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
     <ProjectReference Include="..\BuildingBlocks\Database\Nordiska.BuildingBlocks.Database.csproj" />
+	  <None Update="sample-input-huge.json">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
   </ItemGroup>
 </Project>
+
+

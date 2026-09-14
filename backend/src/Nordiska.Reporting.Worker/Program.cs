@@ -1,7 +1,24 @@
-using Nordiska.Reporting.Worker;
+using Nordiska.Modules.Reporting.PdfGeneration;
 
-var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
 
-var host = builder.Build();
-host.Run();
+PdfGenerationService service = new();
+Console.WriteLine($"starting");
+
+var jsonPath = Path.Combine(
+    AppContext.BaseDirectory,
+    "sample-input-huge.json"
+);
+//nu
+string jsonhuge = File.ReadAllText(jsonPath);
+
+byte[] pdf = service.Generate(jsonhuge);
+
+string path = Path.Combine(AppContext.BaseDirectory, "testfil.pdf");
+
+File.WriteAllBytes(path, pdf);
+
+Console.WriteLine($"PDF at: {path}");
+
+
+ 
+ 
