@@ -7,8 +7,7 @@ Alla endpoints.
 
  [Hela scalar i markdown](Scalar-markdown.md)
 
- [Sparad html](Scalar-markdown.md)
-
+ 
 
 
 ## API Map
