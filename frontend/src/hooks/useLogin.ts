@@ -33,11 +33,17 @@ export function useBankIdCollect(orderRef: string) {
         queryFn: () => bankIdCollect(orderRef!),
 
         enabled: !!orderRef,
+        retry: false,
 
         refetchInterval: (query) => {
             const status = query.state.data?.status;
 
-            if (status === "COMPLETE" || status === "failed") {
+            if (status === "COMPLETE") {
+                return false;
+                // THROWA ERROR HÄR, MEN FÖRST ORDENTLIG STATUS TILLBAKA FRÅN BACKEND
+            }
+
+            if (query.state.error) {
                 return false;
             }
 

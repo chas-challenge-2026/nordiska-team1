@@ -24,16 +24,12 @@ interface BankIdCollectUser {
 }
 
 export async function bankIdInitiate(personalNum:string):Promise<BankIdInitRes> {
-
-    const res = await axiosInstance.post("/auth/bankid/initate", {personalNum: personalNum});
-
+    const res = await axiosInstance.post("/auth/bankid/initiate", {personalNum: personalNum});
     return res.data;
 }
 
 export async function bankIdCollect(orderRef: string):Promise<BankIdCollectUser> {
-
     const res = await axiosInstance.post("/auth/bankid/collect", {orderRef});
-
     return res.data;
 }
 

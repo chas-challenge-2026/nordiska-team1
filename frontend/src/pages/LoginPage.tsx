@@ -9,22 +9,15 @@ export default function LoginPage() {
     const { t } = useTranslation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [orderRef, setOrderRef] = useState("");
-    const {mutate: login, isPending:loginPending, isError: loginIsError, error: loginError } = useLogin();
 
+    const [personalNum, setPersonalNum] = useState("");
+    const [orderRef, setOrderRef] = useState("");
+
+    const {mutate: login, isPending:loginPending, isError: loginIsError, error: loginError } = useLogin();
     const {mutate: bankIdInit, isPending: bankIdInitPending, isError:bankIdInitIsError, error: bankIdInitError } = useBankIdInitate();
 
     const bankIdCollect = useBankIdCollect(orderRef);
-
-
     const status = bankIdCollect.data?.status;
-
-
-    
-
-
-    const [personalNum, setPersonalNum] = useState("");
-
 
     function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
@@ -37,30 +30,22 @@ export default function LoginPage() {
         );
     }
 
-
     function handleBankIdInit(e: React.SubmitEvent) {
         e.preventDefault();
 
-        console.log(personalNum)
-
         bankIdInit(
-            {personalNum},
+            personalNum,
             {
                 onSuccess: (data) => setOrderRef(data.orderRef),
             }
         )
-
     }
 
-    
     useEffect(() => {
         if (status==="COMPLETE") {
             navigate("/");
         }
     }, [status, navigate]);
-
-
-
 
     return (
     <main className="min-h-screen w-full bg-login-bg">
@@ -78,15 +63,32 @@ export default function LoginPage() {
                     </div>
                 </section>
                 <section className="border-l-2 border-nordiska-orange pl-12">
-                    <div className="h-[30vh] w-[320px] bg-white rounded-tr-[20px] rounded-br-[20px]">
+                    <div className="w-[320px] bg-white rounded-tr-[20px] rounded-br-[20px] py-2 px-3">
                         <form onSubmit={(e) => handleSubmit(e)}>
                             <InputField name="email" type="email" label="email" placeholder="email" value={email} onChange={setEmail}/>
                             <InputField name="password" type="password" label="password" placeholder="password" value={password} onChange={setPassword}/>
-                            <button type="submit" disabled={loginPending}>{loginPending ? "loggas in..." : "logga in"}</button>
+                            <button type="submit" disabled={loginPending} className="cursor-pointer">{loginPending ? "Loggas in..." : "Logga in"}</button>
                         </form>
                         {loginIsError && <p className="text-red-500">{loginError.message}</p>}
 
-                    <p>Inlogg med BankID här</p>
+                    <section>
+                            <p className="mt-5"> Logga in med BankID-ish</p> 
+                            <form onSubmit={handleBankIdInit}>
+                                <InputField 
+                                name="personalnum" 
+                                type="text" 
+                                label="Personnummer" 
+                                placeholder="Personnummer" 
+                                value={personalNum} 
+                                onChange={setPersonalNum} /> 
+
+                                <button type="submit" disabled={status === "PENDING"} className="cursor-pointer">
+                                    {status === "PENDING" ? "Loggar in ..." : "Logga in"}
+                                </button>
+                                
+                            </form>
+
+                        </section>
                 </div>
             </section>
         </div>
@@ -121,8 +123,8 @@ export default function LoginPage() {
                                 onChange={setPassword} /> 
                             <button type="submit" disabled={loginPending} > 
                                 {loginPending 
-                                    ? "loggas in..." 
-                                    : "logga in"} 
+                                    ? "Loggas in..." 
+                                    : "Logga in"} 
                             </button> 
                         </form> 
                         
@@ -131,10 +133,9 @@ export default function LoginPage() {
                                 {loginError.message} 
                             </p> 
                         )} 
-                        
 
                         <section>
-                            <p className="mt-5"> Logga in med BankID</p> 
+                            <p className="mt-5"> Logga in med BankID-ish</p> 
                             <form onSubmit={handleBankIdInit}>
                                 <InputField 
                                 name="personalnum" 
@@ -145,7 +146,7 @@ export default function LoginPage() {
                                 onChange={setPersonalNum} /> 
 
                                 <button type="submit" disabled={status === "PENDING"}>
-                                    {status === "PENDING" ? "Loggar in" : "Logga in med BankId"}
+                                    {status === "PENDING" ? "Loggar in ..." : "Logga in"}
                                 </button>
                                 
                             </form>
