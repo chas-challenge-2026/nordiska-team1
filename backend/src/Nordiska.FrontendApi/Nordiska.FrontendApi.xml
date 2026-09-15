@@ -155,6 +155,27 @@
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.LoginRequest.Password">
             <summary>The user's account password.</summary>
         </member>
+        <member name="T:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest">
+            <summary>
+            Query parameters for filtering, searching and paginating transaction records.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>
+            Query parameters for filtering, searching and paginating transaction records.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.ToDomainParameters(System.Collections.Generic.IReadOnlyList{System.Int64})">
+            <summary>
+            Converts to domain query parameters with consolidated account IDs.
+            </summary>
+            <param name="effectiveAccountIds">The authorized account IDs to query.</param>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.GetRequestedAccountIds">
+            <summary>
+            Extracts all requested account IDs from both single AccountId and AccountIds list.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Controllers.AuthController">
             <summary>
             Authentication and session management endpoints using BankID and JWT cookies.
@@ -208,11 +229,11 @@
             <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
             <response code="401">Invalid email or password.</response>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser">
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser(Nordiska.Modules.Banking.Application.ICustomerService,System.Threading.CancellationToken)">
             <summary>
-            Returns the currently authenticated user's profile information extracted from the JWT.
+            Returns the currently authenticated user's profile information extracted from the session and database.
             </summary>
-            <response code="200">The authenticated user's id, email, and role.</response>
+            <response code="200">The authenticated user's id, name, email, phone, and role.</response>
             <response code="401">Unauthorized if the user is not authenticated.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Logout">
@@ -369,13 +390,14 @@
             API endpoints for querying and executing account transactions (deposits and withdrawals) using the ledger pattern.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetAll(System.Nullable{System.Int64},System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetAll(Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest,System.Threading.CancellationToken)">
             <summary>
-            Queries transaction ledger entries, optionally filtered by account ID.
+            Queries paginated transaction ledger entries with flexible search, filtering, and sorting parameters.
             </summary>
-            <param name="accountId">Optional account ID to filter transactions.</param>
+            <param name="query">Pagination, filter, and sort criteria.</param>
             <param name="cancellationToken">Cancellation token.</param>
-            <response code="200">List of transactions matching the criteria.</response>
+            <response code="200">Paginated list of transactions with metadata.</response>
+            <response code="400">Invalid query parameters.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
             <response code="403">Forbidden if accessing transactions for an account that does not belong to the user.</response>
         </member>

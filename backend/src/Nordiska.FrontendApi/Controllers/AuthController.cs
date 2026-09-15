@@ -131,26 +131,52 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Returns the currently authenticated user's profile information extracted from the JWT.
+    /// Returns the currently authenticated user's profile information extracted from the session and database.
     /// </summary>
-    /// <response code="200">The authenticated user's id, email, and role.</response>
+    /// <response code="200">The authenticated user's id, name, email, phone, and role.</response>
     /// <response code="401">Unauthorized if the user is not authenticated.</response>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser(
+        [FromServices] ICustomerService customerService,
+        CancellationToken cancellationToken)
     {
-        var customerId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
-                         ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var customerIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
                     ?? User.FindFirst(ClaimTypes.Email)?.Value;
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Customer";
+
+        if (long.TryParse(customerIdStr, out var customerId))
+        {
+            try
+            {
+                var customer = await customerService.GetByIdAsync(customerId, cancellationToken);
+                return Ok(new
+                {
+                    id = customer.Id,
+                    name = customer.Name,
+                    email = !string.IsNullOrWhiteSpace(email) ? email : customer.Email,
+                    phone = customer.PhoneNumber,
+                    phoneNumber = customer.PhoneNumber,
+                    role = role
+                });
+            }
+            catch
+            {
+                // Fallback to claims if domain customer is not yet provisioned
+            }
+        }
 
         return Ok(new
         {
-            id = customerId,
+            id = customerIdStr,
+            name = User.FindFirst("name")?.Value ?? email,
             email = email,
+            phone = (string?)null,
+            phoneNumber = (string?)null,
             role = role
         });
     }
