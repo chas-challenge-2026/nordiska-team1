@@ -20,7 +20,7 @@ export default function TransactionsPage() {
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
 
     return (
-        <div className='flex gap-8 w-screen max-h-screen p-6 font-montserrat'>
+        <div className="min-h-0 min-w-0 flex flex-1 flex-col gap-8 overflow-y-auto p-6 md:flex-row md:p-10">
             <TransactionFilter onChange={setFilters} onReset={() => setFilters(initialFilters)} />
 
             <TransactionTable

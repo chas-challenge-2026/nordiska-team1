@@ -5,25 +5,26 @@ export default function PageNotFound() {
     const {t} = useTranslation();
 
     return (
-        <div className='fixed z-[-2]'>
+        <main className="absolute inset-x-0 bottom-0 top-[70px] md:top-[80px]">
+            <section aria-labelledby="page-title" className="relative z-10 flex min-h-[calc(100vh-120px)] items-center px-6 py-12 sm:px-10 lg:px-15 ">
 
-            <main className='flex items-center h-[90vh] w-[100vw]'>
-                <div className='flex flex-col gap-10 ml-[20%] text-dark-navy'>
-                    <h1 className='text-6xl font-bold font-montserrat-alternates'>
-                        {`404 - ${t("404-route.title")}`}
+                <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 text-dark-navy lg:ml-[10%] lg:gap-10">
+                    <h1 id="page-title" className="max-w-5xl font-montserrat-alternates text-3xl font-bold leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
+                        <span className="block">404</span>
+                        {t("404-route.title")}
                     </h1>
-                    <p className='text-xl w-[80%] font-montserrat'>
+                    <p className="max-w-3xl -mt-5 font-montserrat text-base leading-relaxed sm:text-lg lg:text-xl">
                         {t("404-route.paragraph")}
                     </p>
-
-                <Link 
-                    to="/"
-                    className='group w-fit flex items-center hover:bg-login-bg cursor-pointer p-8 font-montserrat bg-nordiska-blue text-2xl font-semibold h-14 rounded-tr-[10px] rounded-br-[10px] rounded-bl-[10px] text-white pr-10'>
-                        <span><img src="icons/arrow-right.svg" alt="" className='invert rotate-180 w-[36px] group-hover:animate-bounce-right mr-5' /></span>
-                        {t("404-route.button")}
-                </Link>
+                    <Link 
+                        to="/"
+                        className="group flex min-h-14 w-[65%] max-w-xs items-center gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] bg-nordiska-blue px-2 py-2 font-montserrat text-white text-lg font-semibold transition-colors hover:bg-login-bg focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl" 
+                        >
+                            <img src="icons/arrow-right.svg" alt="" className='invert rotate-180 w-[24px] group-hover:animate-bounce-right ml-1 mr-1' />
+                            {t("404-route.button")}
+                    </Link>
                 </div>
-            </main>
-        </div>
+            </section>
+        </main>
     );
 }

@@ -17,7 +17,9 @@ export default function PageNavigation() {
         </nav>
 
         {/* ----- MOBIL ----- */}
-        <nav className="fixed bottom-0 left-0 z-50 flex h-[70px] w-full bg-nordiska-blue md:hidden">
+        <nav className="fixed bottom-0 left-0 z-50 flex h-[60px] w-full bg-nordiska-blue md:hidden">
+        {/* Alt. designförslag-ish  */}
+        {/* <nav className="fixed bottom-2 left-1/2 z-50 flex h-[60px] w-[98%] -translate-x-1/2 rounded-3xl bg-nordiska-blue md:hidden"> */}
             <div
                 onClick={() => navigate("/accounts")}
                 className="relative flex flex-1 flex-col items-center justify-center after:absolute after:right-0 after:top-[10%] after:h-[80%] after:w-px after:bg-white">
