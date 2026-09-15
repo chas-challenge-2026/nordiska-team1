@@ -5,26 +5,40 @@ SAN_FLAGS = -fsanitize=address,undefined
 
 LDLIBS = -lcrypto
 
-UNIT_BIN = test_key_load
+KEY_LOAD_BIN = test_key_load
 PKCS11_BIN = test_key_load_pkcs11
+CERT_LOAD_BIN = test_cert_load
+PDF_SIGN_BIN = test_pdf_sign
 
-.PHONY: all test test-unit test-pkcs11 clean
+.PHONY: all test test-key-load test-cert-load test-pdf-sign test-pkcs11 clean
 
-all: $(UNIT_BIN) $(PKCS11_BIN)
+all: $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN)
 
-$(UNIT_BIN): src/key_load.c tests/test_key_load.c
+$(KEY_LOAD_BIN): src/key_load.c tests/test_key_load.c
 	$(CC) $(CFLAGS) $(SAN_FLAGS) $^ -o $@ $(SAN_FLAGS) $(LDLIBS)
 
 $(PKCS11_BIN): src/key_load.c tests/test_key_load_pkcs11.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-test: test-unit test-pkcs11
+$(CERT_LOAD_BIN): src/cert_load.c tests/test_cert_load.c
+	$(CC) $(CFLAGS) $(SAN_FLAGS) $^ -o $@ $(SAN_FLAGS) $(LDLIBS)
 
-test-unit: $(UNIT_BIN)
-	./$(UNIT_BIN)
+$(PDF_SIGN_BIN): src/pdf_sign.c src/key_load.c src/cert_load.c tests/test_pdf_sign.c
+	$(CC) $(CFLAGS) $(SAN_FLAGS) $^ -o $@ $(SAN_FLAGS) $(LDLIBS)
+
+test: test-key-load test-cert-load test-pdf-sign test-pkcs11
+
+test-key-load: $(KEY_LOAD_BIN)
+	./$(KEY_LOAD_BIN)
+
+test-cert-load: $(CERT_LOAD_BIN)
+	./$(CERT_LOAD_BIN)
+
+test-pdf-sign: $(PDF_SIGN_BIN)
+	./$(PDF_SIGN_BIN)
 
 test-pkcs11: $(PKCS11_BIN)
 	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(PKCS11_BIN)
 
 clean:
-	rm -f $(UNIT_BIN) $(PKCS11_BIN)
+	rm -f $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN)
