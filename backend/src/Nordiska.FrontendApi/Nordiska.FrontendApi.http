@@ -53,10 +53,30 @@ GET {{HostAddress}}/api/test/secure
 Authorization: Bearer {{authToken}}
 Accept: application/json
 
-###
+### 1. Create a new FAQ (Testdata)
+POST{{HostAddress}}/api/faqs
+Content-Type: application/json
+
+{
+  "question": "Hur spärrar jag mitt bankkort?",
+  "answer": "Du kan spärra ditt kort direkt i mobilappen eller genom att ringa kundtjänst på 0771-000 000.",
+  "category": "Kort",
+  "keywords": "spärra, stulet, kort, mastercard, visa"
+}
+### 3. Get faq by Id
+GET {{HostAddress}}/api/faqs/1
 
 
-###
+### 4. Search by category 
+GET {{HostAddress}}/api/faqs/search?category=kort
+
+### 5. Search by free text
+# Search in quetions, anwers och keywords after "spärra"
+GET {{HostAddress}}/api/faqs/search?searchTerm=spärra
+
+### 6. Delete faq by id
+DELETE {{HostAddress}}/api/faqs/1
+
 
 ### 6. Get current authenticated user profile via cookie or Bearer token
 GET {{HostAddress}}/api/auth/me
