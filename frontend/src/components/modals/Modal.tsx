@@ -89,7 +89,7 @@ export default function Modal({
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="absolute top-3 right-3 z-10 rounded-md p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none"
+                    className="absolute top-3 right-3 z-10 rounded-md p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none cursor-pointer"
                 >
                     ×
                 </button>

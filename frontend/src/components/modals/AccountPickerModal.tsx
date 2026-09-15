@@ -37,7 +37,7 @@ export default function AccountPickerModal({
     groups,
     isEmpty,
     onSelect,
-    onClose,
+    // onClose,
     onAddNew,
 }: AccountPickerModalProps) {
     const { t } = useTranslation();
@@ -49,14 +49,14 @@ export default function AccountPickerModal({
                     <h3 className="m-0 text-xl font-semibold text-dark-navy">
                         {title}
                     </h3>
-                    <button
+                    {/* <button
                         type="button"
                         onClick={onClose}
                         aria-label={t("generic.close")}
                         className="cursor-pointer border-0 bg-none px-2 py-1 text-2xl leading-none text-secondary"
                     >
                         ×
-                    </button>
+                    </button> */}
                 </div>
                 <input
                     type="text"
