@@ -77,5 +77,23 @@ Origin: http://localhost:5173
 Access-Control-Request-Method: POST
 Access-Control-Request-Headers: authorization, content-type
 
+###
 
+### 9. Query transactions with pagination (Page 1, 10 items)
+GET {{HostAddress}}/api/transactions?page=1&pageSize=10
+Authorization: Bearer {{authToken}}
+Accept: application/json
 
+###
+
+### 10. Filter transactions by type and date range
+GET {{HostAddress}}/api/transactions?type=deposit&fromDate=2026-09-01T00:00:00Z&toDate=2026-09-30T23:59:59Z
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### 11. Search transactions with min/max amount and sorting
+GET {{HostAddress}}/api/transactions?minAmount=50&maxAmount=10000&sortBy=amount&sortOrder=desc
+Authorization: Bearer {{authToken}}
+Accept: application/json
