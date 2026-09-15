@@ -1,0 +1,81 @@
+@HostAddress = http://localhost:5031
+
+### 1. Get Weather Forecast (Public endpoint)
+GET {{HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### 2. Access protected test endpoint without token (Should return 401 Unauthorized)
+GET {{HostAddress}}/api/test/secure
+Accept: application/json
+
+### 1. Starta BankID-autentisering (Initiate)
+# Skickar personnummer och startar en ny BankID-session.
+POST {{HostAddress}}/api/auth/bankid/initiate
+Content-Type: application/json
+
+{
+  "personalNum": "198202116050"
+}
+
+###
+
+### 2. Poll/Hämta status för BankID (Collect)
+# Ersätt orderRef med det värde du fick tillbaka från Initiate ovan.
+POST {{HostAddress}}/api/auth/bankid/collect
+Content-Type: application/json
+
+{
+  "orderRef": "4a1d8213-33bc-452f-8a5e-2b7e12345678"
+}
+
+###
+
+### 3. Registrera ny kund
+# Skapar en ny användare med personnummer, namn, e-post och telefonnummer.
+POST {{HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "personalNum": "199205121234",
+  "name": "Erik Svensson",
+  "email": "erik.svensson@example.com",
+  "phoneNumber": "+46701234567"
+}
+
+
+### Save token from loginAnna response
+@authToken = {{loginAnna.response.body.token}}
+
+### 4. Access protected endpoint with valid JWT token (Should return 200 OK and show claims)
+GET {{HostAddress}}/api/test/secure
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+
+###
+
+### 6. Get current authenticated user profile via cookie or Bearer token
+GET {{HostAddress}}/api/auth/me
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### 7. Log out (clears auth cookie)
+POST {{HostAddress}}/api/auth/logout
+Accept: application/json
+
+###
+
+### 8. CORS Preflight OPTIONS request from React Vite frontend (Should return 204/200 with Access-Control-Allow-Origin)
+OPTIONS {{HostAddress}}/api/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: authorization, content-type
+
+
+

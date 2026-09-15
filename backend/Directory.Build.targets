@@ -1,0 +1,21 @@
+<Project>
+
+  <Target Name="ValidateTargetFramework"
+          BeforeTargets="Build">
+
+    <Error
+      Condition="'$(TargetFramework)' != 'net8.0'"
+      Text="ERROR: $(MSBuildProjectName) must target net8.0." />
+
+  </Target>
+
+  <Target Name="PrintBuildInfo"
+          BeforeTargets="Build">
+
+    <Message
+      Importance="high"
+      Text="Building $(MSBuildProjectName) | $(Configuration) | $(TargetFramework)" />
+
+  </Target>
+
+</Project>

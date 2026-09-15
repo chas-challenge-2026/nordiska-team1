@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!--  dependency restore -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestorePackagesWithLockFile Condition="
+      '$(MSBuildProjectName)' == 'Nordiska.BuildingBlocks.Database' Or
+      '$(MSBuildProjectName)' == 'Nordiska.Modules.Banking' Or
+      '$(MSBuildProjectName)' == 'Nordiska.Modules.Faq' Or
+      '$(MSBuildProjectName)' == 'Nordiska.Modules.Reporting'">false</RestorePackagesWithLockFile>
+
+    <!-- dependency vulnerability audit-->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>moderate</NuGetAuditLevel>
+  </PropertyGroup>
+</Project>
