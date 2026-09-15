@@ -3,14 +3,16 @@ import { Link, useNavigate } from "react-router";
 import Collapsible from "../components/Collapsible";
 import { EmailForm, PhoneForm } from "../components/Forms";
 import { useTranslation } from "react-i18next";
+import { useUserStore } from "../store/userStore";
 
 export default function SettingsPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const user = useUserStore();
 
     const [openField, setOpenField] = useState<"email" | "phone" | null>(null);
 
-    const savedEmail = "";
+    const savedEmail = user ? user.user?.email : "";
     const savedPhone = "0701234567";
 
     return (
