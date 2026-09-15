@@ -1,0 +1,10 @@
+{
+  "name": "nordiska-pdf-generator",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "cairo",
+    "libharu",
+    "nlohmann-json",
+    "openssl"
+  ]
+}

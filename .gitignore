@@ -1,10 +1,9 @@
-# ==========================================
-# Nordiska Portal v2 - Master .gitignore
-# ==========================================
+# Nordiska Portal v2 - Gitignore
 
 # 1. Environment files, Secrets & Certificates
 .env
 .env.*
+!.env.example
 *.local
 *.secret
 secrets.json
@@ -20,6 +19,7 @@ secrets.json
 [Tt]est[Rr]esults/
 *.user
 *.suo
+*.userosscache
 *.userosv
 *.sln.docstates
 
@@ -31,17 +31,37 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+packages/
+*.nupkg
 design_handoff_overforingar/
 
 # 4. OS & IDE Files
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
-desktop.ini
+ehthumbs.db
+Desktop.ini
 .vs/
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# 5. Local Databases & Logs
+# 5. CMake & Native Build Output
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+install_manifest.txt
+
+# 6. Local Databases, Logs & Temp Files
 *.sqlite
 *.log
 postgres_data/
+coverage/
+tmp/
+temp/
