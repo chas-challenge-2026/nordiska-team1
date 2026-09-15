@@ -118,5 +118,24 @@ public sealed class FaqController(FaqService service) : ControllerBase
 
         return Ok(entry);
     }
+    
+    [HttpGet("search")]
+    [ProducesResponseType(
+        typeof(FaqEntryResponse[]),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ValidationProblemDetails),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyCollection<FaqEntryResponse>>> Search([FromQuery] SearchFaqRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.SearchAsync(request, cancellationToken);
+        return Ok(result);
+    }
+
+
 
 }

@@ -34,3 +34,13 @@ public record UpdateFaqRequest(
     [property: StringLength(500)]
     string? Keywords
 );
+
+public record SearchFaqRequest(
+    [property: StringLength(500)]
+    string? SearchTerm = null,
+    [property: StringLength(200)]
+    string? Category = null,
+    [property: StringLength(200)]
+    string? Keyword = null
+ 
+);
