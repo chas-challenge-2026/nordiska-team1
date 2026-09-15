@@ -27,7 +27,7 @@ export default function AppRoutes() {
             <Route path="*" element={<PageNotFound />} />
 
             {/* PROTECTED ROUTES HÄR */}
-            {/* <Route element={<ProtectedRoute/>}> */}
+            <Route element={<ProtectedRoute/>}>
             
                 <Route path="/settings" element={<SettingsPage />} />
 
@@ -36,7 +36,7 @@ export default function AppRoutes() {
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/transactions" element={<TransactionsPage />} />
                 </Route>
-            {/* </Route> */}
+            </Route>
 
         </Routes>
     );
