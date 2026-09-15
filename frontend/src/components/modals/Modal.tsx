@@ -85,6 +85,14 @@ export default function Modal({
                 className={`animate-rise relative flex ${maxHeightClassName} ${widthClassName} flex-col overflow-hidden rounded-xl bg-white shadow-modal outline-none`}
                 onClick={(e) => e.stopPropagation()}
             >
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="absolute top-3 right-3 z-10 rounded-md p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none"
+                >
+                    ×
+                </button>
                 {children}
             </div>
         </div>

@@ -11,6 +11,7 @@
     "from": "Från",
     "date": "Datum",
     "reset": "Återställ",
+    "all": "Alla",
 
     "account": "Konto",
     "savings-account": "Sparkonto",
@@ -55,7 +56,12 @@
     "withdraws": "Endast uttag",
     "transactions": "Senaste transaktioner",
     "all-transactions": "Visa fler transaktioner",
-    "less-transactions": "Visa färre transaktioner"
+    "less-transactions": "Visa färre transaktioner",
+    "filter-options": "Välj instättningar eller uttag",
+    "loading-accounts": "Laddar konton...",
+    "accounts-error": "Ett problem uppstod vid hämtning av konton",
+    "loading-transactions": "Laddar transaktioner...",
+    "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner"
 },
 "login-route": {
     "title": "Logga in",
