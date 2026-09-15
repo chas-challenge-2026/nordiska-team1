@@ -20,7 +20,7 @@ public sealed class CustomerService : ICustomerService
         _userManager = userManager;
     }
 
-    public async Task<Customer> CreateAsync(string name, string email, string personalNum, CancellationToken cancellationToken = default)
+    public async Task<Customer> CreateAsync(string name, string email, string personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
     {
         var customer = new Customer
         {
@@ -28,6 +28,7 @@ public sealed class CustomerService : ICustomerService
             Email = email,
             UserName = email,
             PersonalNum = personalNum,
+            PhoneNumber = phoneNumber,
             CreatedAt = DateTime.UtcNow,
             PasswordHash = string.Empty
         };
@@ -55,15 +56,20 @@ public sealed class CustomerService : ICustomerService
         return customer;
     }
 
-    public async Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, CancellationToken cancellationToken = default)
+    public async Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
     {
         var customer = await _userManager.FindByIdAsync(id.ToString());
         if (customer is null)
             throw new KeyNotFoundException($"Customer with id {id} was not found.");
 
         if (!string.IsNullOrWhiteSpace(name)) customer.Name = name!;
-        if (!string.IsNullOrWhiteSpace(email)) customer.Email = email!;
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            customer.Email = email!;
+            customer.UserName = email!;
+        }
         if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum!;
+        if (!string.IsNullOrWhiteSpace(phoneNumber)) customer.PhoneNumber = phoneNumber!;
 
         var result = await _userManager.UpdateAsync(customer);
         if (!result.Succeeded)
@@ -76,5 +82,31 @@ public sealed class CustomerService : ICustomerService
         _logger.LogInformation("Updated customer {Id}", id);
 
         return customer;
+    }
+
+    public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var customer = await _userManager.FindByIdAsync(id.ToString());
+        if (customer is null)
+            throw new KeyNotFoundException($"Customer with id {id} was not found.");
+
+        var hasActiveBalance = await _db.SavingsAccounts
+            .AnyAsync(a => a.CustomerId == id && a.Balance > 0, cancellationToken);
+
+        if (hasActiveBalance)
+        {
+            _logger.LogWarning("Cannot delete customer {Id} because active accounts have non-zero balance", id);
+            throw new InvalidOperationException("Kan inte radera kund med kvarvarande saldo på sparkonton.");
+        }
+
+        var result = await _userManager.DeleteAsync(customer);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(';', result.Errors.Select(e => e.Description));
+            _logger.LogError("Failed to delete user {Id}: {Errors}", id, errors);
+            throw new InvalidOperationException($"Unable to delete user: {errors}");
+        }
+
+        _logger.LogInformation("Deleted customer {Id}", id);
     }
 }
