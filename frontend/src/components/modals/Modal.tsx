@@ -73,7 +73,7 @@ export default function Modal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-dark-navy/45 p-10"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-dark-navy/45 p-4 sm:p-10"
             onClick={onClose}
         >
             <div
@@ -89,7 +89,7 @@ export default function Modal({
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="absolute top-3 right-3 z-10 rounded-md p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none"
+                    className="absolute top-3 right-3 z-10 rounded-md p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none cursor-pointer"
                 >
                     ×
                 </button>
