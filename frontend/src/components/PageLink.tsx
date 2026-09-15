@@ -1,53 +1,57 @@
 import { NavLink } from "react-router";
+import capitalize from "../utils/capitalize";
 
 type PageLinkProps = {
     title: string;
     route: string;
+    header?: boolean;
 };
 
-export default function PageLink({ title, route }: PageLinkProps) {
+export default function PageLink({ title, route, header=false }: PageLinkProps) {
     return (
         <NavLink
             to={route}
             className={({ isActive }) => `
                 relative
+                flex
+                items-end
                 h-full
-                flex items-center justify-center
                 whitespace-nowrap
                 no-underline
-
                 font-montserrat
-                text-lg
-                text-white
-                uppercase
-                tracking-[0.18em]
-
+                cursor-pointer
                 transition-all
                 duration-200
                 ease-in-out
-
-                after:content-['']
-                after:absolute
-                after:bottom-9
-                after:left-1/2
-                after:-translate-x-1/2
-                after:w-[70%]
-                after:h-[3px]
-                after:bg-nordiska-orange
-                after:origin-center
-                after:transition-transform
-                after:duration-200
-                after:ease-in-out
-
-                ${isActive
-                    ? "font-bold after:scale-x-100"
-                    : "font-regular after:scale-x-0"
-                }
-
-                hover:after:scale-x-100
+                ${isActive ? header ? "font-semibold" :"font-bold" : "font-normal"}
             `}
         >
-            {title}
+            {({ isActive }) => (
+                <span className={`
+                    relative
+                    inline-block
+
+                    after:content-['']
+                    after:absolute
+                    after:top-full
+                    ${header ? "after:mt-0.5" : "after:mt-0"}
+                    after:left-1/2
+                    after:-translate-x-1/2
+                    ${header ? "after:h-[2px]" : "after:h-[4px]"}
+                    after:bg-nordiska-orange
+                    after:origin-center
+                    after:transition-all
+                    after:duration-200
+                    after:ease-in-out
+
+                    ${isActive
+                        ? "after:w-full"
+                        : "after:w-0 hover:after:w-[70%]"
+                    }
+                `}>
+                    {capitalize(title)}
+                </span>
+            )}
         </NavLink>
     );
 }

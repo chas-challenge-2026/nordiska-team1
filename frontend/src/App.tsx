@@ -1,23 +1,18 @@
 import './App.css'
-import LandingPage from './pages/LandingPage'
-import CollapsiblePlayground from './pages/CollapsiblePlayground'
-import DesktopLayout from './layouts/DesktopLayout'
-import OverviewPage from './pages/OverviewPage'
-import { Routes, Route } from 'react-router'
+import AppRoutes from './routes/AppRoutes'
+import { useUserStore } from './store/userStore'
+import { useSessionCheck } from './hooks/useSessionCheck'
+import PageHeader from './components/PageHeader'
 
-function App() {
+export default function App() {
+    const isCheckingSession = useUserStore((state) => state.isCheckingSession);
+    useSessionCheck();
+    if (isCheckingSession) return <div>loading...</div>
+    
     return (
         <>
-            <Routes>
-                <Route path="/welcome" element={<LandingPage />} />
-                <Route path="/inactive" element={<LandingPage inactive />} />
-                <Route path="/dev/collapsible" element={<CollapsiblePlayground />} />
-                <Route path="/" element={<DesktopLayout />}>
-                    <Route index element={<OverviewPage />} />
-                </Route>
-            </Routes>
+            <PageHeader />
+            <AppRoutes/>
         </>
     )
 }
-
-export default App

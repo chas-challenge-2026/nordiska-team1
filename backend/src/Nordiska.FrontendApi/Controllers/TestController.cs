@@ -6,11 +6,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Nordiska.FrontendApi.Controllers;
 
+/// <summary>
+/// Controller providing test endpoints for authenticated scenarios.
+/// </summary>
 [ApiController]
 [Route("api/test")]
 [Authorize]
 public class TestController : ControllerBase
 {
+    /// <summary>
+    /// Returns information extracted from the authenticated user's JWT claims.
+    /// </summary>
+    /// <returns>Basic user info and all claims.</returns>
     [HttpGet("secure")]
     public IActionResult GetSecureData()
     {

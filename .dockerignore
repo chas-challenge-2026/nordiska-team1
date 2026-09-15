@@ -1,0 +1,41 @@
+# ==========================================
+# Docker Build Ignore - Root
+# ==========================================
+
+# 1. Version Control & IDEs
+.git/
+.gitignore
+.gitattributes
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# 2. Build Outputs & Packages
+**/bin/
+**/obj/
+**/artifacts/
+**/TestResults/
+**/node_modules/
+**/dist/
+
+# 3. Secrets & Environment Files
+.env
+.env.*
+*.secret
+*.local
+secrets.json
+*.pem
+*.key
+*.pfx
+*.p12
+
+# 4. Documentation & Misc
+README.md
+PLAN/
+docs/
+*.log

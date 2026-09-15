@@ -8,6 +8,11 @@
 
     <!--  dependency restore -->
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestorePackagesWithLockFile Condition="
+      '$(MSBuildProjectName)' == 'Nordiska.BuildingBlocks.Database' Or
+      '$(MSBuildProjectName)' == 'Nordiska.Modules.Banking' Or
+      '$(MSBuildProjectName)' == 'Nordiska.Modules.Faq' Or
+      '$(MSBuildProjectName)' == 'Nordiska.Modules.Reporting'">false</RestorePackagesWithLockFile>
 
     <!-- dependency vulnerability audit-->
     <NuGetAudit>true</NuGetAudit>
