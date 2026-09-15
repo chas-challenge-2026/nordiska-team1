@@ -1,11 +1,12 @@
 import { create } from "zustand";
 
 interface User {
-    id: string;
+    id: number;
     email: string;
-    role: string;
+    role?: string;
+    name?: string;
 }
-
+    
 interface UserState {
     user: User | null;
     isCheckingSession: boolean;
