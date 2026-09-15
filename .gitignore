@@ -6,6 +6,10 @@
 !.env.example
 *.local
 *.secret
+.dev/
+**/.dev/
+*.user
+*.suo
 secrets.json
 *.pem
 *.key
@@ -44,6 +48,45 @@ ehthumbs.db
 Desktop.ini
 .vs/
 .vscode/
+*.user
+
+# Native / C / C++
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Crash / sanitizer output
+core
+core.*
+vgcore.*
+asan.log*
+ubsan.log*
+
+# clang tooling generated from builds
+**/compile_commands.json
+
+# Current native test binaries
+/native/test_key_load
+/native/pdf-signer/test_key_load
+/native/pdf-signer/test_key_load_pkcs11
+
+# CMake / Meson build output
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/Makefile.user
+**/build/
+**/builddir/
+**/meson-logs/
+**/meson-private/
+
 .idea/
 *.swp
 *.swo

@@ -10,5 +10,6 @@ public sealed class CreateCustomerRequestValidator : AbstractValidator<CreateCus
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(320);
         RuleFor(x => x.PersonalNum).NotEmpty().Matches("^[0-9A-Za-z-]{10,12}$").WithMessage("PersonalNum must be 10-12 chars");
+        RuleFor(x => x.PhoneNumber).MaximumLength(50).When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
     }
 }
