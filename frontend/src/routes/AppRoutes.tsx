@@ -22,6 +22,8 @@ export default function AppRoutes() {
             <Route path="/welcome" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/inactive" element={<LandingPage inactive />} />
+            <Route path="/logged-out" element={<LandingPage loggedOut />} />
+
             <Route path="*" element={<PageNotFound />} />
 
             {/* PROTECTED ROUTES HÄR */}

@@ -11,6 +11,7 @@
     "from": "Från",
     "date": "Datum",
     "reset": "Återställ",
+    "all": "Alla",
 
     "account": "Konto",
     "savings-account": "Sparkonto",
@@ -39,6 +40,10 @@
     "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
     "button": "Logga in igen"
 },
+"loggedout-route": {
+    "title": "Du har loggat ut.",
+    "paragraph": "Det är nu säkert att stänga denna sidan."
+},
 "transactions-route": {
     "account-select": "Styr vilka transaktioner som visas i listan till vänster. Bocka ur ett konto för att dölja dess transaktioner.",
     "all-accounts": "Alla konton",
@@ -51,7 +56,12 @@
     "withdraws": "Endast uttag",
     "transactions": "Senaste transaktioner",
     "all-transactions": "Visa fler transaktioner",
-    "less-transactions": "Visa färre transaktioner"
+    "less-transactions": "Visa färre transaktioner",
+    "filter-options": "Välj instättningar eller uttag",
+    "loading-accounts": "Laddar konton...",
+    "accounts-error": "Ett problem uppstod vid hämtning av konton",
+    "loading-transactions": "Laddar transaktioner...",
+    "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner"
 },
 "login-route": {
     "title": "Logga in",
