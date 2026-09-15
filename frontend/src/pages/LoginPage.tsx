@@ -14,6 +14,7 @@ export default function LoginPage() {
     const [orderRef, setOrderRef] = useState("");
 
     const {mutate: login, isPending:loginPending, isError: loginIsError, error: loginError } = useLogin();
+    // eslint-disable-next-line
     const {mutate: bankIdInit, isPending: bankIdInitPending, isError:bankIdInitIsError, error: bankIdInitError } = useBankIdInitate();
 
     const bankIdCollect = useBankIdCollect(orderRef);
