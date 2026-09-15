@@ -1,10 +1,11 @@
 import axiosInstance from "./axiosInstance";
+import type { User } from "../types/types";
 
-interface User {
-    id: string;
-    email: string;
-    role: string;
-}
+// interface User {
+//     id: string;
+//     email: string;
+//     role: string;
+// }
 
 interface BankIdInitRes {
     orderRef: string;
