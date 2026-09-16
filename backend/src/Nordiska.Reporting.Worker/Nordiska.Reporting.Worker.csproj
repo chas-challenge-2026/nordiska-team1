@@ -23,12 +23,14 @@
   </ItemGroup>
 
   <Target Name="CopyNativePdfRuntime" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-    <Error
+    <Warning
       Condition="'@(NativePdfRuntimeFiles)' == ''"
-      Text="Native PDF runtime not found. Build native/pdf_generator before building Nordiska.Reporting.Worker." />
+      Text="Native PDF runtime not found. Build native/pdf_generator before running PDF generation." />
     <Copy
+      Condition="'@(NativePdfRuntimeFiles)' != ''"
       SourceFiles="@(NativePdfRuntimeFiles)"
       DestinationFolder="$(TargetDir)"
       SkipUnchangedFiles="true" />
   </Target>
+
 </Project>

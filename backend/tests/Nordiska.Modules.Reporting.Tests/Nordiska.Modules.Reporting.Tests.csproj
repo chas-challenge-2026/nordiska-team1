@@ -19,21 +19,4 @@
     <ProjectReference Include="..\..\src\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <NativePdfBuildDirectory>$(MSBuildThisFileDirectory)..\..\..\native\pdf_generator\build</NativePdfBuildDirectory>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <NativePdfRuntimeFiles Include="$(NativePdfBuildDirectory)\*.dll" />
-  </ItemGroup>
-
-  <Target Name="CopyNativePdfRuntime" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-    <Error
-      Condition="'@(NativePdfRuntimeFiles)' == ''"
-      Text="Native PDF runtime not found. Build native/pdf_generator before building Nordiska.Modules.Reporting.Tests." />
-    <Copy
-      SourceFiles="@(NativePdfRuntimeFiles)"
-      DestinationFolder="$(TargetDir)"
-      SkipUnchangedFiles="true" />
-  </Target>
 </Project>
