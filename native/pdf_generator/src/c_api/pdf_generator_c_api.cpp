@@ -1,7 +1,6 @@
 #include "nordiska/delivery/c_api/pdf_generator_c_api.h"
 
-#include "nordiska/application/generate_customer_batch.hpp"
-#include "nordiska/composition/default_composition.hpp"
+#include "nordiska/application/customer_batch_generator.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -75,26 +74,22 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
             return val_res.error();
         }
 
-        // 2. Delegate to application batch generation pipeline.
-        // The application coordinator owns:
-        //   - Swappable JSON input adapter (nlohmann / simdjson / custom) -> owning validated CustomerBatch
-        //   - Calling-thread sequential layout & rendering (Libharu / Cairo / custom)
-        //   - Optional PDF signing
-        //   - Retained complete in-memory BatchResult
+        // 2. Delegate to application batch generation pipeline
         const std::span<const uint8_t> payload_span{json_utf8, json_length};
-        auto generator = nordiska::make_default_batch_generator();
-        auto batch_result = generator->generate(payload_span);
+        nordiska::CustomerBatchGenerator generator;
+        auto batch_result = generator.generate(payload_span);
         if (!batch_result) {
             set_last_error(batch_result.error().message);
             return batch_result.error().status;
         }
 
-        const auto& completed_batch = *batch_result;
+        const nordiska::GeneratedCustomerBatch& completed_batch = *batch_result;
 
         // 3. Construct borrowed C ABI batch and document views
         std::vector<nordiska_pdf_document_view> document_views;
         document_views.reserve(completed_batch.documents.size());
-        for (const auto& doc : completed_batch.documents) {
+
+        for (const nordiska::GeneratedDocument& doc : completed_batch.documents) {
             document_views.push_back(nordiska_pdf_document_view{
                 .document_id = doc.document_id.c_str(),
                 .bytes = doc.pdf_bytes.data(),
