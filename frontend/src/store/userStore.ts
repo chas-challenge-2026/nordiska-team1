@@ -1,19 +1,24 @@
 import { create } from "zustand";
 import type { User } from "../types/types";
 
-    
+type LogoutReasons = "manual" | "inactivity";
+
 interface UserState {
     user: User | null;
     isCheckingSession: boolean;
+    loggedOut: boolean;
+    loggedOutDueToInactivity: boolean;
     setUser: (user: User | null) => void;
     setCheckingSession: (value: boolean) => void;
-    logout: () => void;
+    logout: (reason?: LogoutReasons) => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
     user: null,
     isCheckingSession: true,
-    setUser: (user) => set({ user }),
+    loggedOut: false,
+    loggedOutDueToInactivity: false,
+    setUser: (user) => set(user ? { user, loggedOut: false, loggedOutDueToInactivity: false } : { user }),
     setCheckingSession: (value) => set({ isCheckingSession: value }),
-    logout: () => set({ user: null }),
+    logout: (reason) => set({ user: null, loggedOut: true, loggedOutDueToInactivity: reason === "inactivity" }),
 }));

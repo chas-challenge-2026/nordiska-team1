@@ -1,6 +1,5 @@
 import { useLogout } from "../hooks/useLogout";
 import { useUserStore } from "../store/userStore";
-import { useNavigate } from "react-router";
 
 type LogoutButtonProps = {
     title: string;
@@ -10,13 +9,11 @@ type LogoutButtonProps = {
 export default function LogoutButton({ title, mobile = false }: LogoutButtonProps) {
     const { mutate } = useLogout();
     const clearUser = useUserStore((state) => state.logout);
-    const navigate = useNavigate();
 
     function handleLogout() {
         mutate(undefined, {
             onSuccess: () => {
-                clearUser();
-                navigate("/logged-out");
+                clearUser("manual");
             },
         });
     }
