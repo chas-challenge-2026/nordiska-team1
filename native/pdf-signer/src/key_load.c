@@ -14,6 +14,7 @@ static key_secret_result_t request_secret(const key_credentials_t* credentials,
 static int                 file_passphrase_cb(char* pass, size_t pass_size, size_t* pass_len,
                                               const OSSL_PARAM params[], void* arg);
 
+#define KEY_SECRET_MAX_LEN 1024
 /*----------------------------------------------------------*/
 
 struct key_loader
@@ -93,7 +94,9 @@ static void cleanup_key_load_resources(key_load_resources_t* resources) {
 static int file_passphrase_cb(char* pass, size_t pass_size, size_t* pass_len,
                               const OSSL_PARAM params[], void* arg) {
   (void)params;
-
+  if (!arg || !pass || !pass_len) {
+    return 0;
+  }
   struct file_passphrase_ctx* ctx = arg;
 
   unsigned char* secret     = NULL;
@@ -149,11 +152,6 @@ static int pkcs11_ui_reader(UI* ui, UI_STRING* uis) {
   if (request_secret(ctx->credentials, KEY_SECRET_PKCS11_PIN, ctx->spec, &secret, &secret_len) !=
       KEY_SECRET_OK) {
     fprintf(stderr, "Failed to get PKCS#11 PIN\n");
-    return 0;
-  }
-
-  if (secret_len > INT_MAX) {
-    release_secret(&secret);
     return 0;
   }
 
@@ -415,7 +413,13 @@ key_loader_t* key_loader_create(const key_loader_config_t* config) {
   const char* provider_name =
       config->pkcs11_provider_name != NULL ? config->pkcs11_provider_name : "pkcs11";
 
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
   key_loader->pkcs11_provider = OSSL_PROVIDER_load_ex(key_loader->libctx, provider_name, params);
+#else
+  (void)params;
+  key_loader->pkcs11_provider = OSSL_PROVIDER_load(key_loader->libctx, provider_name);
+#endif
+
   OPENSSL_free(module_path);
 
   if (!key_loader->pkcs11_provider) {
