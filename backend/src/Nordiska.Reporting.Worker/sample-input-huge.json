@@ -1,0 +1,23 @@
+{
+  "account_number": "SE1234567890",
+  "transactions": [
+    {
+      "date": "2026-01-05",
+      "type": "deposit",
+      "currency": "SEK",
+      "amount_minor": 100000
+    },
+    {
+      "date": "2026-01-12",
+      "type": "interest",
+      "currency": "SEK",
+      "amount_minor": 1250
+    },
+    {
+      "date": "2026-01-20",
+      "type": "withdrawal",
+      "currency": "SEK",
+      "amount_minor": -25000
+    }
+  ]
+}
