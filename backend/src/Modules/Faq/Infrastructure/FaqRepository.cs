@@ -79,7 +79,7 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
             var keyword = request.Keyword.Trim().ToLower();
-            query = query.Where(entry => entry.Keywords.ToLower() == keyword);
+            query = query.Where(entry => entry.Keywords != null && entry.Keywords.ToLower().Contains(keyword));
         }
         
         // Filter by free text search
@@ -88,7 +88,7 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
             var searchTerm = request.SearchTerm.Trim().ToLower();
             query = query.Where(entry => entry.Question.ToLower().Contains(searchTerm) || 
                                          entry.Answer.ToLower().Contains(searchTerm) || 
-                                         (entry.Keywords.Contains(searchTerm)));
+                                         (entry.Keywords != null && entry.Keywords.ToLower().Contains(searchTerm)));
         }
         
         return await query

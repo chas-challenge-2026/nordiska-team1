@@ -54,7 +54,7 @@ Authorization: Bearer {{authToken}}
 Accept: application/json
 
 ### 1. Create a new FAQ (Testdata)
-POST{{HostAddress}}/api/faqs
+POST {{HostAddress}}/api/faqs
 Content-Type: application/json
 
 {

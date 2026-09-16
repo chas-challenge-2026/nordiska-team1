@@ -120,6 +120,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
     
     [HttpGet("search")]
+    [AllowAnonymous]
     [ProducesResponseType(
         typeof(FaqEntryResponse[]),
         StatusCodes.Status200OK)]
