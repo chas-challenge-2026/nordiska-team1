@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 
 namespace Nordiska.FrontendApi.Controllers;
@@ -36,6 +37,7 @@ public class AuthController : ControllerBase
     /// <response code="200">BankID session successfully initiated with orderRef and start tokens.</response>
     /// <response code="400">Failed to initiate BankID session (e.g. invalid request or service error).</response>
     [HttpPost("bankid/initiate")]
+    [AuditAction("AUTH_BANKID_INITIATE")]
     [ProducesResponseType(typeof(BankIdInitiateResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
@@ -62,6 +64,7 @@ public class AuthController : ControllerBase
     /// <response code="200">Current status of the authentication (e.g. PENDING or COMPLETE with customer profile).</response>
     /// <response code="401">Authentication failed or customer not found.</response>
     [HttpPost("bankid/collect")]
+    [AuditAction("AUTH_BANKID_COLLECT")]
     [ProducesResponseType(typeof(BankIdCollectResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
@@ -86,6 +89,7 @@ public class AuthController : ControllerBase
     /// <response code="200">Customer registered successfully and session established.</response>
     /// <response code="400">Registration validation failed or email already registered.</response>
     [HttpPost("register")]
+    [AuditAction("AUTH_REGISTER")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestDto request)
@@ -116,6 +120,7 @@ public class AuthController : ControllerBase
     /// <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
     /// <response code="401">Invalid email or password.</response>
     [HttpPost("login")]
+    [AuditAction("AUTH_LOGIN")]
     [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -187,6 +192,7 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <response code="200">Successfully logged out and cookie deleted.</response>
     [HttpPost("logout")]
+    [AuditAction("AUTH_LOGOUT")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Logout()
     {

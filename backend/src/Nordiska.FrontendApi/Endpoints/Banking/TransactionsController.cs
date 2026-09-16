@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -157,6 +158,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if attempting to execute transaction on an account belonging to another customer.</response>
     [HttpPost]
+    [AuditAction("TRANSACTION_EXECUTE")]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -182,6 +184,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if source account does not belong to authenticated user.</response>
     [HttpPost("transfer")]
+    [AuditAction("TRANSACTION_TRANSFER")]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -207,6 +210,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if account does not belong to authenticated user.</response>
     [HttpPost("planned")]
+    [AuditAction("TRANSACTION_PLAN")]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -232,6 +236,7 @@ public class TransactionsController : ControllerBase
     /// <response code="403">Forbidden if transaction does not belong to authenticated user.</response>
     /// <response code="404">Planned transaction not found.</response>
     [HttpDelete("planned/{id}")]
+    [AuditAction("TRANSACTION_CANCEL_PLAN")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

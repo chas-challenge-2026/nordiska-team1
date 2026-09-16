@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -94,6 +95,7 @@ public class AccountsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if attempting to open an account for another customer.</response>
     [HttpPost]
+    [AuditAction("ACCOUNT_OPEN")]
     [ProducesResponseType(typeof(SavingsAccountResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -121,6 +123,7 @@ public class AccountsController : ControllerBase
     /// <response code="404">Account not found.</response>
     [HttpPatch("{id}/close")]
     [HttpPost("{id}/close")]
+    [AuditAction("ACCOUNT_CLOSE")]
     [ProducesResponseType(typeof(SavingsAccountResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

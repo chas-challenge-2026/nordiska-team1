@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Nordiska.FrontendApi.Contracts.Mappers;
 using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 
@@ -63,6 +64,7 @@ public sealed class CustomersController : ControllerBase
     /// <response code="400">Invalid customer creation payload.</response>
     [AllowAnonymous]
     [HttpPost]
+    [AuditAction("CUSTOMER_CREATE")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CustomerResponse>> Create([FromBody] CreateCustomerRequest request, CancellationToken cancellationToken)
@@ -84,6 +86,7 @@ public sealed class CustomersController : ControllerBase
     [HttpPut]
     [HttpPut("{id}")]
     [HttpPut("{id}/profile")]
+    [AuditAction("CUSTOMER_UPDATE")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -117,6 +120,7 @@ public sealed class CustomersController : ControllerBase
     /// <response code="404">Customer not found.</response>
     [HttpPatch("{id}")]
     [HttpPatch("{id}/profile")]
+    [AuditAction("CUSTOMER_PATCH")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -136,6 +140,7 @@ public sealed class CustomersController : ControllerBase
     /// Partially updates specific customer profile fields using request body ID.
     /// </summary>
     [HttpPatch]
+    [AuditAction("CUSTOMER_PATCH")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -162,6 +167,7 @@ public sealed class CustomersController : ControllerBase
     /// <response code="403">Forbidden if the user is not authorized to delete this profile.</response>
     /// <response code="404">Customer not found.</response>
     [HttpDelete("{id}")]
+    [AuditAction("CUSTOMER_DELETE")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

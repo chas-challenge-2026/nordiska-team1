@@ -527,6 +527,36 @@
             <response code="403">Forbidden if checking balance for another customer's account.</response>
             <response code="404">Account not found.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.AuditController">
+            <summary>
+            API endpoints for viewing and cryptographically verifying immutable audit logs.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Reporting.AuditController.GetAuditEntries(System.String,System.Nullable{System.Int64},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves paginated audit log entries with optional filtering.
+            Non-admin users can only view entries belonging to their own user ID.
+            </summary>
+            <param name="action">Optional filter for action type (e.g. AUTH_LOGIN, TRANSACTION_DEPOSIT).</param>
+            <param name="userId">Optional filter for target user ID (admin only).</param>
+            <param name="fromDate">Optional start date for filtering.</param>
+            <param name="toDate">Optional end date for filtering.</param>
+            <param name="page">Page number (default: 1).</param>
+            <param name="pageSize">Page size (default: 50, max: 200).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Returns list of audit entries and total count.</response>
+            <response code="401">Unauthorized if authentication token is missing.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Reporting.AuditController.VerifyAuditEntry(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Cryptographically verifies the HMAC-SHA256 signature of a specific audit log entry.
+            </summary>
+            <param name="id">The audit entry identifier.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Returns the cryptographic verification result.</response>
+            <response code="404">Audit entry with the specified ID was not found.</response>
+            <response code="403">Forbidden if accessing an entry belonging to another customer.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.ReportsController">
             <summary>
             API endpoints for generating and downloading customer tax statements and annual interest reports.

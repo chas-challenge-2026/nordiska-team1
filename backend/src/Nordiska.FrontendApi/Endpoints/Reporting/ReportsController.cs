@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
 
@@ -38,6 +39,7 @@ public sealed class ReportsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if the account does not belong to the authenticated user.</response>
     [HttpPost("tax-report")]
+    [AuditAction("REPORT_TAX_INITIATE")]
     [ProducesResponseType(typeof(TaxReportJobResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -134,6 +136,7 @@ public sealed class ReportsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if the account does not belong to the user.</response>
     [HttpGet("tax-report")]
+    [AuditAction("REPORT_TAX_DIRECT")]
     [Produces("application/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
