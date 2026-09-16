@@ -17,6 +17,16 @@ struct GeneratorConfig {
     bool enable_signing{false};
 };
 
+struct PipelineTiming {
+    double ingest_seconds{0.0};
+    double layout_seconds{0.0};
+    double render_seconds{0.0};
+
+    [[nodiscard]] double total_seconds() const noexcept {
+        return ingest_seconds + layout_seconds + render_seconds;
+    }
+};
+
 enum class GeneratorErrorKind {
     InvalidArgument,
     InvalidInput,
@@ -34,7 +44,8 @@ class PdfGenerator {
     explicit PdfGenerator(GeneratorConfig config);
     ~PdfGenerator();
 
-    [[nodiscard]] std::expected<GeneratedPdfs, GeneratorError> generate(std::span<const uint8_t> json_utf8) const;
+    [[nodiscard]] std::expected<GeneratedPdfs, GeneratorError> generate(std::span<const uint8_t> json_utf8,
+                                                                        PipelineTiming* timing = nullptr) const;
 
   private:
     JsonIngestor ingestor_;

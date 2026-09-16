@@ -4,6 +4,7 @@
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/layout/layout_builder.hpp"
 
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <span>
@@ -17,8 +18,17 @@ PdfGenerator::PdfGenerator(GeneratorConfig config)
 
 PdfGenerator::~PdfGenerator() = default;
 
-std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<const uint8_t> json_utf8) const {
+std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<const uint8_t> json_utf8,
+                                                                    PipelineTiming* timing) const {
+    using Clock = std::chrono::steady_clock;
+
+    const auto t_ingest_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
     auto ingest_res = ingestor_.ingest(json_utf8);
+    if (timing != nullptr) {
+        const auto t_ingest_end = Clock::now();
+        timing->ingest_seconds += std::chrono::duration<double>(t_ingest_end - t_ingest_start).count();
+    }
+
     if (!ingest_res) {
         GeneratorErrorKind kind = GeneratorErrorKind::InvalidInput;
         if (ingest_res.error().kind == IngestErrorKind::InternalError) {
@@ -36,8 +46,20 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
     generated.documents.reserve(job.documents.size());
 
     for (const Document& doc : job.documents) {
+        const auto t_layout_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         DocumentLayout layout = LayoutBuilder::build(doc);
+        if (timing != nullptr) {
+            const auto t_layout_end = Clock::now();
+            timing->layout_seconds += std::chrono::duration<double>(t_layout_end - t_layout_start).count();
+        }
+
+        const auto t_render_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         auto render_res = engine_.render(layout);
+        if (timing != nullptr) {
+            const auto t_render_end = Clock::now();
+            timing->render_seconds += std::chrono::duration<double>(t_render_end - t_render_start).count();
+        }
+
         if (!render_res) {
             // All-or-nothing guarantee: stop on first failure and discard accumulated results
             return std::unexpected(GeneratorError{

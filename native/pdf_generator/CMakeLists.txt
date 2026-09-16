@@ -70,6 +70,7 @@ target_link_libraries(pdf_generator_benchmark PRIVATE
     nordiska_document_core
     nordiska_document_input_json
     nordiska_document_diagnostics
+    nordiska_pdf_generator_c_api
 )
 
 # Standalone CLI Subproject
