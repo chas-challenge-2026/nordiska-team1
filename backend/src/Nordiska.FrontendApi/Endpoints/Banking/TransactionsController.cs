@@ -44,10 +44,11 @@ public class TransactionsController : ControllerBase
     /// <response code="403">Forbidden if accessing transactions for an account that does not belong to the user.</response>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<TransactionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<TransactionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<TransactionResponse>>> GetAll([FromQuery] TransactionQueryRequest query, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] TransactionQueryRequest query, CancellationToken cancellationToken)
     {
         query ??= new TransactionQueryRequest();
         var requestedAccountIds = query.GetRequestedAccountIds();
@@ -56,7 +57,7 @@ public class TransactionsController : ControllerBase
         {
             var adminParams = query.ToDomainParameters(requestedAccountIds);
             var adminResult = await _service.QueryPagedAsync(adminParams, cancellationToken);
-            return Ok(adminResult);
+            return FormatResult(adminResult);
         }
 
         var currentUserId = GetCurrentUserId();
@@ -74,21 +75,42 @@ public class TransactionsController : ControllerBase
 
             var userParams = query.ToDomainParameters(requestedAccountIds);
             var result = await _service.QueryPagedAsync(userParams, cancellationToken);
-            return Ok(result);
+            return FormatResult(result);
         }
 
         if (userAccounts.Count == 0)
         {
-            return Ok(PagedResult<TransactionResponse>.Create(
+            var emptyResult = PagedResult<TransactionResponse>.Create(
                 Array.Empty<TransactionResponse>(),
                 0,
                 query.Page,
-                query.PageSize));
+                query.PageSize);
+            return FormatResult(emptyResult);
         }
 
         var allAccountsParams = query.ToDomainParameters(userAccounts.ToList());
         var pagedResult = await _service.QueryPagedAsync(allAccountsParams, cancellationToken);
-        return Ok(pagedResult);
+        return FormatResult(pagedResult);
+    }
+
+    private IActionResult FormatResult(PagedResult<TransactionResponse> result)
+    {
+        if (HasExplicitPagination())
+        {
+            return Ok(result);
+        }
+
+        return Ok(result.Items);
+    }
+
+    private bool HasExplicitPagination()
+    {
+        return Request.Query.ContainsKey("page") ||
+               Request.Query.ContainsKey("pageSize") ||
+               Request.Query.ContainsKey("limit") ||
+               Request.Query.ContainsKey("offset") ||
+               Request.Query.ContainsKey("pageNumber") ||
+               Request.Query.ContainsKey("hasMore");
     }
 
     /// <summary>
@@ -148,6 +170,92 @@ public class TransactionsController : ControllerBase
 
         var created = await _service.ExecuteAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>
+    /// Executes a funds transfer between two accounts.
+    /// </summary>
+    /// <param name="request">Transfer request containing sourceAccountId, targetAccountId, amount, and optional label.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Transfer successfully executed.</response>
+    /// <response code="400">Invalid transfer parameters or insufficient funds.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="403">Forbidden if source account does not belong to authenticated user.</response>
+    [HttpPost("transfer")]
+    [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TransactionResponse>> Transfer([FromBody] TransferRequest request, CancellationToken cancellationToken)
+    {
+        if (!await IsAuthorizedForAccountAsync(request.SourceAccountId, cancellationToken))
+        {
+            return Forbid();
+        }
+
+        var result = await _service.TransferAsync(request, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a scheduled or planned future transaction.
+    /// </summary>
+    /// <param name="request">Planned transaction details.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="201">Planned transaction successfully registered.</response>
+    /// <response code="400">Invalid planned transaction details.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="403">Forbidden if account does not belong to authenticated user.</response>
+    [HttpPost("planned")]
+    [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TransactionResponse>> CreatePlanned([FromBody] PlannedTransactionRequest request, CancellationToken cancellationToken)
+    {
+        if (!await IsAuthorizedForAccountAsync(request.AccountId, cancellationToken))
+        {
+            return Forbid();
+        }
+
+        var created = await _service.CreatePlannedAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>
+    /// Cancels or deletes a planned transaction.
+    /// </summary>
+    /// <param name="id">Identifier of the planned transaction to cancel.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Planned transaction cancelled successfully.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="403">Forbidden if transaction does not belong to authenticated user.</response>
+    /// <response code="404">Planned transaction not found.</response>
+    [HttpDelete("planned/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelPlanned(long id, CancellationToken cancellationToken)
+    {
+        var existing = await _service.GetByIdAsync(id, cancellationToken);
+        if (existing == null)
+        {
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Planned transaction not found." });
+        }
+
+        if (!await IsAuthorizedForAccountAsync(existing.AccountId, cancellationToken))
+        {
+            return Forbid();
+        }
+
+        var deleted = await _service.CancelPlannedAsync(id, cancellationToken);
+        if (!deleted)
+        {
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Planned transaction not found." });
+        }
+
+        return NoContent();
     }
 
     /// <summary>

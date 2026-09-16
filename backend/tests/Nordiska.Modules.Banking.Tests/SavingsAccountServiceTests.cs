@@ -78,4 +78,35 @@ public class SavingsAccountServiceTests
         Assert.Equal(req.AccountNumber, created.AccountNumber);
         Assert.Equal(req.InitialDeposit, created.Balance);
     }
+
+    [Fact]
+    public async Task CloseAccount_WithZeroBalance_SetsStatusClosed()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "Standard", Balance = 0, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var closed = await service.CloseAccountAsync(1);
+
+        Assert.Equal("closed", closed.Status);
+        Assert.NotNull(closed.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task CloseAccount_WithPositiveBalance_ThrowsInvalidOperationException()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "Standard", Balance = 500m, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CloseAccountAsync(1));
+    }
 }

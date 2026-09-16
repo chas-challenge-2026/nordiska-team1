@@ -24,4 +24,10 @@ public interface ISavingsAccountService
     /// </summary>
     /// <param name="request">Open savings account request.</param>
     Task<SavingsAccountResponse> CreateAsync(OpenSavingsAccountRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Closes an account if balance is zero.
+    /// </summary>
+    /// <param name="id">Account id.</param>
+    Task<SavingsAccountResponse> CloseAccountAsync(long id, CancellationToken cancellationToken = default);
 }

@@ -13,12 +13,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Nordiska.BuildingBlocks.Database;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
 using Nordiska.FrontendApi.Extensions;
 using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
 using Xunit;
 
@@ -144,6 +146,172 @@ public class TestAuthService : IAuthService
     }
 }
 
+public class TestSavingsAccountRepository : ISavingsAccountRepository
+{
+    private static readonly List<SavingsAccount> _store = new()
+    {
+        new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "NOR-100001", AccountType = "saving", AccountName = "Sparkonto", Balance = 5000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "NOR-100002", AccountType = "checking", AccountName = "Lönekonto", Balance = 10000m, InterestRate = 0.005m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 3, CustomerId = 2, AccountNumber = "NOR-200001", AccountType = "saving", AccountName = "Eriks Spar", Balance = 3000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow }
+    };
+    private static long _next = 10;
+
+    public Task<IEnumerable<SavingsAccount>> GetAllAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<SavingsAccount>>(_store.ToList());
+
+    public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
+
+    public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _next++;
+        _store.Add(entity);
+        return Task.FromResult(entity.Id);
+    }
+
+    public Task UpdateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(s => s.Id == entity.Id);
+        if (idx >= 0) _store[idx] = entity;
+        return Task.CompletedTask;
+    }
+}
+
+public class TestTransactionRepository : ITransactionRepository
+{
+    private static readonly List<LedgerEntry> _store = new()
+    {
+        new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 5000m, CreatedAt = DateTime.UtcNow.AddDays(-10), Label = "Insättning" },
+        new LedgerEntry { Id = 2, AccountId = 2, Type = "deposit", Amount = 10000m, CreatedAt = DateTime.UtcNow.AddDays(-5), Label = "Lön" }
+    };
+    private static long _next = 10;
+
+    public Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
+    {
+        var q = _store.Where(l => !l.IsPlanned).AsEnumerable();
+        if (accountId.HasValue) q = q.Where(l => l.AccountId == accountId.Value);
+        return Task.FromResult<IEnumerable<LedgerEntry>>(q.ToList());
+    }
+
+    public Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
+    {
+        var q = _store.AsEnumerable();
+
+        if (parameters.AccountIds != null && parameters.AccountIds.Count > 0)
+        {
+            q = q.Where(l => parameters.AccountIds.Contains(l.AccountId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(parameters.Type))
+        {
+            var typeLower = parameters.Type.Trim().ToLowerInvariant();
+            q = q.Where(l => l.Type.ToLowerInvariant() == typeLower);
+        }
+
+        if (parameters.FromDate.HasValue)
+            q = q.Where(l => l.CreatedAt >= parameters.FromDate.Value);
+
+        if (parameters.ToDate.HasValue)
+            q = q.Where(l => l.CreatedAt <= parameters.ToDate.Value);
+
+        if (parameters.MinAmount.HasValue)
+            q = q.Where(l => l.Amount >= parameters.MinAmount.Value);
+
+        if (parameters.MaxAmount.HasValue)
+            q = q.Where(l => l.Amount <= parameters.MaxAmount.Value);
+
+        if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+        {
+            var term = parameters.SearchTerm.Trim().ToLowerInvariant();
+            q = q.Where(l => l.Type.ToLowerInvariant().Contains(term)
+                             || (l.Label != null && l.Label.ToLowerInvariant().Contains(term))
+                             || l.Id.ToString().Contains(term)
+                             || l.AccountId.ToString().Contains(term));
+        }
+
+        var totalCount = q.Count();
+        var page = parameters.NormalizedPage;
+        var pageSize = parameters.NormalizedPageSize;
+        var isAsc = string.Equals(parameters.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+
+        q = isAsc ? q.OrderBy(l => l.CreatedAt).ThenBy(l => l.Id) : q.OrderByDescending(l => l.CreatedAt).ThenByDescending(l => l.Id);
+
+        var items = q.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        return Task.FromResult(PagedResult<LedgerEntry>.Create(items, totalCount, page, pageSize));
+    }
+
+    public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
+
+    public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+    {
+        entry.Id = _next++;
+        _store.Add(entry);
+        return Task.FromResult(entry.Id);
+    }
+
+    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(l => l.Id == id);
+        if (idx >= 0)
+        {
+            _store.RemoveAt(idx);
+            return Task.FromResult(true);
+        }
+        return Task.FromResult(false);
+    }
+}
+
+public class TestCustomerService : ICustomerService
+{
+    private static readonly ConcurrentDictionary<long, Customer> _customers = new();
+
+    static TestCustomerService()
+    {
+        var anna = new Customer { Id = 1, Name = "Anna Smith", Email = "anna@exempel.se", PersonalNum = "198202116050", PhoneNumber = "+46701112233", CreatedAt = DateTime.UtcNow };
+        var erik = new Customer { Id = 2, Name = "Erik Svensson", Email = "erik@exempel.se", PersonalNum = "197903142380", PhoneNumber = "+46702223344", CreatedAt = DateTime.UtcNow };
+        _customers[1] = anna;
+        _customers[2] = erik;
+    }
+
+    public Task<Customer> CreateAsync(string name, string email, string personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    {
+        var id = Random.Shared.Next(100, 9999);
+        var c = new Customer { Id = id, Name = name, Email = email, PersonalNum = personalNum, PhoneNumber = phoneNumber, CreatedAt = DateTime.UtcNow };
+        _customers[id] = c;
+        return Task.FromResult(c);
+    }
+
+    public Task<Customer> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    {
+        if (_customers.TryGetValue(id, out var customer))
+            return Task.FromResult(customer);
+        throw new KeyNotFoundException($"Customer with id {id} was not found.");
+    }
+
+    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    {
+        var customer = _customers.GetOrAdd(id, k => new Customer { Id = k, Name = "User", Email = "u@ex.se", PersonalNum = "198001010000" });
+        if (!string.IsNullOrWhiteSpace(name)) customer.Name = name;
+        if (!string.IsNullOrWhiteSpace(email)) customer.Email = email;
+        if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum;
+        if (phoneNumber != null) customer.PhoneNumber = phoneNumber;
+        customer.UpdatedAt = DateTime.UtcNow;
+        return Task.FromResult(customer);
+    }
+
+    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    {
+        return UpdateAsync(id, name, email, null, phoneNumber, cancellationToken);
+    }
+
+    public Task DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        _customers.TryRemove(id, out _);
+        return Task.CompletedTask;
+    }
+}
+
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -152,6 +320,15 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IAuthService>();
             services.AddScoped<IAuthService, TestAuthService>();
+
+            services.RemoveAll<ISavingsAccountRepository>();
+            services.AddScoped<ISavingsAccountRepository, TestSavingsAccountRepository>();
+
+            services.RemoveAll<ITransactionRepository>();
+            services.AddScoped<ITransactionRepository, TestTransactionRepository>();
+
+            services.RemoveAll<ICustomerService>();
+            services.AddScoped<ICustomerService, TestCustomerService>();
         });
     }
 }
