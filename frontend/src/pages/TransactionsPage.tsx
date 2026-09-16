@@ -5,7 +5,7 @@ import TransactionFilter from '../components/transactions/TransactionsFilter';
 import type { TransactionFilters } from '../components/transactions/TransactionsFilter';
 import Modal from '../components/modals/Modal';
 import { useTransactions } from '../hooks/useTransactions';
-import { useAccounts } from '../hooks/useAccounts';
+import { useGetAccounts } from '../hooks/useAccounts';
 
 const initialFilters: TransactionFilters = {
     search: '',
@@ -17,7 +17,7 @@ const initialFilters: TransactionFilters = {
 
 export default function TransactionsPage() {
     const { data: transactions, isLoading: transactionsLoading, isError: transactionsError } = useTransactions();
-    const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useAccounts();
+    const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useGetAccounts();
 
     const [selectedAccountIds, setSelectedAccountIds] = useState<number[] | null>(null);
     const effectiveSelectedIds = selectedAccountIds ?? accounts?.map(a => a.id) ?? [];
