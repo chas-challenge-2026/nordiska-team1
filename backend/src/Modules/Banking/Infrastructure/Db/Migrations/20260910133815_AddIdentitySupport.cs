@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -120,11 +120,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                 name: "NormalizedEmail",
                 schema: "banking",
                 table: "customers",
-                type: "character varying(254)",
-                maxLength: 254,
-                nullable: true,
-                computedColumnSql: "lower(btrim(\"Email\"))",
-                stored: true);
+                type: "character varying(256)",
+                maxLength: 256,
+                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",

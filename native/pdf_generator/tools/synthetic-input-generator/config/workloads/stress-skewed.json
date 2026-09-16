@@ -1,0 +1,12 @@
+{
+  "accounts": 10000,
+  "transactions": 500000,
+  "currency": "SEK",
+  "annual_interest_rate": 0.025,
+  "tax_withholding_rate": 0.30,
+  "distribution": {
+    "type": "stress-skewed",
+    "active_account_fraction": 0.01,
+    "active_transaction_fraction": 0.80
+  }
+}

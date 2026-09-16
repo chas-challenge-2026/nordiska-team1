@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -34,10 +34,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                 maxLength: 256,
                 nullable: true,
                 oldClrType: typeof(string),
-                oldType: "character varying(254)",
-                oldMaxLength: 254,
-                oldNullable: true,
-                oldComputedColumnSql: "lower(btrim(\"Email\"))");
+                oldType: "character varying(256)",
+                oldMaxLength: 256,
+                oldNullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
@@ -71,11 +70,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                 name: "NormalizedEmail",
                 schema: "banking",
                 table: "customers",
-                type: "character varying(254)",
-                maxLength: 254,
+                type: "character varying(256)",
+                maxLength: 256,
                 nullable: true,
-                computedColumnSql: "lower(btrim(\"Email\"))",
-                stored: true,
                 oldClrType: typeof(string),
                 oldType: "character varying(256)",
                 oldMaxLength: 256,

@@ -10,8 +10,9 @@ public static class CustomerMappers
         if (!string.IsNullOrWhiteSpace(req.Name)) target.Name = req.Name!;
         if (!string.IsNullOrWhiteSpace(req.Email)) target.Email = req.Email!;
         if (!string.IsNullOrWhiteSpace(req.PersonalNum)) target.PersonalNum = req.PersonalNum!;
+        if (!string.IsNullOrWhiteSpace(req.PhoneNumber)) target.PhoneNumber = req.PhoneNumber!;
     }
 
     public static CustomerResponse ToResponse(this Customer c)
-        => new(c.Id, c.PersonalNum, c.Name, c.Email ?? string.Empty , c.CreatedAt);
+        => new(c.Id, c.PersonalNum, c.Name, c.Email ?? string.Empty, c.PhoneNumber, c.CreatedAt);
 }

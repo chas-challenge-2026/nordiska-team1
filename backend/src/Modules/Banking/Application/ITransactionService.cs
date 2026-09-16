@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
 
@@ -12,6 +16,11 @@ public interface ITransactionService
     /// Queries transactions, optionally filtered by account id.
     /// </summary>
     Task<IEnumerable<TransactionResponse>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queries paginated transactions using filter and search parameters.
+    /// </summary>
+    Task<PagedResult<TransactionResponse>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a transaction by id.

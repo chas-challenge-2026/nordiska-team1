@@ -1,9 +1,14 @@
-using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Banking.Domain;
-using Microsoft.Extensions.Logging;
 
 namespace Nordiska.Modules.Banking.Infrastructure;
 
@@ -24,6 +29,24 @@ public class TransactionService : ITransactionService
     {
         var entries = await _txRepo.QueryAsync(accountId, cancellationToken);
         return entries.Select(l => new TransactionResponse(l.Id, l.AccountId, l.Type, l.Amount, l.CreatedAt));
+    }
+
+    public async Task<PagedResult<TransactionResponse>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        var paged = await _txRepo.QueryPagedAsync(parameters, cancellationToken);
+        var mapped = paged.Items
+            .Select(l => new TransactionResponse(l.Id, l.AccountId, l.Type, l.Amount, l.CreatedAt))
+            .ToList();
+
+        return new PagedResult<TransactionResponse>(
+            mapped,
+            paged.TotalCount,
+            paged.Page,
+            paged.PageSize,
+            paged.TotalPages,
+            paged.HasNextPage,
+            paged.HasPreviousPage);
     }
 
     public async Task<TransactionResponse> GetByIdAsync(long id, CancellationToken cancellationToken = default)

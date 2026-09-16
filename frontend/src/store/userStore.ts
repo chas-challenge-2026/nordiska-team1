@@ -1,11 +1,7 @@
 import { create } from "zustand";
+import type { User } from "../types/types";
 
-interface User {
-    id: string;
-    email: string;
-    role: string;
-}
-
+    
 interface UserState {
     user: User | null;
     isCheckingSession: boolean;

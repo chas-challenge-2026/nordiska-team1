@@ -1,3 +1,8 @@
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Nordiska.BuildingBlocks.Database;
+using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.Modules.Banking.Application;
@@ -5,6 +10,7 @@ namespace Nordiska.Modules.Banking.Application;
 public interface ITransactionRepository
 {
     Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
 }

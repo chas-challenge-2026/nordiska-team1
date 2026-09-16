@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
@@ -17,13 +18,18 @@ using Nordiska.Modules.Banking.Domain;
 using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Core;
-using Microsoft.EntityFrameworkCore;
 using Nordiska.Modules.Banking.Infrastructure;
-
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns (NOR-78)
+builder.Host.UseDefaultServiceProvider((context, options) =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
 
 // Register JWT configuration options
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
@@ -190,6 +196,27 @@ builder.Services.AddCors(options =>
 builder.Services.AddErrorHandling();
 
 var app = builder.Build();
+
+// Automatic database migrations on startup (Banking, FAQ, Reporting)
+try
+{
+    using var scope = app.Services.CreateScope();
+
+    var bankingDb = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
+    await bankingDb.Database.MigrateAsync();
+
+    var faqDb = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+    await faqDb.Database.MigrateAsync();
+
+    var reportingDb = scope.ServiceProvider.GetRequiredService<ReportingDbContext>();
+    await reportingDb.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    // If the database is unreachable (e.g. during unit tests), log a warning
+    app.Logger.LogWarning(ex, "Automatic database migration could not be completed at startup: {Message}", ex.Message);
+}
+
 //look out for the order of middleware, it matters.
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
@@ -198,6 +225,10 @@ app.UseHttpsRedirection();
 app.UseRouting();
 // Enable CORS middleware before Authentication and Authorization
 app.UseCors(StrictFrontendCorsPolicy);
+
+// Enable static files (for React frontend in wwwroot) and default files
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -238,9 +269,18 @@ if (app.Environment.IsDevelopment())
 // Seed Test Customer 
 if (app.Environment.IsDevelopment())
 {
-    await DbInitializer.SeedAsync(app.Services);
+    try
+    {
+        await DbInitializer.SeedAsync(app.Services);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Could not seed test data at startup: {Message}", ex.Message);
+    }
 }
 
+// Fallback to React index.html for non-API client-side routes (SPA routing)
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

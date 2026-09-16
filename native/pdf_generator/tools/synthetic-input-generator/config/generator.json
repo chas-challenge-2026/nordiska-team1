@@ -1,0 +1,6 @@
+{
+  "seed": 827461,
+  "year": 2025,
+  "workload": "realistic",
+  "output_directory": "generated/realistic-500k"
+}
