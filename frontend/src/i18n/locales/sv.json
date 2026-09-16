@@ -104,7 +104,10 @@
     "help-center": "Hjälpcenter",
     "settings": "Inställningar",
     "logout": "Logga ut",
-    "my-nordiska": "Mitt nordiska"
+    "my-nordiska": "Mitt nordiska",
+    "menu": "Meny",
+    "home": "Hem",
+    "user": "Användare: "
 },
 "page-navigation": {
     "overview": "Översikt",
