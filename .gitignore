@@ -108,5 +108,3 @@ postgres_data/
 coverage/
 tmp/
 temp/
-/.github/copilot-instructions.md
-/PR_DESCRIPTION.md
