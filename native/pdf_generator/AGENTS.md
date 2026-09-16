@@ -5,7 +5,7 @@
 This directory is a standalone native PDF-generation component. Treat it as
 its own project, with its own CMake build, tests and dependencies.
 
-The component is intended to be called by another application as a C cmpatible library on windows or linux.
+The component is intended to be called by another application as a C-compatible library on Linux.
 The reusable application core must remain independent of the caller and must
 not depend on .NET, web services, deployment tooling, Docker, or background-job
 infrastructure.

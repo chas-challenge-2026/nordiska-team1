@@ -59,17 +59,17 @@ target_include_directories(nordiska_document_composition PUBLIC include)
 target_compile_features(nordiska_document_composition PUBLIC cxx_std_23)
 target_link_libraries(nordiska_document_composition PUBLIC nordiska_document_renderer_pdf)
 
-add_library(nordiska_document_c_api SHARED
-    src/c_api/document_c_api.cpp
+add_library(nordiska_pdf_generator_c_api SHARED
+    src/c_api/pdf_generator_c_api.cpp
 )
-set_target_properties(nordiska_document_c_api PROPERTIES
+set_target_properties(nordiska_pdf_generator_c_api PROPERTIES
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON
 )
-target_include_directories(nordiska_document_c_api PUBLIC include)
-target_compile_features(nordiska_document_c_api PUBLIC cxx_std_23)
-target_link_libraries(nordiska_document_c_api PRIVATE
+target_include_directories(nordiska_pdf_generator_c_api PUBLIC include)
+target_compile_features(nordiska_pdf_generator_c_api PUBLIC cxx_std_23)
+target_link_libraries(nordiska_pdf_generator_c_api PRIVATE
     nordiska_document_core
     nordiska_document_input_json
     nordiska_document_output
@@ -118,7 +118,7 @@ if(BUILD_TESTING)
     target_link_libraries(nordiska_diagnostics_tests PRIVATE nordiska_document_diagnostics)
     add_test(NAME nordiska_diagnostics_tests COMMAND nordiska_diagnostics_tests)
 
-    add_executable(nordiska_document_c_api_tests tests/document_c_api_tests.cpp)
-    target_link_libraries(nordiska_document_c_api_tests PRIVATE nordiska_document_c_api)
-    add_test(NAME nordiska_document_c_api_tests COMMAND nordiska_document_c_api_tests)
+    add_executable(nordiska_pdf_generator_c_api_tests tests/pdf_generator_c_api_tests.cpp)
+    target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api)
+    add_test(NAME nordiska_pdf_generator_c_api_tests COMMAND nordiska_pdf_generator_c_api_tests)
 endif()

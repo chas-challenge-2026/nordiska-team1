@@ -1,0 +1,48 @@
+{
+  "$schema_version": "1.0",
+  "customer_id": 1,
+  "customer_name": "Anna Lindqvist",
+  "created_at": "2026-02-01T10:00:00Z",
+  "documents": [
+    {
+      "document_id": "account1_statement",
+      "kind": "account_statement",
+      "version": "1.0",
+      "document": {
+        "title": "Kontoutdrag",
+        "account_number": "NKM-10001",
+        "account_name": "Sparkonto",
+        "currency": "SEK",
+        "period": "2026-01-01 - 2026-01-31",
+        "opening_balance": "90 000,00 SEK",
+        "closing_balance": "125 000,00 SEK",
+        "transactions": [
+          {
+            "date": "2026-01-15",
+            "type": "deposit",
+            "description": "Löneinsättning",
+            "currency": "SEK",
+            "amount_minor": 3500000,
+            "amount_display": "+35 000,00 SEK",
+            "balance_after_display": "125 000,00 SEK"
+          }
+        ]
+      }
+    },
+    {
+      "document_id": "account1_tax",
+      "kind": "annual_tax_report",
+      "version": "1.0",
+      "document": {
+        "title": "Kontrolluppgift för ränteinkomst",
+        "tax_year": "2025",
+        "account_number": "NKM-10001",
+        "account_name": "Sparkonto",
+        "total_interest_earned": "4 375,00 SEK",
+        "preliminary_tax_deducted": "1 312,50 SEK",
+        "reported_to_authority": "Skatteverket (KU20)"
+      }
+    }
+  ]
+}
+
