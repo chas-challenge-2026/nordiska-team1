@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using Nordiska.Modules.Faq.Contracts.Requests;
 using Nordiska.Modules.Faq.Domain;
 using Nordiska.Modules.Faq.Contracts.Responses;
 namespace Nordiska.Modules.Faq.Application;
@@ -14,6 +16,8 @@ public interface IFaqRepository
 
     Task<bool> DeleteAsync(
         int id,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<FaqEntryResponse>> SearchAsync(SearchFaqRequest request,
         CancellationToken cancellationToken = default);
 }
 public sealed class FaqService(IFaqRepository repository)
@@ -54,5 +58,11 @@ public sealed class FaqService(IFaqRepository repository)
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
 
         return repository.GetByIdAsync(id, cancellationToken);
+    }
+
+    public Task<IReadOnlyCollection<FaqEntryResponse>> SearchAsync(SearchFaqRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return repository.SearchAsync(request, cancellationToken);
     }
 }
