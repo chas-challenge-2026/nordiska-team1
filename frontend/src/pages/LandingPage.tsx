@@ -22,7 +22,7 @@ export default function LandingPage({ inactive = false, loggedOut = false }: pag
             {/* ----- BAKGRUND ----- */}
             <div
                 aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 top-[70px] bg-[url('src/assets/img/mountain_view.webp')] bg-cover bg-center opacity-65 md:top-[120px]"
+                className="absolute inset-x-0 bottom-0 top-[70px] bg-[url('/images/mountain_view.webp')] bg-cover bg-center opacity-65 md:top-[120px]"
             />
             {/* ----- INNEHÅLL ----- */}
             <section aria-labelledby="page-title" className="relative z-10 flex min-h-[calc(100vh-120px)] items-center px-6 py-12 sm:px-10 lg:px-15 mt-[70px]">

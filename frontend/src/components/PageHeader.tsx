@@ -50,7 +50,7 @@ export default function PageHeader() {
     const logoSize = isLargeHeader ? "text-3xl md:text-6xl" : "text-3xl";
 
     const headerBackground = isLogin
-        ? "bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center"
+        ? "bg-[url('/images/winter_forrest.webp')] bg-cover bg-center"
         : isDarkHeader
             ? "bg-dark-navy"
             : "bg-nordiska-blue";
