@@ -1,6 +1,6 @@
 #include "nordiska/delivery/c_api/pdf_generator_c_api.h"
 
-#include "nordiska/application/customer_batch_generator.hpp"
+#include "nordiska/application/pdf_generator.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -76,20 +76,35 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
 
         // 2. Delegate to application batch generation pipeline
         const std::span<const uint8_t> payload_span{json_utf8, json_length};
-        nordiska::CustomerBatchGenerator generator;
+        const nordiska::GeneratorConfig config{
+            .ingestor = nordiska::JsonIngestorKind::Nlohmann,
+            .engine = nordiska::PdfEngineKind::Libharu,
+            .enable_signing = false,
+        };
+        nordiska::PdfGenerator generator(config);
         auto batch_result = generator.generate(payload_span);
         if (!batch_result) {
             set_last_error(batch_result.error().message);
-            return batch_result.error().status;
+            switch (batch_result.error().kind) {
+            case nordiska::GeneratorErrorKind::InvalidArgument:
+                return NORDISKA_PDF_INVALID_ARGUMENT;
+            case nordiska::GeneratorErrorKind::InvalidInput:
+                return NORDISKA_PDF_INVALID_INPUT;
+            case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
+                return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
+            case nordiska::GeneratorErrorKind::InternalError:
+            default:
+                return NORDISKA_PDF_INTERNAL_ERROR;
+            }
         }
 
-        const nordiska::GeneratedCustomerBatch& completed_batch = *batch_result;
+        const nordiska::GeneratedPdfs& completed_batch = *batch_result;
 
         // 3. Construct borrowed C ABI batch and document views
         std::vector<nordiska_pdf_document_view> document_views;
         document_views.reserve(completed_batch.documents.size());
 
-        for (const nordiska::GeneratedDocument& doc : completed_batch.documents) {
+        for (const nordiska::PdfDocument& doc : completed_batch.documents) {
             document_views.push_back(nordiska_pdf_document_view{
                 .document_id = doc.document_id.c_str(),
                 .bytes = doc.pdf_bytes.data(),

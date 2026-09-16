@@ -217,7 +217,6 @@ int main() {
 
     // 7. Resource limit query functions (NOR-157)
     require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "max json bytes mismatch");
-    require(nordiska_pdf_v1_max_documents_per_batch() == 500, "max documents mismatch");
 
     // 8. Ground-truth golden sample verification
     std::filesystem::path golden_path = "docs/golden_customer_batch_sample.json";

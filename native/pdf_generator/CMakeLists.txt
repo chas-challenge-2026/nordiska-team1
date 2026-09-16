@@ -20,13 +20,17 @@ pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 add_library(nordiska_document_core STATIC
     src/domain/report.cpp
     src/application/generate_documents.cpp
+    src/application/pdf_generator.cpp
+    src/rendering/pdf_engine.cpp
 )
 set_target_properties(nordiska_document_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_document_core PUBLIC include)
 target_compile_features(nordiska_document_core PUBLIC cxx_std_23)
+target_link_libraries(nordiska_document_core PUBLIC nordiska_document_input_json)
 
 add_library(nordiska_document_input_json STATIC
     src/adapters/input/json_input_adapter.cpp
+    src/ingestion/json_ingestor.cpp
 )
 set_target_properties(nordiska_document_input_json PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_document_input_json PUBLIC include)
@@ -117,6 +121,10 @@ if(BUILD_TESTING)
     add_executable(nordiska_diagnostics_tests tests/benchmark_metrics_tests.cpp)
     target_link_libraries(nordiska_diagnostics_tests PRIVATE nordiska_document_diagnostics)
     add_test(NAME nordiska_diagnostics_tests COMMAND nordiska_diagnostics_tests)
+
+    add_executable(nordiska_json_ingestor_tests tests/json_ingestor_tests.cpp)
+    target_link_libraries(nordiska_json_ingestor_tests PRIVATE nordiska_document_input_json nordiska_document_core)
+    add_test(NAME nordiska_json_ingestor_tests COMMAND nordiska_json_ingestor_tests)
 
     add_executable(nordiska_pdf_generator_c_api_tests tests/pdf_generator_c_api_tests.cpp)
     target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api)
