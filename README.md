@@ -18,6 +18,11 @@ docker compose up
 | anna@example.com | password123 |
 | erik@example.com | password123 |
 
+| BankID |
+|--------|
+| 197903142380 |
+| 198202116050 |
+
 ## Vad som fungerar i v1
 
 - Inloggning med e-post och lösenord
