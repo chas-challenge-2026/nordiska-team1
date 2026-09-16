@@ -1,8 +1,15 @@
+using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Nordiska.BuildingBlocks.Database;
+using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -27,34 +34,29 @@ public class TransactionsController : ControllerBase
     }
 
     /// <summary>
-    /// Queries transaction ledger entries, optionally filtered by account ID.
+    /// Queries paginated transaction ledger entries with flexible search, filtering, and sorting parameters.
     /// </summary>
-    /// <param name="accountId">Optional account ID to filter transactions.</param>
+    /// <param name="query">Pagination, filter, and sort criteria.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="200">List of transactions matching the criteria.</response>
+    /// <response code="200">Paginated list of transactions with metadata.</response>
+    /// <response code="400">Invalid query parameters.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="403">Forbidden if accessing transactions for an account that does not belong to the user.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<TransactionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<TransactionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<TransactionResponse>>> GetAll([FromQuery] long? accountId, CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<TransactionResponse>>> GetAll([FromQuery] TransactionQueryRequest query, CancellationToken cancellationToken)
     {
-        if (accountId.HasValue)
-        {
-            if (!await IsAuthorizedForAccountAsync(accountId.Value, cancellationToken))
-            {
-                return Forbid();
-            }
-
-            var results = await _service.QueryAsync(accountId, cancellationToken);
-            return Ok(results);
-        }
+        query ??= new TransactionQueryRequest();
+        var requestedAccountIds = query.GetRequestedAccountIds();
 
         if (IsAdmin())
         {
-            var allResults = await _service.QueryAsync(null, cancellationToken);
-            return Ok(allResults);
+            var adminParams = query.ToDomainParameters(requestedAccountIds);
+            var adminResult = await _service.QueryPagedAsync(adminParams, cancellationToken);
+            return Ok(adminResult);
         }
 
         var currentUserId = GetCurrentUserId();
@@ -63,9 +65,30 @@ public class TransactionsController : ControllerBase
             .Select(a => a.Id)
             .ToHashSet();
 
-        var allTx = await _service.QueryAsync(null, cancellationToken);
-        var filteredTx = allTx.Where(t => userAccounts.Contains(t.AccountId));
-        return Ok(filteredTx);
+        if (requestedAccountIds != null && requestedAccountIds.Count > 0)
+        {
+            if (requestedAccountIds.Any(id => !userAccounts.Contains(id)))
+            {
+                return Forbid();
+            }
+
+            var userParams = query.ToDomainParameters(requestedAccountIds);
+            var result = await _service.QueryPagedAsync(userParams, cancellationToken);
+            return Ok(result);
+        }
+
+        if (userAccounts.Count == 0)
+        {
+            return Ok(PagedResult<TransactionResponse>.Create(
+                Array.Empty<TransactionResponse>(),
+                0,
+                query.Page,
+                query.PageSize));
+        }
+
+        var allAccountsParams = query.ToDomainParameters(userAccounts.ToList());
+        var pagedResult = await _service.QueryPagedAsync(allAccountsParams, cancellationToken);
+        return Ok(pagedResult);
     }
 
     /// <summary>
@@ -152,16 +175,6 @@ public class TransactionsController : ControllerBase
         return Ok(balance);
     }
 
-    private bool IsAdmin() => User.IsInRole("Admin");
-
-    private long? GetCurrentUserId()
-    {
-        var currentUserIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return long.TryParse(currentUserIdStr, out var currentUserId) ? currentUserId : null;
-    }
-
     private async Task<bool> IsAuthorizedForAccountAsync(long accountId, CancellationToken cancellationToken)
     {
         if (IsAdmin())
@@ -169,12 +182,19 @@ public class TransactionsController : ControllerBase
             return true;
         }
 
+        var currentUserId = GetCurrentUserId();
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken);
-        if (account is null)
-        {
-            return false;
-        }
 
-        return account.CustomerId == GetCurrentUserId();
+        return account != null && account.CustomerId == currentUserId;
+    }
+
+    private bool IsAdmin() => User.IsInRole("Admin");
+
+    private long GetCurrentUserId()
+    {
+        var currentUserIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        return long.TryParse(currentUserIdStr, out var currentUserId) ? currentUserId : 0;
     }
 }
