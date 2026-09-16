@@ -13,4 +13,5 @@ public interface ITransactionRepository
     Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
 }

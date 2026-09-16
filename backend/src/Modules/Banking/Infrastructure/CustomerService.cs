@@ -1,3 +1,7 @@
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
@@ -48,7 +52,6 @@ public sealed class CustomerService : ICustomerService
 
     public async Task<Customer> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        // Use UserManager to ensure we get Identity-managed user
         var customer = await _userManager.FindByIdAsync(id.ToString());
         if (customer is null)
             throw new KeyNotFoundException($"Customer with id {id} was not found.");
@@ -58,55 +61,68 @@ public sealed class CustomerService : ICustomerService
 
     public async Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
     {
-        var customer = await _userManager.FindByIdAsync(id.ToString());
-        if (customer is null)
-            throw new KeyNotFoundException($"Customer with id {id} was not found.");
+        var customer = await GetByIdAsync(id, cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(name)) customer.Name = name!;
+        if (!string.IsNullOrWhiteSpace(name))
+            customer.Name = name;
+
         if (!string.IsNullOrWhiteSpace(email))
         {
-            customer.Email = email!;
-            customer.UserName = email!;
+            customer.Email = email;
+            customer.UserName = email;
         }
-        if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum!;
-        if (!string.IsNullOrWhiteSpace(phoneNumber)) customer.PhoneNumber = phoneNumber!;
+
+        if (!string.IsNullOrWhiteSpace(personalNum))
+            customer.PersonalNum = personalNum;
+
+        if (phoneNumber != null)
+            customer.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber;
+
+        customer.UpdatedAt = DateTime.UtcNow;
 
         var result = await _userManager.UpdateAsync(customer);
         if (!result.Succeeded)
         {
             var errors = string.Join(';', result.Errors.Select(e => e.Description));
-            _logger.LogError("Failed to update user {Id}: {Errors}", id, errors);
+            _logger.LogError("Failed to update user: {Errors}", errors);
             throw new InvalidOperationException($"Unable to update user: {errors}");
         }
 
-        _logger.LogInformation("Updated customer {Id}", id);
-
+        _logger.LogInformation("Updated customer {Id}", customer.Id);
         return customer;
+    }
+
+    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    {
+        return UpdateAsync(id, name, email, personalNum: null, phoneNumber: phoneNumber, cancellationToken);
     }
 
     public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)
     {
-        var customer = await _userManager.FindByIdAsync(id.ToString());
-        if (customer is null)
-            throw new KeyNotFoundException($"Customer with id {id} was not found.");
+        var customer = await GetByIdAsync(id, cancellationToken);
 
-        var hasActiveBalance = await _db.SavingsAccounts
-            .AnyAsync(a => a.CustomerId == id && a.Balance > 0, cancellationToken);
+        var activeAccounts = await _db.SavingsAccounts
+            .Where(a => a.CustomerId == id)
+            .ToListAsync(cancellationToken);
 
-        if (hasActiveBalance)
+        if (activeAccounts.Any(a => a.Balance > 0))
         {
-            _logger.LogWarning("Cannot delete customer {Id} because active accounts have non-zero balance", id);
-            throw new InvalidOperationException("Kan inte radera kund med kvarvarande saldo på sparkonton.");
+            throw new InvalidOperationException("Cannot delete customer with positive account balance. Withdraw or transfer all funds before deleting account.");
+        }
+
+        if (activeAccounts.Count > 0)
+        {
+            _db.SavingsAccounts.RemoveRange(activeAccounts);
         }
 
         var result = await _userManager.DeleteAsync(customer);
         if (!result.Succeeded)
         {
             var errors = string.Join(';', result.Errors.Select(e => e.Description));
-            _logger.LogError("Failed to delete user {Id}: {Errors}", id, errors);
+            _logger.LogError("Failed to delete user: {Errors}", errors);
             throw new InvalidOperationException($"Unable to delete user: {errors}");
         }
 
-        _logger.LogInformation("Deleted customer {Id}", id);
+        _logger.LogInformation("Deleted customer {Id}", customer.Id);
     }
 }

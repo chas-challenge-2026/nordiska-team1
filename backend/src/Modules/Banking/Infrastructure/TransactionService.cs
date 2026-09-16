@@ -28,16 +28,14 @@ public class TransactionService : ITransactionService
     public async Task<IEnumerable<TransactionResponse>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
     {
         var entries = await _txRepo.QueryAsync(accountId, cancellationToken);
-        return entries.Select(l => new TransactionResponse(l.Id, l.AccountId, l.Type, l.Amount, l.CreatedAt));
+        return entries.Select(ToResponse);
     }
 
     public async Task<PagedResult<TransactionResponse>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(parameters);
         var paged = await _txRepo.QueryPagedAsync(parameters, cancellationToken);
-        var mapped = paged.Items
-            .Select(l => new TransactionResponse(l.Id, l.AccountId, l.Type, l.Amount, l.CreatedAt))
-            .ToList();
+        var mapped = paged.Items.Select(ToResponse).ToList();
 
         return new PagedResult<TransactionResponse>(
             mapped,
@@ -49,11 +47,11 @@ public class TransactionService : ITransactionService
             paged.HasPreviousPage);
     }
 
-    public async Task<TransactionResponse> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    public async Task<TransactionResponse?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
         var item = await _txRepo.GetByIdAsync(id, cancellationToken);
-        if (item is null) throw new KeyNotFoundException($"Transaction with ID {id} was not found.");
-        return new TransactionResponse(item.Id, item.AccountId, item.Type, item.Amount, item.CreatedAt);
+        if (item is null) return null;
+        return ToResponse(item);
     }
 
     public async Task<decimal> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default)
@@ -100,6 +98,7 @@ public class TransactionService : ITransactionService
             AccountId = request.AccountId,
             Type = request.Type.ToLowerInvariant(),
             Amount = delta,
+            Label = request.Label,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -108,6 +107,114 @@ public class TransactionService : ITransactionService
 
         _logger.LogInformation("Executed verified ledger transaction {TxId} on account {AccountId} type={Type} amount={Amount}", entry.Id, entry.AccountId, entry.Type, entry.Amount);
 
-        return new TransactionResponse(entry.Id, entry.AccountId, entry.Type, entry.Amount, entry.CreatedAt);
+        return ToResponse(entry);
     }
+
+    public async Task<TransactionResponse> TransferAsync(TransferRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0)
+            throw new ArgumentException("Transfer amount must be greater than zero.", nameof(request.Amount));
+
+        if (request.SourceAccountId == request.TargetAccountId)
+            throw new ArgumentException("Source and target accounts cannot be the same.", nameof(request.TargetAccountId));
+
+        var sourceAccount = await _accRepo.GetByIdAsync(request.SourceAccountId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Source account {request.SourceAccountId} was not found.");
+
+        var targetAccount = await _accRepo.GetByIdAsync(request.TargetAccountId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Target account {request.TargetAccountId} was not found.");
+
+        var currentBalance = await GetBalanceAsync(request.SourceAccountId, cancellationToken);
+        if (currentBalance < request.Amount)
+        {
+            throw new InvalidOperationException($"Insufficient funds on source account. Current balance is {currentBalance:N2}, requested transfer is {request.Amount:N2}.");
+        }
+
+        var now = DateTime.UtcNow;
+
+        // 1. Withdrawal on source account
+        var withdrawalEntry = new LedgerEntry
+        {
+            AccountId = request.SourceAccountId,
+            Type = "transfer",
+            Amount = -request.Amount,
+            Label = request.Label,
+            TargetAccountId = request.TargetAccountId,
+            CreatedAt = now
+        };
+        var withdrawalId = await _txRepo.CreateAsync(withdrawalEntry, cancellationToken);
+        withdrawalEntry.Id = withdrawalId;
+
+        // 2. Deposit on target account
+        var depositEntry = new LedgerEntry
+        {
+            AccountId = request.TargetAccountId,
+            Type = "transfer",
+            Amount = request.Amount,
+            Label = request.Label,
+            TargetAccountId = request.SourceAccountId,
+            CreatedAt = now
+        };
+        await _txRepo.CreateAsync(depositEntry, cancellationToken);
+
+        _logger.LogInformation("Executed funds transfer from account {Source} to {Target} amount={Amount}", request.SourceAccountId, request.TargetAccountId, request.Amount);
+
+        return ToResponse(withdrawalEntry);
+    }
+
+    public async Task<TransactionResponse> CreatePlannedAsync(PlannedTransactionRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0)
+            throw new ArgumentException("Planned amount must be greater than zero.", nameof(request.Amount));
+
+        var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Account {request.AccountId} was not found.");
+
+        var entry = new LedgerEntry
+        {
+            AccountId = request.AccountId,
+            Type = request.Type.ToLowerInvariant(),
+            Amount = request.Amount,
+            Label = request.Label,
+            TargetAccountId = request.TargetAccountId,
+            IsPlanned = true,
+            PlannedDate = request.PlannedDate,
+            Repeating = request.Repeating,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var txId = await _txRepo.CreateAsync(entry, cancellationToken);
+        entry.Id = txId;
+
+        _logger.LogInformation("Created planned transaction {TxId} for account {AccountId} on {PlannedDate}", entry.Id, entry.AccountId, entry.PlannedDate);
+
+        return ToResponse(entry);
+    }
+
+    public async Task<bool> CancelPlannedAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var entry = await _txRepo.GetByIdAsync(id, cancellationToken);
+        if (entry is null) return false;
+
+        if (!entry.IsPlanned)
+        {
+            throw new InvalidOperationException("Cannot cancel an executed transaction. Only planned transactions can be cancelled.");
+        }
+
+        return await _txRepo.DeleteAsync(id, cancellationToken);
+    }
+
+    private static TransactionResponse ToResponse(LedgerEntry l)
+        => new(
+            l.Id,
+            l.AccountId,
+            l.Type,
+            l.Amount,
+            l.CreatedAt,
+            l.Label,
+            l.TargetAccountId,
+            l.IsPlanned,
+            l.PlannedDate,
+            l.Repeating
+        );
 }

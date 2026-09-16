@@ -136,6 +136,7 @@ public class AuthController : ControllerBase
     /// <response code="200">The authenticated user's id, name, email, phone, and role.</response>
     /// <response code="401">Unauthorized if the user is not authenticated.</response>
     [HttpGet("me")]
+    [HttpGet("/api/me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

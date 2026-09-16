@@ -564,7 +564,8 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[11.6.0, )",
-          "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
+          "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
+          "Nordiska.Modules.Banking": "[1.0.0, )"
         }
       },
       "Npgsql": {

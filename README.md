@@ -62,16 +62,17 @@ Följande datamodell och entitetsrelationer gäller för v2 av Nordiska Sparbank
 erDiagram
     Customer {
         bigint id PK
-        string personal_num UK
+        string personal_num UK "BankID personnummer"
         string name
         string email UK
         string phone_number "kontaktuppgift"
         string password_hash
         datetime created_at
+        datetime updated_at "Senast uppdaterad"
     }
 
     AccountTypeConfig {
-        string account_type PK "saving, debit etc"
+        string account_type PK "saving, checking, flex"
         decimal interest_rate "t.ex. 1.45 eller 3.46"
         string description
     }
@@ -79,19 +80,26 @@ erDiagram
     SavingsAccount {
         bigint id PK
         bigint customer_id FK
-        string account_number UK
-        string account_type FK
+        string account_number UK "NOR-XXXXXX auto-genererad"
+        string account_name "Valbart kontonamn, max 40 tecken"
+        string account_type FK "saving, checking, flex"
         decimal balance "Ledger snapshot"
         decimal interest_rate
         string status "active, closed"
         datetime created_at
+        datetime updated_at "Senast ändrad"
     }
 
     Transaction {
         bigint id PK
         bigint account_id FK
-        string type "deposit, withdrawal, interest"
+        string type "deposit, withdrawal, transfer"
         decimal amount
+        string label "Etikett t.ex. Hyra, Lön"
+        bigint target_account_id "Motparts-konto vid transfer"
+        boolean is_planned "Planerad framtida transaktion"
+        datetime planned_date "Planerat datum"
+        string repeating "week, month, year"
         datetime created_at
     }
 

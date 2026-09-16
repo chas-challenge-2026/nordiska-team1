@@ -16,7 +16,7 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
 {
     public async Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
     {
-        var query = db.LedgerEntries.AsNoTracking().AsQueryable();
+        var query = db.LedgerEntries.AsNoTracking().Where(l => !l.IsPlanned).AsQueryable();
         if (accountId.HasValue) query = query.Where(l => l.AccountId == accountId.Value);
         return await query.ToListAsync(cancellationToken);
     }
@@ -62,6 +62,7 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
         {
             var term = parameters.SearchTerm.Trim().ToLowerInvariant();
             query = query.Where(l => l.Type.ToLower().Contains(term) 
+                                     || (l.Label != null && l.Label.ToLower().Contains(term))
                                      || l.Id.ToString().Contains(term) 
                                      || l.AccountId.ToString().Contains(term));
         }
@@ -98,5 +99,15 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
         db.LedgerEntries.Add(entry);
         await db.SaveChangesAsync(cancellationToken);
         return entry.Id;
+    }
+
+    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var item = await db.LedgerEntries.FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+        if (item is null) return false;
+
+        db.LedgerEntries.Remove(item);
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

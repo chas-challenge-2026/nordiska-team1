@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.Modules.Reporting.Application;
 
 namespace Nordiska.Modules.Reporting.Infrastructure.Db;
 
@@ -10,6 +11,9 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddScoped<IPdfReportGenerator, PdfReportGenerator>();
+        services.AddScoped<ITaxReportService, TaxReportService>();
+
         return services.AddModulePostgresDbContext<ReportingDbContext>(
             configuration,
             ReportingDatabase.Details);

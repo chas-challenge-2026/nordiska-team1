@@ -1,10 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Mappers;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Banking.Domain;
-using Microsoft.Extensions.Logging;
-using Nordiska.Modules.Banking.Application;
 
 namespace Nordiska.Modules.Banking.Infrastructure;
 
@@ -35,9 +40,34 @@ public class SavingsAccountService : ISavingsAccountService
 
     public async Task<SavingsAccountResponse> CreateAsync(OpenSavingsAccountRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = request.ToDomain();
+        var accountNumber = string.IsNullOrWhiteSpace(request.AccountNumber)
+            ? $"NOR-{Random.Shared.Next(100000, 999999)}"
+            : request.AccountNumber.Trim();
+
+        var normalizedRequest = request with { AccountNumber = accountNumber };
+        var entity = normalizedRequest.ToDomain();
         await _repo.CreateAsync(entity, cancellationToken);
-        _logger.LogInformation("Created savings account {Id} for customer {CustomerId}", entity.Id, entity.CustomerId);
+        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}) for customer {CustomerId}", entity.Id, entity.AccountNumber, entity.CustomerId);
         return entity.ToResponse();
+    }
+
+    public async Task<SavingsAccountResponse> CloseAccountAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var acc = await _repo.GetByIdAsync(id, cancellationToken);
+        if (acc is null)
+            throw new KeyNotFoundException($"Savings account with ID {id} was not found.");
+
+        if (acc.Balance > 0)
+        {
+            throw new InvalidOperationException($"Cannot close account with positive balance ({acc.Balance:N2} SEK). Transfer or withdraw all funds before closing.");
+        }
+
+        acc.Status = "closed";
+        acc.UpdatedAt = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(acc, cancellationToken);
+        _logger.LogInformation("Closed account {Id} (accountNumber={AccountNumber})", acc.Id, acc.AccountNumber);
+
+        return acc.ToResponse();
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -10,7 +11,8 @@ public static class BankingMappers
         => new()
         {
             CustomerId = req.CustomerId,
-            AccountNumber = req.AccountNumber,
+            AccountNumber = req.AccountNumber ?? string.Empty,
+            AccountName = req.AccountName,
             AccountType = req.AccountType,
             Balance = req.InitialDeposit,
             InterestRate = req.InterestRate,
@@ -20,8 +22,10 @@ public static class BankingMappers
     public static void ApplyUpdate(this SavingsAccount target, UpdateSavingsAccountRequest req)
     {
         if (!string.IsNullOrWhiteSpace(req.AccountType)) target.AccountType = req.AccountType!;
+        if (!string.IsNullOrWhiteSpace(req.AccountName)) target.AccountName = req.AccountName;
         // Balance is immutable via update according to ADR 0001 (must go through verified Ledger transactions)
         if (req.InterestRate.HasValue) target.InterestRate = req.InterestRate.Value;
+        target.UpdatedAt = DateTime.UtcNow;
     }
 
     public static SavingsAccountResponse ToResponse(this SavingsAccount acc, decimal? calculatedBalance = null)
@@ -32,7 +36,10 @@ public static class BankingMappers
             acc.AccountType,
             calculatedBalance ?? acc.Balance,
             acc.InterestRate,
-            acc.CreatedAt
+            acc.CreatedAt,
+            acc.AccountName,
+            acc.UpdatedAt,
+            acc.Status
         );
 
     public static AccountTypeConfig ToDomain(this CreateAccountTypeConfigRequest req)
