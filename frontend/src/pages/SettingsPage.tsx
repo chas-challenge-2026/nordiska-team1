@@ -20,7 +20,7 @@ export default function SettingsPage() {
             <div className="fixed inset-0 z-0 bg-dark-navy border-t-50 border-dark-navy">
                 <div
                     aria-hidden="true"
-                    className="absolute inset-0 bg-[url('src/assets/img/winter_forrest.webp')] bg-cover bg-center opacity-65"
+                    className="absolute inset-0 bg-[url('/images/winter_forrest.webp')] bg-cover bg-center opacity-65"
                 />
             </div>
 
@@ -106,7 +106,7 @@ export default function SettingsPage() {
                     </p>
 
                     <img
-                        src="src/assets/img/mountain_view.webp"
+                        src="images/mountain_view.webp"
                         alt=""
                         aria-hidden="true"
                         className="my-8 h-auto w-full object-cover"
