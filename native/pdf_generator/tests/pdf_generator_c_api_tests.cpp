@@ -237,7 +237,13 @@ int main() {
         require(golden_capture.customer_id == 1, "golden customer_id mismatch");
         require(golden_capture.docs.size() == 2, "golden docs count mismatch");
         require(golden_capture.docs[0].id == "account1_statement", "golden doc 0 id mismatch");
+        require(golden_capture.docs[0].bytes.size() > 500, "golden doc 0 must be real PDF bytes");
+        require(std::string_view(reinterpret_cast<const char*>(golden_capture.docs[0].bytes.data()), 5) == "%PDF-",
+                "golden doc 0 header must be %PDF-");
         require(golden_capture.docs[1].id == "account1_tax", "golden doc 1 id mismatch");
+        require(golden_capture.docs[1].bytes.size() > 500, "golden doc 1 must be real PDF bytes");
+        require(std::string_view(reinterpret_cast<const char*>(golden_capture.docs[1].bytes.data()), 5) == "%PDF-",
+                "golden doc 1 header must be %PDF-");
     }
 
     // 9. Thread-local isolation test for nordiska_pdf_v1_get_last_error

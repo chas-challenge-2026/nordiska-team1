@@ -2,6 +2,7 @@
 
 #include "nordiska/domain/generated_pdfs.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
+#include "nordiska/layout/layout_builder.hpp"
 
 #include <cstdint>
 #include <expected>
@@ -35,11 +36,19 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
     generated.documents.reserve(job.documents.size());
 
     for (const Document& doc : job.documents) {
-        // Temporary PDF header stub until Step 3/4/5 layout and rendering are wired
-        static const uint8_t kStubPdf[] = "%PDF-1.3\n%fake\n%%EOF";
+        DocumentLayout layout = LayoutBuilder::build(doc);
+        auto render_res = engine_.render(layout);
+        if (!render_res) {
+            // All-or-nothing guarantee: stop on first failure and discard accumulated results
+            return std::unexpected(GeneratorError{
+                .kind = GeneratorErrorKind::InternalError,
+                .message = "Failed to render document '" + doc.document_id + "': " + render_res.error().message,
+            });
+        }
+
         generated.documents.push_back(PdfDocument{
             .document_id = doc.document_id,
-            .pdf_bytes = std::vector<uint8_t>(std::begin(kStubPdf), std::end(kStubPdf) - 1),
+            .pdf_bytes = std::move(*render_res),
         });
     }
 

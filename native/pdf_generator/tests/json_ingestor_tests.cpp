@@ -187,14 +187,37 @@ int main() {
     require(malformed_res.error().message.find("Malformed JSON") != std::string::npos,
             "error should indicate malformed json");
 
-    // 9. PdfGenerator with default config parses golden sample
+    // 9. PdfGenerator with default config (Libharu) renders golden sample
     nordiska::PdfGenerator default_gen{nordiska::GeneratorConfig{}};
     auto default_batch_res = default_gen.generate(golden_span);
-    require(default_batch_res.has_value(), "default generator should parse golden sample");
+    require(default_batch_res.has_value(), "default generator should render golden sample");
     require(default_batch_res->customer_id == 1, "generated batch customer_id mismatch");
     require(default_batch_res->documents.size() == 2, "generated batch documents count mismatch");
+    require(default_batch_res->documents[0].pdf_bytes.size() > 500, "haru doc 0 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(default_batch_res->documents[0].pdf_bytes.data()), 5) ==
+                "%PDF-",
+            "haru doc 0 must start with %PDF-");
+    require(default_batch_res->documents[1].pdf_bytes.size() > 500, "haru doc 1 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(default_batch_res->documents[1].pdf_bytes.data()), 5) ==
+                "%PDF-",
+            "haru doc 1 must start with %PDF-");
 
-    // 10. PdfGenerator with Simdjson config reports not yet implemented
+    // 10. PdfGenerator with Cairo engine renders golden sample
+    nordiska::PdfGenerator cairo_gen{nordiska::GeneratorConfig{.engine = nordiska::PdfEngineKind::Cairo}};
+    auto cairo_batch_res = cairo_gen.generate(golden_span);
+    require(cairo_batch_res.has_value(), "cairo generator should render golden sample");
+    require(cairo_batch_res->customer_id == 1, "cairo batch customer_id mismatch");
+    require(cairo_batch_res->documents.size() == 2, "cairo batch documents count mismatch");
+    require(cairo_batch_res->documents[0].pdf_bytes.size() > 500, "cairo doc 0 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(cairo_batch_res->documents[0].pdf_bytes.data()), 5) ==
+                "%PDF-",
+            "cairo doc 0 must start with %PDF-");
+    require(cairo_batch_res->documents[1].pdf_bytes.size() > 500, "cairo doc 1 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(cairo_batch_res->documents[1].pdf_bytes.data()), 5) ==
+                "%PDF-",
+            "cairo doc 1 must start with %PDF-");
+
+    // 11. PdfGenerator with Simdjson config reports not yet implemented
     nordiska::PdfGenerator simd_gen{nordiska::GeneratorConfig{.ingestor = nordiska::JsonIngestorKind::Simdjson}};
     auto simd_res = simd_gen.generate(golden_span);
     require(!simd_res.has_value(), "simdjson should report not implemented");
