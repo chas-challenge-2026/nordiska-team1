@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.FrontendApi.RateLimiting;
 using Nordiska.Modules.Banking.Application;
 
@@ -40,6 +41,7 @@ public class AuthController : ControllerBase
     /// <response code="400">Failed to initiate BankID session (e.g. invalid request or service error).</response>
     [AllowAnonymous]
     [HttpPost("bankid/initiate")]
+    [AuditAction("AUTH_BANKID_INITIATE")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(typeof(BankIdInitiateResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -68,6 +70,7 @@ public class AuthController : ControllerBase
     /// <response code="401">Authentication failed or customer not found.</response>
     [AllowAnonymous]
     [HttpPost("bankid/collect")]
+    [AuditAction("AUTH_BANKID_COLLECT")]
     [ProducesResponseType(typeof(BankIdCollectResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
@@ -93,6 +96,7 @@ public class AuthController : ControllerBase
     /// <response code="400">Registration validation failed or email already registered.</response>
     [AllowAnonymous]
     [HttpPost("register")]
+    [AuditAction("AUTH_REGISTER")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -128,6 +132,7 @@ public class AuthController : ControllerBase
     /// <response code="429">Too many login requests from this IP.</response>
     [AllowAnonymous]
     [HttpPost("login")]
+    [AuditAction("AUTH_LOGIN")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -224,6 +229,7 @@ public class AuthController : ControllerBase
     // Anonymous so a user with an expired session can still clear the cookie
     [AllowAnonymous]
     [HttpPost("logout")]
+    [AuditAction("AUTH_LOGOUT")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Logout()
     {

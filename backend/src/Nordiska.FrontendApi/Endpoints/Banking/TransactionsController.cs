@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.FrontendApi.RateLimiting;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
@@ -149,6 +150,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost]
+    [AuditAction("TRANSACTION_EXECUTE")]
     [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -175,6 +177,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("transfer")]
+    [AuditAction("TRANSACTION_TRANSFER")]
     [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -201,6 +204,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("planned")]
+    [AuditAction("TRANSACTION_PLAN")]
     [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -226,6 +230,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Planned transaction not found or belongs to another customer.</response>
     [HttpDelete("planned/{id}")]
+    [AuditAction("TRANSACTION_CANCEL_PLAN")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

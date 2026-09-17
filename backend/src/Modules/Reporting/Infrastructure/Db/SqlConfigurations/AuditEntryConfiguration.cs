@@ -30,5 +30,8 @@ public sealed class AuditEntryConfiguration
             .IsRequired();
 
         builder.HasIndex(x => x.UserId);
+        builder.HasIndex(x => new { x.UserId, x.CreatedAt });
+        builder.HasIndex(x => x.CreatedAt);
+        builder.HasIndex(x => x.Action);
     }
 }
