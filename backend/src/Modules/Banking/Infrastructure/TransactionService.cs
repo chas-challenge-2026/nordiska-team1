@@ -105,6 +105,10 @@ public class TransactionService : ITransactionService
         var txId = await _txRepo.CreateAsync(entry, cancellationToken);
         entry.Id = txId;
 
+        account.Balance = await GetBalanceAsync(request.AccountId, cancellationToken);
+        account.UpdatedAt = DateTime.UtcNow;
+        await _accRepo.UpdateAsync(account, cancellationToken);
+
         _logger.LogInformation("Executed verified ledger transaction {TxId} on account {AccountId} type={Type} amount={Amount}", entry.Id, entry.AccountId, entry.Type, entry.Amount);
 
         return ToResponse(entry);
@@ -156,6 +160,15 @@ public class TransactionService : ITransactionService
             CreatedAt = now
         };
         await _txRepo.CreateAsync(depositEntry, cancellationToken);
+
+        // 3. Update cached balance snapshots
+        sourceAccount.Balance = await GetBalanceAsync(request.SourceAccountId, cancellationToken);
+        sourceAccount.UpdatedAt = now;
+        await _accRepo.UpdateAsync(sourceAccount, cancellationToken);
+
+        targetAccount.Balance = await GetBalanceAsync(request.TargetAccountId, cancellationToken);
+        targetAccount.UpdatedAt = now;
+        await _accRepo.UpdateAsync(targetAccount, cancellationToken);
 
         _logger.LogInformation("Executed funds transfer from account {Source} to {Target} amount={Amount}", request.SourceAccountId, request.TargetAccountId, request.Amount);
 
