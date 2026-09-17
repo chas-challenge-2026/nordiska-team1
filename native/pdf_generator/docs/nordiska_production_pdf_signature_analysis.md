@@ -73,3 +73,4 @@ Certificates found via OpenSSL:
    * **Full BankID / Signicat PAdES (QES)**: 105,032 hex characters (~52 KB) is the exact size required when embedding the full Buypass/Signicat certificate chain, revocation status (OCSP), and RFC 3161 timestamp.
 4. **Clean Metadata**:
    Leaving `/Reason`, `/Location`, and `/ContactInfo` as empty string literals `()` matches real-world Nordic banking practice.
+
