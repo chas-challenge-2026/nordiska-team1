@@ -4,3 +4,4 @@ vcpkg_installed/
 benchmark-output/
 tools/synthetic-input-generator/generated/
 *.pdf
+!samples_for_signing/**/*.pdf

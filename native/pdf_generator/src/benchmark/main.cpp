@@ -1,445 +1,609 @@
-#include "nordiska/adapters/input/json_input_adapter.hpp"
-#include "nordiska/adapters/output/byte_sinks.hpp"
-#include "nordiska/adapters/renderers/pdf/pdf_renderer.hpp"
-#include "nordiska/application/generate_documents.hpp"
+#include "nordiska/application/pdf_generator.hpp"
+#include "nordiska/c_api/pdf_generator_c_api.h"
 #include "nordiska/diagnostics/benchmark_metrics.hpp"
-#include "nordiska/domain/report.hpp"
-#include "nordiska/ports/document_renderer.hpp"
 
-#include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <memory>
-#include <optional>
-#include <span>
-#include <sstream>
+#include <mutex>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <sys/resource.h>
+#include <thread>
+#include <unistd.h>
 #include <vector>
 
 namespace {
 
-using nordiska::benchmark::PhaseMetrics;
-using nordiska::Report;
 using Clock = std::chrono::steady_clock;
 
+std::size_t get_proc_status_field_bytes(std::string_view field_prefix) {
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.starts_with(field_prefix)) {
+            const auto colon = line.find(':');
+            if (colon != std::string::npos) {
+                std::string val_str = line.substr(colon + 1);
+                // Strip leading whitespace
+                const auto first_digit = val_str.find_first_of("0123456789");
+                if (first_digit != std::string::npos) {
+                    const std::size_t kb = std::stoull(val_str.substr(first_digit));
+                    return kb * 1024;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+std::size_t get_current_rss_bytes() {
+    return get_proc_status_field_bytes("VmRSS:");
+}
+
+std::size_t get_peak_rss_bytes() {
+    return get_proc_status_field_bytes("VmHWM:");
+}
+
+struct PayloadInfo {
+    std::vector<uint8_t> bytes;
+    std::size_t doc_count{0};
+    std::size_t tx_count{0};
+};
+
 struct Options {
-    std::filesystem::path input_directory;
-    std::filesystem::path output_directory = "benchmark-output";
+    std::filesystem::path input_path;
+    std::string api = "cabi"; // "cabi" or "direct"
     std::string renderer = "haru";
-    std::size_t iterations = 3;
-    std::size_t warmups = 0;
-    std::size_t limit = 0;
-    std::size_t sample_count = 3;
-    bool delete_output = false;
+    std::string ingestor = "simdjson";
+    bool compression = true;
+    std::size_t target_customers = 0; // if > 0, cycles through payloads until target_customers reached
+    std::size_t iterations = 1;
+    std::size_t warmups = 1;
+    std::size_t workers = 1;
+    bool instrumented = false;
 };
 
-struct LoadedCorpus {
-    std::vector<std::filesystem::path> paths;
-    std::vector<Report> reports;
-    std::size_t transactions{};
-};
+void print_usage(std::string_view prog_name) {
+    std::cout
+        << "Usage: " << prog_name << " [input-file-or-dir] [options]\n\n"
+        << "Options:\n"
+        << "  -i, --input <path>          Path to JSON input file or directory (default: auto-detects pool_100)\n"
+        << "  --api <cabi|direct>         Execution API (default: cabi)\n"
+        << "  --target-customers <N>      Target customer count to process across workers (default: 0 = exact pool "
+           "size)\n"
+        << "  --workers <N>               Worker threads count (default: 1)\n"
+        << "  --renderer <haru|cairo|native> Rendering engine (default: haru)\n"
+        << "  --ingestor <simd|nlohmann>  JSON ingestor (default: simdjson)\n"
+        << "  --no-compression            Disable Flate stream compression in PDF rendering\n"
+        << "  --compression <true|false>  Configure PDF stream compression (default: true)\n"
+        << "  --instrumented              Enable fine-grained phase profiling (Ingest, Layout, Render)\n"
+        << "  --iterations <N>            Measurement iterations (default: 1)\n"
+        << "  --warmups <N>               Warmup iterations (default: 1)\n"
+        << "  -h, --help                  Print this help message\n";
+}
 
-struct NamedMetrics {
-    std::string phase;
-    PhaseMetrics metrics;
-};
-
-struct RecordedResult {
-    std::string renderer;
-    std::size_t iteration{};
-    NamedMetrics result;
-};
-
-std::unique_ptr<nordiska::IDocumentRenderer> make_renderer(std::string_view name) {
-    if (name == "haru") {
-        return nordiska::make_pdf_renderer(nordiska::PdfEngine::haru);
+std::filesystem::path resolve_default_pool_path() {
+    const std::vector<std::filesystem::path> candidates = {"tools/synthetic-input-generator/generated/pool_100",
+                                                           "../tools/synthetic-input-generator/generated/pool_100",
+                                                           "../../tools/synthetic-input-generator/generated/pool_100"};
+    for (const auto& p : candidates) {
+        if (std::filesystem::exists(p)) {
+            return p;
+        }
     }
-    if (name == "cairo") {
-        return nordiska::make_pdf_renderer(nordiska::PdfEngine::cairo);
-    }
-    throw std::invalid_argument("unsupported renderer: " + std::string(name));
+    return candidates[0];
 }
 
 Options parse_options(int argc, char* argv[]) {
-    if (argc < 2) {
-        throw std::invalid_argument("Usage: pdf_generator_benchmark <input-dir> [--renderer haru|cairo|all] "
-                                    "[--iterations N] [--warmups N] [--limit N] [--sample-count N] [--output-dir DIR] "
-                                    "[--delete-output]");
-    }
-    Options options{.input_directory = argv[1]};
-    for (int index = 2; index < argc; ++index) {
-        const std::string_view argument = argv[index];
-        auto value = [&](std::string_view name) {
+    Options options;
+
+    for (int index = 1; index < argc; ++index) {
+        const std::string_view arg = argv[index];
+        auto next_value = [&](std::string_view opt_name) {
             if (++index >= argc) {
-                throw std::invalid_argument(std::string(name) + " requires a value");
+                throw std::invalid_argument(std::string(opt_name) + " requires a value");
             }
             return std::string(argv[index]);
         };
-        if (argument == "--renderer") {
-            options.renderer = value("--renderer");
-        } else if (argument == "--iterations") {
-            options.iterations = std::stoull(value("--iterations"));
-        } else if (argument == "--warmups") {
-            options.warmups = std::stoull(value("--warmups"));
-        } else if (argument == "--limit") {
-            options.limit = std::stoull(value("--limit"));
-        } else if (argument == "--sample-count") {
-            options.sample_count = std::stoull(value("--sample-count"));
-        } else if (argument == "--output-dir") {
-            options.output_directory = value("--output-dir");
-        } else if (argument == "--delete-output") {
-            options.delete_output = true;
+
+        if (arg == "-h" || arg == "--help") {
+            print_usage(argv[0]);
+            std::exit(EXIT_SUCCESS);
+        } else if (arg == "-i" || arg == "--input") {
+            options.input_path = next_value(arg);
+        } else if (arg == "--api") {
+            options.api = next_value("--api");
+        } else if (arg == "--target-customers") {
+            options.target_customers = std::stoull(next_value("--target-customers"));
+        } else if (arg == "--workers") {
+            options.workers = std::stoull(next_value("--workers"));
+        } else if (arg == "--renderer") {
+            options.renderer = next_value("--renderer");
+        } else if (arg == "--ingestor") {
+            options.ingestor = next_value("--ingestor");
+        } else if (arg == "--no-compression") {
+            options.compression = false;
+        } else if (arg == "--compression") {
+            const std::string val = next_value("--compression");
+            if (val == "false" || val == "0" || val == "no") {
+                options.compression = false;
+            } else if (val == "true" || val == "1" || val == "yes") {
+                options.compression = true;
+            } else {
+                throw std::invalid_argument("invalid value for --compression: " + val);
+            }
+        } else if (arg == "--instrumented") {
+            options.instrumented = true;
+        } else if (arg == "--iterations") {
+            options.iterations = std::stoull(next_value("--iterations"));
+        } else if (arg == "--warmups") {
+            options.warmups = std::stoull(next_value("--warmups"));
+        } else if (!arg.starts_with("-")) {
+            if (options.input_path.empty()) {
+                options.input_path = arg;
+            } else {
+                throw std::invalid_argument("unexpected extra argument: " + std::string(arg));
+            }
         } else {
-            throw std::invalid_argument("unknown option: " + std::string(argument));
+            throw std::invalid_argument("unknown option: " + std::string(arg));
         }
     }
-    if (!std::filesystem::is_directory(options.input_directory)) {
-        throw std::runtime_error("input directory does not exist: " + options.input_directory.string());
+
+    if (options.input_path.empty()) {
+        options.input_path = resolve_default_pool_path();
     }
-    if (options.iterations == 0) {
-        throw std::invalid_argument("--iterations must be positive");
-    }
-    if (options.renderer != "haru" && options.renderer != "cairo" && options.renderer != "all") {
-        throw std::invalid_argument("--renderer must be haru, cairo, or all");
-    }
+
     return options;
 }
 
-std::vector<std::filesystem::path> discover(const Options& options) {
-    std::vector<std::filesystem::path> paths;
-    for (const auto& entry : std::filesystem::directory_iterator(options.input_directory)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".json" &&
-            entry.path().filename() != "manifest.json") {
-            paths.push_back(entry.path());
+std::vector<PayloadInfo> load_payloads(const std::filesystem::path& path) {
+    std::vector<std::filesystem::path> files;
+    if (std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".json") {
+                // Ignore manifest files
+                if (entry.path().filename().string().starts_with("manifest")) {
+                    continue;
+                }
+                files.push_back(entry.path());
+            }
+        }
+    } else if (std::filesystem::is_regular_file(path)) {
+        files.push_back(path);
+    } else {
+        throw std::runtime_error("Path does not exist: " + path.string());
+    }
+
+    std::vector<PayloadInfo> payloads;
+    payloads.reserve(files.size());
+    for (const auto& file_path : files) {
+        std::ifstream stream(file_path, std::ios::binary);
+        if (!stream) {
+            throw std::runtime_error("Failed to open file: " + file_path.string());
+        }
+        std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+
+        // Inspect metadata once at startup for accurate transaction/doc stats
+        std::size_t doc_count = 0;
+        std::size_t tx_count = 0;
+        try {
+            auto parsed = nlohmann::json::parse(bytes.begin(), bytes.end());
+            if (parsed.contains("documents") && parsed["documents"].is_array()) {
+                doc_count = parsed["documents"].size();
+                for (const auto& doc_entry : parsed["documents"]) {
+                    if (doc_entry.contains("document") && doc_entry["document"].contains("transactions") &&
+                        doc_entry["document"]["transactions"].is_array()) {
+                        tx_count += doc_entry["document"]["transactions"].size();
+                    }
+                }
+            }
+        } catch (...) {
+            // Keep zero counts if parsing fails here; ingestor will catch it during benchmark
+        }
+
+        payloads.push_back(PayloadInfo{
+            .bytes = std::move(bytes),
+            .doc_count = doc_count,
+            .tx_count = tx_count,
+        });
+    }
+    return payloads;
+}
+
+struct CallbackState {
+    std::size_t docs_delivered{0};
+    std::size_t bytes_delivered{0};
+    std::size_t max_doc_bytes{0};
+};
+
+int cabi_delivery_callback(const struct nordiska_pdf_batch_view* batch, void* user_data) {
+    if (batch == nullptr) {
+        return -1;
+    }
+    if (user_data != nullptr) {
+        auto* state = static_cast<CallbackState*>(user_data);
+        state->docs_delivered += batch->document_count;
+        for (std::size_t i = 0; i < batch->document_count; ++i) {
+            const auto len = batch->documents[i].length;
+            state->bytes_delivered += len;
+            if (len > state->max_doc_bytes) {
+                state->max_doc_bytes = len;
+            }
         }
     }
-    std::sort(paths.begin(), paths.end());
-    if (options.limit != 0 && paths.size() > options.limit) {
-        paths.resize(options.limit);
-    }
-    if (paths.empty()) {
-        throw std::runtime_error("input directory contains no JSON reports");
-    }
-    return paths;
+    return 0; // Return 0: accept and deliver
 }
 
-LoadedCorpus load(const std::vector<std::filesystem::path>& paths) {
-    nordiska::JsonInputAdapter adapter;
-    LoadedCorpus corpus{.paths = paths};
-    corpus.reports.reserve(paths.size());
-    for (const auto& path : paths) {
-        corpus.reports.push_back(adapter.import(path));
-        corpus.transactions += corpus.reports.back().transactions.size();
-    }
-    return corpus;
-}
-
-template <typename Function>
-PhaseMetrics timed(const LoadedCorpus& corpus, std::optional<std::size_t> output_bytes, Function&& function) {
-    const auto started = Clock::now();
-    function();
-    const double seconds = std::chrono::duration<double>(Clock::now() - started).count();
-    return {.seconds = seconds,
-            .reports = corpus.reports.size(),
-            .transactions = corpus.transactions,
-            .output_bytes = output_bytes};
-}
-
-void render_to_sink(const Report& report, nordiska::IDocumentRenderer& renderer, nordiska::IByteSink& sink) {
-    nordiska::validate_report(report);
-    renderer.render(report, sink);
-    sink.finish();
-}
-
-std::vector<std::byte> render_to_memory(const Report& report, nordiska::IDocumentRenderer& renderer) {
-    nordiska::MemoryByteSink sink;
-    render_to_sink(report, renderer, sink);
-    return {sink.bytes().begin(), sink.bytes().end()};
-}
-
-std::vector<NamedMetrics> measure(const std::string& renderer_name, const std::vector<std::filesystem::path>& paths,
-                                  const Options& options, std::size_t iteration) {
-    LoadedCorpus corpus;
-    const auto input_started = Clock::now();
-    corpus = load(paths);
-    const double input_seconds = std::chrono::duration<double>(Clock::now() - input_started).count();
-    auto renderer = make_renderer(renderer_name);
-    std::vector<std::vector<std::byte>> rendered;
-    rendered.reserve(corpus.reports.size());
-    for (const auto& report : corpus.reports) {
-        rendered.push_back(render_to_memory(report, *renderer));
-    }
-    std::size_t bytes = 0;
-    for (const auto& value : rendered) {
-        bytes += value.size();
-    }
-
-    std::vector<NamedMetrics> results;
-    results.push_back({"input_load_and_parse",
-                       {.seconds = input_seconds,
-                        .reports = corpus.reports.size(),
-                        .transactions = corpus.transactions,
-                        .output_bytes = std::nullopt}});
-    results.push_back({"memory_render", timed(corpus, bytes, [&] {
-                           for (const auto& report : corpus.reports) {
-                               nordiska::MemoryByteSink sink;
-                               render_to_sink(report, *renderer, sink);
-                           }
-                       })});
-    results.push_back({"null_render", timed(corpus, std::nullopt, [&] {
-                           for (const auto& report : corpus.reports) {
-                               nordiska::NullByteSink sink;
-                               render_to_sink(report, *renderer, sink);
-                           }
-                       })});
-
-    std::vector<nordiska::DocumentRequest> requests;
-    requests.reserve(corpus.reports.size());
-    for (const auto& report : corpus.reports) {
-        requests.push_back({report});
-    }
-
-    results.push_back({"parallel_memory_render", timed(corpus, bytes, [&] {
-                           nordiska::CallbackOutputDestination callback_dest(
-                               [](std::span<const std::byte>, std::size_t) {});
-                           nordiska::GenerateDocuments generator([&] { return make_renderer(renderer_name); });
-                           generator.execute(requests, callback_dest);
-                       })});
-
-    const auto persistence_dir = options.output_directory / renderer_name / ("iteration-" + std::to_string(iteration));
-    std::filesystem::create_directories(persistence_dir);
-    results.push_back({"persistence", timed(corpus, bytes, [&] {
-                           for (std::size_t index = 0; index < rendered.size(); ++index) {
-                               nordiska::FileByteSink sink(persistence_dir /
-                                                           ("report-" + std::to_string(index) + ".pdf"));
-                               sink.write(rendered[index]);
-                               sink.finish();
-                           }
-                       })});
-    results.push_back({"end_to_end", timed(corpus, bytes, [&] {
-                           nordiska::JsonInputAdapter adapter;
-                           for (std::size_t index = 0; index < corpus.paths.size(); ++index) {
-                               const Report report = adapter.import(corpus.paths[index]);
-                               nordiska::FileByteSink sink(persistence_dir / ("e2e-" + std::to_string(index) + ".pdf"));
-                               render_to_sink(report, *renderer, sink);
-                           }
-                       })});
-    if (options.delete_output) {
-        std::filesystem::remove_all(persistence_dir);
-    }
-    return results;
-}
-
-void write_csv_row(std::ostream& output, const std::string& renderer, std::size_t iteration,
-                   const NamedMetrics& result) {
-    const auto& metrics = result.metrics;
-    output << renderer << ',' << iteration << ',' << result.phase << ',' << std::fixed << std::setprecision(6)
-           << metrics.seconds << ',' << metrics.reports << ',' << metrics.transactions << ','
-           << metrics.reports_per_second() << ',' << metrics.transactions_per_second() << ',';
-    if (metrics.output_bytes) {
-        output << *metrics.output_bytes;
-    } else {
-        output << "NA";
-    }
-    output << '\n';
-}
-
-std::string format_bytes(std::optional<std::size_t> bytes) {
-    if (!bytes) {
-        return "NA";
-    }
-    std::ostringstream formatted;
-    const double value = static_cast<double>(*bytes);
-    if (value >= 1024.0 * 1024.0 * 1024.0) {
-        formatted << std::fixed << std::setprecision(2) << value / (1024.0 * 1024.0 * 1024.0) << " GiB";
-    } else if (value >= 1024.0 * 1024.0) {
-        formatted << std::fixed << std::setprecision(2) << value / (1024.0 * 1024.0) << " MiB";
-    } else {
-        formatted << *bytes << " B";
-    }
-    return formatted.str();
-}
-
-void write_summary(std::ostream& output, const std::vector<RecordedResult>& records) {
-    struct Aggregate {
-        double seconds{};
-        double reports_per_second{};
-        double transactions_per_second{};
-        std::optional<std::size_t> output_bytes;
-        std::size_t count{};
-    };
-    std::map<std::pair<std::string, std::string>, Aggregate> aggregates;
-    for (const auto& record : records) {
-        auto& aggregate = aggregates[{record.renderer, record.result.phase}];
-        aggregate.seconds += record.result.metrics.seconds;
-        aggregate.reports_per_second += record.result.metrics.reports_per_second();
-        aggregate.transactions_per_second += record.result.metrics.transactions_per_second();
-        aggregate.output_bytes = record.result.metrics.output_bytes;
-        ++aggregate.count;
-    }
-
-    output << "Renderer | Phase | Avg seconds | Reports/sec | Transactions/sec | Output size\n"
-              "--- | --- | ---: | ---: | ---: | ---:\n";
-    for (const auto& [key, aggregate] : aggregates) {
-        output << key.first << " | " << key.second << " | " << std::fixed << std::setprecision(3)
-               << aggregate.seconds / aggregate.count << " | " << aggregate.reports_per_second / aggregate.count
-               << " | " << aggregate.transactions_per_second / aggregate.count << " | "
-               << format_bytes(aggregate.output_bytes) << "\n";
-    }
-}
-
-void write_human_report(const std::filesystem::path& path, const Options& options,
-                        const std::filesystem::path& run_directory, const std::vector<RecordedResult>& records,
-                        std::size_t report_count, std::size_t transaction_count) {
-    std::ofstream output(path);
-    if (!output) {
-        throw std::runtime_error("could not create benchmark report: " + path.string());
-    }
-    output << "# Nordiska native PDF benchmark\n\n"
-              "- Input corpus: `"
-           << options.input_directory.string()
-           << "`\n"
-              "- Reports: "
-           << report_count
-           << "\n"
-              "- Transactions: "
-           << transaction_count
-           << "\n"
-              "- Measured iterations: "
-           << options.iterations
-           << "\n"
-              "- Warmup iterations: "
-           << options.warmups
-           << "\n"
-              "- Output directory: `"
-           << run_directory.string()
-           << "`\n\n"
-              "The timings are wall-clock durations. Throughput is calculated from the full corpus "
-              "count."
-              " Input loading includes file reading and JSON parsing. Persistence writes "
-              "already-rendered"
-              " bytes through `FileByteSink`; end-to-end includes loading, rendering, and "
-              "persistence.\n\n"
-              "## Summary\n\n";
-    write_summary(output, records);
-    output << "\nRaw per-iteration measurements are in [`results.csv`](results.csv).\n";
-}
-
-std::filesystem::path write_samples(const std::vector<std::filesystem::path>& paths, const Options& options,
-                                    const std::filesystem::path& run_directory) {
-    const std::string engine_name = options.renderer == "cairo" ? "cairo" : "haru";
-    const auto sample_directory = run_directory / "samples" / engine_name;
-    const std::size_t count = std::min(options.sample_count, paths.size());
-    if (count == 0) {
-        return sample_directory;
-    }
-    std::filesystem::create_directories(sample_directory);
-    nordiska::JsonInputAdapter adapter;
-    auto renderer = make_renderer(engine_name);
-    for (std::size_t index = 0; index < count; ++index) {
-        const Report report = adapter.import(paths[index]);
-        nordiska::FileByteSink sink(sample_directory / ("sample-" + std::to_string(index + 1) + ".pdf"));
-        render_to_sink(report, *renderer, sink);
-    }
-    return sample_directory;
-}
-
-void print_execution_plan(const Options& options, const std::vector<std::string>& renderers, std::size_t report_count) {
-    const std::size_t runs_per_renderer = options.warmups + options.iterations;
-    const std::size_t total_runs = renderers.size() * runs_per_renderer;
-    const std::size_t measured_rows = renderers.size() * options.iterations * 6;
-    const std::size_t all_phase_executions = total_runs * 6;
-    const std::size_t corpus_loads = total_runs * 2;
-    const std::size_t pdf_renders = total_runs * report_count * 5;
-    const std::size_t pdf_writes = total_runs * report_count * 2;
-
-    std::cout << "Nordiska native PDF benchmark plan\n"
-              << "  Renderers: " << renderers.size() << " (";
-    for (std::size_t index = 0; index < renderers.size(); ++index) {
-        if (index != 0) {
-            std::cout << ", ";
-        }
-        std::cout << renderers[index];
-    }
-    std::cout << ")\n"
-              << "  Corpus: " << report_count << " reports\n"
-              << "  Warmups: " << options.warmups << " per renderer\n"
-              << "  Measured iterations: " << options.iterations << " per renderer\n"
-              << "  Total benchmark passes: " << total_runs << "\n"
-              << "  Measured result rows: " << measured_rows << "\n"
-              << "  Phase executions including warmups: " << all_phase_executions << "\n"
-              << "  Corpus loads including end-to-end reloads: " << corpus_loads << "\n"
-              << "  PDF renders including preparation: " << pdf_renders << "\n"
-              << "  PDF file writes including end-to-end: " << pdf_writes << "\n\n";
-}
+struct WorkerStats {
+    std::size_t customers{0};
+    std::size_t docs{0};
+    std::size_t txs{0};
+    std::size_t bytes{0};
+    std::size_t max_batch_bytes{0};
+    std::size_t max_doc_bytes{0};
+    nordiska::PipelineTiming timing{};
+};
 
 } // namespace
 
 int main(int argc, char* argv[]) {
     try {
-        Options options = parse_options(argc, argv);
-        const auto paths = discover(options);
-        std::filesystem::create_directories(options.output_directory);
-        options.output_directory /=
-            "run-" + std::to_string(
-                         std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now().time_since_epoch()).count());
-        std::filesystem::create_directories(options.output_directory);
-        const auto csv_path = options.output_directory / "results.csv";
-        const auto report_path = options.output_directory / "report.md";
-        std::ofstream csv(csv_path);
-        if (!csv) {
-            throw std::runtime_error("could not create benchmark CSV: " + csv_path.string());
+        const Options options = parse_options(argc, argv);
+
+        const std::size_t initial_rss = get_current_rss_bytes();
+        const auto payloads = load_payloads(options.input_path);
+        const std::size_t input_loaded_rss = get_current_rss_bytes();
+
+        if (payloads.empty()) {
+            std::cerr << "No valid JSON customer payload files found at " << options.input_path << "\n";
+            return EXIT_FAILURE;
         }
-        csv << "renderer,iteration,phase,seconds,reports,transactions,reports_per_second,"
-               "transactions_per_second,output_bytes\n";
-        std::vector<std::string> renderers;
-        if (options.renderer == "all") {
-            renderers = {"haru", "cairo"};
-        } else {
-            renderers = {options.renderer};
-        }
-        print_execution_plan(options, renderers, paths.size());
-        std::vector<RecordedResult> records;
-        for (const auto& renderer : renderers) {
-            for (std::size_t warmup = 0; warmup < options.warmups; ++warmup) {
-                (void)measure(renderer, paths, options, warmup);
+
+        std::size_t total_input_payload_bytes = 0;
+        std::size_t min_input_payload_bytes = payloads[0].bytes.size();
+        std::size_t max_input_payload_bytes = 0;
+        for (const auto& p : payloads) {
+            total_input_payload_bytes += p.bytes.size();
+            if (p.bytes.size() < min_input_payload_bytes) {
+                min_input_payload_bytes = p.bytes.size();
             }
-            for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
-                for (const auto& result : measure(renderer, paths, options, iteration)) {
-                    write_csv_row(csv, renderer, iteration, result);
-                    records.push_back({renderer, iteration, result});
+            if (p.bytes.size() > max_input_payload_bytes) {
+                max_input_payload_bytes = p.bytes.size();
+            }
+        }
+
+        const std::size_t customers_to_run =
+            (options.target_customers > 0) ? options.target_customers : payloads.size();
+
+        const bool use_direct =
+            (options.api != "cabi") || options.instrumented || !options.compression || (options.renderer != "haru");
+        std::string api_mode_str = options.instrumented ? "direct C++ (phase timing)" : options.api;
+        if (!options.compression && options.api == "cabi" && !options.instrumented) {
+            api_mode_str = "direct C++ (uncompressed override)";
+        } else if (options.renderer != "haru" && options.api == "cabi" && !options.instrumented) {
+            api_mode_str = "direct C++ (renderer override)";
+        }
+
+        std::cout << "Loaded " << payloads.size() << " customer payload(s) (" << std::fixed << std::setprecision(2)
+                  << (static_cast<double>(total_input_payload_bytes) / (1024.0 * 1024.0)) << " MB) into RAM.\n"
+                  << "Benchmark mode: API=" << api_mode_str << ", workers=" << options.workers
+                  << ", target_customers=" << customers_to_run << ", renderer=" << options.renderer
+                  << ", ingestor=" << options.ingestor << ", compression=" << (options.compression ? "true" : "false")
+                  << (options.instrumented ? ", instrumented=true" : "") << "\n\n";
+
+        nordiska::GeneratorConfig direct_config;
+        direct_config.compression = options.compression;
+        if (options.renderer == "haru") {
+            direct_config.engine = nordiska::PdfEngineKind::Libharu;
+        } else if (options.renderer == "cairo") {
+            direct_config.engine = nordiska::PdfEngineKind::Cairo;
+        } else if (options.renderer == "native" || options.renderer == "fast") {
+            direct_config.engine = nordiska::PdfEngineKind::Native;
+        } else {
+            std::cerr << "Unsupported renderer: " << options.renderer << "\n";
+            return EXIT_FAILURE;
+        }
+
+        if (options.ingestor == "nlohmann") {
+            direct_config.ingestor = nordiska::JsonIngestorKind::Nlohmann;
+        } else if (options.ingestor == "simdjson" || options.ingestor == "simd") {
+            direct_config.ingestor = nordiska::JsonIngestorKind::Simdjson;
+        } else {
+            std::cerr << "Unsupported ingestor: " << options.ingestor << "\n";
+            return EXIT_FAILURE;
+        }
+
+        // Warmup
+        if (options.warmups > 0) {
+            const auto& sample = payloads[0];
+            if (!use_direct) {
+                CallbackState cb_state;
+                int status = nordiska_pdf_v1_generate_customer_batch(sample.bytes.data(), sample.bytes.size(),
+                                                                     cabi_delivery_callback, &cb_state);
+                if (status != 0) {
+                    std::cerr << "Warmup error via C ABI: " << nordiska_pdf_v1_get_last_error() << "\n";
+                    return EXIT_FAILURE;
+                }
+            } else {
+                const nordiska::PdfGenerator generator(direct_config);
+                auto res = generator.generate(sample.bytes);
+                if (!res) {
+                    std::cerr << "Warmup error: " << res.error().message << "\n";
+                    return EXIT_FAILURE;
                 }
             }
         }
-        csv.close();
-        if (records.empty()) {
-            throw std::runtime_error("benchmark produced no measured results");
+
+        for (std::size_t iter = 0; iter < options.iterations; ++iter) {
+            std::atomic<std::size_t> next_customer_idx{0};
+            std::atomic<bool> abort_requested{false};
+            std::string first_error_msg;
+            std::mutex error_mutex;
+
+            const std::size_t num_workers = std::max<std::size_t>(1, options.workers);
+            std::vector<WorkerStats> worker_stats(num_workers);
+
+            const auto start_time = Clock::now();
+
+            auto worker_lambda = [&](std::size_t worker_id) {
+                // For direct C++ API or instrumented profiling, instantiate a per-thread generator instance
+                std::unique_ptr<nordiska::PdfGenerator> direct_generator;
+                if (use_direct) {
+                    direct_generator = std::make_unique<nordiska::PdfGenerator>(direct_config);
+                }
+
+                auto& stats = worker_stats[worker_id];
+                nordiska::PipelineTiming* p_timing = options.instrumented ? &stats.timing : nullptr;
+
+                while (true) {
+                    if (abort_requested.load(std::memory_order_relaxed)) {
+                        break;
+                    }
+
+                    const std::size_t current_idx = next_customer_idx.fetch_add(1, std::memory_order_relaxed);
+                    if (current_idx >= customers_to_run) {
+                        break;
+                    }
+
+                    const auto& payload = payloads[current_idx % payloads.size()];
+
+                    if (!use_direct) {
+                        CallbackState cb_state;
+                        const int status = nordiska_pdf_v1_generate_customer_batch(
+                            payload.bytes.data(), payload.bytes.size(), cabi_delivery_callback, &cb_state);
+
+                        if (status != 0) {
+                            std::lock_guard<std::mutex> lock(error_mutex);
+                            if (!abort_requested.load(std::memory_order_relaxed)) {
+                                first_error_msg = std::string("C ABI failure (status ") +
+                                                  nordiska_pdf_v1_status_name(status) +
+                                                  "): " + nordiska_pdf_v1_get_last_error();
+                                abort_requested.store(true, std::memory_order_relaxed);
+                            }
+                            break;
+                        }
+
+                        stats.customers += 1;
+                        stats.docs += cb_state.docs_delivered;
+                        stats.bytes += cb_state.bytes_delivered;
+                        stats.txs += payload.tx_count;
+                        if (cb_state.bytes_delivered > stats.max_batch_bytes) {
+                            stats.max_batch_bytes = cb_state.bytes_delivered;
+                        }
+                        if (cb_state.max_doc_bytes > stats.max_doc_bytes) {
+                            stats.max_doc_bytes = cb_state.max_doc_bytes;
+                        }
+                    } else {
+                        auto result = direct_generator->generate(payload.bytes, p_timing);
+                        if (!result) {
+                            std::lock_guard<std::mutex> lock(error_mutex);
+                            if (!abort_requested.load(std::memory_order_relaxed)) {
+                                first_error_msg = result.error().message;
+                                abort_requested.store(true, std::memory_order_relaxed);
+                            }
+                            break;
+                        }
+
+                        stats.customers += 1;
+                        stats.docs += result->documents.size();
+                        stats.txs += payload.tx_count;
+                        std::size_t batch_bytes = 0;
+                        for (const auto& doc : result->documents) {
+                            const auto doc_len = doc.pdf_bytes.size();
+                            batch_bytes += doc_len;
+                            stats.bytes += doc_len;
+                            if (doc_len > stats.max_doc_bytes) {
+                                stats.max_doc_bytes = doc_len;
+                            }
+                        }
+                        if (batch_bytes > stats.max_batch_bytes) {
+                            stats.max_batch_bytes = batch_bytes;
+                        }
+                    }
+                }
+            };
+
+            std::vector<std::thread> threads;
+            threads.reserve(num_workers);
+            for (std::size_t w = 0; w < num_workers; ++w) {
+                threads.emplace_back(worker_lambda, w);
+            }
+            for (auto& t : threads) {
+                t.join();
+            }
+
+            const auto end_time = Clock::now();
+            const double elapsed_seconds = std::chrono::duration<double>(end_time - start_time).count();
+
+            if (abort_requested.load()) {
+                std::cerr << "Benchmark aborted on error: " << first_error_msg << "\n";
+                return EXIT_FAILURE;
+            }
+
+            // Aggregate stats across workers
+            std::size_t total_customers = 0;
+            std::size_t total_docs = 0;
+            std::size_t total_txs = 0;
+            std::size_t total_bytes = 0;
+            std::size_t max_batch_bytes = 0;
+            std::size_t max_doc_bytes = 0;
+            double total_cpu_ingest = 0.0;
+            double total_cpu_layout = 0.0;
+            double total_cpu_render = 0.0;
+
+            for (const auto& ws : worker_stats) {
+                total_customers += ws.customers;
+                total_docs += ws.docs;
+                total_txs += ws.txs;
+                total_bytes += ws.bytes;
+                if (ws.max_batch_bytes > max_batch_bytes) {
+                    max_batch_bytes = ws.max_batch_bytes;
+                }
+                if (ws.max_doc_bytes > max_doc_bytes) {
+                    max_doc_bytes = ws.max_doc_bytes;
+                }
+                if (options.instrumented) {
+                    total_cpu_ingest += ws.timing.ingest_seconds;
+                    total_cpu_layout += ws.timing.layout_seconds;
+                    total_cpu_render += ws.timing.render_seconds;
+                }
+            }
+
+            const double total_ms = elapsed_seconds * 1000.0;
+            const double ms_per_customer = (total_customers > 0) ? (total_ms / total_customers) : 0.0;
+            const double customers_per_sec = (elapsed_seconds > 0.0) ? (total_customers / elapsed_seconds) : 0.0;
+
+            const double ms_per_doc = (total_docs > 0) ? (total_ms / total_docs) : 0.0;
+            const double docs_per_sec = (elapsed_seconds > 0.0) ? (total_docs / elapsed_seconds) : 0.0;
+
+            const double txs_per_sec = (elapsed_seconds > 0.0) ? (total_txs / elapsed_seconds) : 0.0;
+            const double mb_generated = static_cast<double>(total_bytes) / (1024.0 * 1024.0);
+            const double mb_per_sec = (elapsed_seconds > 0.0) ? (mb_generated / elapsed_seconds) : 0.0;
+
+            // Memory measurements
+            const std::size_t peak_rss_bytes = get_peak_rss_bytes();
+            const std::size_t worker_heap_delta_bytes =
+                (peak_rss_bytes > input_loaded_rss) ? (peak_rss_bytes - input_loaded_rss) : 0;
+            const double per_worker_delta_mb =
+                (num_workers > 0) ? ((static_cast<double>(worker_heap_delta_bytes) / (1024.0 * 1024.0)) / num_workers)
+                                  : 0.0;
+
+            std::cout << "--- Benchmark Results (Iteration " << (iter + 1) << ") ---\n"
+                      << "  Total wall time:       " << std::fixed << std::setprecision(2) << total_ms << " ms ("
+                      << elapsed_seconds << " s)\n"
+                      << "  Customers processed:   " << total_customers << "\n"
+                      << "  Throughput (customers):" << std::setprecision(1) << customers_per_sec << " cust/sec ("
+                      << std::setprecision(2) << ms_per_customer << " ms/customer)\n"
+                      << "  Documents generated:   " << total_docs << "\n"
+                      << "  Throughput (documents):" << std::setprecision(1) << docs_per_sec << " docs/sec ("
+                      << std::setprecision(2) << ms_per_doc << " ms/doc)\n"
+                      << "  Transactions simulated:" << total_txs << " (" << std::setprecision(1) << txs_per_sec
+                      << " tx/sec)\n\n";
+
+            if (options.instrumented) {
+                const double total_cpu_pipeline = total_cpu_ingest + total_cpu_layout + total_cpu_render;
+                const double wall_equiv_ingest =
+                    (num_workers > 0) ? (total_cpu_ingest / num_workers) : total_cpu_ingest;
+                const double wall_equiv_layout =
+                    (num_workers > 0) ? (total_cpu_layout / num_workers) : total_cpu_layout;
+                const double wall_equiv_render =
+                    (num_workers > 0) ? (total_cpu_render / num_workers) : total_cpu_render;
+                const double wall_equiv_sum = wall_equiv_ingest + wall_equiv_layout + wall_equiv_render;
+
+                const double pct_ingest =
+                    (total_cpu_pipeline > 0.0) ? (total_cpu_ingest / total_cpu_pipeline * 100.0) : 0.0;
+                const double pct_layout =
+                    (total_cpu_pipeline > 0.0) ? (total_cpu_layout / total_cpu_pipeline * 100.0) : 0.0;
+                const double pct_render =
+                    (total_cpu_pipeline > 0.0) ? (total_cpu_render / total_cpu_pipeline * 100.0) : 0.0;
+
+                const double ingest_docs_per_sec = (wall_equiv_ingest > 0.0) ? (total_docs / wall_equiv_ingest) : 0.0;
+                const double layout_docs_per_sec = (wall_equiv_layout > 0.0) ? (total_docs / wall_equiv_layout) : 0.0;
+                const double render_docs_per_sec = (wall_equiv_render > 0.0) ? (total_docs / wall_equiv_render) : 0.0;
+
+                const double ms_per_doc_ingest = (total_docs > 0) ? ((total_cpu_ingest * 1000.0) / total_docs) : 0.0;
+                const double ms_per_doc_layout = (total_docs > 0) ? ((total_cpu_layout * 1000.0) / total_docs) : 0.0;
+                const double ms_per_doc_render = (total_docs > 0) ? ((total_cpu_render * 1000.0) / total_docs) : 0.0;
+
+                const double delta_seconds = elapsed_seconds - wall_equiv_sum;
+                const double delta_percent =
+                    (elapsed_seconds > 0.0) ? (std::abs(delta_seconds) / elapsed_seconds * 100.0) : 0.0;
+
+                std::cout
+                    << "--- Pipeline Phase Breakdown (--instrumented) ---\n"
+                    << "  Phase               CPU Time      Wall Equiv      Share     Throughput       CPU / Doc\n"
+                    << "  JSON Ingestion:     " << std::setw(8) << std::fixed << std::setprecision(2)
+                    << total_cpu_ingest << " s    " << std::setw(8) << std::setprecision(2) << wall_equiv_ingest
+                    << " s    " << std::setw(6) << std::setprecision(1) << pct_ingest << " %   " << std::setw(9)
+                    << std::setprecision(1) << ingest_docs_per_sec << " docs/s   " << std::setw(7)
+                    << std::setprecision(3) << ms_per_doc_ingest << " ms\n"
+                    << "  Layout Builder:     " << std::setw(8) << std::setprecision(2) << total_cpu_layout << " s    "
+                    << std::setw(8) << std::setprecision(2) << wall_equiv_layout << " s    " << std::setw(6)
+                    << std::setprecision(1) << pct_layout << " %   " << std::setw(9) << std::setprecision(1)
+                    << layout_docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3) << ms_per_doc_layout
+                    << " ms\n"
+                    << "  PDF Render Engine:  " << std::setw(8) << std::setprecision(2) << total_cpu_render << " s    "
+                    << std::setw(8) << std::setprecision(2) << wall_equiv_render << " s    " << std::setw(6)
+                    << std::setprecision(1) << pct_render << " %   " << std::setw(9) << std::setprecision(1)
+                    << render_docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3) << ms_per_doc_render
+                    << " ms\n"
+                    << "  ------------------------------------------------------------------------------------\n"
+                    << "  Sum of Phases:      " << std::setw(8) << std::setprecision(2) << total_cpu_pipeline
+                    << " s    " << std::setw(8) << std::setprecision(2) << wall_equiv_sum << " s    " << " 100.0 %   "
+                    << std::setw(9) << std::setprecision(1)
+                    << (wall_equiv_sum > 0.0 ? total_docs / wall_equiv_sum : 0.0) << " docs/s   " << std::setw(7)
+                    << std::setprecision(3) << (total_docs > 0 ? (total_cpu_pipeline * 1000.0) / total_docs : 0.0)
+                    << " ms\n"
+                    << "  Total Wall Time:    " << std::setw(8) << std::setprecision(2)
+                    << (elapsed_seconds * num_workers) << " s    " << std::setw(8) << std::setprecision(2)
+                    << elapsed_seconds << " s    " << "       -   " << std::setw(9) << std::setprecision(1)
+                    << docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3)
+                    << (total_docs > 0 ? (elapsed_seconds * num_workers * 1000.0) / total_docs : 0.0) << " ms\n"
+                    << "  Sanity Check:       Sum of phases (" << std::setprecision(2) << wall_equiv_sum
+                    << " s) matches wall time (" << elapsed_seconds << " s) within " << std::setprecision(2)
+                    << std::abs(delta_seconds * 1000.0) << " ms (" << std::setprecision(1) << delta_percent
+                    << "% delta, worker scheduling overhead)\n\n";
+            }
+
+            std::cout << "--- Memory Utilization & High Watermark ---\n"
+                      << "  Input RAM footprint:   " << std::setprecision(2)
+                      << (static_cast<double>(total_input_payload_bytes) / (1024.0 * 1024.0)) << " MB ("
+                      << payloads.size() << " payloads, avg "
+                      << (static_cast<double>(total_input_payload_bytes) / payloads.size() / 1024.0)
+                      << " KB/batch, max " << (static_cast<double>(max_input_payload_bytes) / 1024.0) << " KB)\n"
+                      << "  Baseline Process RSS:  " << std::setprecision(2)
+                      << (static_cast<double>(input_loaded_rss) / (1024.0 * 1024.0))
+                      << " MB (after loading input payloads)\n"
+                      << "  Peak RSS (high-water): " << std::setprecision(2)
+                      << (static_cast<double>(peak_rss_bytes) / (1024.0 * 1024.0))
+                      << " MB (maximum physical RAM mapped)\n"
+                      << "  Worker RAM overhead:   " << std::setprecision(2)
+                      << (static_cast<double>(worker_heap_delta_bytes) / (1024.0 * 1024.0)) << " MB (~"
+                      << per_worker_delta_mb << " MB / worker across " << num_workers << " thread(s))\n\n"
+                      << "--- Output Data Footprint ---\n"
+                      << "  Total PDF generated:   " << std::setprecision(2) << mb_generated << " MB ("
+                      << std::setprecision(2) << mb_per_sec << " MB/sec)\n"
+                      << "  Average customer batch:" << std::setprecision(2)
+                      << (total_customers > 0 ? (static_cast<double>(total_bytes) / total_customers / 1024.0) : 0.0)
+                      << " KB / customer\n"
+                      << "  Peak customer batch:   " << std::setprecision(2)
+                      << (static_cast<double>(max_batch_bytes) / 1024.0) << " KB\n"
+                      << "  Average document size: " << std::setprecision(2)
+                      << (total_docs > 0 ? (static_cast<double>(total_bytes) / total_docs / 1024.0) : 0.0)
+                      << " KB / doc\n"
+                      << "  Peak document size:    " << std::setprecision(2)
+                      << (static_cast<double>(max_doc_bytes) / 1024.0) << " KB\n\n";
         }
-        const std::size_t report_count = records.front().result.metrics.reports;
-        const std::size_t transaction_count = records.front().result.metrics.transactions;
-        const auto sample_directory = write_samples(paths, options, options.output_directory);
-        write_human_report(report_path, options, options.output_directory, records, report_count, transaction_count);
-        std::cout << "\nNordiska native PDF benchmark\n"
-                  << "Corpus: " << report_count << " reports, " << transaction_count << " transactions\n\n";
-        write_summary(std::cout, records);
-        std::cout << "\nCSV: " << csv_path << "\nReport: " << report_path << '\n';
-        if (options.sample_count != 0) {
-            std::cout << "Samples: " << sample_directory << " (" << std::min(options.sample_count, paths.size())
-                      << " PDFs)\n";
-        }
-        std::cerr << "Benchmark output directory: " << options.output_directory << '\n';
-        if (options.delete_output) {
-            std::filesystem::remove_all(options.output_directory);
-        }
-        return 0;
+
+        return EXIT_SUCCESS;
     } catch (const std::exception& error) {
-        std::cerr << "PDF benchmark failed: " << error.what() << '\n';
-        return 1;
+        std::cerr << "Fatal error: " << error.what() << "\n";
+        return EXIT_FAILURE;
     }
 }
