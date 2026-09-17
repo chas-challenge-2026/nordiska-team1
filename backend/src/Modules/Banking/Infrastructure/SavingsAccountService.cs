@@ -30,6 +30,12 @@ public class SavingsAccountService : ISavingsAccountService
         return list.Select(a => a.ToResponse());
     }
 
+    public async Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+    {
+        var list = await _repo.GetByCustomerIdAsync(customerId, cancellationToken);
+        return list.Select(a => a.ToResponse());
+    }
+
     public async Task<SavingsAccountResponse> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
         var acc = await _repo.GetByIdAsync(id, cancellationToken);

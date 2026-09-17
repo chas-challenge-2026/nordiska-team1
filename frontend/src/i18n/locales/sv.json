@@ -19,7 +19,9 @@
     "filter": "Filtrera",
     "showing": "Visar",
     "of": "av",
-    "transactions": "transaktioner"
+    "transactions": "transaktioner",
+    "balance": "Saldo",
+    "tax-report": "Skatteunderlag"
 },
 "errors": {
     "loading": "Någonting gick fel vid hämtning av datan.",
@@ -63,6 +65,32 @@
     "accounts-error": "Ett problem uppstod vid hämtning av konton",
     "loading-transactions": "Laddar transaktioner...",
     "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner"
+},
+"accounts-route": {
+    "yearly-interest": "Beräknad årsränta",
+    "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo",
+    "my-accounts": "Mina konton",
+    "total-balance": "Totalt saldo",
+    "new-account": "Nytt konto",
+    "full-report": "Skatteunderlag för samtliga konton",
+    "loading-accounts": "Laddar konton...",
+    "accounts-error": "Ett problem uppstod vid hämtning av konton",
+    "no-accounts": "Inga konton hittades.",
+    "account-name": "Kontonamn",
+    "account-name-placeholder": "T.ex. Semesterfonden",
+    "account-type": "Kontotyp",
+    "account-type-required": "kontotyp krävs",
+    "select-account-type": "Välj kontotyp",
+    "account-type-saving": "Sparkonto",
+    "account-type-standard": "Standardkonto",
+    "account-type-flex": "Flexkonto",
+    "account-type-fixed": "Fasträntekonto",
+    "account-type-premium": "Premiumkonto",
+    "initial-deposit": "Startinsättning",
+    "interest-rate": "Ränta",
+    "invalid-amount": "ogiltigt belopp",
+    "invalid-interest-rate": "ogiltig ränta",
+    "create-account-error": "Kunde inte skapa kontot. Försök igen."
 },
 "login-route": {
     "title": "Logga in",

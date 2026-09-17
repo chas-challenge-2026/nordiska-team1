@@ -23,6 +23,11 @@ public static class DependencyInjection
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ICustomerService, CustomerService>();
 
+        // Interest rates are read often and change rarely, so they are cached in memory
+        services.AddMemoryCache();
+        services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
+        services.AddScoped<IInterestRateService, InterestRateService>();
+
         return services;
     }
 }
