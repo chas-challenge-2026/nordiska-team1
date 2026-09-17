@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -317,7 +318,7 @@ public class TransactionServiceTests
 
         var req = new TransactionRequest(1, "withdrawal", 100m);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.ExecuteAsync(req));
+        await Assert.ThrowsAsync<ConflictException>(() => svc.ExecuteAsync(req));
 
         Assert.Equal(1, txRepo.Count); // No new entry created
         var balance = await svc.GetBalanceAsync(1);
@@ -379,7 +380,7 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task Transfer_InsufficientFunds_ThrowsInvalidOperationException()
+    public async Task Transfer_InsufficientFunds_ThrowsConflictException()
     {
         var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
@@ -393,7 +394,23 @@ public class TransactionServiceTests
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
         var req = new TransferRequest(1, 2, 100m);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.TransferAsync(req));
+        await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(req));
+    }
+
+    [Fact]
+    public async Task CancelPlanned_ExecutedTransaction_ThrowsConflictException()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 50m, IsPlanned = false, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(1));
     }
 
     [Fact]

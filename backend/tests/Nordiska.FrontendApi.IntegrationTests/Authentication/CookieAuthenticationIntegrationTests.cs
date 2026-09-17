@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Contracts.Requests;
@@ -289,7 +290,7 @@ public class TestCustomerService : ICustomerService
     {
         if (_customers.TryGetValue(id, out var customer))
             return Task.FromResult(customer);
-        throw new KeyNotFoundException($"Customer with id {id} was not found.");
+        throw new NotFoundException($"Customer with id {id} was not found.");
     }
 
     public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
