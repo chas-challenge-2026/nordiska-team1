@@ -93,6 +93,8 @@ jobs:
         run: dotnet test backend/np.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx"
         env:
           ASPNETCORE_ENVIRONMENT: Development
+          # Runs the [PostgresFact] lockout tests against the postgres service above (NOR-70)
+          RUN_POSTGRES_TESTS: "true"
           Jwt__SecretKey: "ci_testing_super_secret_jwt_key_that_is_long_enough_12345"
           ConnectionStrings__Database: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"

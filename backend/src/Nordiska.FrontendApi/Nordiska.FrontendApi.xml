@@ -248,11 +248,14 @@
             </summary>
             <remarks>
             Performs email and password authentication and automatically sets the secure HttpOnly <c>access_token</c> authentication cookie on success.
-            Seeded demo accounts (e.g. <c>anna@exempel.se</c> or <c>erik@exempel.se</c>) can log in using password <c>password123</c>.
+            After 5 failed attempts the account is locked for 15 minutes (BankID login lifts the lockout).
+            In Development only, seeded demo accounts without a password (e.g. <c>anna@example.com</c> or <c>erik@example.com</c>) can log in using password <c>password123</c>.
             </remarks>
             <param name="request">Login request payload containing email and password.</param>
             <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
             <response code="401">Invalid email or password.</response>
+            <response code="423">Account is temporarily locked after too many failed attempts.</response>
+            <response code="429">Too many login requests from this IP.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser(Nordiska.Modules.Banking.Application.ICustomerService,System.Threading.CancellationToken)">
             <summary>
@@ -588,6 +591,11 @@
             Registers the concrete savings and transaction service implementations.
             </summary>
         </member>
+        <member name="T:Nordiska.FrontendApi.Extensions.RateLimitingServiceCollectionExtensions">
+            <summary>
+            Registers the rate limiting policies for login and money-moving endpoints (NOR-70).
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Extensions.ServiceCollectionExtensions">
             <summary>
             Convenience extension methods for IServiceCollection used by the Frontend API.
@@ -606,6 +614,16 @@
         <member name="M:Nordiska.FrontendApi.Middleware.GlobalExceptionHandler.TryHandleAsync(Microsoft.AspNetCore.Http.HttpContext,System.Exception,System.Threading.CancellationToken)">
             <summary>
             Attempts to handle an exception and write a ProblemDetails response.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.RateLimiting.RateLimitingOptions">
+            <summary>
+            Rate limiting settings bound from the "RateLimiting" section in appsettings.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.RateLimiting.RateLimitPolicies">
+            <summary>
+            Policy names used with [EnableRateLimiting] on controller actions.
             </summary>
         </member>
     </members>

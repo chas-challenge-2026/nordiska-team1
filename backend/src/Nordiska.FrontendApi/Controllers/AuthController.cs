@@ -1,11 +1,14 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
+using Nordiska.FrontendApi.RateLimiting;
 using Nordiska.Modules.Banking.Application;
 
 namespace Nordiska.FrontendApi.Controllers;
@@ -36,6 +39,7 @@ public class AuthController : ControllerBase
     /// <response code="200">BankID session successfully initiated with orderRef and start tokens.</response>
     /// <response code="400">Failed to initiate BankID session (e.g. invalid request or service error).</response>
     [HttpPost("bankid/initiate")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(typeof(BankIdInitiateResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
@@ -86,6 +90,7 @@ public class AuthController : ControllerBase
     /// <response code="200">Customer registered successfully and session established.</response>
     /// <response code="400">Registration validation failed or email already registered.</response>
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestDto request)
@@ -110,17 +115,28 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Performs email and password authentication and automatically sets the secure HttpOnly <c>access_token</c> authentication cookie on success.
-    /// Seeded demo accounts (e.g. <c>anna@exempel.se</c> or <c>erik@exempel.se</c>) can log in using password <c>password123</c>.
+    /// After 5 failed attempts the account is locked for 15 minutes (BankID login lifts the lockout).
+    /// In Development only, seeded demo accounts without a password (e.g. <c>anna@example.com</c> or <c>erik@example.com</c>) can log in using password <c>password123</c>.
     /// </remarks>
     /// <param name="request">Login request payload containing email and password.</param>
     /// <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
     /// <response code="401">Invalid email or password.</response>
+    /// <response code="423">Account is temporarily locked after too many failed attempts.</response>
+    /// <response code="429">Too many login requests from this IP.</response>
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status423Locked)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request, Response);
+
+        if (result.FailureReason == AuthFailureReason.LockedOut)
+        {
+            return LockedOut(result.LockoutEnd);
+        }
 
         if (!result.IsSuccess)
         {
@@ -128,6 +144,21 @@ public class AuthController : ControllerBase
         }
 
         return Ok(result.CollectData?.Customer);
+    }
+
+    // 423 as ProblemDetails with Retry-After, so the frontend can tell a lockout apart from wrong password
+    private IActionResult LockedOut(DateTimeOffset? lockoutEnd)
+    {
+        var remaining = lockoutEnd.HasValue ? lockoutEnd.Value - DateTimeOffset.UtcNow : TimeSpan.Zero;
+        if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
+
+        Response.Headers.RetryAfter = ((int)Math.Ceiling(remaining.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+
+        var minutes = Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes));
+        return Problem(
+            statusCode: StatusCodes.Status423Locked,
+            title: "Locked",
+            detail: $"Kontot är tillfälligt spärrat, försök igen om {minutes} minuter.");
     }
 
     /// <summary>
