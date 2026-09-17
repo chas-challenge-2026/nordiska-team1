@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type AccountTypes, getAccount, getAccounts, createAccount, closeAccount } from "../services/accountsService";
+import { type AccountTypes, getAccount, getAllAccounts, createAccount, closeAccount } from "../services/accountsService";
 
 interface CreateAccountInput {
+    customerId: number;
     accountName: string | null;
     accountType: AccountTypes;
     initialDeposit?: number;
@@ -16,7 +17,7 @@ export const accountKey = {
 export function useGetAccounts() {
     return useQuery({
         queryKey: accountKey.all,
-        queryFn: getAccounts,
+        queryFn: getAllAccounts,
     });
 }
 
@@ -31,7 +32,7 @@ export function useGetAccount(id: number) {
 export function useCreateAccount() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (input: CreateAccountInput) => createAccount(input.accountName, input.accountType, input.initialDeposit, input.interestRate),
+        mutationFn: (input: CreateAccountInput) => createAccount(input.customerId, input.accountName, input.accountType, input.initialDeposit, input.interestRate),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: accountKey.all })
         },
