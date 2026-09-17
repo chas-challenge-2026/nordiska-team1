@@ -65,6 +65,41 @@ std::string utf8_to_cp1252(std::string_view utf8) {
     return result;
 }
 
+inline void append_pdf_char(std::string& dest, char c) {
+    if (c == '(' || c == ')' || c == '\\') {
+        dest.push_back('\\');
+    }
+    dest.push_back(c);
+}
+
+// Single-pass UTF-8 -> CP1252 conversion with PDF string escaping directly into target stream
+void append_pdf_escaped_text(std::string& dest, std::string_view utf8) {
+    if (is_pure_ascii(utf8)) {
+        for (char c : utf8) {
+            append_pdf_char(dest, c);
+        }
+        return;
+    }
+
+    for (std::size_t index = 0; index < utf8.size(); ++index) {
+        const auto character = static_cast<unsigned char>(utf8[index]);
+        if (character < 0x80) {
+            append_pdf_char(dest, static_cast<char>(character));
+        } else if (character == 0xC3 && index + 1 < utf8.size()) {
+            dest.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index]) + 0x40));
+        } else if (character == 0xC2 && index + 1 < utf8.size()) {
+            dest.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index])));
+        } else if (character == 0xE2 && index + 2 < utf8.size() &&
+                   static_cast<unsigned char>(utf8[index + 1]) == 0x82 &&
+                   static_cast<unsigned char>(utf8[index + 2]) == 0xAC) {
+            dest.push_back(static_cast<char>(0x80)); // Euro symbol in CP1252
+            index += 2;
+        } else {
+            dest.push_back('?');
+        }
+    }
+}
+
 // --- Libharu Engine Implementation ---
 
 struct HaruDocDeleter {
@@ -480,23 +515,7 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                     append_float_2(t_stream_buf, haru_y);
                     t_stream_buf.append(" Tm (");
 
-                    if (is_pure_ascii(text.text)) {
-                        for (char c : text.text) {
-                            if (c == '(' || c == ')' || c == '\\') {
-                                t_stream_buf.push_back('\\');
-                            }
-                            t_stream_buf.push_back(c);
-                        }
-                    } else {
-                        t_cp1252_scratch.clear();
-                        utf8_to_cp1252_append(text.text, t_cp1252_scratch);
-                        for (char c : t_cp1252_scratch) {
-                            if (c == '(' || c == ')' || c == '\\') {
-                                t_stream_buf.push_back('\\');
-                            }
-                            t_stream_buf.push_back(c);
-                        }
-                    }
+                    append_pdf_escaped_text(t_stream_buf, text.text);
                     t_stream_buf.append(") Tj\n");
                 }
                 t_stream_buf.append("ET\n");
