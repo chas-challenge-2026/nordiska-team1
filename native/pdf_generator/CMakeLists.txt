@@ -35,6 +35,9 @@ target_link_libraries(nordiska_document_input_json PUBLIC
 add_library(nordiska_document_core STATIC
     src/application/pdf_generator.cpp
     src/rendering/pdf_engine.cpp
+    src/rendering/haru_pdf_engine.cpp
+    src/rendering/cairo_pdf_engine.cpp
+    src/rendering/native_pdf_engine.cpp
     src/layout/layout_builder.cpp
     src/signing/pdf_signer.cpp
 )
