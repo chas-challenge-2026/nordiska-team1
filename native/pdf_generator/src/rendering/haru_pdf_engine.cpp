@@ -1,4 +1,4 @@
-#include "pdf_engine_impl.hpp"
+#include "nordiska/rendering/haru_pdf_engine.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -190,7 +190,7 @@ class HaruEngineImpl final : public PdfEngine::Impl {
 
 } // namespace
 
-std::unique_ptr<PdfEngine::Impl> make_haru_engine(bool compression) {
+std::unique_ptr<PdfEngine::Impl> create_haru_pdf_engine(bool compression) {
     return std::make_unique<HaruEngineImpl>(compression);
 }
 

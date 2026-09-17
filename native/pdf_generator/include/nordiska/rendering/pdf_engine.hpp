@@ -29,7 +29,11 @@ struct RenderError {
 
 class PdfEngine {
   public:
-    struct Impl;
+    struct Impl {
+        virtual ~Impl() = default;
+        [[nodiscard]] virtual std::expected<std::vector<uint8_t>, RenderError>
+        render(const DocumentLayout& layout) const = 0;
+    };
 
     explicit PdfEngine(PdfEngineConfig config = {});
     explicit PdfEngine(PdfEngineKind kind, bool compression = true)

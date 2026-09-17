@@ -1,4 +1,4 @@
-#include "pdf_engine_impl.hpp"
+#include "nordiska/rendering/cairo_pdf_engine.hpp"
 
 #include <cairo-pdf.h>
 #include <cairo.h>
@@ -154,7 +154,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
 
 } // namespace
 
-std::unique_ptr<PdfEngine::Impl> make_cairo_engine() {
+std::unique_ptr<PdfEngine::Impl> create_cairo_pdf_engine() {
     return std::make_unique<CairoEngineImpl>();
 }
 

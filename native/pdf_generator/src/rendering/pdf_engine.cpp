@@ -1,5 +1,8 @@
 #include "nordiska/rendering/pdf_engine.hpp"
-#include "pdf_engine_impl.hpp"
+
+#include "nordiska/rendering/cairo_pdf_engine.hpp"
+#include "nordiska/rendering/haru_pdf_engine.hpp"
+#include "nordiska/rendering/native_pdf_engine.hpp"
 
 #include <memory>
 #include <vector>
@@ -9,13 +12,13 @@ namespace nordiska {
 PdfEngine::PdfEngine(PdfEngineConfig config) {
     switch (config.kind) {
     case PdfEngineKind::Libharu:
-        impl_ = make_haru_engine(config.compression);
+        impl_ = create_haru_pdf_engine(config.compression);
         break;
     case PdfEngineKind::Cairo:
-        impl_ = make_cairo_engine();
+        impl_ = create_cairo_pdf_engine();
         break;
     case PdfEngineKind::Native:
-        impl_ = make_native_engine(config.compression);
+        impl_ = create_native_pdf_engine(config.compression);
         break;
     }
 }

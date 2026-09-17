@@ -1,4 +1,4 @@
-#include "pdf_engine_impl.hpp"
+#include "nordiska/rendering/native_pdf_engine.hpp"
 
 #include <charconv>
 #include <cstdint>
@@ -262,7 +262,7 @@ class NativeEngineImpl final : public PdfEngine::Impl {
 
 } // namespace
 
-std::unique_ptr<PdfEngine::Impl> make_native_engine(bool compression) {
+std::unique_ptr<PdfEngine::Impl> create_native_pdf_engine(bool compression) {
     return std::make_unique<NativeEngineImpl>(compression);
 }
 
