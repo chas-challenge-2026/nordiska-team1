@@ -133,7 +133,7 @@ SignatureSlot append_signature_slot(std::vector<uint8_t>& pdf_buffer) {
     const std::string sig_header = std::format("{} 0 obj\n"
                                                "<< /Type /Sig\n"
                                                "   /Filter /Adobe.PPKLite\n"
-                                               "   /SubFilter /adbe.pkcs7.detached\n"
+                                               "   /SubFilter /ETSI.CAdES.detached\n"
                                                "   /ByteRange [ ",
                                                sig_id);
     pdf_buffer.insert(pdf_buffer.end(), sig_header.begin(), sig_header.end());
@@ -157,7 +157,7 @@ SignatureSlot append_signature_slot(std::vector<uint8_t>& pdf_buffer) {
     pdf_buffer.resize(pdf_buffer.size() + kDefaultSignatureSlotSize, '0');
 
     // 5. Signature Dictionary Closer
-    const std::string_view sig_closer = ">\n   /Reason (Nordiska Document Verification)\n>>\nendobj\n\n";
+    const std::string_view sig_closer = ">\n   /Reason ()\n>>\nendobj\n\n";
     pdf_buffer.insert(pdf_buffer.end(), sig_closer.begin(), sig_closer.end());
 
     // Byte offset of byte immediately following '>':

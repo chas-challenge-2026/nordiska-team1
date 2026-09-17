@@ -8,12 +8,12 @@
 
 namespace nordiska {
 
-// Standard 8 KB placeholder for CMS DER hex encoding (certificate chain + timestamp)
-inline constexpr size_t kDefaultSignatureSlotSize = 8192;
+// Production BankID / Signicat PAdES slot size (extracted from real Nordiska contract)
+inline constexpr size_t kDefaultSignatureSlotSize = 105032; // 105,032 hex characters (52,516 bytes)
 
 // Total capacity needed when appending the signature incremental update block
-// (includes widget annotation, /Sig dictionary, ByteRange, 8192-char placeholder, xref, trailer)
-inline constexpr size_t kSignatureBlockSize = 10240;
+// (includes widget annotation, /Sig dictionary, ByteRange, 105,032-char placeholder, xref, trailer)
+inline constexpr size_t kSignatureBlockSize = 115000;
 
 struct SignatureSlot {
     size_t offset{0};
