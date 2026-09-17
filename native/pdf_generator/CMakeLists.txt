@@ -14,6 +14,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 find_package(unofficial-libharu CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(simdjson CONFIG REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 
@@ -25,6 +26,10 @@ set_target_properties(nordiska_document_input_json PROPERTIES POSITION_INDEPENDE
 target_include_directories(nordiska_document_input_json PUBLIC include)
 target_compile_features(nordiska_document_input_json PUBLIC cxx_std_23)
 target_link_libraries(nordiska_document_input_json PUBLIC nlohmann_json::nlohmann_json)
+target_link_libraries(nordiska_document_input_json PUBLIC
+    nlohmann_json::nlohmann_json
+    simdjson::simdjson
+)
 
 # Core Domain, Layout & PDF Rendering Engine Library
 add_library(nordiska_document_core STATIC

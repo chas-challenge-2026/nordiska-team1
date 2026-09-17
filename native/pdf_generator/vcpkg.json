@@ -5,6 +5,7 @@
     "cairo",
     "libharu",
     "nlohmann-json",
-    "openssl"
+    "openssl",
+    "simdjson"
   ]
 }

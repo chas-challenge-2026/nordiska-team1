@@ -217,11 +217,18 @@ int main() {
                 "%PDF-",
             "cairo doc 1 must start with %PDF-");
 
-    // 11. PdfGenerator with Simdjson config reports not yet implemented
+    // 11. PdfGenerator with Simdjson config parses and renders golden sample
     nordiska::PdfGenerator simd_gen{nordiska::GeneratorConfig{.ingestor = nordiska::JsonIngestorKind::Simdjson}};
     auto simd_res = simd_gen.generate(golden_span);
-    require(!simd_res.has_value(), "simdjson should report not implemented");
-    require(simd_res.error().message.find("simdjson") != std::string::npos, "error should mention simdjson");
+    require(simd_res.has_value(), "simdjson generator should render golden sample");
+    require(simd_res->customer_id == 1, "simdjson batch customer_id mismatch");
+    require(simd_res->documents.size() == 2, "simdjson batch documents count mismatch");
+    require(simd_res->documents[0].pdf_bytes.size() > 500, "simdjson doc 0 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(simd_res->documents[0].pdf_bytes.data()), 5) == "%PDF-",
+            "simdjson doc 0 must start with %PDF-");
+    require(simd_res->documents[1].pdf_bytes.size() > 500, "simdjson doc 1 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(simd_res->documents[1].pdf_bytes.data()), 5) == "%PDF-",
+            "simdjson doc 1 must start with %PDF-");
 
     std::cout << "All json ingestor tests passed successfully!\n";
     return 0;
