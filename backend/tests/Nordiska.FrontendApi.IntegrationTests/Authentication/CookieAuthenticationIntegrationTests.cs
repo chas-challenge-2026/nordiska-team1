@@ -319,6 +319,10 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Tests share one factory per class, so raise the limits to keep rate limiting out of the way (NOR-70)
+        builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
+        builder.UseSetting("RateLimiting:Transactions:PermitLimit", "10000");
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IAuthService>();

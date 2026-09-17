@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.RateLimiting;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -147,6 +149,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost]
+    [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -172,6 +175,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("transfer")]
+    [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -197,6 +201,7 @@ public class TransactionsController : ControllerBase
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("planned")]
+    [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
