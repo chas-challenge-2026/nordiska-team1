@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.RateLimiting;
 using Nordiska.Modules.Banking.Application;
@@ -43,28 +42,26 @@ public class TransactionsController : ControllerBase
     /// <response code="200">Paginated list of transactions with metadata.</response>
     /// <response code="400">Invalid query parameters.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if accessing transactions for an account that does not belong to the user.</response>
+    /// <response code="404">Account filter contains an account that was not found or does not belong to the user.</response>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<TransactionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(IEnumerable<TransactionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAll([FromQuery] TransactionQueryRequest query, CancellationToken cancellationToken)
     {
         query ??= new TransactionQueryRequest();
         var requestedAccountIds = query.GetRequestedAccountIds();
 
-        if (IsAdmin())
+        if (User.IsAdmin())
         {
             var adminParams = query.ToDomainParameters(requestedAccountIds);
             var adminResult = await _service.QueryPagedAsync(adminParams, cancellationToken);
             return FormatResult(adminResult);
         }
 
-        var currentUserId = GetCurrentUserId();
-        var userAccounts = (await _savingsAccountService.GetAllAsync(cancellationToken))
-            .Where(a => a.CustomerId == currentUserId)
+        var userAccounts = (await _savingsAccountService.GetByCustomerIdAsync(User.GetRequiredCustomerId(), cancellationToken))
             .Select(a => a.Id)
             .ToHashSet();
 
@@ -72,7 +69,7 @@ public class TransactionsController : ControllerBase
         {
             if (requestedAccountIds.Any(id => !userAccounts.Contains(id)))
             {
-                return Forbid();
+                return AccountNotFound();
             }
 
             var userParams = query.ToDomainParameters(requestedAccountIds);
@@ -122,24 +119,17 @@ public class TransactionsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">The transaction ledger details.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if the transaction belongs to another customer's account.</response>
-    /// <response code="404">Transaction with the specified ID was not found.</response>
+    /// <response code="404">Transaction with the specified ID was not found or belongs to another customer.</response>
     [HttpGet("{id}", Name = "GetTransactionById")]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TransactionResponse>> GetById(long id, CancellationToken cancellationToken)
     {
         var tx = await _service.GetByIdAsync(id, cancellationToken);
-        if (tx is null)
+        if (tx is null || !await IsAuthorizedForAccountAsync(tx.AccountId, cancellationToken))
         {
             return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Transaction not found." });
-        }
-
-        if (!await IsAuthorizedForAccountAsync(tx.AccountId, cancellationToken))
-        {
-            return Forbid();
         }
 
         return Ok(tx);
@@ -157,18 +147,18 @@ public class TransactionsController : ControllerBase
     /// <response code="201">Transaction successfully executed and recorded in the ledger.</response>
     /// <response code="400">Invalid transaction data or insufficient funds for withdrawal.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if attempting to execute transaction on an account belonging to another customer.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost]
     [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TransactionResponse>> Create([FromBody] TransactionRequest request, CancellationToken cancellationToken)
     {
         if (!await IsAuthorizedForAccountAsync(request.AccountId, cancellationToken))
         {
-            return Forbid();
+            return AccountNotFound();
         }
 
         var created = await _service.ExecuteAsync(request, cancellationToken);
@@ -183,18 +173,18 @@ public class TransactionsController : ControllerBase
     /// <response code="200">Transfer successfully executed.</response>
     /// <response code="400">Invalid transfer parameters or insufficient funds.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if source account does not belong to authenticated user.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("transfer")]
     [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TransactionResponse>> Transfer([FromBody] TransferRequest request, CancellationToken cancellationToken)
     {
         if (!await IsAuthorizedForAccountAsync(request.SourceAccountId, cancellationToken))
         {
-            return Forbid();
+            return AccountNotFound();
         }
 
         var result = await _service.TransferAsync(request, cancellationToken);
@@ -209,18 +199,18 @@ public class TransactionsController : ControllerBase
     /// <response code="201">Planned transaction successfully registered.</response>
     /// <response code="400">Invalid planned transaction details.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if account does not belong to authenticated user.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("planned")]
     [EnableRateLimiting(RateLimitPolicies.Transactions)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TransactionResponse>> CreatePlanned([FromBody] PlannedTransactionRequest request, CancellationToken cancellationToken)
     {
         if (!await IsAuthorizedForAccountAsync(request.AccountId, cancellationToken))
         {
-            return Forbid();
+            return AccountNotFound();
         }
 
         var created = await _service.CreatePlannedAsync(request, cancellationToken);
@@ -234,24 +224,17 @@ public class TransactionsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="204">Planned transaction cancelled successfully.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if transaction does not belong to authenticated user.</response>
-    /// <response code="404">Planned transaction not found.</response>
+    /// <response code="404">Planned transaction not found or belongs to another customer.</response>
     [HttpDelete("planned/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CancelPlanned(long id, CancellationToken cancellationToken)
     {
         var existing = await _service.GetByIdAsync(id, cancellationToken);
-        if (existing == null)
+        if (existing == null || !await IsAuthorizedForAccountAsync(existing.AccountId, cancellationToken))
         {
             return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Planned transaction not found." });
-        }
-
-        if (!await IsAuthorizedForAccountAsync(existing.AccountId, cancellationToken))
-        {
-            return Forbid();
         }
 
         var deleted = await _service.CancelPlannedAsync(id, cancellationToken);
@@ -270,18 +253,16 @@ public class TransactionsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">The calculated current balance amount.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if checking balance for another customer's account.</response>
-    /// <response code="404">Account not found.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpGet("balance/{accountId}")]
     [ProducesResponseType(typeof(decimal), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<decimal>> GetBalance(long accountId, CancellationToken cancellationToken)
     {
         if (!await IsAuthorizedForAccountAsync(accountId, cancellationToken))
         {
-            return Forbid();
+            return AccountNotFound();
         }
 
         var balance = await _service.GetBalanceAsync(accountId, cancellationToken);
@@ -290,24 +271,19 @@ public class TransactionsController : ControllerBase
 
     private async Task<bool> IsAuthorizedForAccountAsync(long accountId, CancellationToken cancellationToken)
     {
-        if (IsAdmin())
+        if (User.IsAdmin())
         {
             return true;
         }
 
-        var currentUserId = GetCurrentUserId();
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken);
 
-        return account != null && account.CustomerId == currentUserId;
+        return account != null && User.CanAccessCustomer(account.CustomerId);
     }
 
-    private bool IsAdmin() => User.IsInRole("Admin");
-
-    private long GetCurrentUserId()
+    // Same response as a missing account, so other customers' account ids can't be discovered
+    private NotFoundObjectResult AccountNotFound()
     {
-        var currentUserIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return long.TryParse(currentUserIdStr, out var currentUserId) ? currentUserId : 0;
+        return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Account not found." });
     }
 }

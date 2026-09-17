@@ -38,6 +38,7 @@ public class AuthController : ControllerBase
     /// <param name="request">The initiate request containing the optional personal number.</param>
     /// <response code="200">BankID session successfully initiated with orderRef and start tokens.</response>
     /// <response code="400">Failed to initiate BankID session (e.g. invalid request or service error).</response>
+    [AllowAnonymous]
     [HttpPost("bankid/initiate")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(typeof(BankIdInitiateResponseDto), StatusCodes.Status200OK)]
@@ -65,6 +66,7 @@ public class AuthController : ControllerBase
     /// <param name="request">The collect request containing the orderRef.</param>
     /// <response code="200">Current status of the authentication (e.g. PENDING or COMPLETE with customer profile).</response>
     /// <response code="401">Authentication failed or customer not found.</response>
+    [AllowAnonymous]
     [HttpPost("bankid/collect")]
     [ProducesResponseType(typeof(BankIdCollectResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -89,6 +91,7 @@ public class AuthController : ControllerBase
     /// <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
     /// <response code="200">Customer registered successfully and session established.</response>
     /// <response code="400">Registration validation failed or email already registered.</response>
+    [AllowAnonymous]
     [HttpPost("register")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -123,6 +126,7 @@ public class AuthController : ControllerBase
     /// <response code="401">Invalid email or password.</response>
     /// <response code="423">Account is temporarily locked after too many failed attempts.</response>
     /// <response code="429">Too many login requests from this IP.</response>
+    [AllowAnonymous]
     [HttpPost("login")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
@@ -217,6 +221,8 @@ public class AuthController : ControllerBase
     /// Logs out the user by clearing the HTTP-only authentication cookie.
     /// </summary>
     /// <response code="200">Successfully logged out and cookie deleted.</response>
+    // Anonymous so a user with an expired session can still clear the cookie
+    [AllowAnonymous]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Logout()

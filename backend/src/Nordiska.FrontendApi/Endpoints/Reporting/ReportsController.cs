@@ -1,12 +1,11 @@
 using System;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Authentication;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
 
@@ -36,17 +35,17 @@ public sealed class ReportsController : ControllerBase
     /// <response code="202">Report generation job accepted and currently processing.</response>
     /// <response code="400">Invalid account or tax year specified.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if the account does not belong to the authenticated user.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("tax-report")]
     [ProducesResponseType(typeof(TaxReportJobResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaxReportJobResponse>> InitiateTaxReport(
         [FromBody] TaxReportRequest request,
         CancellationToken cancellationToken)
     {
-        var currentUserId = GetCurrentUserId();
+        var currentUserId = User.GetRequiredCustomerId();
 
         try
         {
@@ -55,7 +54,8 @@ public sealed class ReportsController : ControllerBase
         }
         catch (AuthenticationException)
         {
-            return Forbid();
+            // Not the customer's account, answer as if it doesn't exist
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Account not found." });
         }
         catch (InvalidOperationException ex)
         {
@@ -70,19 +70,17 @@ public sealed class ReportsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">The current job status and download metadata.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if accessing a job belonging to another customer.</response>
-    /// <response code="404">Job with the specified ID was not found.</response>
+    /// <response code="404">Job with the specified ID was not found or belongs to another customer.</response>
     [HttpGet("jobs/{jobId}")]
     [ProducesResponseType(typeof(TaxReportJobResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaxReportJobResponse>> GetJobStatus(
         string jobId,
         CancellationToken cancellationToken)
     {
-        var currentUserId = GetCurrentUserId();
-        var job = await _reportService.GetJobStatusAsync(jobId, currentUserId, IsAdmin(), cancellationToken);
+        var currentUserId = User.GetRequiredCustomerId();
+        var job = await _reportService.GetJobStatusAsync(jobId, currentUserId, User.IsAdmin(), cancellationToken);
 
         if (job is null)
         {
@@ -99,21 +97,19 @@ public sealed class ReportsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Returns the raw binary PDF file (Content-Type: application/pdf).</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if accessing a report belonging to another customer.</response>
-    /// <response code="404">Report or job was not found.</response>
+    /// <response code="404">Report or job was not found or belongs to another customer.</response>
     [HttpGet("jobs/{jobId}/download")]
     [HttpGet("{jobId}/download")]
     [Produces("application/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadReport(
         string jobId,
         CancellationToken cancellationToken)
     {
-        var currentUserId = GetCurrentUserId();
-        var result = await _reportService.GetReportFileAsync(jobId, currentUserId, IsAdmin(), cancellationToken);
+        var currentUserId = User.GetRequiredCustomerId();
+        var result = await _reportService.GetReportFileAsync(jobId, currentUserId, User.IsAdmin(), cancellationToken);
 
         if (result is null)
         {
@@ -132,43 +128,34 @@ public sealed class ReportsController : ControllerBase
     /// <response code="200">Returns the generated PDF stream.</response>
     /// <response code="400">Invalid account or tax year.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if the account does not belong to the user.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpGet("tax-report")]
     [Produces("application/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetDirectTaxReport(
         [FromQuery] long accountId,
         [FromQuery] int? year,
         CancellationToken cancellationToken)
     {
         var effectiveYear = year ?? DateTime.UtcNow.Year;
-        var currentUserId = GetCurrentUserId();
+        var currentUserId = User.GetRequiredCustomerId();
 
         try
         {
-            var result = await _reportService.GenerateDirectReportAsync(currentUserId, accountId, effectiveYear, IsAdmin(), cancellationToken);
+            var result = await _reportService.GenerateDirectReportAsync(currentUserId, accountId, effectiveYear, User.IsAdmin(), cancellationToken);
             return File(result.FileBytes, "application/pdf", result.FileName);
         }
         catch (AuthenticationException)
         {
-            return Forbid();
+            // Not the customer's account, answer as if it doesn't exist
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Account not found." });
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new ProblemDetails { Status = StatusCodes.Status400BadRequest, Title = ex.Message });
         }
-    }
-
-    private bool IsAdmin() => User.IsInRole("Admin");
-
-    private long GetCurrentUserId()
-    {
-        var currentUserIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return long.TryParse(currentUserIdStr, out var currentUserId) ? currentUserId : 0;
     }
 }

@@ -1,11 +1,10 @@
 using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Mappers;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Application;
@@ -34,17 +33,15 @@ public sealed class CustomersController : ControllerBase
     /// <param name="id">The customer identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Customer profile retrieved successfully.</response>
-    /// <response code="403">Forbidden if the user is not authorized to access this profile.</response>
-    /// <response code="404">Customer with the given ID was not found.</response>
+    /// <response code="404">Customer with the given ID was not found or is not the authenticated customer.</response>
     [HttpGet("{id}", Name = "GetCustomerById")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CustomerResponse>> GetById(long id, CancellationToken cancellationToken)
     {
-        if (!IsAuthorizedForCustomer(id))
+        if (!User.CanAccessCustomer(id))
         {
-            return Forbid();
+            return CustomerNotFound();
         }
 
         var customer = await _service.GetByIdAsync(id, cancellationToken);
@@ -61,7 +58,7 @@ public sealed class CustomersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="201">Customer created successfully.</response>
     /// <response code="400">Invalid customer creation payload.</response>
-    [AllowAnonymous]
+    /// <response code="401">Unauthorized if authentication token is missing or invalid. New customers register via /api/auth/register.</response>
     [HttpPost]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -79,14 +76,12 @@ public sealed class CustomersController : ControllerBase
     /// <param name="id">Optional customer ID from route.</param>
     /// <response code="200">Customer updated successfully.</response>
     /// <response code="400">Validation failed on the updated customer data.</response>
-    /// <response code="403">Forbidden if the user is not authorized to update this profile.</response>
-    /// <response code="404">Customer not found.</response>
+    /// <response code="404">Customer not found or is not the authenticated customer.</response>
     [HttpPut]
     [HttpPut("{id}")]
     [HttpPut("{id}/profile")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CustomerResponse>> Update([FromBody] UpdateCustomerRequest request, CancellationToken cancellationToken, [FromRoute] long? id = null)
     {
@@ -96,9 +91,9 @@ public sealed class CustomersController : ControllerBase
             return BadRequest(new ProblemDetails { Status = StatusCodes.Status400BadRequest, Title = "Customer ID is required." });
         }
 
-        if (!IsAuthorizedForCustomer(targetId))
+        if (!User.CanAccessCustomer(targetId))
         {
-            return Forbid();
+            return CustomerNotFound();
         }
 
         var updated = await _service.UpdateAsync(targetId, request.Name, request.Email, request.PersonalNum, request.EffectivePhone, cancellationToken);
@@ -113,19 +108,17 @@ public sealed class CustomersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Customer partially updated successfully.</response>
     /// <response code="400">Validation failed.</response>
-    /// <response code="403">Forbidden if accessing another customer's profile.</response>
-    /// <response code="404">Customer not found.</response>
+    /// <response code="404">Customer not found or is not the authenticated customer.</response>
     [HttpPatch("{id}")]
     [HttpPatch("{id}/profile")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CustomerResponse>> Patch(long id, [FromBody] PatchCustomerRequest request, CancellationToken cancellationToken)
     {
-        if (!IsAuthorizedForCustomer(id))
+        if (!User.CanAccessCustomer(id))
         {
-            return Forbid();
+            return CustomerNotFound();
         }
 
         var updated = await _service.PatchProfileAsync(id, request.Name, request.Email, request.EffectivePhone, cancellationToken);
@@ -138,14 +131,13 @@ public sealed class CustomersController : ControllerBase
     [HttpPatch]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CustomerResponse>> PatchBody([FromBody] PatchCustomerRequest request, CancellationToken cancellationToken)
     {
-        var targetId = request.Id ?? GetCurrentUserId();
-        if (targetId == 0 || !IsAuthorizedForCustomer(targetId))
+        var targetId = request.Id ?? User.GetRequiredCustomerId();
+        if (!User.CanAccessCustomer(targetId))
         {
-            return Forbid();
+            return CustomerNotFound();
         }
 
         var updated = await _service.PatchProfileAsync(targetId, request.Name, request.Email, request.EffectivePhone, cancellationToken);
@@ -159,40 +151,25 @@ public sealed class CustomersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="204">Customer deleted successfully.</response>
     /// <response code="400">Cannot delete customer with positive account balance.</response>
-    /// <response code="403">Forbidden if the user is not authorized to delete this profile.</response>
-    /// <response code="404">Customer not found.</response>
+    /// <response code="404">Customer not found or is not the authenticated customer.</response>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        if (!IsAuthorizedForCustomer(id))
+        if (!User.CanAccessCustomer(id))
         {
-            return Forbid();
+            return CustomerNotFound();
         }
 
         await _service.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 
-    private bool IsAuthorizedForCustomer(long customerId)
+    // Same response as a missing customer, so other customers' ids can't be discovered
+    private NotFoundObjectResult CustomerNotFound()
     {
-        if (User.IsInRole("Admin"))
-        {
-            return true;
-        }
-
-        var currentUserId = GetCurrentUserId();
-        return currentUserId != 0 && currentUserId == customerId;
-    }
-
-    private long GetCurrentUserId()
-    {
-        var currentUserIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                               ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return long.TryParse(currentUserIdStr, out var currentUserId) ? currentUserId : 0;
+        return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Customer not found." });
     }
 }

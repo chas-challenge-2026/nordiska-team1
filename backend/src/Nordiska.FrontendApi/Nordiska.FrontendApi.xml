@@ -28,6 +28,32 @@
             </summary>
             <param name="response">The current HTTP response.</param>
         </member>
+        <member name="T:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions">
+            <summary>
+            Helpers for reading the logged in customer from the JWT claims.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetCustomerId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the customer id from the token, or null if it is missing or not a number.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredCustomerId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the customer id from the token. Throws if the token has no valid customer id,
+            which the global exception handler turns into 401.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.IsAdmin(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            True if the logged in user has the Admin role.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.CanAccessCustomer(System.Security.Claims.ClaimsPrincipal,System.Int64)">
+            <summary>
+            True if the logged in user is the given customer, or an admin.
+            </summary>
+        </member>
         <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.SecretKey">
             <summary>
             Secret key used to sign JWT tokens. Keep this secure.
@@ -348,8 +374,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Returns the bank account details.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the account does not belong to the authenticated customer.</response>
-            <response code="404">Bank account with the specified ID was not found.</response>
+            <response code="404">Bank account was not found or does not belong to the authenticated customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.Create(Nordiska.Modules.Banking.Contracts.Requests.OpenSavingsAccountRequest,System.Threading.CancellationToken)">
             <summary>
@@ -363,7 +388,7 @@
             <response code="201">Bank account successfully created.</response>
             <response code="400">Invalid account creation request data.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if attempting to open an account for another customer.</response>
+            <response code="404">Customer not found when attempting to open an account for another customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.Close(System.Int64,System.Threading.CancellationToken)">
             <summary>
@@ -374,8 +399,7 @@
             <response code="200">Account successfully closed.</response>
             <response code="400">Cannot close account with positive balance.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the account does not belong to the authenticated customer.</response>
-            <response code="404">Account not found.</response>
+            <response code="404">Account not found or does not belong to the authenticated customer.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.CustomersController">
             <summary>
@@ -389,8 +413,7 @@
             <param name="id">The customer identifier.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Customer profile retrieved successfully.</response>
-            <response code="403">Forbidden if the user is not authorized to access this profile.</response>
-            <response code="404">Customer with the given ID was not found.</response>
+            <response code="404">Customer with the given ID was not found or is not the authenticated customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.Create(Nordiska.Modules.Banking.Contracts.Requests.CreateCustomerRequest,System.Threading.CancellationToken)">
             <summary>
@@ -403,6 +426,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="201">Customer created successfully.</response>
             <response code="400">Invalid customer creation payload.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid. New customers register via /api/auth/register.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.Update(Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest,System.Threading.CancellationToken,System.Nullable{System.Int64})">
             <summary>
@@ -413,8 +437,7 @@
             <param name="id">Optional customer ID from route.</param>
             <response code="200">Customer updated successfully.</response>
             <response code="400">Validation failed on the updated customer data.</response>
-            <response code="403">Forbidden if the user is not authorized to update this profile.</response>
-            <response code="404">Customer not found.</response>
+            <response code="404">Customer not found or is not the authenticated customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.Patch(System.Int64,Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest,System.Threading.CancellationToken)">
             <summary>
@@ -425,8 +448,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Customer partially updated successfully.</response>
             <response code="400">Validation failed.</response>
-            <response code="403">Forbidden if accessing another customer's profile.</response>
-            <response code="404">Customer not found.</response>
+            <response code="404">Customer not found or is not the authenticated customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.PatchBody(Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest,System.Threading.CancellationToken)">
             <summary>
@@ -441,8 +463,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="204">Customer deleted successfully.</response>
             <response code="400">Cannot delete customer with positive account balance.</response>
-            <response code="403">Forbidden if the user is not authorized to delete this profile.</response>
-            <response code="404">Customer not found.</response>
+            <response code="404">Customer not found or is not the authenticated customer.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.InterestRatesController">
             <summary>
@@ -473,7 +494,7 @@
             <response code="200">Paginated list of transactions with metadata.</response>
             <response code="400">Invalid query parameters.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if accessing transactions for an account that does not belong to the user.</response>
+            <response code="404">Account filter contains an account that was not found or does not belong to the user.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetById(System.Int64,System.Threading.CancellationToken)">
             <summary>
@@ -483,8 +504,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">The transaction ledger details.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the transaction belongs to another customer's account.</response>
-            <response code="404">Transaction with the specified ID was not found.</response>
+            <response code="404">Transaction with the specified ID was not found or belongs to another customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.Create(Nordiska.Modules.Banking.Contracts.Requests.TransactionRequest,System.Threading.CancellationToken)">
             <summary>
@@ -499,7 +519,7 @@
             <response code="201">Transaction successfully executed and recorded in the ledger.</response>
             <response code="400">Invalid transaction data or insufficient funds for withdrawal.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if attempting to execute transaction on an account belonging to another customer.</response>
+            <response code="404">Account not found or does not belong to the authenticated user.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.Transfer(Nordiska.Modules.Banking.Contracts.Requests.TransferRequest,System.Threading.CancellationToken)">
             <summary>
@@ -510,7 +530,7 @@
             <response code="200">Transfer successfully executed.</response>
             <response code="400">Invalid transfer parameters or insufficient funds.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if source account does not belong to authenticated user.</response>
+            <response code="404">Account not found or does not belong to the authenticated user.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.CreatePlanned(Nordiska.Modules.Banking.Contracts.Requests.PlannedTransactionRequest,System.Threading.CancellationToken)">
             <summary>
@@ -521,7 +541,7 @@
             <response code="201">Planned transaction successfully registered.</response>
             <response code="400">Invalid planned transaction details.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if account does not belong to authenticated user.</response>
+            <response code="404">Account not found or does not belong to the authenticated user.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.CancelPlanned(System.Int64,System.Threading.CancellationToken)">
             <summary>
@@ -531,8 +551,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="204">Planned transaction cancelled successfully.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if transaction does not belong to authenticated user.</response>
-            <response code="404">Planned transaction not found.</response>
+            <response code="404">Planned transaction not found or belongs to another customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetBalance(System.Int64,System.Threading.CancellationToken)">
             <summary>
@@ -542,8 +561,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">The calculated current balance amount.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if checking balance for another customer's account.</response>
-            <response code="404">Account not found.</response>
+            <response code="404">Account not found or does not belong to the authenticated user.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.ReportsController">
             <summary>
@@ -560,7 +578,7 @@
             <response code="202">Report generation job accepted and currently processing.</response>
             <response code="400">Invalid account or tax year specified.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the account does not belong to the authenticated user.</response>
+            <response code="404">Account not found or does not belong to the authenticated user.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Reporting.ReportsController.GetJobStatus(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -570,8 +588,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">The current job status and download metadata.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if accessing a job belonging to another customer.</response>
-            <response code="404">Job with the specified ID was not found.</response>
+            <response code="404">Job with the specified ID was not found or belongs to another customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Reporting.ReportsController.DownloadReport(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -581,8 +598,7 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Returns the raw binary PDF file (Content-Type: application/pdf).</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if accessing a report belonging to another customer.</response>
-            <response code="404">Report or job was not found.</response>
+            <response code="404">Report or job was not found or belongs to another customer.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Reporting.ReportsController.GetDirectTaxReport(System.Int64,System.Nullable{System.Int32},System.Threading.CancellationToken)">
             <summary>
@@ -594,7 +610,7 @@
             <response code="200">Returns the generated PDF stream.</response>
             <response code="400">Invalid account or tax year.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the account does not belong to the user.</response>
+            <response code="404">Account not found or does not belong to the authenticated user.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Extensions.BankingServiceCollectionExtensions">
             <summary>
@@ -619,6 +635,11 @@
         <member name="M:Nordiska.FrontendApi.Extensions.ServiceCollectionExtensions.AddErrorHandling(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
             <summary>
             Registers problem details and the global exception handler.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Extensions.ServiceCollectionExtensions.AddApiAuthorization(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers authorization policies. Every endpoint requires a logged in user unless it is marked with [AllowAnonymous].
             </summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Middleware.GlobalExceptionHandler">
