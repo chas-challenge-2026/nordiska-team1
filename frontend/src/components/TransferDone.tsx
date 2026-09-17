@@ -35,23 +35,23 @@ export default function TransferDone({
                     <p className="m-0 text-sm font-semibold text-secondary">
                         {t("page-transfer.done.processing")}
                     </p>
-                    <div className="mt-6 flex max-w-[520px] items-center gap-4">
-                        <div className="flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
+                    <div className="mt-6 flex max-w-full items-center gap-2 sm:max-w-[520px] sm:gap-4">
+                        <div className="min-w-0 flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
                             <div className="text-xs tracking-[0.08em] text-secondary uppercase">
                                 {t("generic.from")}
                             </div>
-                            <div className="text-[15px] font-bold text-dark-navy">
+                            <div className="truncate text-[15px] font-bold text-dark-navy">
                                 {fromName}
                             </div>
                         </div>
-                        <div className="relative h-0.5 w-28 flex-none bg-[#E5EAF0]">
+                        <div className="relative h-0.5 w-10 flex-none bg-[#E5EAF0] sm:w-28">
                             <div className="absolute -top-1 left-0 h-2.5 w-2.5 animate-[dot-travel_1.8s_ease-in-out_infinite] rounded-full bg-nordiska-orange" />
                         </div>
-                        <div className="flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
+                        <div className="min-w-0 flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
                             <div className="text-xs tracking-[0.08em] text-secondary uppercase">
                                 {t("generic.to")}
                             </div>
-                            <div className="text-[15px] font-bold text-dark-navy">
+                            <div className="truncate text-[15px] font-bold text-dark-navy">
                                 {toName}
                             </div>
                         </div>

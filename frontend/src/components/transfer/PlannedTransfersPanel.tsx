@@ -13,7 +13,7 @@ export default function PlannedTransfersPanel({
     const { t } = useTranslation();
 
     return (
-        <div className="border-l border-[#E5EAF0] px-10 pt-8 pb-10">
+        <div className="border-t border-[#E5EAF0] px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:border-t-0 lg:border-l lg:px-10 lg:pt-8 lg:pb-10">
             <Table tableType="planned" handleClick={() => {}}>
                 <div className="max-h-[420px] overflow-y-auto">
                     {upcomingTransfers.map((planned, index) => (

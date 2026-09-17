@@ -19,4 +19,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
   </ItemGroup>
+
 </Project>

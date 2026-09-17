@@ -37,26 +37,26 @@ export default function AccountPickerModal({
     groups,
     isEmpty,
     onSelect,
-    onClose,
+    // onClose,
     onAddNew,
 }: AccountPickerModalProps) {
     const { t } = useTranslation();
 
     return (
         <>
-            <div className="border-b border-[#E5EAF0] px-7 py-6 pb-[18px]">
+            <div className="border-b border-[#E5EAF0] px-4 py-5 pb-[18px] sm:px-7 sm:py-6">
                 <div className="flex items-center justify-between gap-4">
                     <h3 className="m-0 text-xl font-semibold text-dark-navy">
                         {title}
                     </h3>
-                    <button
+                    {/* <button
                         type="button"
                         onClick={onClose}
                         aria-label={t("generic.close")}
                         className="cursor-pointer border-0 bg-none px-2 py-1 text-2xl leading-none text-secondary"
                     >
                         ×
-                    </button>
+                    </button> */}
                 </div>
                 <input
                     type="text"
@@ -67,7 +67,7 @@ export default function AccountPickerModal({
                 />
             </div>
 
-            <div className="flex-1 overflow-y-auto px-7 pt-2 pb-24">
+            <div className="flex-1 overflow-y-auto px-4 pt-2 pb-24 sm:px-7">
                 {groups.map((group) => (
                     <div key={group.title} className="pt-4.5">
                         <div className="pb-1.5 text-xs font-bold tracking-[0.1em] text-secondary uppercase">
@@ -126,7 +126,7 @@ export default function AccountPickerModal({
                 <button
                     type="button"
                     onClick={onAddNew}
-                    className="absolute right-6 bottom-[22px] cursor-pointer rounded-full border-0 bg-nordiska-blue px-[22px] py-[13px] text-sm font-bold text-white shadow-floating hover:bg-login-bg"
+                    className="absolute right-4 bottom-4 cursor-pointer rounded-full border-0 bg-nordiska-blue px-[22px] py-[13px] text-sm font-bold text-white shadow-floating hover:bg-login-bg sm:right-6 sm:bottom-[22px]"
                 >
                     {t("page-transfer.modal.add-new")}
                 </button>
