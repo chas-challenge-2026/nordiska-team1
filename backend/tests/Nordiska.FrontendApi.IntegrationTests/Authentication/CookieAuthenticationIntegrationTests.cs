@@ -159,6 +159,9 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
     public Task<IEnumerable<SavingsAccount>> GetAllAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IEnumerable<SavingsAccount>>(_store.ToList());
 
+    public Task<IEnumerable<SavingsAccount>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<SavingsAccount>>(_store.Where(s => s.CustomerId == customerId).ToList());
+
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 

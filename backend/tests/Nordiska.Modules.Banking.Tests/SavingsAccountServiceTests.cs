@@ -27,6 +27,9 @@ public class SavingsAccountServiceTests
         public Task<IEnumerable<SavingsAccount>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<IEnumerable<SavingsAccount>>(_store.ToList());
 
+        public Task<IEnumerable<SavingsAccount>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IEnumerable<SavingsAccount>>(_store.Where(s => s.CustomerId == customerId).ToList());
+
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
@@ -60,6 +63,24 @@ public class SavingsAccountServiceTests
         var all = await service.GetAllAsync();
 
         Assert.Equal(2, all.Count());
+    }
+
+    [Fact]
+    public async Task GetByCustomerId_ReturnsOnlyThatCustomersAccounts()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "Standard", Balance = 100 },
+            new SavingsAccount { Id = 2, CustomerId = 2, AccountNumber = "A2", AccountType = "Premium", Balance = 200 },
+            new SavingsAccount { Id = 3, CustomerId = 1, AccountNumber = "A3", AccountType = "Standard", Balance = 300 }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var res = await service.GetByCustomerIdAsync(1);
+
+        Assert.Equal(new long[] { 1, 3 }, res.Select(a => a.Id).OrderBy(id => id));
     }
 
     [Fact]
