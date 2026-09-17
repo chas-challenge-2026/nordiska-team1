@@ -77,9 +77,10 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
         // 2. Delegate to application batch generation pipeline
         const std::span<const uint8_t> payload_span{json_utf8, json_length};
         const nordiska::GeneratorConfig config{
-            .ingestor = nordiska::JsonIngestorKind::Nlohmann,
+            .ingestor = nordiska::JsonIngestorKind::Simdjson,
             .engine = nordiska::PdfEngineKind::Libharu,
             .enable_signing = false,
+            .compression = true,
         };
         nordiska::PdfGenerator generator(config);
         auto batch_result = generator.generate(payload_span);

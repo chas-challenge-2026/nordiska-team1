@@ -10,7 +10,12 @@
 
 namespace nordiska {
 
-enum class PdfEngineKind { Libharu, Cairo };
+enum class PdfEngineKind { Libharu, Cairo, Native };
+
+struct PdfEngineConfig {
+    PdfEngineKind kind{PdfEngineKind::Libharu};
+    bool compression{true};
+};
 
 enum class RenderErrorKind {
     EngineError,
@@ -26,7 +31,9 @@ class PdfEngine {
   public:
     struct Impl;
 
-    explicit PdfEngine(PdfEngineKind kind = PdfEngineKind::Libharu);
+    explicit PdfEngine(PdfEngineConfig config = {});
+    explicit PdfEngine(PdfEngineKind kind, bool compression = true)
+        : PdfEngine(PdfEngineConfig{.kind = kind, .compression = compression}) {}
     ~PdfEngine();
 
     PdfEngine(PdfEngine&&) noexcept;

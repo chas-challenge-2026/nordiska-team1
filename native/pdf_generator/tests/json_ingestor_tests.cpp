@@ -227,8 +227,30 @@ int main() {
     require(std::string_view(reinterpret_cast<const char*>(simd_res->documents[0].pdf_bytes.data()), 5) == "%PDF-",
             "simdjson doc 0 must start with %PDF-");
     require(simd_res->documents[1].pdf_bytes.size() > 500, "simdjson doc 1 bytes non-empty");
-    require(std::string_view(reinterpret_cast<const char*>(simd_res->documents[1].pdf_bytes.data()), 5) == "%PDF-",
-            "simdjson doc 1 must start with %PDF-");
+    // 12. PdfGenerator with Native engine (Solution B) renders golden sample
+    nordiska::PdfGenerator native_gen{nordiska::GeneratorConfig{.engine = nordiska::PdfEngineKind::Native}};
+    auto native_batch_res = native_gen.generate(golden_span);
+    require(native_batch_res.has_value(), "native generator should render golden sample");
+    require(native_batch_res->customer_id == 1, "native batch customer_id mismatch");
+    require(native_batch_res->documents.size() == 2, "native batch documents count mismatch");
+    require(native_batch_res->documents[0].pdf_bytes.size() > 500, "native doc 0 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(native_batch_res->documents[0].pdf_bytes.data()), 5) ==
+                "%PDF-",
+            "native doc 0 must start with %PDF-");
+    require(native_batch_res->documents[1].pdf_bytes.size() > 500, "native doc 1 bytes non-empty");
+    require(std::string_view(reinterpret_cast<const char*>(native_batch_res->documents[1].pdf_bytes.data()), 5) ==
+                "%PDF-",
+            "native doc 1 must start with %PDF-");
+
+    // 13. PdfGenerator with Native engine uncompressed
+    nordiska::PdfGenerator native_uncomp_gen{
+        nordiska::GeneratorConfig{.engine = nordiska::PdfEngineKind::Native, .compression = false}};
+    auto native_uncomp_res = native_uncomp_gen.generate(golden_span);
+    require(native_uncomp_res.has_value(), "native uncompressed generator should render golden sample");
+    require(native_uncomp_res->customer_id == 1, "native uncompressed customer_id mismatch");
+    require(native_uncomp_res->documents.size() == 2, "native uncompressed documents count mismatch");
+    require(native_uncomp_res->documents[0].pdf_bytes.size() > native_batch_res->documents[0].pdf_bytes.size(),
+            "uncompressed native PDF should be larger than compressed PDF");
 
     std::cout << "All json ingestor tests passed successfully!\n";
     return 0;

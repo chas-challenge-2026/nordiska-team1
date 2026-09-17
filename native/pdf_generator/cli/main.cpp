@@ -28,7 +28,8 @@ struct CliOptions {
     std::filesystem::path input_path;
     std::filesystem::path output_path = ".";
     std::string renderer = "haru";
-    std::string ingestor = "nlohmann";
+    std::string ingestor = "simdjson";
+    bool compression = true;
     bool quiet = false;
     bool verbose = false;
     bool json_summary = false;
@@ -46,8 +47,10 @@ void print_usage(std::string_view program_name) {
               << "Options:\n"
               << "  -i, --input <path>         Path to input JSON file (or '-' for stdin)\n"
               << "  -o, --output <path>        Output directory or target file (default: current directory)\n"
-              << "  -r, --renderer <engine>    Rendering engine: 'haru' (default) or 'cairo'\n"
-              << "  -e, --ingestor <engine>    JSON ingestor: 'nlohmann' (default) or 'simdjson'\n"
+              << "  -r, --renderer <engine>    Rendering engine: 'haru' (default), 'cairo', or 'native'\n"
+              << "  -e, --ingestor <engine>    JSON ingestor: 'simdjson' (default) or 'nlohmann'\n"
+              << "      --no-compression       Disable Flate compression in generated PDF streams (faster, larger)\n"
+              << "      --compression <bool>   Enable or disable PDF stream compression (default: true)\n"
               << "  -q, --quiet                Quiet mode (suppress progress messages, only report errors)\n"
               << "  -v, --verbose              Verbose mode (print detailed breakdown and elapsed timing)\n"
               << "      --json-summary         Output machine-readable JSON execution summary to stdout\n"
@@ -122,6 +125,26 @@ CliOptions parse_cli(int argc, char* argv[]) {
                 std::exit(ExitCode::CliUsage);
             }
             options.ingestor = argv[index];
+            continue;
+        }
+        if (argument == "--no-compression") {
+            options.compression = false;
+            continue;
+        }
+        if (argument == "--compression") {
+            if (++index >= argc) {
+                std::cerr << "Error: " << argument << " requires a boolean value (true/false)\n";
+                std::exit(ExitCode::CliUsage);
+            }
+            const std::string_view val = argv[index];
+            if (val == "false" || val == "0" || val == "no") {
+                options.compression = false;
+            } else if (val == "true" || val == "1" || val == "yes") {
+                options.compression = true;
+            } else {
+                std::cerr << "Error: invalid value '" << val << "' for --compression (expected true or false)\n";
+                std::exit(ExitCode::CliUsage);
+            }
             continue;
         }
         if (argument.starts_with("-") && argument != "-") {
@@ -222,9 +245,11 @@ int main(int argc, char* argv[]) {
             config.engine = nordiska::PdfEngineKind::Libharu;
         } else if (options.renderer == "cairo") {
             config.engine = nordiska::PdfEngineKind::Cairo;
+        } else if (options.renderer == "native" || options.renderer == "fast") {
+            config.engine = nordiska::PdfEngineKind::Native;
         } else {
             std::cerr << "Error: unsupported renderer engine '" << options.renderer
-                      << "'. Supported: 'haru', 'cairo'\n";
+                      << "'. Supported: 'haru', 'cairo', 'native'\n";
             return ExitCode::CliUsage;
         }
 
@@ -237,6 +262,8 @@ int main(int argc, char* argv[]) {
                       << "'. Supported: 'nlohmann', 'simdjson'\n";
             return ExitCode::CliUsage;
         }
+
+        config.compression = options.compression;
 
         // 3. Execute batch generation
         const nordiska::PdfGenerator generator(config);

@@ -14,7 +14,7 @@
 namespace nordiska {
 
 PdfGenerator::PdfGenerator(GeneratorConfig config)
-    : ingestor_(config.ingestor), engine_(config.engine), enable_signing_(config.enable_signing) {}
+    : ingestor_(config.ingestor), engine_(config.engine, config.compression), enable_signing_(config.enable_signing) {}
 
 PdfGenerator::~PdfGenerator() = default;
 

@@ -15,6 +15,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 find_package(unofficial-libharu CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(simdjson CONFIG REQUIRED)
+find_package(ZLIB REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 
@@ -44,6 +45,7 @@ target_link_libraries(nordiska_document_core PUBLIC
     nordiska_document_input_json
     unofficial::libharu::hpdf
     PkgConfig::CAIRO
+    ZLIB::ZLIB
 )
 
 # C ABI Shared Library for P/Invoke (.NET / Host Interop)

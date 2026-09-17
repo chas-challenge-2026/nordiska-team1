@@ -56,8 +56,10 @@ By default, the benchmark **automatically detects and loads the pre-generated 10
 | `--workers` | Integer | `1` | Number of parallel worker threads |
 | `--target-customers` | Integer | `0` | Total customer batches to process across workers (`0` = process loaded pool once) |
 | `--api` | `cabi`, `direct` | `cabi` | Invocation mode: C ABI (`nordiska_pdf_v1_generate_customer_batch`) or C++ direct |
-| `--renderer` | `haru`, `cairo` | `haru` | PDF rendering engine |
-| `--ingestor` | `nlohmann`, `simdjson` | `nlohmann` | JSON ingestion engine |
+| `--renderer` | `haru`, `cairo`, `native` | `haru` | PDF rendering engine |
+| `--ingestor` | `simdjson`, `nlohmann` | `simdjson` | JSON ingestion engine |
+| `--no-compression` | Flag | Disabled | Disable Flate stream compression in PDF rendering |
+| `--compression` | `true`, `false` | `true` | Configure PDF stream compression |
 | `--instrumented` | Flag | Disabled | Enables fine-grained pipeline phase breakdown (Ingest, Layout, Render) |
 | `--iterations` | Integer | `1` | Number of benchmark measurement iterations |
 | `--warmups` | Integer | `1` | Number of warmup batches executed prior to timing |
@@ -111,14 +113,17 @@ Benchmark mode: API=cabi, workers=8, target_customers=10000, renderer=haru, inge
   Peak document size:    15.04 KB
 ```
 
-### 3. Comparing Cairo vs. Libharu Engines
+### 3. Comparing PDF Engines (Native, Libharu, Cairo)
 
 ```bash
+# Dedicated Native engine (fastest, ~44,000 docs/sec)
+./build/pdf_generator_benchmark --renderer native --no-compression --workers 16 --target-customers 50000
+
 # Libharu engine
-./build/pdf_generator_benchmark tools/synthetic-input-generator/generated/pool_100 --renderer haru --workers 4
+./build/pdf_generator_benchmark --renderer haru --workers 16 --target-customers 50000
 
 # Cairo engine
-./build/pdf_generator_benchmark tools/synthetic-input-generator/generated/pool_100 --renderer cairo --workers 4
+./build/pdf_generator_benchmark --renderer cairo --workers 16 --target-customers 50000
 ```
 
 ### 4. Phase Breakdown & Profiling (`--instrumented`)

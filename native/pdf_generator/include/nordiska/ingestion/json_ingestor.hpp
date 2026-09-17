@@ -34,7 +34,7 @@ class JsonIngestor {
   public:
     struct Impl;
 
-    explicit JsonIngestor(JsonIngestorKind kind = JsonIngestorKind::Nlohmann);
+    explicit JsonIngestor(JsonIngestorKind kind = JsonIngestorKind::Simdjson);
     ~JsonIngestor();
 
     JsonIngestor(JsonIngestor&&) noexcept;

@@ -60,7 +60,8 @@ struct Options {
     std::filesystem::path input_path;
     std::string api = "cabi"; // "cabi" or "direct"
     std::string renderer = "haru";
-    std::string ingestor = "nlohmann";
+    std::string ingestor = "simdjson";
+    bool compression = true;
     std::size_t target_customers = 0; // if > 0, cycles through payloads until target_customers reached
     std::size_t iterations = 1;
     std::size_t warmups = 1;
@@ -77,8 +78,10 @@ void print_usage(std::string_view prog_name) {
         << "  --target-customers <N>      Target customer count to process across workers (default: 0 = exact pool "
            "size)\n"
         << "  --workers <N>               Worker threads count (default: 1)\n"
-        << "  --renderer <haru|cairo>     Rendering engine (default: haru)\n"
-        << "  --ingestor <nlohmann|simd>  JSON ingestor (default: nlohmann)\n"
+        << "  --renderer <haru|cairo|native> Rendering engine (default: haru)\n"
+        << "  --ingestor <simd|nlohmann>  JSON ingestor (default: simdjson)\n"
+        << "  --no-compression            Disable Flate stream compression in PDF rendering\n"
+        << "  --compression <true|false>  Configure PDF stream compression (default: true)\n"
         << "  --instrumented              Enable fine-grained phase profiling (Ingest, Layout, Render)\n"
         << "  --iterations <N>            Measurement iterations (default: 1)\n"
         << "  --warmups <N>               Warmup iterations (default: 1)\n"
@@ -124,6 +127,17 @@ Options parse_options(int argc, char* argv[]) {
             options.renderer = next_value("--renderer");
         } else if (arg == "--ingestor") {
             options.ingestor = next_value("--ingestor");
+        } else if (arg == "--no-compression") {
+            options.compression = false;
+        } else if (arg == "--compression") {
+            const std::string val = next_value("--compression");
+            if (val == "false" || val == "0" || val == "no") {
+                options.compression = false;
+            } else if (val == "true" || val == "1" || val == "yes") {
+                options.compression = true;
+            } else {
+                throw std::invalid_argument("invalid value for --compression: " + val);
+            }
         } else if (arg == "--instrumented") {
             options.instrumented = true;
         } else if (arg == "--iterations") {
@@ -267,20 +281,30 @@ int main(int argc, char* argv[]) {
         const std::size_t customers_to_run =
             (options.target_customers > 0) ? options.target_customers : payloads.size();
 
-        const bool use_direct = (options.api != "cabi") || options.instrumented;
-        const std::string api_mode_str = options.instrumented ? "direct C++ (phase timing)" : options.api;
+        const bool use_direct =
+            (options.api != "cabi") || options.instrumented || !options.compression || (options.renderer != "haru");
+        std::string api_mode_str = options.instrumented ? "direct C++ (phase timing)" : options.api;
+        if (!options.compression && options.api == "cabi" && !options.instrumented) {
+            api_mode_str = "direct C++ (uncompressed override)";
+        } else if (options.renderer != "haru" && options.api == "cabi" && !options.instrumented) {
+            api_mode_str = "direct C++ (renderer override)";
+        }
 
         std::cout << "Loaded " << payloads.size() << " customer payload(s) (" << std::fixed << std::setprecision(2)
                   << (static_cast<double>(total_input_payload_bytes) / (1024.0 * 1024.0)) << " MB) into RAM.\n"
                   << "Benchmark mode: API=" << api_mode_str << ", workers=" << options.workers
                   << ", target_customers=" << customers_to_run << ", renderer=" << options.renderer
-                  << ", ingestor=" << options.ingestor << (options.instrumented ? ", instrumented=true" : "") << "\n\n";
+                  << ", ingestor=" << options.ingestor << ", compression=" << (options.compression ? "true" : "false")
+                  << (options.instrumented ? ", instrumented=true" : "") << "\n\n";
 
         nordiska::GeneratorConfig direct_config;
+        direct_config.compression = options.compression;
         if (options.renderer == "haru") {
             direct_config.engine = nordiska::PdfEngineKind::Libharu;
         } else if (options.renderer == "cairo") {
             direct_config.engine = nordiska::PdfEngineKind::Cairo;
+        } else if (options.renderer == "native" || options.renderer == "fast") {
+            direct_config.engine = nordiska::PdfEngineKind::Native;
         } else {
             std::cerr << "Unsupported renderer: " << options.renderer << "\n";
             return EXIT_FAILURE;

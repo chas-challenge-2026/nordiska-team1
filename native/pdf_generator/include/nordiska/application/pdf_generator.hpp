@@ -12,9 +12,10 @@
 namespace nordiska {
 
 struct GeneratorConfig {
-    JsonIngestorKind ingestor{JsonIngestorKind::Nlohmann};
+    JsonIngestorKind ingestor{JsonIngestorKind::Simdjson};
     PdfEngineKind engine{PdfEngineKind::Libharu};
     bool enable_signing{false};
+    bool compression{true};
 };
 
 struct PipelineTiming {
