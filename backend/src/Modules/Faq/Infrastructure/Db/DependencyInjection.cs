@@ -15,6 +15,8 @@ public static class DependencyInjection
          services.AddModulePostgresDbContext<FaqDbContext>(
             configuration,
             FaqDatabase.Details);
+        services.AddMemoryCache();
+        services.AddSingleton<FaqCacheInvalidator>();
         services.AddScoped<IFaqRepository, FaqRepository>();
         services.AddScoped<FaqService>();
         return services;
