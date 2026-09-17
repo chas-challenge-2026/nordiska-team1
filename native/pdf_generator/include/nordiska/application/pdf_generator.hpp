@@ -21,6 +21,7 @@ struct GeneratorConfig {
     std::shared_ptr<PdfSigner> custom_signer{nullptr};
 };
 
+// For "--instrumented" arg  in CLI/benchmark
 struct PipelineTiming {
     double ingest_seconds{0.0};
     double layout_seconds{0.0};
@@ -40,6 +41,7 @@ enum class GeneratorErrorKind {
     InternalError,
 };
 
+// Wrap in struct so std::expected can return both
 struct GeneratorError {
     GeneratorErrorKind kind{GeneratorErrorKind::InternalError};
     std::string message;
