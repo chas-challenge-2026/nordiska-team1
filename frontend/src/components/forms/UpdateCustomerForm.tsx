@@ -30,7 +30,7 @@ export function UpdateCustomerForm({ type, onClose, onError, onSuccess }: Collap
     let compareConfirmation = false;
 
     if (type === "email") {inputType= "email"; confirmation = true; compareConfirmation = true;}
-    if (type === "phone") {inputType= "tel"; checkPhoneFormat = true; confirmation = true; compareConfirmation = true;}
+    if (type === "phone") {inputType= "tel"; checkPhoneFormat = true;}
 
     const handleSubmit = async (e:SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
