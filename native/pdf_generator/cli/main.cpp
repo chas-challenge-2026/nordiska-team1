@@ -22,6 +22,7 @@ constexpr int CliUsage = 1;
 constexpr int IoError = 2;
 constexpr int IngestError = 3;
 constexpr int RenderError = 4;
+constexpr int SigningError = 5;
 } // namespace ExitCode
 
 struct CliOptions {
@@ -30,6 +31,7 @@ struct CliOptions {
     std::string renderer = "haru";
     std::string ingestor = "simdjson";
     bool compression = true;
+    bool enable_signing = false;
     bool quiet = false;
     bool verbose = false;
     bool json_summary = false;
@@ -51,6 +53,7 @@ void print_usage(std::string_view program_name) {
               << "  -e, --ingestor <engine>    JSON ingestor: 'simdjson' (default) or 'nlohmann'\n"
               << "      --no-compression       Disable Flate compression in generated PDF streams (faster, larger)\n"
               << "      --compression <bool>   Enable or disable PDF stream compression (default: true)\n"
+              << "      --signing              Enable PDF signing seam on generated documents (default: false)\n"
               << "  -q, --quiet                Quiet mode (suppress progress messages, only report errors)\n"
               << "  -v, --verbose              Verbose mode (print detailed breakdown and elapsed timing)\n"
               << "      --json-summary         Output machine-readable JSON execution summary to stdout\n"
@@ -61,7 +64,8 @@ void print_usage(std::string_view program_name) {
               << "  1  Invalid command line options or syntax\n"
               << "  2  I/O error (file read or write failure)\n"
               << "  3  JSON ingestion or validation error\n"
-              << "  4  Document rendering or internal error\n";
+              << "  4  Document rendering or internal error\n"
+              << "  5  Document signing error\n";
 }
 
 void print_version_info() {
@@ -145,6 +149,14 @@ CliOptions parse_cli(int argc, char* argv[]) {
                 std::cerr << "Error: invalid value '" << val << "' for --compression (expected true or false)\n";
                 std::exit(ExitCode::CliUsage);
             }
+            continue;
+        }
+        if (argument == "--signing") {
+            options.enable_signing = true;
+            continue;
+        }
+        if (argument == "--no-signing") {
+            options.enable_signing = false;
             continue;
         }
         if (argument.starts_with("-") && argument != "-") {
@@ -264,6 +276,7 @@ int main(int argc, char* argv[]) {
         }
 
         config.compression = options.compression;
+        config.enable_signing = options.enable_signing;
 
         // 3. Execute batch generation
         const nordiska::PdfGenerator generator(config);
@@ -286,6 +299,8 @@ int main(int argc, char* argv[]) {
                 return ExitCode::IngestError;
             case nordiska::GeneratorErrorKind::InvalidArgument:
                 return ExitCode::CliUsage;
+            case nordiska::GeneratorErrorKind::SigningError:
+                return ExitCode::SigningError;
             case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
             case nordiska::GeneratorErrorKind::InternalError:
             default:

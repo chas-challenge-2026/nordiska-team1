@@ -1,9 +1,12 @@
+#include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/delivery/c_api/pdf_generator_c_api.h"
+#include "nordiska/signing/pdf_signer.hpp"
 
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -65,6 +68,8 @@ int main() {
             "status name RESOURCE_LIMIT_EXCEEDED mismatch");
     require(std::strcmp(nordiska_pdf_v1_status_name(NORDISKA_PDF_OUT_OF_MEMORY), "NORDISKA_PDF_OUT_OF_MEMORY") == 0,
             "status name OUT_OF_MEMORY mismatch");
+    require(std::strcmp(nordiska_pdf_v1_status_name(NORDISKA_PDF_SIGNING_FAILED), "NORDISKA_PDF_SIGNING_FAILED") == 0,
+            "status name SIGNING_FAILED mismatch");
     require(std::strcmp(nordiska_pdf_v1_status_name(999), "status code does not exist") == 0,
             "status name unknown mismatch");
 
@@ -272,4 +277,77 @@ int main() {
     // Main thread's last error must still be untouched
     require(nordiska_pdf_v1_get_last_error() == main_err,
             "main thread last error must not be clobbered by worker thread");
+
+    // 10. Step 7: Signing Seam happy path with timing
+    {
+        const nordiska::GeneratorConfig sign_cfg{
+            .ingestor = nordiska::JsonIngestorKind::Simdjson,
+            .engine = nordiska::PdfEngineKind::Native,
+            .enable_signing = true,
+            .compression = true,
+        };
+        nordiska::PdfGenerator sign_gen(sign_cfg);
+        nordiska::PipelineTiming timing;
+        const std::span<const uint8_t> valid_span{reinterpret_cast<const uint8_t*>(valid_batch_json.data()),
+                                                  valid_batch_json.size()};
+        auto res = sign_gen.generate(valid_span, &timing);
+        require(res.has_value(), "signing-enabled generation must succeed with stub signer");
+        require(res->documents.size() == 2, "batch must contain 2 signed documents");
+        require(timing.sign_seconds >= 0.0, "sign timing must be recorded");
+        require(timing.total_seconds() >= timing.sign_seconds, "total timing must include sign timing");
+    }
+
+    // 11. Step 7: All-or-Nothing Signing Failure Guarantee
+    {
+        auto mock_signer = std::make_shared<nordiska::StubPdfSigner>(true, "account1_tax");
+        const nordiska::GeneratorConfig fail_cfg{
+            .ingestor = nordiska::JsonIngestorKind::Simdjson,
+            .engine = nordiska::PdfEngineKind::Native,
+            .enable_signing = true,
+            .compression = true,
+            .custom_signer = mock_signer,
+        };
+        nordiska::PdfGenerator fail_gen(fail_cfg);
+        const std::span<const uint8_t> valid_span{reinterpret_cast<const uint8_t*>(valid_batch_json.data()),
+                                                  valid_batch_json.size()};
+        auto fail_res = fail_gen.generate(valid_span);
+        require(!fail_res.has_value(), "signing failure on doc 2 must fail the entire batch");
+        require(fail_res.error().kind == nordiska::GeneratorErrorKind::SigningError, "error kind must be SigningError");
+        require(fail_res.error().message.find("Failed to sign document 'account1_tax'") != std::string::npos,
+                "error message must identify failed document");
+    }
+
+    // 12. Step 7: SigningContext customer & document ID propagation
+    {
+        struct ContextCheckingSigner : public nordiska::PdfSigner {
+            std::vector<std::string> seen_docs;
+            std::vector<uint64_t> seen_customers;
+
+            std::expected<std::vector<uint8_t>, nordiska::SigningError>
+            sign(std::span<const uint8_t> unsigned_pdf, const nordiska::SigningContext& context) override {
+                seen_docs.emplace_back(context.document_id);
+                seen_customers.push_back(context.customer_id);
+                return std::vector<uint8_t>(unsigned_pdf.begin(), unsigned_pdf.end());
+            }
+        };
+
+        auto ctx_signer = std::make_shared<ContextCheckingSigner>();
+        const nordiska::GeneratorConfig ctx_cfg{
+            .ingestor = nordiska::JsonIngestorKind::Simdjson,
+            .engine = nordiska::PdfEngineKind::Native,
+            .enable_signing = true,
+            .compression = true,
+            .custom_signer = ctx_signer,
+        };
+        nordiska::PdfGenerator ctx_gen(ctx_cfg);
+        const std::span<const uint8_t> valid_span{reinterpret_cast<const uint8_t*>(valid_batch_json.data()),
+                                                  valid_batch_json.size()};
+        auto ctx_res = ctx_gen.generate(valid_span);
+        require(ctx_res.has_value(), "context checking generation must succeed");
+        require(ctx_signer->seen_docs.size() == 2, "must see 2 documents");
+        require(ctx_signer->seen_docs[0] == "account1_statement", "doc 0 must be account1_statement");
+        require(ctx_signer->seen_docs[1] == "account1_tax", "doc 1 must be account1_tax");
+        require(ctx_signer->seen_customers[0] == 1 && ctx_signer->seen_customers[1] == 1,
+                "customer_id must be 1 for all documents");
+    }
 }

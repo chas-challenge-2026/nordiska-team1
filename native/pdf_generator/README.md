@@ -33,13 +33,15 @@ native/pdf_generator/
 │   ├── domain/                   # CustomerBatch, Document, PdfRenderingJob
 │   ├── ingestion/                # JSON ingestor interface & factory
 │   ├── layout/                   # Deterministic layout structures (DocumentLayout)
-│   └── rendering/                # PDF rendering engine abstraction (PdfEngine)
+│   ├── rendering/                # PDF rendering engine abstraction (PdfEngine)
+│   └── signing/                  # PDF signing abstraction & stub seam (PdfSigner)
 ├── src/                          # Subsystem implementations
-│   ├── application/              # PdfGenerator 3-stage pipeline driver
+│   ├── application/              # PdfGenerator pipeline driver
 │   ├── c_api/                    # C ABI implementation & boundary validation
 │   ├── ingestion/                # simdjson (default) & nlohmann JSON parsers
 │   ├── layout/                   # LayoutBuilder (typography, tables, flow)
-│   └── rendering/                # Native (default), Haru (bump arena), Cairo
+│   ├── rendering/                # Native (default), Haru (bump arena), Cairo
+│   └── signing/                  # PdfSigner stub & all-or-nothing enforcement
 ├── cli/                          # Standalone CLI binary (pdf_generator)
 ├── src/benchmark/                # Multi-threaded performance harness
 ├── tests/                        # CTest automated test suites
@@ -47,7 +49,7 @@ native/pdf_generator/
 └── docs/                         # Golden customer batch specification
 ```
 
-### The 3-Stage Pipeline
+### The Generation Pipeline
 
 ```
 Raw JSON Buffer (UTF-8)
@@ -71,6 +73,11 @@ Raw JSON Buffer (UTF-8)
          ▼  [3. Rendering Stage]
    PdfEngine (Native / Libharu / Cairo)
    - Compiles binary PDF 1.4 streams
+         │
+         ▼  [4. Optional Signing Stage]
+   PdfSigner (Stub / PKCS#7)
+   - Per-document signing dispatch
+   - Strict all-or-nothing failure guarantee
          │
          ▼
 GeneratedPdfs / C ABI Delivery Callback
@@ -152,6 +159,16 @@ const char* nordiska_pdf_v1_get_last_error(void);
 const char* nordiska_pdf_v1_status_name(int status_code);
 ```
 
+#### Status Codes (`nordiska_pdf_status`):
+- `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
+- `1`: `NORDISKA_PDF_INVALID_ARGUMENT` — Null buffer, zero length, or null callback.
+- `2`: `NORDISKA_PDF_INVALID_INPUT` — JSON parse or domain validation error.
+- `3`: `NORDISKA_PDF_CALLBACK_FAILED` — Host callback rejected the completed batch.
+- `4`: `NORDISKA_PDF_INTERNAL_ERROR` — PDF rendering or layout construction failure.
+- `5`: `NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED` — Payload exceeds 32 MB limit.
+- `6`: `NORDISKA_PDF_OUT_OF_MEMORY` — Memory allocation failed.
+- `7`: `NORDISKA_PDF_SIGNING_FAILED` — Document signing failure (batch aborted, zero callbacks).
+
 #### Memory Contract:
 - **Synchronous execution**: Executes entirely on the caller's thread (zero thread hopping).
 - **Borrowed memory**: Input JSON buffer is borrowed; native code never retains pointers after return.
@@ -172,6 +189,7 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 - `-e, --ingestor <simdjson|nlohmann>`: JSON ingestor (default: `simdjson`).
 - `--no-compression`: Disable Flate stream compression for maximum rendering speed.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
+- `--signing`: Enable PDF signing seam on generated documents (default: `false`).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.

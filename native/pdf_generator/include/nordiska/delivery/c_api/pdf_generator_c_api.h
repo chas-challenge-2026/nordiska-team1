@@ -85,7 +85,8 @@ enum nordiska_pdf_status {
     NORDISKA_PDF_CALLBACK_FAILED = 3,
     NORDISKA_PDF_INTERNAL_ERROR = 4,
     NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED = 5,
-    NORDISKA_PDF_OUT_OF_MEMORY = 6
+    NORDISKA_PDF_OUT_OF_MEMORY = 6,
+    NORDISKA_PDF_SIGNING_FAILED = 7
 };
 
 /* View of an individual completed document within a customer batch */

@@ -26,7 +26,6 @@ add_library(nordiska_document_input_json STATIC
 set_target_properties(nordiska_document_input_json PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_document_input_json PUBLIC include)
 target_compile_features(nordiska_document_input_json PUBLIC cxx_std_23)
-target_link_libraries(nordiska_document_input_json PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(nordiska_document_input_json PUBLIC
     nlohmann_json::nlohmann_json
     simdjson::simdjson
@@ -37,6 +36,7 @@ add_library(nordiska_document_core STATIC
     src/application/pdf_generator.cpp
     src/rendering/pdf_engine.cpp
     src/layout/layout_builder.cpp
+    src/signing/pdf_signer.cpp
 )
 set_target_properties(nordiska_document_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_document_core PUBLIC include)
@@ -96,6 +96,6 @@ if(BUILD_TESTING)
     add_test(NAME nordiska_json_ingestor_tests COMMAND nordiska_json_ingestor_tests)
 
     add_executable(nordiska_pdf_generator_c_api_tests tests/pdf_generator_c_api_tests.cpp)
-    target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api)
+    target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core)
     add_test(NAME nordiska_pdf_generator_c_api_tests COMMAND nordiska_pdf_generator_c_api_tests)
 endif()

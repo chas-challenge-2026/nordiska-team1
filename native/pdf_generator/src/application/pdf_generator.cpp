@@ -3,18 +3,23 @@
 #include "nordiska/domain/generated_pdfs.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/layout/layout_builder.hpp"
+#include "nordiska/signing/pdf_signer.hpp"
 
 #include <chrono>
 #include <cstdint>
 #include <expected>
+#include <memory>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace nordiska {
 
 PdfGenerator::PdfGenerator(GeneratorConfig config)
-    : ingestor_(config.ingestor), engine_(config.engine, config.compression), enable_signing_(config.enable_signing) {}
+    : ingestor_(config.ingestor), engine_(config.engine, config.compression),
+      signer_(config.custom_signer ? config.custom_signer : std::make_shared<StubPdfSigner>()),
+      enable_signing_(config.enable_signing) {}
 
 PdfGenerator::~PdfGenerator() = default;
 
@@ -68,9 +73,34 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
             });
         }
 
+        std::vector<uint8_t> final_bytes = std::move(*render_res);
+
+        if (enable_signing_ && signer_ != nullptr) {
+            const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
+            const SigningContext signing_context{
+                .document_id = doc.document_id,
+                .customer_id = job.customer_id,
+            };
+            auto sign_res = signer_->sign(final_bytes, signing_context);
+            if (timing != nullptr) {
+                const auto t_sign_end = Clock::now();
+                timing->sign_seconds += std::chrono::duration<double>(t_sign_end - t_sign_start).count();
+            }
+
+            if (!sign_res) {
+                // All-or-nothing guarantee: stop on first signing failure, discard accumulated results, invoke zero
+                // callbacks
+                return std::unexpected(GeneratorError{
+                    .kind = GeneratorErrorKind::SigningError,
+                    .message = "Failed to sign document '" + doc.document_id + "': " + sign_res.error().message,
+                });
+            }
+            final_bytes = std::move(*sign_res);
+        }
+
         generated.documents.push_back(PdfDocument{
             .document_id = doc.document_id,
-            .pdf_bytes = std::move(*render_res),
+            .pdf_bytes = std::move(final_bytes),
         });
     }
 

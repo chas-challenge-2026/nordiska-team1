@@ -93,6 +93,8 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
                 return NORDISKA_PDF_INVALID_INPUT;
             case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
                 return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
+            case nordiska::GeneratorErrorKind::SigningError:
+                return NORDISKA_PDF_SIGNING_FAILED;
             case nordiska::GeneratorErrorKind::InternalError:
             default:
                 return NORDISKA_PDF_INTERNAL_ERROR;
@@ -168,6 +170,8 @@ extern "C" const char* nordiska_pdf_v1_status_name(int status) {
         return "NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED";
     case NORDISKA_PDF_OUT_OF_MEMORY:
         return "NORDISKA_PDF_OUT_OF_MEMORY";
+    case NORDISKA_PDF_SIGNING_FAILED:
+        return "NORDISKA_PDF_SIGNING_FAILED";
     default:
         return "status code does not exist";
     }
