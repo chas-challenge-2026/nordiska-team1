@@ -4,6 +4,7 @@
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/layout/layout_builder.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
+#include "nordiska/signing/signature_slot_appender.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -88,13 +89,20 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
 
         std::vector<uint8_t> final_bytes = std::move(*render_res);
 
+        // 3. Signature Slot Preparation (In-Place Incremental Append)
+        // All three backends (Haru, Cairo, Native) guaranteed spare capacity via
+        // buffer.reserve(size + kSignatureBlockSize) upon completing visual rendering.
+        // Therefore, appending the ISO 32000-compliant /Sig dictionary, ByteRange,
+        // and 8 KB placeholder incurs zero buffer reallocations or heap copies.
+        SignatureSlot slot = append_signature_slot(final_bytes);
+
         if (enable_signing_ && signer_ != nullptr) {
             const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
             const SigningContext signing_context{
                 .document_id = doc.document_id,
                 .customer_id = job.customer_id,
             };
-            // 3.Sign
+            // 4. Sign
             auto sign_res = signer_->sign(final_bytes, signing_context);
 
             if (timing != nullptr) {
@@ -111,11 +119,13 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
                 });
             }
             final_bytes = std::move(*sign_res);
+            slot.is_signed = true;
         }
 
         generated.documents.push_back(PdfDocument{
             .document_id = doc.document_id,
             .pdf_bytes = std::move(final_bytes),
+            .signature_slot = slot,
         });
     }
 

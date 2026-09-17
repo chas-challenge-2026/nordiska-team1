@@ -8,9 +8,16 @@
 
 namespace nordiska {
 
+// Standard 8 KB placeholder for CMS DER hex encoding (certificate chain + timestamp)
+inline constexpr size_t kDefaultSignatureSlotSize = 8192;
+
+// Total capacity needed when appending the signature incremental update block
+// (includes widget annotation, /Sig dictionary, ByteRange, 8192-char placeholder, xref, trailer)
+inline constexpr size_t kSignatureBlockSize = 10240;
+
 struct SignatureSlot {
     size_t offset{0};
-    size_t max_length{0};
+    size_t max_length{kDefaultSignatureSlotSize};
     bool is_signed{false};
 };
 
@@ -27,4 +34,3 @@ struct GeneratedPdfs {
 };
 
 } // namespace nordiska
-

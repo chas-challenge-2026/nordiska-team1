@@ -1,5 +1,7 @@
 #include "nordiska/rendering/native_pdf_engine.hpp"
 
+#include "nordiska/domain/generated_pdfs.hpp"
+
 #include <charconv>
 #include <cstdint>
 #include <format>
@@ -252,6 +254,10 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                                   "{}\n"
                                   "%%EOF\n",
                                   total_objects + 1, xref_offset));
+
+        // Ensure spare capacity for downstream digital signature block append so that
+        // adding the /Sig dictionary and 8 KB placeholder incurs zero buffer reallocations.
+        pdf.reserve(pdf.size() + kSignatureBlockSize);
 
         return pdf;
     }

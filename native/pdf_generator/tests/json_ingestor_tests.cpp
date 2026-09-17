@@ -252,6 +252,26 @@ int main() {
     require(native_uncomp_res->documents[0].pdf_bytes.size() > native_batch_res->documents[0].pdf_bytes.size(),
             "uncompressed native PDF should be larger than compressed PDF");
 
+    // 14. Verify in-place digital signature slot append across backends
+    for (const auto* batch_res : {&default_batch_res, &cairo_batch_res, &native_batch_res}) {
+        require((*batch_res)->documents.size() == 2, "batch must have 2 documents");
+        for (const auto& doc : (*batch_res)->documents) {
+            const auto& slot = doc.signature_slot;
+            require(slot.offset > 0, "signature slot offset must be non-zero");
+            require(slot.max_length == 8192, "signature slot max_length must be 8192 bytes");
+            require(!slot.is_signed, "initial signature slot must not be marked signed");
+            require(slot.offset + slot.max_length < doc.pdf_bytes.size(), "slot must fit within pdf bytes");
+            require(doc.pdf_bytes[slot.offset - 1] == '<', "preceding byte must be opening '<'");
+            require(doc.pdf_bytes[slot.offset + slot.max_length] == '>', "succeeding byte must be closing '>'");
+            for (size_t i = 0; i < slot.max_length; ++i) {
+                require(doc.pdf_bytes[slot.offset + i] == '0', "slot content must be initialized to '0'");
+            }
+            std::string_view pdf_sv(reinterpret_cast<const char*>(doc.pdf_bytes.data()), doc.pdf_bytes.size());
+            require(pdf_sv.find("/Type /Sig") != std::string_view::npos, "PDF must contain /Type /Sig dictionary");
+            require(pdf_sv.find("/ByteRange [ ") != std::string_view::npos, "PDF must contain /ByteRange");
+        }
+    }
+
     std::cout << "All json ingestor tests passed successfully!\n";
     return 0;
 }

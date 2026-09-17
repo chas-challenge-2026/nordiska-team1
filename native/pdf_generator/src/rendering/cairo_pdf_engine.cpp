@@ -1,5 +1,7 @@
 #include "nordiska/rendering/cairo_pdf_engine.hpp"
 
+#include "nordiska/domain/generated_pdfs.hpp"
+
 #include <cairo-pdf.h>
 #include <cairo.h>
 #include <cstdint>
@@ -147,6 +149,10 @@ class CairoEngineImpl final : public PdfEngine::Impl {
                 .message = std::string("cairo: rendering failed: ") + cairo_status_to_string(status),
             });
         }
+
+        // Ensure spare capacity for downstream digital signature block append so that
+        // adding the /Sig dictionary and 8 KB placeholder incurs zero buffer reallocations.
+        buffer.reserve(buffer.size() + kSignatureBlockSize);
 
         return buffer;
     }

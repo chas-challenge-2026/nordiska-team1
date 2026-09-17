@@ -1,5 +1,7 @@
 #include "nordiska/rendering/haru_pdf_engine.hpp"
 
+#include "nordiska/domain/generated_pdfs.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <hpdf.h>
@@ -177,7 +179,13 @@ class HaruEngineImpl final : public PdfEngine::Impl {
         }
 
         const HPDF_UINT32 stream_size = HPDF_GetStreamSize(pdf.get());
-        std::vector<uint8_t> buffer(stream_size);
+        // Pre-allocate buffer capacity to include kSignatureBlockSize upfront in a single malloc.
+        // The visual PDF takes stream_size bytes, and the spare capacity guarantees that when the
+        // downstream pipeline appends the digital signature slot (/Sig dictionary, ByteRange,
+        // and 8 KB placeholder), zero buffer reallocations or heap copies occur.
+        std::vector<uint8_t> buffer;
+        buffer.reserve(stream_size + kSignatureBlockSize);
+        buffer.resize(stream_size);
         HPDF_UINT32 read_bytes = stream_size;
         HPDF_ReadFromStream(pdf.get(), reinterpret_cast<HPDF_BYTE*>(buffer.data()), &read_bytes);
 

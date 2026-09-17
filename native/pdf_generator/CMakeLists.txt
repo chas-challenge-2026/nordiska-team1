@@ -40,6 +40,7 @@ add_library(nordiska_document_core STATIC
     src/rendering/native_pdf_engine.cpp
     src/layout/layout_builder.cpp
     src/signing/pdf_signer.cpp
+    src/signing/signature_slot_appender.cpp
 )
 set_target_properties(nordiska_document_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nordiska_document_core PUBLIC include)
