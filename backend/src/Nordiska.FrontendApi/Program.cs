@@ -135,6 +135,11 @@ builder.Services
         
         // Email must be unique
         options.User.RequireUniqueEmail = true;
+
+        // Lock password login after too many failed attempts (NOR-70)
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue<int?>("Lockout:MaxFailedAccessAttempts") ?? 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int?>("Lockout:LockoutMinutes") ?? 15);
     })
     .AddRoles<IdentityRole<long>>()
     .AddEntityFrameworkStores<BankingDbContext>();
@@ -194,6 +199,8 @@ builder.Services.AddCors(options =>
 });
 // Custom-made! ProblemDetails and ExceptionHandler DI registered via extension (moved into ServiceCollectionExtensions.cs)
 builder.Services.AddErrorHandling();
+// Rate limiting for login and money-moving endpoints (NOR-70), limits are read from "RateLimiting" in appsettings
+builder.Services.AddRateLimitingPolicies(builder.Configuration);
 
 var app = builder.Build();
 
@@ -232,6 +239,8 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+// Must run after authentication so the transactions policy can partition on the customer id
+app.UseRateLimiter();
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())
