@@ -124,7 +124,7 @@ public class DbInitializer
                 CustomerId = anna.Id,
                 AccountNumber = "XYZ-234",
                 AccountType = "Savings",
-                Balance = 3450.90m,
+                Balance = 68099.66m,
                 InterestRate = 0.0350m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             };
@@ -135,6 +135,7 @@ public class DbInitializer
             var annaTransactions = new List<LedgerEntry>
             {
                 // Account ABC-123 transactions (Sparkonto — 1234)
+                new() { AccountId = acc1.Id, Type = "deposit", Amount = 90772.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -412.00m, CreatedAt = new DateTime(2026, 8, 26, 3, 12, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -412.00m, CreatedAt = new DateTime(2026, 8, 26, 3, 12, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -540.00m, CreatedAt = new DateTime(2026, 8, 18, 20, 15, 0, DateTimeKind.Utc) },
@@ -185,12 +186,14 @@ public class DbInitializer
             var erikTransactions = new List<LedgerEntry>
             {
                 // Account DEF-345 transactions (Sparkonto — 5678)
+                new() { AccountId = acc3.Id, Type = "deposit", Amount = 13329.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -119.00m, CreatedAt = new DateTime(2026, 8, 22, 9, 14, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -890.00m, CreatedAt = new DateTime(2026, 8, 21, 18, 40, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -215.00m, CreatedAt = new DateTime(2026, 8, 16, 11, 11, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -65.00m, CreatedAt = new DateTime(2026, 8, 11, 8, 55, 0, DateTimeKind.Utc) },
 
                 // Account GHI-456 transactions (Buffertkonto — 3456)
+                new() { AccountId = acc4.Id, Type = "deposit", Amount = 147000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc4.Id, Type = "deposit", Amount = 5000.00m, CreatedAt = new DateTime(2026, 8, 20, 10, 0, 0, DateTimeKind.Utc) },
                 new() { AccountId = acc4.Id, Type = "withdrawal", Amount = -2000.00m, CreatedAt = new DateTime(2026, 8, 15, 9, 45, 0, DateTimeKind.Utc) }
             };
