@@ -1,17 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import Collapsible from "../components/Collapsible";
-import { EmailForm, PhoneForm } from "../components/Forms";
+import { UpdateCustomerForm } from "../components/forms/UpdateCustomerForm";
 import { useTranslation } from "react-i18next";
+import { useUserStore } from "../store/userStore";
 
 export default function SettingsPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const user = useUserStore((state) => state.user);
 
     const [openField, setOpenField] = useState<"email" | "phone" | null>(null);
 
-    const savedEmail = "";
-    const savedPhone = "0701234567";
+    const savedEmail = user ? user.email : "";
+    const savedPhone = user ? user.phone : "";
+    const [message, setMessage] = useState("");
+    const [messageType, setMessageType] = useState<"error" | "success" | "">("");
+
+    const handleError = (message: string) => {
+        setMessage(message);
+        setMessageType("error");
+    };
+
+    const handleSuccess = (message: string) => {
+        setMessage(message);
+        setMessageType("success");
+    };
+
+    useEffect(() => {
+        if (!message) return;
+
+
+        const timer = setTimeout(() => {
+            setMessage("");
+            setMessageType("");
+        }, 3700);
+
+        return () => clearTimeout(timer);
+    }, [message]);
 
     return (
         <main className="relative min-h-[calc(100vh-75px)] bg-dark-navy px-4 py-6 text-dark-navy sm:px-6 lg:px-10">
@@ -29,8 +55,8 @@ export default function SettingsPage() {
 
                 <button
                     type="button"
-                    onClick={() => navigate(-1)}
-                    className="absolute right-4 top-4 z-10 hidden min-h-11 items-center gap-2 rounded-sm px-2 font-montserrat text-sm font-semibold uppercase text-primary-blue transition-colors hover:text-nordiska-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy md:flex"
+                    onClick={ () => navigate("/")}
+                    className="absolute right-4 top-4 z-10 hidden min-h-11 items-center gap-2 rounded-sm px-2 font-montserrat text-sm font-semibold uppercase text-primary-blue cursor-pointer transition-colors hover:text-nordiska-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy md:flex"
                 >
                     <span>{t("settings-route.close")}</span>
 
@@ -68,7 +94,7 @@ export default function SettingsPage() {
                                 setOpenField(open ? "email" : null)
                             }
                         >
-                            {(close) => <EmailForm onClose={close} />}
+                            {(close) => <UpdateCustomerForm type="email" onClose={close} onError={handleError} onSuccess={handleSuccess}/>}
                         </Collapsible>
 
                         <Collapsible
@@ -84,8 +110,17 @@ export default function SettingsPage() {
                                 setOpenField(open ? "phone" : null)
                             }
                         >
-                            {(close) => <PhoneForm onClose={close} />}
+                            {(close) => <UpdateCustomerForm type="phone" onClose={close} onError={handleError} onSuccess={handleSuccess}/>}
                         </Collapsible>
+
+                        {message && (
+                            <div
+                                role="alert"
+                                className={`mt-2 md:mt-15 z-50 animate-[toast-in_0.3s_ease-out] rounded-lg md:rounded-xl md:px-4 py-1 md:py-2 font-normal text-center text-xs md:text-base text-white shadow-lg ${messageType === "success" ? "bg-success" : "bg-error" }`}
+                            >
+                                {message}
+                            </div>
+                         )}
                     </div>
                 </section>
 

@@ -1,5 +1,3 @@
-import capitalize from "../utils/capitalize"
-
 type InputFieldProps = {
     name: string;
     type: React.HTMLInputTypeAttribute;
@@ -31,11 +29,11 @@ export default function InputField({
     return (
         <div>
             <div className="flex items-center justify-between">
-                <label htmlFor={name} className="text-sm font-bold text-dark-navy">
-                    {capitalize(label)} {required && <span className="text-red-600 font-light"> *</span>}
+                <label htmlFor={name} className="text-sm font-bold text-dark-navy first-letter:uppercase">
+                    {label} {required && <span className="text-red-600 font-light"> *</span>}
                 </label>
                 {error && (
-                    <span id={`${name}-error`} className="text-sm text-[#C4291C]">{capitalize(error)}</span>
+                    <span id={`${name}-error`} className="text-sm text-error">{error}</span>
                 )}
             </div>
 
@@ -44,7 +42,7 @@ export default function InputField({
                     id = {name}
                     name = {name}
                     type = {type}
-                    placeholder = {capitalize(placeholder)}
+                    placeholder = {placeholder}
                     value = {value}
                     required = {required}
                     onChange={(e) => onChange(e.target.value)}

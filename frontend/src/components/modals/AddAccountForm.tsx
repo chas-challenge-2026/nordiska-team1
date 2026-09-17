@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { useTranslation } from "react-i18next";
-import InputField from "../InputField";
-import { CollapsibleFormBtns } from "../Buttons";
+import InputField from "../forms/InputField";
+import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
 
 export type NewAccountValues = {
     type: string;
