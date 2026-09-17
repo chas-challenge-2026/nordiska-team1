@@ -441,6 +441,21 @@
             <response code="403">Forbidden if the user is not authorized to delete this profile.</response>
             <response code="404">Customer not found.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.InterestRatesController">
+            <summary>
+            API endpoints for reading interest rates per account type.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.InterestRatesController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves the current interest rate for every account type.
+            </summary>
+            <remarks>
+            Interest rates are public information and are cached on the server for one hour.
+            </remarks>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of interest rates per account type.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController">
             <summary>
             API endpoints for querying and executing account transactions (deposits and withdrawals) using the ledger pattern.
