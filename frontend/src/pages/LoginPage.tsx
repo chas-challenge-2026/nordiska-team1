@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import InputField from "../components/InputField";
+import InputField from "../components/forms/InputField";
 import { useEffect, useState } from "react";
 import { useLogin, useBankIdInitate, useBankIdCollect } from "../hooks/useLogin";
 import { useNavigate } from "react-router";
