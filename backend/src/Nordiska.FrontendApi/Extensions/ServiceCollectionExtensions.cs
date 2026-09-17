@@ -1,5 +1,6 @@
 ﻿namespace Nordiska.FrontendApi.Extensions;
 
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Nordiska.FrontendApi.Middleware;
@@ -14,7 +15,17 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddErrorHandling(this IServiceCollection services)
     {
-        services.AddProblemDetails();
+        services.AddProblemDetails(options =>
+        {
+            // Every ProblemDetails response gets a traceId, whether it comes from
+            // GlobalExceptionHandler, ValidationProblem(), or a built-in 404/405.
+            options.CustomizeProblemDetails = context =>
+            {
+                context.ProblemDetails.Extensions["traceId"] =
+                    Activity.Current?.Id
+                    ?? context.HttpContext.TraceIdentifier;
+            };
+        });
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
         return services;

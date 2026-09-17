@@ -131,17 +131,6 @@ builder.Services
     })
     .AddRoles<IdentityRole<long>>()
     .AddEntityFrameworkStores<BankingDbContext>();
-builder.Services.AddProblemDetails(options =>
-{
-    options.CustomizeProblemDetails = context =>
-    {
-        context.ProblemDetails.Extensions["traceId"] =
-            System.Diagnostics.Activity.Current?.Id
-            ?? context.HttpContext.TraceIdentifier;
-    };
-});
-
-
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
 // Service for bank id  

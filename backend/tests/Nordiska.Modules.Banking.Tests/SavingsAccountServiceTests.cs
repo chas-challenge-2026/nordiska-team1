@@ -1,4 +1,5 @@
 using System.Threading;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure;
@@ -118,7 +119,7 @@ public class SavingsAccountServiceTests
     }
 
     [Fact]
-    public async Task CloseAccount_WithPositiveBalance_ThrowsInvalidOperationException()
+    public async Task CloseAccount_WithPositiveBalance_ThrowsConflictException()
     {
         var seed = new[]
         {
@@ -128,6 +129,6 @@ public class SavingsAccountServiceTests
         var repo = new FakeSavingsRepo(seed);
         var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CloseAccountAsync(1));
+        await Assert.ThrowsAsync<ConflictException>(() => service.CloseAccountAsync(1));
     }
 }
