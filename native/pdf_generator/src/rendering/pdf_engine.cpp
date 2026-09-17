@@ -23,27 +23,45 @@ struct PdfEngine::Impl {
 
 namespace {
 
+thread_local std::string t_cp1252_scratch;
+
+bool is_pure_ascii(std::string_view sv) noexcept {
+    for (unsigned char c : sv) {
+        if (c >= 0x80) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // UTF-8 to CP1252 conversion for Swedish banking document characters in libharu
-std::string utf8_to_cp1252(std::string_view utf8) {
-    std::string result;
-    result.reserve(utf8.size());
+void utf8_to_cp1252_append(std::string_view utf8, std::string& out) {
+    out.reserve(out.size() + utf8.size());
     for (std::size_t index = 0; index < utf8.size(); ++index) {
         const auto character = static_cast<unsigned char>(utf8[index]);
         if (character < 0x80) {
-            result.push_back(static_cast<char>(character));
-        } else if (character == 0xC2 && index + 1 < utf8.size()) {
-            result.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index])));
+            out.push_back(static_cast<char>(character));
         } else if (character == 0xC3 && index + 1 < utf8.size()) {
-            result.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index]) + 0x40));
+            out.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index]) + 0x40));
+        } else if (character == 0xC2 && index + 1 < utf8.size()) {
+            out.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index])));
         } else if (character == 0xE2 && index + 2 < utf8.size() &&
                    static_cast<unsigned char>(utf8[index + 1]) == 0x82 &&
                    static_cast<unsigned char>(utf8[index + 2]) == 0xAC) {
-            result.push_back(static_cast<char>(0x80)); // Euro symbol
+            out.push_back(static_cast<char>(0x80)); // Euro symbol
             index += 2;
         } else {
-            result.push_back('?');
+            out.push_back('?');
         }
     }
+}
+
+std::string utf8_to_cp1252(std::string_view utf8) {
+    if (is_pure_ascii(utf8)) {
+        return std::string(utf8);
+    }
+    std::string result;
+    utf8_to_cp1252_append(utf8, result);
     return result;
 }
 
@@ -162,8 +180,13 @@ class HaruEngineImpl final : public PdfEngine::Impl {
                 HPDF_Font active_font = text.weight == FontWeight::Bold ? font_bold : font_normal;
                 HPDF_Page_SetFontAndSize(page, active_font, text.font_size);
                 const float haru_y = page_layout.height - text.y;
-                const std::string cp1252_str = utf8_to_cp1252(text.text);
-                HPDF_Page_TextOut(page, text.x, haru_y, cp1252_str.c_str());
+                if (is_pure_ascii(text.text)) {
+                    HPDF_Page_TextOut(page, text.x, haru_y, text.text.c_str());
+                } else {
+                    t_cp1252_scratch.clear();
+                    utf8_to_cp1252_append(text.text, t_cp1252_scratch);
+                    HPDF_Page_TextOut(page, text.x, haru_y, t_cp1252_scratch.c_str());
+                }
             }
             HPDF_Page_EndText(page);
         }
@@ -457,12 +480,22 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                     append_float_2(t_stream_buf, haru_y);
                     t_stream_buf.append(" Tm (");
 
-                    const std::string cp1252 = utf8_to_cp1252(text.text);
-                    for (char c : cp1252) {
-                        if (c == '(' || c == ')' || c == '\\') {
-                            t_stream_buf.push_back('\\');
+                    if (is_pure_ascii(text.text)) {
+                        for (char c : text.text) {
+                            if (c == '(' || c == ')' || c == '\\') {
+                                t_stream_buf.push_back('\\');
+                            }
+                            t_stream_buf.push_back(c);
                         }
-                        t_stream_buf.push_back(c);
+                    } else {
+                        t_cp1252_scratch.clear();
+                        utf8_to_cp1252_append(text.text, t_cp1252_scratch);
+                        for (char c : t_cp1252_scratch) {
+                            if (c == '(' || c == ')' || c == '\\') {
+                                t_stream_buf.push_back('\\');
+                            }
+                            t_stream_buf.push_back(c);
+                        }
                     }
                     t_stream_buf.append(") Tj\n");
                 }
