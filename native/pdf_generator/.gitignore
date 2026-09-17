@@ -5,5 +5,3 @@ benchmark-output/
 tools/synthetic-input-generator/generated/
 *.pdf
 !samples_for_signing/**/*.pdf
-all_linear_issues_september_16.txt
-NOR-176_plan.md
