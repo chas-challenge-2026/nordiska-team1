@@ -1,0 +1,26 @@
+FROM ubuntu:26.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    openssl \
+    softhsm2 \
+    libsofthsm2 \
+    pkcs11-provider \
+    opensc \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN module="$(find /usr/lib -name libsofthsm2.so -print -quit)" \
+    && test -n "$module" \
+    && ln -sf "$module" /usr/lib/libsofthsm2.so
+
+WORKDIR /app
+
+COPY . .
+
+RUN chmod +x docker/test-entrypoint.sh
+
+CMD ["./docker/test-entrypoint.sh"]

@@ -1,12 +1,13 @@
 #ifndef PDF_SIGN_H
 #define PDF_SIGN_H
 
-#include <openssl/evp.h>
-#include <openssl/x509.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct pdf_signer pdf_signer_t;
 
 typedef enum
 {
@@ -22,15 +23,17 @@ typedef enum
 
 typedef struct
 {
-  const char* input_path;
-  const char* output_path;
-
-  EVP_PKEY* private_key;
-  X509*     certificate;
-  STACK_OF(X509) * certificate_chain;
+  unsigned char* pdf;
+  size_t         pdf_len;
+  size_t         byte_range[4];
+  size_t         contents_offset;
+  size_t         contents_hex_len;
 } pdf_sign_request_t;
 
-pdf_sign_status_t pdf_sign(const pdf_sign_request_t* req);
+
+pdf_sign_status_t pdf_signer_create(pdf_signer_t** out);
+pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t* req);
+void              pdf_signer_destroy(pdf_signer_t* signer);
 
 #ifdef __cplusplus
 }
