@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "./modals/Modal";
-import InputField from "./InputField";
-import { CollapsibleFormBtns } from "./Buttons";
+import InputField from "./forms/InputField";
+import { CollapsibleFormBtns } from "./forms/CollapsibleFormButtons";
 import { useCreateAccount } from "../hooks/useAccounts";
 import type { AccountTypes } from "../services/accountsService";
 import { useUserStore } from "../store/userStore";
