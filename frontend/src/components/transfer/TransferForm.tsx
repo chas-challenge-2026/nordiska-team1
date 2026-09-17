@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import InputField from "../InputField";
+import InputField from "../forms/InputField";
 import AccountTriggerButton from "./AccountTriggerButton";
 import { formatSek } from "./transferHelpers";
 import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";

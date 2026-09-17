@@ -72,6 +72,8 @@ Seeded test accounts available out of the box:
 | `anna@example.com` | `password123` | `198202116050` | Anna Smith |
 | `erik@example.com` | `password123` | `197903142380` | Erik Svensson |
 
+> `password123` only works when `ASPNETCORE_ENVIRONMENT=Development` and only for seeded accounts without a password. After 5 failed attempts the account is locked for 15 minutes; a BankID login lifts the lockout.
+
 ### B. BankID Login (Dynamic Mock)
 * You can log in using **any 12-digit Swedish personal number** (e.g. `199001011234`).
 * If the user does not exist in the database, a customer profile and primary savings account with initial balance are created dynamically.

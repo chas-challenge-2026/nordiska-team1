@@ -23,7 +23,23 @@ public sealed class AuditLogService : IAuditLogService
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        var signingKey = configuration["AuditLogging:SigningKey"] ?? DefaultSigningKey;
+
+        var signingKey = configuration["AuditLogging:SigningKey"];
+        if (string.IsNullOrWhiteSpace(signingKey))
+        {
+            var environment = configuration["ASPNETCORE_ENVIRONMENT"]
+                ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                ?? "Development";
+
+            if (string.Equals(environment, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Mandatory configuration 'AuditLogging:SigningKey' is missing in Production environment.");
+            }
+
+            signingKey = DefaultSigningKey;
+            _logger.LogWarning("Using default development signing key for audit logging. Configure 'AuditLogging:SigningKey' in production.");
+        }
+
         _signingKeyBytes = Encoding.UTF8.GetBytes(signingKey);
     }
 

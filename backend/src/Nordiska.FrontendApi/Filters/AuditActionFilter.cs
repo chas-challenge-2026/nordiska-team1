@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Nordiska.Modules.Reporting.Application;
@@ -17,6 +18,23 @@ public sealed class AuditActionAttribute : TypeFilterAttribute
 
 public sealed class AuditActionFilter : IAsyncActionFilter
 {
+    private static readonly HashSet<string> SensitiveKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "password",
+        "secret",
+        "token",
+        "pin",
+        "ssn",
+        "personnummer",
+        "personalnum",
+        "personalnumber",
+        "cvv",
+        "cvc",
+        "key",
+        "authorization",
+        "pwd"
+    };
+
     private readonly string _action;
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<AuditActionFilter> _logger;
@@ -57,7 +75,8 @@ public sealed class AuditActionFilter : IAsyncActionFilter
         try
         {
             long? userId = null;
-            var nameIdentifier = executedContext.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var nameIdentifier = executedContext.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                 ?? executedContext.HttpContext.User.FindFirst("sub")?.Value;
             if (long.TryParse(nameIdentifier, out var parsedUserId))
             {
                 userId = parsedUserId;
@@ -67,25 +86,8 @@ public sealed class AuditActionFilter : IAsyncActionFilter
             var requestPath = executedContext.HttpContext.Request.Path.Value ?? string.Empty;
             var httpMethod = executedContext.HttpContext.Request.Method;
 
-            // Sanitize and serialize action arguments (avoid logging passwords/sensitive secrets/PII if present)
-            var sanitizedArgs = new Dictionary<string, object?>();
-            foreach (var (key, value) in context.ActionArguments)
-            {
-                if (key.Contains("password", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("secret", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("token", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("pin", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("ssn", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("personnummer", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("cvv", StringComparison.OrdinalIgnoreCase))
-                {
-                    sanitizedArgs[key] = "[REDACTED]";
-                }
-                else
-                {
-                    sanitizedArgs[key] = value;
-                }
-            }
+            // Deep sanitize and serialize action arguments (recursively masks passwords, secrets, tokens, PII)
+            var sanitizedArgs = SanitizeArguments(context.ActionArguments);
 
             var detailsObject = new
             {
@@ -105,5 +107,55 @@ public sealed class AuditActionFilter : IAsyncActionFilter
             // Log audit failure but do not break user response
             _logger.LogError(ex, "Failed to write audit entry for action {Action}", _action);
         }
+    }
+
+    public static JsonNode? SanitizeArguments(IDictionary<string, object?> actionArguments)
+    {
+        try
+        {
+            var node = JsonSerializer.SerializeToNode(actionArguments);
+            return SanitizeNode(node);
+        }
+        catch
+        {
+            return new JsonObject();
+        }
+    }
+
+    private static JsonNode? SanitizeNode(JsonNode? node)
+    {
+        if (node is JsonObject obj)
+        {
+            var sanitized = new JsonObject();
+            foreach (var kvp in obj)
+            {
+                if (IsSensitive(kvp.Key))
+                {
+                    sanitized[kvp.Key] = "[REDACTED]";
+                }
+                else
+                {
+                    sanitized[kvp.Key] = SanitizeNode(kvp.Value?.DeepClone());
+                }
+            }
+            return sanitized;
+        }
+
+        if (node is JsonArray arr)
+        {
+            var sanitized = new JsonArray();
+            foreach (var item in arr)
+            {
+                sanitized.Add(SanitizeNode(item?.DeepClone()));
+            }
+            return sanitized;
+        }
+
+        return node?.DeepClone();
+    }
+
+    private static bool IsSensitive(string propertyName)
+    {
+        return SensitiveKeys.Any(k => propertyName.Contains(k, StringComparison.OrdinalIgnoreCase));
     }
 }

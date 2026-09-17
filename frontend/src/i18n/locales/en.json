@@ -23,7 +23,8 @@
     "transactions": "transactions"
 },
 "errors": {
-    "loading": "Something went wrong while loading the data."
+    "loading": "Something went wrong while loading the data.",
+    "no-user": "Could not find user."
 },
 "aria-label": {
     "page-nav": "Main navigation",
@@ -77,7 +78,10 @@
     "help-center": "Help Center",
     "settings": "Settings",
     "logout": "Log out",
-    "my-nordiska": "My nordiska"
+    "my-nordiska": "My nordiska",
+    "menu": "Menu",
+    "home": "Home",
+    "user": "User: "
 },
 "page-navigation": {
     "overview": "Overview",
@@ -91,14 +95,15 @@
     "latest-transactions": "Latest transactions"
 },
 "forms": {
-    "email": "Email",
-    "email-placeholder": "Enter email",
-    "email-confirm": "Confirm email",
-    "email-confirm-placeholder": "Repeat email",
-    "email-error": "Email addresses do not match",
-    "phone": "Phone number",
-    "phone-placeholder": "Enter phone number",
-    "phone-error": "Enter a valid format: 07xxxxxxxx"
+    "email": "email",
+    "phone": "phone number",
+    "placeholder": "Enter ",
+    "confirm": "Confirm ",
+    "confirm-placeholder": "Repeat ",
+    "confirm-error": "The fields don't match",
+    "phone-error": "Enter a valid format: 07xxxxxxxx",
+    "on-success": "Settings saved, user updated.",
+    "on-error": "Something went wrong, the user could not be updated."
 },
 "page-footer": {
     "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",

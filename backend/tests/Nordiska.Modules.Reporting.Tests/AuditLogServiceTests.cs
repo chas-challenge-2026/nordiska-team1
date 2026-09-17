@@ -137,4 +137,27 @@ public class AuditLogServiceTests
         Assert.Equal(5, total);
         Assert.Equal(2, pagedEntries.Count);
     }
+
+    [Fact]
+    public void Constructor_ShouldThrowInvalidOperationException_WhenSigningKeyMissingInProduction()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<ReportingDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        var dbContext = new ReportingDbContext(options);
+
+        var configValues = new Dictionary<string, string?>
+        {
+            ["ASPNETCORE_ENVIRONMENT"] = "Production"
+        };
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configValues)
+            .Build();
+
+        var logger = new TestLogger<AuditLogService>();
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => new AuditLogService(dbContext, configuration, logger));
+    }
 }
