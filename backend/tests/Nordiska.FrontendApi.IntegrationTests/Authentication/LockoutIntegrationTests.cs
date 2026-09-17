@@ -34,7 +34,16 @@ public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Pr
     }
 }
 
-public class LockoutIntegrationTests : IClassFixture<PostgresAuthWebApplicationFactory>, IAsyncLifetime
+// Every test class starts its own host and runs the EF migrations on startup. In parallel they race against
+// the same CI database, so these tests run alone (after the parallel ones) to get a fully migrated database.
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class PostgresCollection : ICollectionFixture<PostgresAuthWebApplicationFactory>
+{
+    public const string Name = "Postgres";
+}
+
+[Collection(PostgresCollection.Name)]
+public class LockoutIntegrationTests : IAsyncLifetime
 {
     private const string CorrectPassword = "Korrekt-Losenord-1";
     private const int MaxFailedAttempts = 5;
