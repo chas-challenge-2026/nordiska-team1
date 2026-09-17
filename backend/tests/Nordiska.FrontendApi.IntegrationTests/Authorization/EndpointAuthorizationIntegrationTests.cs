@@ -21,6 +21,7 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
     // should be a conscious decision, so it has to be added here as well.
     private static readonly string[] AnonymousEndpoints =
     {
+        "GET api/interest-rates",
         "POST api/auth/bankid/initiate",
         "POST api/auth/bankid/collect",
         "POST api/auth/register",
