@@ -28,7 +28,7 @@ The generator strictly adheres to [`AGENTS.md`](AGENTS.md): modular architecture
 native/pdf_generator/
 ├── include/nordiska/             # Public C++ interface headers
 │   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig)
-│   ├── delivery/c_api/           # C89 ABI boundary (pdf_generator_c_api.h)
+│   ├── c_api/                    # C89 ABI boundary (pdf_generator_c_api.h)
 │   ├── diagnostics/              # Timing, metrics, and benchmark structures
 │   ├── domain/                   # CustomerBatch, Document, PdfRenderingJob
 │   ├── ingestion/                # JSON ingestor interface & factory
@@ -145,7 +145,7 @@ cmake --build build -j
 Exported C functions for host interop:
 
 ```c
-#include "nordiska/delivery/c_api/pdf_generator_c_api.h"
+#include "nordiska/c_api/pdf_generator_c_api.h"
 
 // Synchronous generation for a single customer batch
 int nordiska_pdf_v1_generate_customer_batch(

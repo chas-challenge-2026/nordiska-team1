@@ -1,4 +1,4 @@
-#include "nordiska/delivery/c_api/pdf_generator_c_api.h"
+#include "nordiska/c_api/pdf_generator_c_api.h"
 
 #include "nordiska/application/pdf_generator.hpp"
 
@@ -13,6 +13,17 @@
 #include <vector>
 
 namespace {
+
+// Using constexpr int instead of enum guarantees fixed 32-bit int types across the C ABI
+// and avoids compiler-dependent enum sizes or type-casting across language boundaries.
+constexpr int NORDISKA_PDF_OK = 0;
+constexpr int NORDISKA_PDF_INVALID_ARGUMENT = 1;
+constexpr int NORDISKA_PDF_INVALID_INPUT = 2;
+constexpr int NORDISKA_PDF_CALLBACK_FAILED = 3;
+constexpr int NORDISKA_PDF_INTERNAL_ERROR = 4;
+constexpr int NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED = 5;
+constexpr int NORDISKA_PDF_OUT_OF_MEMORY = 6;
+constexpr int NORDISKA_PDF_SIGNING_FAILED = 7;
 
 constexpr size_t kMaxJsonPayloadBytes = 32 * 1024 * 1024; // 32 MB (NOR-157)
 
@@ -40,8 +51,8 @@ void set_last_error_static(const char* message) noexcept {
     g_last_error.clear();
 }
 
-std::expected<void, nordiska_pdf_status> validate_boundary_arguments(const uint8_t* json_utf8, size_t json_length,
-                                                                     nordiska_pdf_delivery_callback callback) noexcept {
+std::expected<void, int> validate_boundary_arguments(const uint8_t* json_utf8, size_t json_length,
+                                                     nordiska_pdf_delivery_callback callback) noexcept {
     if (json_utf8 == nullptr) {
         set_last_error("json_utf8 must not be null");
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
@@ -55,81 +66,86 @@ std::expected<void, nordiska_pdf_status> validate_boundary_arguments(const uint8
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
     if (json_length > kMaxJsonPayloadBytes) {
-        set_last_error("Payload size exceeds maximum allowed limit of 32MB");
+        set_last_error("Payload size exceeds maximum allowed limit");
         return std::unexpected(NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED);
     }
     return {};
+}
+
+int map_generator_error(const nordiska::GeneratorError& err) noexcept {
+    set_last_error(err.message);
+    switch (err.kind) {
+    case nordiska::GeneratorErrorKind::InvalidArgument:
+        return NORDISKA_PDF_INVALID_ARGUMENT;
+    case nordiska::GeneratorErrorKind::InvalidInput:
+        return NORDISKA_PDF_INVALID_INPUT;
+    case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
+        return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
+    case nordiska::GeneratorErrorKind::SigningError:
+        return NORDISKA_PDF_SIGNING_FAILED;
+    case nordiska::GeneratorErrorKind::InternalError:
+    default:
+        return NORDISKA_PDF_INTERNAL_ERROR;
+    }
+}
+
+int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_delivery_callback callback,
+                  void* user_data) {
+    std::vector<nordiska_pdf_document_view> document_views;
+    document_views.reserve(completed_batch.documents.size());
+
+    for (const nordiska::PdfDocument& doc : completed_batch.documents) {
+        document_views.push_back(nordiska_pdf_document_view{
+            .document_id = doc.document_id.c_str(),
+            .bytes = doc.pdf_bytes.data(),
+            .length = doc.pdf_bytes.size(),
+        });
+    }
+
+    const nordiska_pdf_batch_view batch_view{
+        .customer_id = completed_batch.customer_id,
+        .documents = document_views.data(),
+        .document_count = document_views.size(),
+    };
+
+    const int cb_status = callback(&batch_view, user_data);
+    if (cb_status != 0) {
+        set_last_error("customer batch callback rejected batch with status code: " + std::to_string(cb_status));
+        return NORDISKA_PDF_CALLBACK_FAILED;
+    }
+
+    return NORDISKA_PDF_OK;
 }
 
 } // namespace
 
 extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                        nordiska_pdf_delivery_callback callback, void* user_data) {
-    clear_last_error();
+    clear_last_error(); // clear thread local error before we start
 
     try {
-        // 1. Validate ABI boundary arguments
         auto val_res = validate_boundary_arguments(json_utf8, json_length, callback);
         if (!val_res) {
             return val_res.error();
         }
 
-        // 2. Delegate to application batch generation pipeline
         const std::span<const uint8_t> payload_span{json_utf8, json_length};
+
         const nordiska::GeneratorConfig config{
             .ingestor = nordiska::JsonIngestorKind::Simdjson,
-            .engine = nordiska::PdfEngineKind::Libharu,
+            .engine = nordiska::PdfEngineKind::Libharu, // TODO native is faster (and smaller) but must be tested more
             .enable_signing = false,
-            .compression = true,
+            .compression = true, // Cut output size by 60% for a 25% performance penalty, huge win
         };
+
+        // Generate PDFs
         nordiska::PdfGenerator generator(config);
         auto batch_result = generator.generate(payload_span);
         if (!batch_result) {
-            set_last_error(batch_result.error().message);
-            switch (batch_result.error().kind) {
-            case nordiska::GeneratorErrorKind::InvalidArgument:
-                return NORDISKA_PDF_INVALID_ARGUMENT;
-            case nordiska::GeneratorErrorKind::InvalidInput:
-                return NORDISKA_PDF_INVALID_INPUT;
-            case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
-                return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
-            case nordiska::GeneratorErrorKind::SigningError:
-                return NORDISKA_PDF_SIGNING_FAILED;
-            case nordiska::GeneratorErrorKind::InternalError:
-            default:
-                return NORDISKA_PDF_INTERNAL_ERROR;
-            }
+            return map_generator_error(batch_result.error());
         }
 
-        const nordiska::GeneratedPdfs& completed_batch = *batch_result;
-
-        // 3. Construct borrowed C ABI batch and document views
-        std::vector<nordiska_pdf_document_view> document_views;
-        document_views.reserve(completed_batch.documents.size());
-
-        for (const nordiska::PdfDocument& doc : completed_batch.documents) {
-            document_views.push_back(nordiska_pdf_document_view{
-                .document_id = doc.document_id.c_str(),
-                .bytes = doc.pdf_bytes.data(),
-                .length = doc.pdf_bytes.size(),
-            });
-        }
-
-        const nordiska_pdf_batch_view batch_view{
-            .customer_id = completed_batch.customer_id,
-            .documents = document_views.data(),
-            .document_count = document_views.size(),
-        };
-
-        // 4. Synchronously invoke host delivery callback exactly once on calling thread
-        const int cb_status = callback(&batch_view, user_data);
-        if (cb_status != 0) {
-            set_last_error("customer batch callback rejected batch with status code: " + std::to_string(cb_status));
-            return NORDISKA_PDF_CALLBACK_FAILED;
-        }
-
-        // 5. Success! Returning automatically deallocates completed_batch and views via RAII.
-        return NORDISKA_PDF_OK;
+        return deliver_batch(*batch_result, callback, user_data);
 
     } catch (const std::bad_alloc&) {
         set_last_error_static("Out of memory during document generation");

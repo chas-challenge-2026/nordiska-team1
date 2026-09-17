@@ -1,5 +1,5 @@
 #include "nordiska/application/pdf_generator.hpp"
-#include "nordiska/delivery/c_api/pdf_generator_c_api.h"
+#include "nordiska/c_api/pdf_generator_c_api.h"
 #include "nordiska/signing/pdf_signer.hpp"
 
 #include <cstdint>
@@ -13,6 +13,17 @@
 #include <vector>
 
 namespace {
+
+// Using constexpr int instead of enum guarantees fixed 32-bit int types across the C ABI
+// and avoids compiler-dependent enum sizes or type-casting across language boundaries.
+constexpr int NORDISKA_PDF_OK = 0;
+constexpr int NORDISKA_PDF_INVALID_ARGUMENT = 1;
+constexpr int NORDISKA_PDF_INVALID_INPUT = 2;
+constexpr int NORDISKA_PDF_CALLBACK_FAILED = 3;
+constexpr int NORDISKA_PDF_INTERNAL_ERROR = 4;
+constexpr int NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED = 5;
+constexpr int NORDISKA_PDF_OUT_OF_MEMORY = 6;
+constexpr int NORDISKA_PDF_SIGNING_FAILED = 7;
 
 void require(bool condition, const char* message) {
     if (!condition) {

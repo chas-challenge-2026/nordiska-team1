@@ -1,5 +1,5 @@
 #include "nordiska/application/pdf_generator.hpp"
-#include "nordiska/delivery/c_api/pdf_generator_c_api.h"
+#include "nordiska/c_api/pdf_generator_c_api.h"
 #include "nordiska/diagnostics/benchmark_metrics.hpp"
 
 #include <atomic>
@@ -326,7 +326,7 @@ int main(int argc, char* argv[]) {
                 CallbackState cb_state;
                 int status = nordiska_pdf_v1_generate_customer_batch(sample.bytes.data(), sample.bytes.size(),
                                                                      cabi_delivery_callback, &cb_state);
-                if (status != NORDISKA_PDF_OK) {
+                if (status != 0) {
                     std::cerr << "Warmup error via C ABI: " << nordiska_pdf_v1_get_last_error() << "\n";
                     return EXIT_FAILURE;
                 }
@@ -378,7 +378,7 @@ int main(int argc, char* argv[]) {
                         const int status = nordiska_pdf_v1_generate_customer_batch(
                             payload.bytes.data(), payload.bytes.size(), cabi_delivery_callback, &cb_state);
 
-                        if (status != NORDISKA_PDF_OK) {
+                        if (status != 0) {
                             std::lock_guard<std::mutex> lock(error_mutex);
                             if (!abort_requested.load(std::memory_order_relaxed)) {
                                 first_error_msg = std::string("C ABI failure (status ") +

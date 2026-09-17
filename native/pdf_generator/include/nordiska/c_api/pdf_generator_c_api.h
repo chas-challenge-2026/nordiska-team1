@@ -1,5 +1,5 @@
-#ifndef NORDISKA_DELIVERY_C_API_PDF_GENERATOR_C_API_H
-#define NORDISKA_DELIVERY_C_API_PDF_GENERATOR_C_API_H
+#ifndef NORDISKA_C_API_PDF_GENERATOR_C_API_H
+#define NORDISKA_C_API_PDF_GENERATOR_C_API_H
 
 /*
  * =============================================================================
@@ -77,18 +77,6 @@
 extern "C" {
 #endif
 
-/* Status / error codes */
-enum nordiska_pdf_status {
-    NORDISKA_PDF_OK = 0,
-    NORDISKA_PDF_INVALID_ARGUMENT = 1,
-    NORDISKA_PDF_INVALID_INPUT = 2,
-    NORDISKA_PDF_CALLBACK_FAILED = 3,
-    NORDISKA_PDF_INTERNAL_ERROR = 4,
-    NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED = 5,
-    NORDISKA_PDF_OUT_OF_MEMORY = 6,
-    NORDISKA_PDF_SIGNING_FAILED = 7
-};
-
 /* View of an individual completed document within a customer batch */
 struct nordiska_pdf_document_view {
     const char* document_id;
@@ -152,8 +140,7 @@ typedef int (*nordiska_pdf_delivery_callback)(const struct nordiska_pdf_batch_vi
  *                 May be NULL if the callback does not require caller state.
  *
  * Return value:
- *   Returns NORDISKA_PDF_OK (0) on success, or a non-zero nordiska_pdf_status
- *   code on failure.
+ *   Returns 0 on success, or a non-zero status code on failure.
  *
  * Error diagnostics:
  *   When returning non-zero, call `nordiska_pdf_v1_get_last_error(void)` on the
@@ -175,4 +162,4 @@ NORDISKA_PDF_API const char* nordiska_pdf_v1_status_name(int status);
 }
 #endif
 
-#endif /* NORDISKA_DELIVERY_C_API_PDF_GENERATOR_C_API_H */
+#endif /* NORDISKA_C_API_PDF_GENERATOR_C_API_H */
