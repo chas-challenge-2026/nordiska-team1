@@ -24,7 +24,8 @@
     "tax-report": "Skatteunderlag"
 },
 "errors": {
-    "loading": "Någonting gick fel vid hämtning av datan."
+    "loading": "Någonting gick fel vid hämtning av datan.",
+    "no-user": "Kan inte hitta användare."
 },
 "aria-label": {
     "page-nav": "Huvudnavigation",
@@ -121,14 +122,15 @@
     "latest-transactions": "Senaste transaktioner"
 },
 "forms": {
-    "email": "E-post",
-    "email-placeholder": "Ange e-post",
-    "email-confirm": "Upprepa e-post",
-    "email-confirm-placeholder": "Upprepa e-post",
-    "email-error": "E-post matchar inte",
-    "phone": "Telefonnummer",
-    "phone-placeholder": "Ange Telefonnummer",
-    "phone-error": "Ange enligt format 07xxxxxxxx"
+    "email": "e-post",
+    "phone": "telefonnummer",
+    "placeholder": "Ange ",
+    "confirm": "Bekräta ",
+    "confirm-placeholder": "Upprepa ",
+    "confirm-error": "Fälten matchar inte",
+    "phone-error": "Ange enligt format 07xxxxxxxx",
+    "on-success": "Inställningar sparade, användare uppdaterad.",
+    "on-error": "Något gick fel, användare kunde inte uppdateras."
 },
 "page-footer": {
     "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
