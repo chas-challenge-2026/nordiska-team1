@@ -14,6 +14,10 @@ interface TransactionTableProps {
 const INITIAL_COUNT = 6;
 const BATCH_SIZE = 10;
 
+function transactionTypeLabel(type: Transaction["type"]): string {
+    return type === "Deposit" ? "Insättning" : "Uttag";
+}
+
 function groupByDate(transactions: Transaction[]): { dateKey: string; items: Transaction[] }[] {
     const groups: { dateKey: string; items: Transaction[] }[] = [];
     for (const transaction of transactions) {
@@ -124,8 +128,8 @@ export default function TransactionTable({ transactions, selectedAccountIds, fil
                                     {group.items.map(transaction => (
                                         <li key={transaction.id} className="py-3 flex justify-between items-start">
                                             <div>
-                                                <p className="text-sm font-medium">Placeholder title</p>
-                                                <p className="text-xs text-secondary">Placeholder label</p>
+                                                <p className="text-sm font-medium">{transaction.label || transactionTypeLabel(transaction.type)}</p>
+                                                <p className="text-xs text-secondary">{transactionTypeLabel(transaction.type)}</p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-xs text-secondary">kl {new Date(transaction.createdAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}</p>

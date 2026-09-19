@@ -175,7 +175,16 @@
     "planned": {
         "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
         "note-to": "To {{name}}",
-        "note-internal": "Between your own accounts"
+        "note-internal": "Between your own accounts",
+        "actions-label": "More options",
+        "actions-heading": "Planned transfer",
+        "action-edit": "Edit",
+        "action-delete": "Delete",
+        "edit-heading": "Change date",
+        "edit-date-label": "New date",
+        "delete-heading": "Delete planned transfer",
+        "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
+        "delete-confirm": "Yes, delete"
     }
 },
 "get-pdf-button": {
