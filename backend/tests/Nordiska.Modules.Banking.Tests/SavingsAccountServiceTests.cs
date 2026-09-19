@@ -130,4 +130,37 @@ public class SavingsAccountServiceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.CloseAccountAsync(1));
     }
+
+    [Fact]
+    public async Task GetById_NotFound_ThrowsKeyNotFoundException()
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.GetByIdAsync(42));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Create_WithoutAccountNumber_GeneratesNorNumber(string accountNumber)
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var created = await service.CreateAsync(new OpenSavingsAccountRequest(1, accountNumber));
+
+        Assert.Matches(@"^NOR-\d{6}$", created.AccountNumber);
+    }
+
+    [Fact]
+    public async Task Create_WithAccountNumber_TrimsWhitespace()
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var created = await service.CreateAsync(new OpenSavingsAccountRequest(1, "  SE1234  "));
+
+        Assert.Equal("SE1234", created.AccountNumber);
+    }
 }
