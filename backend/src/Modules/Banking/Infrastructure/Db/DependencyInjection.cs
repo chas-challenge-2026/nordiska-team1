@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Infrastructure;
+using Nordiska.Modules.Banking.Infrastructure.External.Riksbank;
 
 namespace Nordiska.Modules.Banking.Infrastructure.Db;
 
@@ -27,6 +29,25 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
         services.AddScoped<IInterestRateService, InterestRateService>();
+
+        // Policy rate comes from the Riksbank SWEA API. Bad config should fail at startup, not on the first request.
+        services.AddOptions<RiksbankOptions>()
+            .Bind(configuration.GetSection(RiksbankOptions.SectionName))
+            .Validate(o => Uri.TryCreate(o.BaseUrl, UriKind.Absolute, out _) && o.BaseUrl.EndsWith('/'), "Riksbank:BaseUrl must be an absolute URL ending with '/'.")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.SeriesId), "Riksbank:SeriesId is required.")
+            .Validate(o => o.CacheDuration > TimeSpan.Zero, "Riksbank:CacheDuration must be greater than zero.")
+            .ValidateOnStart();
+
+        // Typed client, IHttpClientFactory owns the handler lifetime so we don't run out of sockets or keep stale DNS.
+        // The standard resilience handler adds retry with backoff, circuit breaker and timeouts.
+        services.AddHttpClient<IRiksbankClient, RiksbankClient>((sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<RiksbankOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl);
+            })
+            .AddStandardResilienceHandler();
+
+        services.AddScoped<IPolicyRateService, PolicyRateService>();
 
         return services;
     }
