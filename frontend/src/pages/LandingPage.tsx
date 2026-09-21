@@ -12,6 +12,14 @@ export default function LandingPage({ inactive = false, loggedOut = false }: pag
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (inactive || loggedOut) {
+            document.title=t("loggedout-route.doc-title")
+        } else {
+            document.title="Nordiska."
+        }
+    },[t, loggedOut, inactive])
+
+    useEffect(() => {
         if (!loggedOut) return;
         const timer = setTimeout(() => navigate("/welcome"), 5000);
         return () => clearTimeout(timer);
