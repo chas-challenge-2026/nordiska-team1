@@ -29,7 +29,7 @@ import type {
     PlannedTransfer,
     TransferAccount,
 } from "../constants/transferAccounts";
-import { useAccounts } from "../hooks/useAccounts";
+import { useGetAccounts } from "../hooks/useAccounts";
 import {
     useTransactions,
     useTransferFunds,
@@ -42,7 +42,7 @@ type Step = "form" | "bankid" | "done";
 export default function TransferPage() {
     const { t } = useTranslation();
 
-    const { data: accountsData } = useAccounts();
+    const { data: accountsData } = useGetAccounts();
     const { data: transactionsData } = useTransactions();
     const transferFundsMutation = useTransferFunds();
     const createPlannedMutation = useCreatePlannedTransaction();

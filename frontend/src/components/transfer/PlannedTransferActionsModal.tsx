@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "../modals/Modal";
-import InputField from "../InputField";
-import { CollapsibleFormBtns } from "../Buttons";
+import InputField from "../forms/InputField";
+import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
 import type { PlannedTransfer } from "../../constants/transferAccounts";
 
 type View = "menu" | "edit" | "confirm-delete";
