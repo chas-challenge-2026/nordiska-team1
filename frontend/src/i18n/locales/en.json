@@ -22,7 +22,9 @@
     "of": "of",
     "transactions": "transactions",
     "balance": "Balance",
-    "tax-report": "Tax report"
+    "tax-report": "Tax report",
+    "log-out": "Log out",
+    "stay": "Stay"
 },
 "errors": {
     "loading": "Something went wrong while loading the data.",
@@ -45,6 +47,7 @@
     "button": "Log in again"
 },
 "loggedout-route": {
+    "doc-title": "You're logged out",
     "title": "You have logged out.",
     "paragraph": "You can safely close this page now."
 },
@@ -221,5 +224,13 @@
     "help-title": "Can't find what you're looking for?",
     "help-link": "Visit our Help Center",
     "close": "Close settings"
+},
+"inactivity-warning": {
+    "doc-title": "Still here?",
+    "title": "You will be logged out soon",
+    "paragraph": "You have been inactive for a while. For security reasons, you will be logged out in:",
+    "minutes": "minutes",
+    "and": "and",
+    "seconds": "seconds"
 }
 }
