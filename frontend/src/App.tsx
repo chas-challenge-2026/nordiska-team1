@@ -6,11 +6,19 @@ import PageHeader from './components/header/PageHeader'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useLocation } from 'react-router'
 
+// TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut:
+import { useInactivityTimer } from './hooks/useInactivityTimer'
+import InactivityWarning from './components/InactivityWarning'
+
 export default function App() {
     const location = useLocation();
 
     const isCheckingSession = useUserStore((state) => state.isCheckingSession);
     useSessionCheck();
+
+    // TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut:
+    const {showWarning, remainingSeconds, stayLoggedIn, logoutNow} = useInactivityTimer();
+
     if (isCheckingSession) return <div>loading...</div>
 
     const UNPROTECTED_HEADER = [
@@ -29,6 +37,15 @@ export default function App() {
             <ErrorBoundary key={location.pathname}>
                 <AppRoutes/>
             </ErrorBoundary>
+            <AppRoutes/>
+
+            {/* TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut: */}
+            {showWarning && (
+                <InactivityWarning 
+                    remainingSeconds={remainingSeconds}
+                    onStayLoggedIn={stayLoggedIn}
+                    onLogout={logoutNow}/>
+            )}
         </>
     )
 }

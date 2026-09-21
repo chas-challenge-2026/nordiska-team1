@@ -21,7 +21,9 @@
     "of": "av",
     "transactions": "transaktioner",
     "balance": "Saldo",
-    "tax-report": "Skatteunderlag"
+    "tax-report": "Skatteunderlag",
+    "log-out": "Logga ut",
+    "stay": "Stanna kvar"
 },
 "errors": {
     "loading": "Någonting gick fel vid hämtning av datan.",
@@ -44,6 +46,7 @@
     "button": "Logga in igen"
 },
 "loggedout-route": {
+    "doc-title": "Du är utloggad",
     "title": "Du har loggat ut.",
     "paragraph": "Det är nu säkert att stänga denna sidan."
 },
@@ -225,5 +228,13 @@
     "help-title": "Hittar du inte det du söker efter?",
     "help-link": "Besök vårt hjälpcenter",
     "close": "Stäng inställningar"
+},
+"inactivity-warning": {
+    "doc-title": "Fortfarande kvar?",
+    "title": "Du kommer snart att loggas ut",
+    "paragraph": "Du har varit inaktiv en stund. Av säkerhetsskäl kommer du att loggas ut om:",
+    "minutes": "minuter",
+    "and": "och",
+    "seconds": "sekunder"
 }
 }

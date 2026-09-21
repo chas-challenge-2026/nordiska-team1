@@ -7,6 +7,8 @@ type ModalProps = {
     children: ReactNode;
     widthClassName?: string;
     maxHeightClassName?: string;
+    closeOnOverlayClick?: boolean;
+    closeOnEscape?: boolean;
 };
 
 const FOCUSABLE_SELECTOR =
@@ -28,6 +30,8 @@ export default function Modal({
     children,
     widthClassName = "w-[560px]",
     maxHeightClassName = "max-h-[calc(100vh-5rem)]",
+    closeOnOverlayClick = true,
+    closeOnEscape = true,
 }: ModalProps) {
     const cardRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +44,7 @@ export default function Modal({
         (focusable[0] ?? card)?.focus();
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
+            if (e.key === "Escape" && closeOnEscape) {
                 e.preventDefault();
                 onClose();
                 return;
@@ -74,7 +78,7 @@ export default function Modal({
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-dark-navy/45 p-4 sm:p-10"
-            onClick={onClose}
+            onClick={closeOnOverlayClick ? onClose : undefined}
         >
             <div
                 ref={cardRef}
