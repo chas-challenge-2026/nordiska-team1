@@ -296,6 +296,17 @@
             </summary>
             <response code="200">Successfully logged out and cookie deleted.</response>
         </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.RefreshSession">
+            <summary>
+            Extends the active session by issuing a refreshed JWT authentication cookie.
+            </summary>
+            <remarks>
+            Re-evaluates the authenticated caller's identity and updates the secure HttpOnly <c>access_token</c>
+            cookie with a refreshed expiration timestamp.
+            </remarks>
+            <response code="200">Session successfully extended.</response>
+            <response code="401">Unauthorized if the session is invalid, expired, or locked out.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Controllers.FaqController">
             <summary>
             API endpoints for managing and querying FAQ knowledge base entries.
