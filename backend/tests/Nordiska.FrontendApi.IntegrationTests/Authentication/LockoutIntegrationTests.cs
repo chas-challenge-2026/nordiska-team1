@@ -1,46 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
+using Nordiska.FrontendApi.IntegrationTests.Postgres;
 using Nordiska.Modules.Banking.Domain;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Authentication;
-
-// These tests need a real Postgres (the real AuthService + UserManager are used).
-// CI sets RUN_POSTGRES_TESTS=true, locally they are skipped unless you set it yourself.
-public sealed class PostgresFactAttribute : FactAttribute
-{
-    public const string EnvironmentVariable = "RUN_POSTGRES_TESTS";
-
-    public PostgresFactAttribute()
-    {
-        if (!string.Equals(Environment.GetEnvironmentVariable(EnvironmentVariable), "true", StringComparison.OrdinalIgnoreCase))
-        {
-            Skip = $"Kräver Postgres. Sätt {EnvironmentVariable}=true för att köra.";
-        }
-    }
-}
-
-// Real services, no fakes. Auth limit is raised so the rate limiter never answers before the lockout does.
-public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Program>
-{
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
-    }
-}
-
-// Every test class starts its own host and runs the EF migrations on startup. In parallel they race against
-// the same CI database, so these tests run alone (after the parallel ones) to get a fully migrated database.
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class PostgresCollection : ICollectionFixture<PostgresAuthWebApplicationFactory>
-{
-    public const string Name = "Postgres";
-}
 
 [Collection(PostgresCollection.Name)]
 public class LockoutIntegrationTests : IAsyncLifetime
@@ -142,38 +108,11 @@ public class LockoutIntegrationTests : IAsyncLifetime
     public Task InitializeAsync() => Task.CompletedTask;
 
     // Remove the customers this test created so the shared CI database stays clean
-    public async Task DisposeAsync()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Customer>>();
-
-        foreach (var id in _createdCustomerIds)
-        {
-            var customer = await userManager.FindByIdAsync(id.ToString());
-            if (customer is not null) await userManager.DeleteAsync(customer);
-        }
-    }
+    public Task DisposeAsync() => PostgresTestData.DeleteCustomersAsync(_factory.Services, _createdCustomerIds);
 
     private async Task<Customer> CreateCustomerAsync(string? password)
     {
-        using var scope = _factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Customer>>();
-
-        var uniqueId = Guid.NewGuid().ToString("N")[..8];
-        var customer = new Customer
-        {
-            UserName = $"lockout_{uniqueId}@example.com",
-            Email = $"lockout_{uniqueId}@example.com",
-            Name = $"Lockout Test {uniqueId}",
-            PersonalNum = CreateRandomPersonalNum(),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var result = password is null
-            ? await userManager.CreateAsync(customer)
-            : await userManager.CreateAsync(customer, password);
-
-        Assert.True(result.Succeeded, string.Join(';', result.Errors.Select(e => e.Description)));
+        var customer = await PostgresTestData.CreateCustomerAsync(_factory.Services, "lockout", password);
         _createdCustomerIds.Add(customer.Id);
         return customer;
     }
@@ -211,22 +150,5 @@ public class LockoutIntegrationTests : IAsyncLifetime
         }
 
         Assert.Fail("BankID login never reached COMPLETE.");
-    }
-
-    // Valid Swedish personal number (YYYYMMDDNNNC) with a correct Luhn check digit, so BankID accepts it
-    private static string CreateRandomPersonalNum()
-    {
-        var birthDate = new DateTime(1970, 1, 1).AddDays(Random.Shared.Next(0, 365 * 30));
-        var digits = $"{birthDate:yyMMdd}{Random.Shared.Next(0, 1000):D3}";
-
-        var sum = 0;
-        for (var i = 0; i < digits.Length; i++)
-        {
-            var n = (digits[i] - '0') * (i % 2 == 0 ? 2 : 1);
-            sum += n > 9 ? n - 9 : n;
-        }
-        var checkDigit = (10 - sum % 10) % 10;
-
-        return $"{birthDate:yyyy}{digits[2..]}{checkDigit}";
     }
 }
