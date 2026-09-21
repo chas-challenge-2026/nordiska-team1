@@ -1,5 +1,5 @@
-import { useLogout } from "../hooks/useLogout";
-import { useUserStore } from "../store/userStore";
+import { useLogout } from "../../hooks/useLogout";
+import { useUserStore } from "../../store/userStore";
 
 type LogoutButtonProps = {
     title: string;

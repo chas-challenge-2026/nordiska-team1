@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.Contracts.Requests;
@@ -159,6 +160,9 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
     public Task<IEnumerable<SavingsAccount>> GetAllAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IEnumerable<SavingsAccount>>(_store.ToList());
 
+    public Task<IEnumerable<SavingsAccount>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<SavingsAccount>>(_store.Where(s => s.CustomerId == customerId).ToList());
+
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
@@ -286,7 +290,7 @@ public class TestCustomerService : ICustomerService
     {
         if (_customers.TryGetValue(id, out var customer))
             return Task.FromResult(customer);
-        throw new KeyNotFoundException($"Customer with id {id} was not found.");
+        throw new NotFoundException($"Customer with id {id} was not found.");
     }
 
     public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
@@ -316,6 +320,10 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Tests share one factory per class, so raise the limits to keep rate limiting out of the way (NOR-70)
+        builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
+        builder.UseSetting("RateLimiting:Transactions:PermitLimit", "10000");
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IAuthService>();

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -57,7 +58,7 @@ public class TransactionService : ITransactionService
     public async Task<decimal> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default)
     {
         var account = await _accRepo.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Account {accountId} not found.");
+            ?? throw new NotFoundException($"Account {accountId} not found.");
 
         var entries = await _txRepo.QueryAsync(accountId, cancellationToken);
         return entries.Sum(e => e.Amount);
@@ -69,7 +70,7 @@ public class TransactionService : ITransactionService
             throw new ArgumentException("Transaction amount must be greater than zero.", nameof(request.Amount));
 
         var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Account {request.AccountId} not found.");
+            ?? throw new NotFoundException($"Account {request.AccountId} not found.");
 
         var isWithdrawal = string.Equals(request.Type, "withdrawal", StringComparison.OrdinalIgnoreCase);
         var isDeposit = string.Equals(request.Type, "deposit", StringComparison.OrdinalIgnoreCase);
@@ -83,7 +84,7 @@ public class TransactionService : ITransactionService
             var currentBalance = await GetBalanceAsync(request.AccountId, cancellationToken);
             if (currentBalance < request.Amount)
             {
-                throw new InvalidOperationException($"Insufficient funds. Current balance is {currentBalance:N2}, requested withdrawal is {request.Amount:N2}.");
+                throw new ConflictException($"Insufficient funds. Current balance is {currentBalance:N2}, requested withdrawal is {request.Amount:N2}.");
             }
 
             delta = -request.Amount;
@@ -123,15 +124,15 @@ public class TransactionService : ITransactionService
             throw new ArgumentException("Source and target accounts cannot be the same.", nameof(request.TargetAccountId));
 
         var sourceAccount = await _accRepo.GetByIdAsync(request.SourceAccountId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Source account {request.SourceAccountId} was not found.");
+            ?? throw new NotFoundException($"Source account {request.SourceAccountId} was not found.");
 
         var targetAccount = await _accRepo.GetByIdAsync(request.TargetAccountId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Target account {request.TargetAccountId} was not found.");
+            ?? throw new NotFoundException($"Target account {request.TargetAccountId} was not found.");
 
         var currentBalance = await GetBalanceAsync(request.SourceAccountId, cancellationToken);
         if (currentBalance < request.Amount)
         {
-            throw new InvalidOperationException($"Insufficient funds on source account. Current balance is {currentBalance:N2}, requested transfer is {request.Amount:N2}.");
+            throw new ConflictException($"Insufficient funds on source account. Current balance is {currentBalance:N2}, requested transfer is {request.Amount:N2}.");
         }
 
         var now = DateTime.UtcNow;
@@ -181,7 +182,7 @@ public class TransactionService : ITransactionService
             throw new ArgumentException("Planned amount must be greater than zero.", nameof(request.Amount));
 
         var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Account {request.AccountId} was not found.");
+            ?? throw new NotFoundException($"Account {request.AccountId} was not found.");
 
         var entry = new LedgerEntry
         {
@@ -211,7 +212,7 @@ public class TransactionService : ITransactionService
 
         if (!entry.IsPlanned)
         {
-            throw new InvalidOperationException("Cannot cancel an executed transaction. Only planned transactions can be cancelled.");
+            throw new ConflictException("Cannot cancel an executed transaction. Only planned transactions can be cancelled.");
         }
 
         return await _txRepo.DeleteAsync(id, cancellationToken);

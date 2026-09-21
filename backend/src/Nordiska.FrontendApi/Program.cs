@@ -64,20 +64,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("faq:manage", policy =>
-    {
-        policy.AddAuthenticationSchemes(
-            JwtBearerDefaults.AuthenticationScheme);
-
-        policy.RequireAuthenticatedUser();
-
-        policy.RequireClaim(
-            "permission",
-            "faq:manage");
-    });
-});
+// Authorization policies incl. fallback policy that requires login (NOR-138)
+builder.Services.AddApiAuthorization();
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -135,20 +123,14 @@ builder.Services
         
         // Email must be unique
         options.User.RequireUniqueEmail = true;
+
+        // Lock password login after too many failed attempts (NOR-70)
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue<int?>("Lockout:MaxFailedAccessAttempts") ?? 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int?>("Lockout:LockoutMinutes") ?? 15);
     })
     .AddRoles<IdentityRole<long>>()
     .AddEntityFrameworkStores<BankingDbContext>();
-builder.Services.AddProblemDetails(options =>
-{
-    options.CustomizeProblemDetails = context =>
-    {
-        context.ProblemDetails.Extensions["traceId"] =
-            System.Diagnostics.Activity.Current?.Id
-            ?? context.HttpContext.TraceIdentifier;
-    };
-});
-
-
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
 // Service for bank id  
@@ -194,6 +176,8 @@ builder.Services.AddCors(options =>
 });
 // Custom-made! ProblemDetails and ExceptionHandler DI registered via extension (moved into ServiceCollectionExtensions.cs)
 builder.Services.AddErrorHandling();
+// Rate limiting for login and money-moving endpoints (NOR-70), limits are read from "RateLimiting" in appsettings
+builder.Services.AddRateLimitingPolicies(builder.Configuration);
 
 var app = builder.Build();
 
@@ -232,11 +216,15 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+// Must run after authentication so the transactions policy can partition on the customer id
+app.UseRateLimiter();
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapSwagger("/openapi/{documentName}.json");
+    // Dev tooling is only mapped in Development, so it can stay open for local testing
+    app.MapSwagger("/openapi/{documentName}.json")
+        .AllowAnonymous();
 
     app.MapScalarApiReference(options =>
     {
@@ -250,7 +238,7 @@ if (app.Environment.IsDevelopment())
         options.WithDefaultHttpClient(
             ScalarTarget.CSharp,
             ScalarClient.HttpClient);
-    });
+    }).AllowAnonymous();
     app.MapGet("/health/database", async (
         BankingDbContext db,
         CancellationToken cancellationToken) =>
@@ -263,7 +251,7 @@ if (app.Environment.IsDevelopment())
             : Results.Json(
                 new { status = "unavailable" },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
-    });
+    }).AllowAnonymous();
 }
 
 // Seed Test Customer 
@@ -280,7 +268,9 @@ if (app.Environment.IsDevelopment())
 }
 
 // Fallback to React index.html for non-API client-side routes (SPA routing)
-app.MapFallbackToFile("index.html");
+// AllowAnonymous so the fallback policy doesn't block the frontend before the user has logged in
+app.MapFallbackToFile("index.html")
+    .AllowAnonymous();
 
 app.Run();
 

@@ -11,18 +11,18 @@ export function CollapsibleFormBtns({
     const {t} = useTranslation();
 
     return (
-        <div className="flex justify-end gap-6 pt-2">
+        <div className="flex justify-end gap-6 pt-2 font-semibold ">
             <button
                 type="button"
                 onClick={onClose}
-                className="font-bold uppercase text-red-600 cursor-pointer"
+                className="text-error uppercase cursor-pointer"
             >
                 {t("generic.cancel")}
             </button>
 
             <button
                 type="submit"
-                className="font-bold uppercase text-green-600 cursor-pointer"
+                className="text-success uppercase cursor-pointer"
             >
                 {t("generic.save")}
             </button>

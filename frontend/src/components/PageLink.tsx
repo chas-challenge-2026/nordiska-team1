@@ -23,7 +23,7 @@ export default function PageLink({ title, route, header=false }: PageLinkProps) 
                 transition-all
                 duration-200
                 ease-in-out
-                ${isActive ? header ? "font-semibold" :"font-bold" : "font-normal"}
+                ${isActive && !header ? "font-bold" : "font-semibold"}
             `}
         >
             {({ isActive }) => (
@@ -34,7 +34,7 @@ export default function PageLink({ title, route, header=false }: PageLinkProps) 
                     after:content-['']
                     after:absolute
                     after:top-full
-                    ${header ? "after:mt-0.5" : "after:mt-0"}
+                    ${header ? "after:mt-1" : "after:mt-0"}
                     after:left-1/2
                     after:-translate-x-1/2
                     ${header ? "after:h-[2px]" : "after:h-[4px]"}
@@ -44,7 +44,7 @@ export default function PageLink({ title, route, header=false }: PageLinkProps) 
                     after:duration-200
                     after:ease-in-out
 
-                    ${isActive
+                    ${isActive && !header
                         ? "after:w-full"
                         : "after:w-0 hover:after:w-[70%]"
                     }

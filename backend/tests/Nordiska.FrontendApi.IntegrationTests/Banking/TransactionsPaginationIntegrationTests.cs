@@ -65,11 +65,11 @@ public class TransactionsPaginationIntegrationTests : IClassFixture<CustomAuthWe
     }
 
     [Fact]
-    public async Task GetAll_FilteredByNonExistentOrUnownedAccount_Returns_403Forbidden()
+    public async Task GetAll_FilteredByNonExistentOrUnownedAccount_Returns_404NotFound()
     {
         var client = await CreateAuthenticatedClientAsync();
 
         var response = await client.GetAsync("/api/transactions?accountId=999999");
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }
