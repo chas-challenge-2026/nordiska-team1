@@ -29,7 +29,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY frontend/ ./
 RUN VITE_API_BASE_URL=/api npm run build
@@ -67,13 +67,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=backend-builder /app/publish .
 COPY --from=frontend-builder /app/frontend/dist ./wwwroot
-COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_document_c_api.so /app/
 COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_document_c_api.so /usr/local/lib/
 RUN ldconfig
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV LD_LIBRARY_PATH=/app:/usr/local/lib
+
+# Run container as unprivileged non-root user
+USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]
