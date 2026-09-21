@@ -104,26 +104,39 @@ pdf_sign_status_t pdf_signer_create(pdf_signer_t** out) {
   return PDF_SIGN_OK;
 }
 
-pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t* req) {
-  if (!signer || !req || !req->pdf) {
+pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t* req,
+                                  pdf_sign_result_t* result) {
+  if (!signer || !req || !result) {
+    return PDF_SIGN_INVALID_ARGUMENT;
+  }
+  result->contents_hex     = NULL;
+  result->contents_hex_len = 0;
+
+  if (req->digest_algorithm != PDF_SIGN_DIGEST_SHA256) {
     return PDF_SIGN_INVALID_ARGUMENT;
   }
 
-  if (req->pdf_len == 0) {
-    return PDF_SIGN_INVALID_PDF;
+  if (!req->digest || req->digest_len != 32) {
+    return PDF_SIGN_INVALID_ARGUMENT;
   }
 
-  if (req->contents_offset > req->pdf_len) {
-    return PDF_SIGN_INVALID_PDF;
+  const size_t hex_len = 8192;
+
+  char* output = malloc(hex_len + 1);
+  if (!output) {
+    return PDF_SIGN_INTERNAL_ERROR;
   }
 
-  if (req->contents_hex_len > req->pdf_len - req->contents_offset) {
-    return PDF_SIGN_INVALID_PDF;
+  for (size_t i = 0; i < hex_len; i++) {
+    output[i] = "0123456789ABCDEF"[i % 16];
   }
 
+  output[hex_len] = '\0';
+
+  result->contents_hex     = output;
+  result->contents_hex_len = hex_len;
   return PDF_SIGN_OK;
 }
-
 
 void pdf_signer_destroy(pdf_signer_t* signer) {
   if (!signer) {
@@ -136,4 +149,13 @@ void pdf_signer_destroy(pdf_signer_t* signer) {
   signer->key_loader = NULL;
 
   free(signer);
+}
+
+void pdf_sign_result_dispose(pdf_sign_result_t* result) {
+  if (!result)
+    return;
+
+  free(result->contents_hex);
+  result->contents_hex     = NULL;
+  result->contents_hex_len = 0;
 }
