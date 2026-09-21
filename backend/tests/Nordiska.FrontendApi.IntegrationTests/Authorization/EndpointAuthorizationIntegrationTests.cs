@@ -22,6 +22,7 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
     private static readonly string[] AnonymousEndpoints =
     {
         "GET api/interest-rates",
+        "GET api/interest-rates/policy-rate",
         "POST api/auth/bankid/initiate",
         "POST api/auth/bankid/collect",
         "POST api/auth/register",

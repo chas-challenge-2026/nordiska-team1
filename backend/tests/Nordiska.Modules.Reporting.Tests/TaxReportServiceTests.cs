@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Banking.Domain;
@@ -176,10 +176,34 @@ public class TaxReportServiceTests
     public async Task GenerateDirectReport_AccountNotFound_ThrowsAndGeneratesNothing()
     {
         _accounts.Setup(a => a.GetByIdAsync(AccountId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new KeyNotFoundException($"Savings account with ID {AccountId} was not found."));
+            .ThrowsAsync(new NotFoundException($"Savings account with ID {AccountId} was not found."));
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateService().GenerateDirectReportAsync(1, AccountId, 2025, isAdmin: false));
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateService().GenerateDirectReportAsync(1, AccountId, 2025, isAdmin: false));
 
         _pdf.Verify(p => p.GenerateTaxReportPdfAsync(It.IsAny<TaxReportData>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateJobAsync_AccountNotFound_ThrowsNotFoundException()
+    {
+        _accounts.Setup(a => a.GetByIdAsync(AccountId, It.IsAny<CancellationToken>())).ReturnsAsync((SavingsAccountResponse)null!);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateService().CreateJobAsync(customerId: 1, accountId: AccountId, year: 2025));
+    }
+
+    [Fact]
+    public async Task GenerateDirectReportAsync_AccountNotFound_ThrowsNotFoundException()
+    {
+        _accounts.Setup(a => a.GetByIdAsync(AccountId, It.IsAny<CancellationToken>())).ReturnsAsync((SavingsAccountResponse)null!);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateService().GenerateDirectReportAsync(customerId: 1, accountId: AccountId, year: 2025, isAdmin: true));
+    }
+
+    [Fact]
+    public async Task GenerateDirectReportAsync_CustomerNotFound_ThrowsNotFoundException()
+    {
+        _customers.Setup(c => c.GetByIdAsync(It.IsAny<long>(), It.IsAny<CancellationToken>())).ReturnsAsync((Customer)null!);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateService().GenerateDirectReportAsync(customerId: 1, accountId: AccountId, year: 2025, isAdmin: true));
     }
 }

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
@@ -317,7 +318,7 @@ public class TransactionServiceTests
 
         var req = new TransactionRequest(1, "withdrawal", 100m);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.ExecuteAsync(req));
+        await Assert.ThrowsAsync<ConflictException>(() => svc.ExecuteAsync(req));
 
         Assert.Equal(1, txRepo.Count); // No new entry created
         var balance = await svc.GetBalanceAsync(1);
@@ -379,7 +380,7 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task Transfer_InsufficientFunds_ThrowsInvalidOperationException()
+    public async Task Transfer_InsufficientFunds_ThrowsConflictException()
     {
         var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
@@ -393,7 +394,23 @@ public class TransactionServiceTests
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
         var req = new TransferRequest(1, 2, 100m);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.TransferAsync(req));
+        await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(req));
+    }
+
+    [Fact]
+    public async Task CancelPlanned_ExecutedTransaction_ThrowsConflictException()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 50m, IsPlanned = false, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(1));
     }
 
     [Fact]
@@ -475,13 +492,13 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task Execute_AccountNotFound_ThrowsKeyNotFoundException()
+    public async Task Execute_AccountNotFound_ThrowsNotFoundException()
     {
         var accRepo = new FakeSavingsRepo();
         var txRepo = new FakeTxRepo();
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.ExecuteAsync(new TransactionRequest(99, "deposit", 100m)));
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.ExecuteAsync(new TransactionRequest(99, "deposit", 100m)));
 
         Assert.Equal(0, txRepo.Count);
     }
@@ -503,14 +520,14 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task Transfer_SourceNotFound_ThrowsKeyNotFoundException()
+    public async Task Transfer_SourceNotFound_ThrowsNotFoundException()
     {
         var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
         var accRepo = new FakeSavingsRepo(new[] { acc2 });
         var txRepo = new FakeTxRepo();
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.TransferAsync(new TransferRequest(99, 2, 100m)));
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.TransferAsync(new TransferRequest(99, 2, 100m)));
 
         Assert.Equal(0, txRepo.Count);
     }
@@ -528,7 +545,7 @@ public class TransactionServiceTests
         var txRepo = new FakeTxRepo(seedTx);
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.TransferAsync(new TransferRequest(1, 99, 100m)));
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.TransferAsync(new TransferRequest(1, 99, 100m)));
 
         Assert.Equal(1, txRepo.Count);
         Assert.Equal(500m, await svc.GetBalanceAsync(1));
@@ -548,7 +565,7 @@ public class TransactionServiceTests
         var txRepo = new FakeTxRepo(seedTx);
         var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.TransferAsync(new TransferRequest(1, 2, 100m)));
+        await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(new TransferRequest(1, 2, 100m)));
 
         Assert.Equal(1, txRepo.Count);
         Assert.Equal(0m, await svc.GetBalanceAsync(2));
@@ -593,7 +610,7 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task CreatePlanned_AccountNotFound_ThrowsKeyNotFoundException()
+    public async Task CreatePlanned_AccountNotFound_ThrowsNotFoundException()
     {
         var accRepo = new FakeSavingsRepo();
         var txRepo = new FakeTxRepo();
@@ -601,7 +618,7 @@ public class TransactionServiceTests
 
         var req = new PlannedTransactionRequest(99, "withdrawal", 1200m, DateTime.UtcNow.AddMonths(1), "Hyra");
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.CreatePlannedAsync(req));
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.CreatePlannedAsync(req));
         Assert.Equal(0, txRepo.Count);
     }
 
@@ -626,7 +643,7 @@ public class TransactionServiceTests
         var txRepo = new FakeTxRepo(seedTx);
         var svc = new TransactionService(txRepo, new FakeSavingsRepo(), new TestLogger<TransactionService>());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CancelPlannedAsync(5));
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(5));
 
         Assert.NotNull(await svc.GetByIdAsync(5));
     }

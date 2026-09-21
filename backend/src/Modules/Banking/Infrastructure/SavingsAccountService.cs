@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Mappers;
 using Nordiska.Modules.Banking.Contracts.Requests;
@@ -40,7 +41,7 @@ public class SavingsAccountService : ISavingsAccountService
     {
         var acc = await _repo.GetByIdAsync(id, cancellationToken);
         if (acc is null)
-            throw new KeyNotFoundException($"Savings account with ID {id} was not found.");
+            throw new NotFoundException($"Savings account with ID {id} was not found.");
         return acc.ToResponse();
     }
 
@@ -61,11 +62,11 @@ public class SavingsAccountService : ISavingsAccountService
     {
         var acc = await _repo.GetByIdAsync(id, cancellationToken);
         if (acc is null)
-            throw new KeyNotFoundException($"Savings account with ID {id} was not found.");
+            throw new NotFoundException($"Savings account with ID {id} was not found.");
 
         if (acc.Balance > 0)
         {
-            throw new InvalidOperationException($"Cannot close account with positive balance ({acc.Balance:N2} SEK). Transfer or withdraw all funds before closing.");
+            throw new ConflictException($"Cannot close account with positive balance ({acc.Balance:N2} SEK). Transfer or withdraw all funds before closing.");
         }
 
         acc.Status = "closed";

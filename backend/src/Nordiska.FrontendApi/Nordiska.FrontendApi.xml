@@ -480,6 +480,18 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">List of interest rates per account type.</response>
         </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.InterestRatesController.GetPolicyRate(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves the current Riksbank policy rate.
+            </summary>
+            <remarks>
+            Fetched from the Riksbank SWEA API and cached on the server for six hours. The rate is a fraction (0.0175 = 1.75 %),
+            same as the account type rates. If the Riksbank can't be reached the last known rate is returned with stale = true.
+            </remarks>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">The current policy rate and the date it took effect.</response>
+            <response code="503">The Riksbank couldn't be reached and there is no earlier rate to fall back on.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController">
             <summary>
             API endpoints for querying and executing account transactions (deposits and withdrawals) using the ledger pattern.

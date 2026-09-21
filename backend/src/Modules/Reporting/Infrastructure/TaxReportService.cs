@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
@@ -37,7 +38,7 @@ public sealed class TaxReportService : ITaxReportService
     public async Task<TaxReportJobResponse> CreateJobAsync(long customerId, long accountId, int year, CancellationToken cancellationToken = default)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new InvalidOperationException($"Account with ID {accountId} was not found.");
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
         if (account.CustomerId != customerId)
         {
@@ -139,7 +140,7 @@ public sealed class TaxReportService : ITaxReportService
     public async Task<(byte[] FileBytes, string FileName)> GenerateDirectReportAsync(long customerId, long accountId, int year, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new InvalidOperationException($"Account with ID {accountId} was not found.");
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
         if (!isAdmin && account.CustomerId != customerId)
         {
@@ -156,10 +157,10 @@ public sealed class TaxReportService : ITaxReportService
     private async Task<TaxReportData> BuildReportDataAsync(long customerId, long accountId, int year, CancellationToken cancellationToken)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new InvalidOperationException($"Account with ID {accountId} was not found.");
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
         var customer = await _customerService.GetByIdAsync(customerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer with ID {customerId} was not found.");
+            ?? throw new NotFoundException($"Customer with ID {customerId} was not found.");
 
         var transactions = (await _transactionService.QueryAsync(accountId, cancellationToken)).ToList();
 
