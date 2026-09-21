@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
@@ -63,7 +63,7 @@ export default function TransferPage() {
     );
 
     const [name, setName] = useState("");
-    const [fromId, setFromId] = useState<string | null>(null);
+    const [selectedFromId, setFromId] = useState<string | null>(null);
     const [toId, setToId] = useState<string | null>(null);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
@@ -79,11 +79,7 @@ export default function TransferPage() {
         PlannedTransfer[]
     >([]);
 
-    useEffect(() => {
-        if (!fromId && ownAccounts.length > 0) {
-            setFromId(ownAccounts[0].id);
-        }
-    }, [fromId, ownAccounts]);
+    const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
 
     const backendPlannedTransfers: PlannedTransfer[] = useMemo(
         () =>
