@@ -102,6 +102,11 @@
     "paragraph": "The page you are looking for could not be found.",
     "button": "Back to home"
 },
+"500-route": {
+    "title": "Something went wrong.",
+    "paragraph": "An internal server error occurred. Please try again shortly.",
+    "button": "Back to home"
+},
 "page-header": {
     "help-center": "Help Center",
     "settings": "Settings",

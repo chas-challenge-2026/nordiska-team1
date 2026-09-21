@@ -101,6 +101,11 @@
     "paragraph": "Sidan du letar efter kunde inte hittas.",
     "button": "Tillbaka till hem"
 },
+"500-route": {
+    "title": "Något gick fel.",
+    "paragraph": "Ett internt serverfel uppstod. Försök igen om en stund.",
+    "button": "Tillbaka till hem"
+},
 "page-header": {
     "help-center": "Hjälpcenter",
     "settings": "Inställningar",
