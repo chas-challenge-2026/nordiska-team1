@@ -38,7 +38,7 @@ public class AccountTypesControllerIntegrationTests : IClassFixture<CustomAuthWe
     public async Task GetAll_Returns_AllStandardAccountTypes()
     {
         var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/account-types");
+        var response = await client.GetAsync("/api/banking/account-types");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var types = await response.Content.ReadFromJsonAsync<List<AccountTypeConfigResponse>>();
@@ -55,7 +55,7 @@ public class AccountTypesControllerIntegrationTests : IClassFixture<CustomAuthWe
     public async Task GetByType_Returns_SpecificAccountType()
     {
         var client = _factory.CreateClient();
-        var response = await client.GetAsync("/api/account-types/flex");
+        var response = await client.GetAsync("/api/banking/account-types/flex");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var type = await response.Content.ReadFromJsonAsync<AccountTypeConfigResponse>();
