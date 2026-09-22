@@ -107,6 +107,25 @@ public class DbInitializer
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
     {
+        // Ensure standard account type configurations exist
+        var standardConfigs = new[]
+        {
+            new AccountTypeConfig { AccountType = "flex", InterestRate = 0.0350m, Description = "Flexible savings account with variable interest rate." },
+            new AccountTypeConfig { AccountType = "fix", InterestRate = 0.0410m, Description = "Fixed-term savings account with 3-month lock-in." },
+            new AccountTypeConfig { AccountType = "standard", InterestRate = 0.0250m, Description = "Standard savings account for everyday savings." },
+            new AccountTypeConfig { AccountType = "saving", InterestRate = 0.0350m, Description = "High-yield savings account." },
+            new AccountTypeConfig { AccountType = "premium", InterestRate = 0.0400m, Description = "Premium savings account with top-tier interest rate." }
+        };
+
+        foreach (var cfg in standardConfigs)
+        {
+            if (!await db.AccountTypeConfigs.AnyAsync(x => x.AccountType == cfg.AccountType))
+            {
+                db.AccountTypeConfigs.Add(cfg);
+            }
+        }
+        await db.SaveChangesAsync();
+
         var anna = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198202116050");
         if (anna != null && !await db.SavingsAccounts.AnyAsync(a => a.CustomerId == anna.Id))
         {
@@ -114,7 +133,7 @@ public class DbInitializer
             {
                 CustomerId = anna.Id,
                 AccountNumber = "ABC-123",
-                AccountType = "Sparkonto Flex",
+                AccountType = "flex",
                 Balance = 88210.50m,
                 InterestRate = 0.0350m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -123,7 +142,7 @@ public class DbInitializer
             {
                 CustomerId = anna.Id,
                 AccountNumber = "XYZ-234",
-                AccountType = "Savings",
+                AccountType = "saving",
                 Balance = 68099.66m,
                 InterestRate = 0.0350m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -165,7 +184,7 @@ public class DbInitializer
             {
                 CustomerId = erik.Id,
                 AccountNumber = "DEF-345",
-                AccountType = "Standard",
+                AccountType = "standard",
                 Balance = 12040.00m,
                 InterestRate = 0.0250m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -174,7 +193,7 @@ public class DbInitializer
             {
                 CustomerId = erik.Id,
                 AccountNumber = "GHI-456",
-                AccountType = "Fasträntekonto Fix",
+                AccountType = "fix",
                 Balance = 150000.00m,
                 InterestRate = 0.0410m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)

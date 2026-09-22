@@ -216,6 +216,47 @@ public class AuthService : IAuthService
         return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
     }
 
+    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response)
+    {
+        if (string.IsNullOrWhiteSpace(customerIdOrEmail))
+        {
+            return new AuthenticationResultDto(false, "Ogiltig session.");
+        }
+
+        Customer? customer = null;
+        if (long.TryParse(customerIdOrEmail, out var customerId))
+        {
+            customer = await _userManager.FindByIdAsync(customerIdOrEmail) 
+                       ?? await _db.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+        }
+
+        if (customer == null)
+        {
+            var normalized = customerIdOrEmail.Trim();
+            customer = await _userManager.FindByEmailAsync(normalized)
+                       ?? await _userManager.FindByNameAsync(normalized)
+                       ?? await _db.Customers.FirstOrDefaultAsync(c => c.Email == normalized);
+        }
+
+        if (customer == null)
+        {
+            return new AuthenticationResultDto(false, "Användaren hittades inte.");
+        }
+
+        if (await _userManager.IsLockedOutAsync(customer))
+        {
+            return LockedOut(customer);
+        }
+
+        var token = await _jwtProvider.Generate(customer);
+        response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
+
+        var customerDto = new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name);
+        var completeData = new BankIdCollectResponseDto("COMPLETE", null, customerDto);
+
+        return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
+    }
+
     private async Task<bool> IsPasswordValidAsync(Customer customer, string password)
     {
         if (!string.IsNullOrEmpty(customer.PasswordHash))

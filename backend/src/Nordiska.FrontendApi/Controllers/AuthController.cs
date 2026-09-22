@@ -236,4 +236,41 @@ public class AuthController : ControllerBase
         Response.DeleteAuthCookie();
         return Ok(new { message = "Logged out successfully" });
     }
+
+    /// <summary>
+    /// Extends the active session by issuing a refreshed JWT authentication cookie.
+    /// </summary>
+    /// <remarks>
+    /// Re-evaluates the authenticated caller's identity and updates the secure HttpOnly <c>access_token</c>
+    /// cookie with a refreshed expiration timestamp.
+    /// </remarks>
+    /// <response code="200">Session successfully extended.</response>
+    /// <response code="401">Unauthorized if the session is invalid, expired, or locked out.</response>
+    [Authorize]
+    [HttpPost("refresh")]
+    [HttpPost("extend-session")]
+    [AuditAction("AUTH_REFRESH")]
+    [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshSession()
+    {
+        var customerIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
+                          ?? User.FindFirst(ClaimTypes.Email)?.Value;
+
+        if (string.IsNullOrWhiteSpace(customerIdStr))
+        {
+            return Unauthorized(new { message = "Ogiltig session." });
+        }
+
+        var result = await _authService.RefreshSessionAsync(customerIdStr, Response);
+
+        if (!result.IsSuccess)
+        {
+            return Unauthorized(new { message = result.ErrorMessage });
+        }
+
+        return Ok(result.CollectData?.Customer ?? new CustomerResponseDto(0, "", ""));
+    }
 }

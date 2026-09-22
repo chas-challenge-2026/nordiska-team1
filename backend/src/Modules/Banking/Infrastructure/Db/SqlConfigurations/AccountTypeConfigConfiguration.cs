@@ -27,33 +27,33 @@ public sealed class AccountTypeConfigConfiguration : IEntityTypeConfiguration<Ac
         builder.HasData(
             new AccountTypeConfig
             {
-                AccountType = "Sparkonto Flex",
+                AccountType = "flex",
                 InterestRate = 0.035000m,
-                Description = "Rörligt sparkonto med fria insättningar och uttag (FLEX)."
+                Description = "Flexible savings account with variable interest rate."
             },
             new AccountTypeConfig
             {
-                AccountType = "Fasträntekonto Fix",
+                AccountType = "fix",
                 InterestRate = 0.041000m,
-                Description = "Fasträntekonto med bunden ränta för långsiktigt sparande (FIX)."
+                Description = "Fixed-term savings account with 3-month lock-in."
             },
             new AccountTypeConfig
             {
-                AccountType = "Standard",
+                AccountType = "standard",
                 InterestRate = 0.025000m,
-                Description = "Standard sparkonto med fria insättningar och uttag."
+                Description = "Standard savings account for everyday savings."
             },
             new AccountTypeConfig
             {
-                AccountType = "Savings",
+                AccountType = "saving",
                 InterestRate = 0.035000m,
-                Description = "Förmånligt sparkonto för långsiktigt sparande."
+                Description = "High-yield savings account."
             },
             new AccountTypeConfig
             {
-                AccountType = "Premium",
+                AccountType = "premium",
                 InterestRate = 0.040000m,
-                Description = "Premium sparkonto med bankens högsta sparränta."
+                Description = "Premium savings account with top-tier interest rate."
             }
         );
     }
