@@ -109,3 +109,5 @@ coverage/
 tmp/
 temp/
 sample_outputs/
+
+treeclimber*
