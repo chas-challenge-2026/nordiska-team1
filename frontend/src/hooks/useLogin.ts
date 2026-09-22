@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { login, checkSession, bankIdInitiate, bankIdCollect } from "../services/authService";
+import { login, register, checkSession, bankIdInitiate, bankIdCollect } from "../services/authService";
+import type { RegisterCustomerRequest } from "../services/authService";
 import { useUserStore } from "../store/userStore";
 import { useEffect } from "react";
 
@@ -10,6 +11,18 @@ export function useLogin() {
     return useMutation({
         mutationFn: ({ email, password }: { email: string; password: string }) =>
             login(email, password),
+        onSuccess: async () => {
+            const user = await checkSession();
+            setUser(user);
+        },
+    });
+}
+
+export function useRegister() {
+    const setUser = useUserStore((state) => state.setUser);
+
+    return useMutation({
+        mutationFn: (data: RegisterCustomerRequest) => register(data),
         onSuccess: async () => {
             const user = await checkSession();
             setUser(user);
