@@ -70,7 +70,15 @@ export default function RegisterPage() {
                 ...(trimmedPhone && { phoneNumber: trimmedPhone }),
             },
             {
-                onSuccess: () => navigate("/"),
+                onSuccess: (result) => {
+                    if (!result.accountCreated) {
+                        // Kunden är registrerad och inloggad, men sparkontot
+                        // kunde inte skapas automatiskt - vi navigerar ändå
+                        // vidare och låter kunden skapa kontot manuellt.
+                        console.warn("Registrering lyckades, men det automatiska sparkontot kunde inte skapas.");
+                    }
+                    navigate("/");
+                },
                 onError: (err) => {
                     if (!isAxiosError(err)) {
                         setFormError(t("register-route.error-generic"));
