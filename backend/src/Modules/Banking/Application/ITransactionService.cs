@@ -51,4 +51,9 @@ public interface ITransactionService
     /// Computes the current balance of a savings account by summing all verified non-planned ledger entries.
     /// </summary>
     Task<decimal> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Processes a pending planned transaction: executes the transaction, advances recurring schedules, or removes single plans.
+    /// </summary>
+    Task<TransactionResponse?> ProcessPlannedTransactionAsync(long ledgerEntryId, CancellationToken cancellationToken = default);
 }

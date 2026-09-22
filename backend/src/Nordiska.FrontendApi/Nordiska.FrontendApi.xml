@@ -86,6 +86,11 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.PlannedTransactionsBackgroundWorker">
+            <summary>
+            Background worker that periodically polls and executes pending planned and recurring transactions.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest">
             <summary>
             Request payload for updating customer profile information.

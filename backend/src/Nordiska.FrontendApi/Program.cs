@@ -21,10 +21,11 @@ using ActiveLogin.Authentication.BankId.Core;
 using Nordiska.Modules.Banking.Infrastructure;
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
+using Nordiska.FrontendApi.BackgroundWorkers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns (NOR-78)
+// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
 builder.Host.UseDefaultServiceProvider((context, options) =>
 {
     options.ValidateScopes = true;
@@ -109,6 +110,9 @@ builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
+
+// Background worker for scheduled & recurring transactions
+builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
  
 builder.Services
     .AddIdentityCore<Customer>(options =>
