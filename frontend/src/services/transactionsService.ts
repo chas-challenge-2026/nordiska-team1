@@ -34,10 +34,7 @@ export interface PlannedTransactionPayload {
 
 export async function getTransactions(): Promise<Transaction[]> {
     const res = await axiosInstance.get("/transactions");
-    const data = res.data;
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.items)) return data.items;
-    return [];
+    return res.data;
 }
 
 export async function createTransaction(payload: NewTransaction): Promise<Transaction> {
