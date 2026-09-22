@@ -57,6 +57,8 @@
     "to": "Till datum",
     "deposites": "Endast insättningar",
     "withdraws": "Endast uttag",
+    "type-deposit": "Insättning",
+    "type-withdraw": "Uttag",
     "transactions": "Senaste transaktioner",
     "all-transactions": "Visa fler transaktioner",
     "less-transactions": "Visa färre transaktioner",

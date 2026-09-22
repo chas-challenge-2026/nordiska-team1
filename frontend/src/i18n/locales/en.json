@@ -58,6 +58,8 @@
       "to": "To date",
       "deposites": "Deposites only",
       "withdraws": "Withdraws only",
+      "type-deposit": "Deposit",
+      "type-withdraw": "Withdrawal",
       "transactions": "Latest transactions",
       "all-transactions": "Show more transactions",
       "less-transactions": "Show fewer transactions",
