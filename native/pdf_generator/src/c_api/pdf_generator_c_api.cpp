@@ -81,6 +81,10 @@ int map_generator_error(const nordiska::GeneratorError& err) noexcept {
         return NORDISKA_PDF_INVALID_INPUT;
     case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
         return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
+    case nordiska::GeneratorErrorKind::SignaturePreparationFailed:
+    case nordiska::GeneratorErrorKind::HashingFailed:
+    case nordiska::GeneratorErrorKind::InvalidSignatureOutput:
+    case nordiska::GeneratorErrorKind::SignatureTooLarge:
     case nordiska::GeneratorErrorKind::SigningError:
         return NORDISKA_PDF_SIGNING_FAILED;
     case nordiska::GeneratorErrorKind::InternalError:

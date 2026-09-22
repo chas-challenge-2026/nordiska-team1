@@ -1,7 +1,5 @@
 #include "nordiska/rendering/native_pdf_engine.hpp"
 
-#include "nordiska/domain/generated_pdfs.hpp"
-
 #include <charconv>
 #include <cstdint>
 #include <format>
@@ -69,7 +67,8 @@ class NativeEngineImpl final : public PdfEngine::Impl {
   public:
     explicit NativeEngineImpl(bool compression = true) : compression_(compression) {}
 
-    [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout) const override {
+    [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout,
+                                                                          size_t tail_capacity) const override {
         const size_t num_pages = layout.pages.size();
         if (num_pages == 0) {
             return std::unexpected(RenderError{
@@ -92,9 +91,15 @@ class NativeEngineImpl final : public PdfEngine::Impl {
 
         std::vector<size_t> object_offsets(total_objects + 1, 0);
         std::vector<uint8_t> pdf;
-        pdf.reserve(8192 * num_pages);
+        pdf.reserve(8192 * num_pages + tail_capacity);
 
-        auto append_string = [&](std::string_view sv) { pdf.insert(pdf.end(), sv.begin(), sv.end()); };
+        auto append_string = [&](std::string_view sv) {
+            const size_t required = pdf.size() + sv.size() + tail_capacity;
+            if (required > pdf.capacity()) {
+                pdf.reserve(std::max(required, pdf.capacity() * 2));
+            }
+            pdf.insert(pdf.end(), sv.begin(), sv.end());
+        };
 
         // 1. Header with binary marker comment
         pdf.insert(pdf.end(),
@@ -202,7 +207,7 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                              t_stream_buf.size()) == Z_OK) {
                     append_string(std::format("{} 0 obj\n<< /Length {} /Filter /FlateDecode >>\nstream\n",
                                               content_obj_id, dest_len));
-                    pdf.insert(pdf.end(), t_compress_buf.data(), t_compress_buf.data() + dest_len);
+                    append_string({reinterpret_cast<const char*>(t_compress_buf.data()), dest_len});
                     append_string("\nendstream\nendobj\n");
                 } else {
                     append_string(
@@ -254,10 +259,6 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                                   "{}\n"
                                   "%%EOF\n",
                                   total_objects + 1, xref_offset));
-
-        // Ensure spare capacity for downstream digital signature block append so that
-        // adding the /Sig dictionary and 8 KB placeholder incurs zero buffer reallocations.
-        pdf.reserve(pdf.size() + kSignatureBlockSize);
 
         return pdf;
     }

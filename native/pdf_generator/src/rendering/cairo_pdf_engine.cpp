@@ -1,7 +1,6 @@
 #include "nordiska/rendering/cairo_pdf_engine.hpp"
 
-#include "nordiska/domain/generated_pdfs.hpp"
-
+#include <algorithm>
 #include <cairo-pdf.h>
 #include <cairo.h>
 #include <cstdint>
@@ -70,25 +69,43 @@ class CairoEngineImpl final : public PdfEngine::Impl {
         (void)SharedCairoFonts::instance();
     }
 
-    [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout) const override {
+    [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout,
+                                                                          size_t tail_capacity) const override {
         std::vector<uint8_t> buffer;
 
+        struct Output {
+            std::vector<uint8_t>& bytes;
+            size_t tail_capacity;
+        } output{buffer, tail_capacity};
         auto write_callback = [](void* closure, const unsigned char* data, unsigned int length) -> cairo_status_t {
-            auto* out = static_cast<std::vector<uint8_t>*>(closure);
-            out->insert(out->end(), data, data + length);
-            return CAIRO_STATUS_SUCCESS;
+            auto& out = *static_cast<Output*>(closure);
+            try {
+                const size_t required = out.bytes.size() + length + out.tail_capacity;
+                if (required > out.bytes.capacity()) {
+                    out.bytes.reserve(std::max(required, out.bytes.capacity() * 2));
+                }
+                out.bytes.insert(out.bytes.end(), data, data + length);
+                return CAIRO_STATUS_SUCCESS;
+            } catch (...) {
+                // Never unwind a C++ exception through Cairo's C callback frames.
+                return CAIRO_STATUS_WRITE_ERROR;
+            }
         };
 
         const float default_w = layout.pages.empty() ? 612.0F : layout.pages.front().width;
         const float default_h = layout.pages.empty() ? 792.0F : layout.pages.front().height;
 
-        UniqueCairoSurface surface(cairo_pdf_surface_create_for_stream(write_callback, &buffer, default_w, default_h));
+        UniqueCairoSurface surface(cairo_pdf_surface_create_for_stream(write_callback, &output, default_w, default_h));
         if (!surface || cairo_surface_status(surface.get()) != CAIRO_STATUS_SUCCESS) {
             return std::unexpected(RenderError{
                 .kind = RenderErrorKind::EngineError,
                 .message = "cairo: failed to create PDF surface",
             });
         }
+
+        // Keep the fresh renderer output on classic xref tables, shared with Haru
+        // and Native. The signing update advertises PDF 1.7 in the catalog.
+        cairo_pdf_surface_restrict_to_version(surface.get(), CAIRO_PDF_VERSION_1_4);
 
         UniqueCairo cr(cairo_create(surface.get()));
         if (!cr || cairo_status(cr.get()) != CAIRO_STATUS_SUCCESS) {
@@ -149,10 +166,6 @@ class CairoEngineImpl final : public PdfEngine::Impl {
                 .message = std::string("cairo: rendering failed: ") + cairo_status_to_string(status),
             });
         }
-
-        // Ensure spare capacity for downstream digital signature block append so that
-        // adding the /Sig dictionary and 8 KB placeholder incurs zero buffer reallocations.
-        buffer.reserve(buffer.size() + kSignatureBlockSize);
 
         return buffer;
     }

@@ -31,6 +31,19 @@ void require(bool condition, const char* message) {
     }
 }
 
+struct TestSigner : nordiska::PdfSigner {
+    std::string failure_document;
+    explicit TestSigner(std::string failure = "") : failure_document(std::move(failure)) {}
+    std::expected<std::string, nordiska::SigningError>
+    sign_digest(std::span<const uint8_t, 32>, const nordiska::SigningContext& context, double*) override {
+        if (context.document_id == failure_document) {
+            return std::unexpected(nordiska::SigningError{nordiska::SigningErrorKind::SignatureGenerationFailed,
+                                                          "Simulated signer failure"});
+        }
+        return "3000";
+    }
+};
+
 struct BatchCapture {
     uint64_t customer_id{0};
     size_t call_count{0};
@@ -296,6 +309,7 @@ int main() {
             .engine = nordiska::PdfEngineKind::Native,
             .enable_signing = true,
             .compression = true,
+            .custom_signer = std::make_shared<TestSigner>(),
         };
         nordiska::PdfGenerator sign_gen(sign_cfg);
         nordiska::PipelineTiming timing;
@@ -310,7 +324,7 @@ int main() {
 
     // 11. Step 7: All-or-Nothing Signing Failure Guarantee
     {
-        auto mock_signer = std::make_shared<nordiska::StubPdfSigner>(true, "account1_tax");
+        auto mock_signer = std::make_shared<TestSigner>("account1_tax");
         const nordiska::GeneratorConfig fail_cfg{
             .ingestor = nordiska::JsonIngestorKind::Simdjson,
             .engine = nordiska::PdfEngineKind::Native,
@@ -334,11 +348,11 @@ int main() {
             std::vector<std::string> seen_docs;
             std::vector<uint64_t> seen_customers;
 
-            std::expected<std::vector<uint8_t>, nordiska::SigningError>
-            sign(std::span<const uint8_t> unsigned_pdf, const nordiska::SigningContext& context) override {
+            std::expected<std::string, nordiska::SigningError>
+            sign_digest(std::span<const uint8_t, 32>, const nordiska::SigningContext& context, double*) override {
                 seen_docs.emplace_back(context.document_id);
                 seen_customers.push_back(context.customer_id);
-                return std::vector<uint8_t>(unsigned_pdf.begin(), unsigned_pdf.end());
+                return "3000";
             }
         };
 

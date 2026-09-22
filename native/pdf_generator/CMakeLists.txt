@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(nordiska_pdf_generator LANGUAGES CXX)
+project(nordiska_pdf_generator LANGUAGES C CXX)
 
 include(CTest)
 
@@ -16,8 +16,31 @@ find_package(unofficial-libharu CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(simdjson CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
+
+# pdf-signer integration — we compile the signer developer's C sources from his
+# module directory, using the same settings as his Makefile: C11, his include/,
+# and OpenSSL::Crypto. We do not own, copy, or modify any file under that path.
+# NORDISKA_PDF_SIGNER_SOURCE_DIR can be overridden via -D to point at a
+# different checkout (e.g. CI) without changing this file.
+set(NORDISKA_PDF_SIGNER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../pdf-signer" CACHE PATH "PDF signer source directory")
+add_library(nordiska_pdf_signer_native STATIC
+    ${NORDISKA_PDF_SIGNER_SOURCE_DIR}/src/pdf_sign.c
+    ${NORDISKA_PDF_SIGNER_SOURCE_DIR}/src/key_load.c
+    ${NORDISKA_PDF_SIGNER_SOURCE_DIR}/src/cert_load.c
+    ${NORDISKA_PDF_SIGNER_SOURCE_DIR}/src/debug_log.c
+)
+set_target_properties(nordiska_pdf_signer_native PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_VISIBILITY_PRESET hidden
+)
+target_compile_options(nordiska_pdf_signer_native PRIVATE -Wall -Wextra -Wpedantic)
+target_include_directories(nordiska_pdf_signer_native PUBLIC ${NORDISKA_PDF_SIGNER_SOURCE_DIR}/include)
+target_link_libraries(nordiska_pdf_signer_native PRIVATE OpenSSL::Crypto)
 
 # JSON Ingestion Library
 add_library(nordiska_document_input_json STATIC
@@ -50,6 +73,7 @@ target_link_libraries(nordiska_document_core PUBLIC
     unofficial::libharu::hpdf
     PkgConfig::CAIRO
     ZLIB::ZLIB
+    PRIVATE OpenSSL::Crypto nordiska_pdf_signer_native
 )
 
 # C ABI Shared Library for P/Invoke (.NET / Host Interop)
@@ -91,6 +115,10 @@ add_subdirectory(cli)
 install(TARGETS nordiska_pdf_generator_c_api LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
 if(BUILD_TESTING)
+    add_executable(nordiska_pdf_signing_tests tests/pdf_signing_tests.cpp)
+    target_link_libraries(nordiska_pdf_signing_tests PRIVATE nordiska_document_core nordiska_pdf_signer_native OpenSSL::Crypto)
+    add_test(NAME nordiska_pdf_signing_tests COMMAND nordiska_pdf_signing_tests)
+
     add_executable(nordiska_diagnostics_tests tests/benchmark_metrics_tests.cpp)
     target_link_libraries(nordiska_diagnostics_tests PRIVATE nordiska_document_diagnostics)
     add_test(NAME nordiska_diagnostics_tests COMMAND nordiska_diagnostics_tests)

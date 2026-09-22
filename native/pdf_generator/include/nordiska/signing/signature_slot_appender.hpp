@@ -1,22 +1,26 @@
 #pragma once
 
 #include "nordiska/domain/generated_pdfs.hpp"
+#include "nordiska/signing/pdf_signer.hpp"
 
-#include <cstdint>
+#include <span>
+#include <string_view>
 #include <vector>
 
 namespace nordiska {
 
-/**
- * Appends an ISO 32000-compliant digital signature placeholder block (incremental update)
- * to an existing visual PDF buffer in-place.
- *
- * Utilizes pre-allocated buffer capacity (guaranteed by the rendering backends) to avoid
- * heap reallocation and buffer copying.
- *
- * @param pdf_buffer The rendered visual PDF buffer. Must have spare capacity.
- * @return SignatureSlot containing the byte offset, slot length, and initial status.
- */
-SignatureSlot append_signature_slot(std::vector<uint8_t>& pdf_buffer);
+// Only fresh PDFs produced by our renderers are supported (classic xref, no forms,
+// encryption or previous revisions). Unsupported structures fail before mutation.
+[[nodiscard]] std::expected<SignatureSlot, SigningError>
+append_signature_slot(std::vector<uint8_t>& pdf_buffer, size_t contents_hex_capacity = kDefaultSignatureSlotSize);
+
+[[nodiscard]] std::expected<Sha256Digest, SigningError> calculate_signing_digest(std::span<const uint8_t> pdf,
+                                                                                 const SignatureSlot& slot);
+
+[[nodiscard]] std::expected<Sha256Digest, SigningError> calculate_pdf_hash(std::span<const uint8_t> pdf);
+
+// Validates the entire result before touching the PDF. Never changes its length.
+[[nodiscard]] std::expected<void, SigningError> insert_signature(std::span<uint8_t> pdf, SignatureSlot& slot,
+                                                                 std::string_view contents_hex);
 
 } // namespace nordiska
