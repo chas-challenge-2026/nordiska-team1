@@ -15,7 +15,7 @@ public static class BankingMappers
             AccountName = req.AccountName,
             AccountType = req.AccountType,
             Balance = req.InitialDeposit,
-            InterestRate = req.InterestRate,
+            InterestRate = req.InterestRate ?? 0m,
             CreatedAt = DateTime.UtcNow
         };
 

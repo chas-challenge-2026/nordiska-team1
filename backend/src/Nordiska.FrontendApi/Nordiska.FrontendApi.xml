@@ -412,6 +412,52 @@
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
             <response code="404">Account not found or does not belong to the authenticated customer.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.AccountTypesController">
+            <summary>
+            API endpoints for retrieving and configuring bank account types and interest rates.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountTypesController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all available account types, their current interest rates, and descriptions.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of account type configurations.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountTypesController.GetByType(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves details and current interest rate for a specific account type.
+            </summary>
+            <param name="type">The account type key (e.g. 'flex', 'fix', 'standard', 'saving', 'premium').</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Account type details.</response>
+            <response code="404">Account type not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountTypesController.Create(Nordiska.Modules.Banking.Contracts.Requests.CreateAccountTypeConfigRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new account type configuration with a specified interest rate.
+            </summary>
+            <param name="request">Payload containing account type key, interest rate, and description.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Account type created successfully.</response>
+            <response code="400">Invalid request payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="409">Account type already exists.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountTypesController.Update(System.String,Nordiska.Modules.Banking.Contracts.Requests.UpdateAccountTypeConfigRequest,System.Threading.CancellationToken)">
+            <summary>
+            Updates the interest rate or description of an existing account type.
+            </summary>
+            <param name="type">The account type key (e.g. 'flex', 'fix', 'standard', 'saving', 'premium').</param>
+            <param name="request">Payload containing new interest rate and/or description.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Account type updated successfully.</response>
+            <response code="400">Invalid request payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Account type not found.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.CustomersController">
             <summary>
             API endpoints for managing customer profiles.
