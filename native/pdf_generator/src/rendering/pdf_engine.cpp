@@ -28,8 +28,9 @@ PdfEngine::~PdfEngine() = default;
 PdfEngine::PdfEngine(PdfEngine&&) noexcept = default;
 PdfEngine& PdfEngine::operator=(PdfEngine&&) noexcept = default;
 
-std::expected<std::vector<uint8_t>, RenderError> PdfEngine::render(const DocumentLayout& layout) const {
-    return impl_->render(layout);
+std::expected<std::vector<uint8_t>, RenderError> PdfEngine::render(const DocumentLayout& layout,
+                                                                   size_t tail_capacity) const {
+    return impl_->render(layout, tail_capacity);
 }
 
 } // namespace nordiska

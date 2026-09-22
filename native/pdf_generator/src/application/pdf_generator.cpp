@@ -28,18 +28,57 @@ GeneratorError map_ingest_error(const IngestError& err) noexcept {
     };
 }
 
+GeneratorError map_signing_error(const SigningError& error) {
+    auto kind = GeneratorErrorKind::SigningError;
+    switch (error.kind) {
+    case SigningErrorKind::InvalidPdf:
+        kind = GeneratorErrorKind::SignaturePreparationFailed;
+        break;
+    case SigningErrorKind::DigestFailed:
+        kind = GeneratorErrorKind::HashingFailed;
+        break;
+    case SigningErrorKind::InvalidSignatureOutput:
+        kind = GeneratorErrorKind::InvalidSignatureOutput;
+        break;
+    case SigningErrorKind::SignatureTooLarge:
+        kind = GeneratorErrorKind::SignatureTooLarge;
+        break;
+    default:
+        break;
+    }
+    return {kind, error.message};
+}
+
 } // namespace
 
 PdfGenerator::PdfGenerator(GeneratorConfig config)
-    : ingestor_(config.ingestor), engine_(config.engine, config.compression),
-      signer_(config.custom_signer ? config.custom_signer : std::make_shared<StubPdfSigner>()),
-      enable_signing_(config.enable_signing) {}
+    : ingestor_(config.ingestor), engine_(config.engine, config.compression), signer_(std::move(config.custom_signer)),
+      enable_signing_(config.enable_signing), signature_contents_capacity_(config.signature_contents_capacity) {
+    if (enable_signing_ && !signer_) {
+        auto signer = create_native_pdf_signer();
+        if (signer) {
+            signer_ = std::move(*signer);
+        } else {
+            signer_initialization_error_ = std::move(signer.error());
+        }
+    }
+}
 
 // Must be defaulted in .cpp (not header) so the compiler can safely destroy Pimpl members.
 PdfGenerator::~PdfGenerator() = default;
 
 std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<const uint8_t> json_utf8,
                                                                     PipelineTiming* timing) const {
+    // Classic PDF xref entries have 10 decimal digits for byte offsets.
+    if (signature_contents_capacity_ == 0 || signature_contents_capacity_ % 2 != 0 ||
+        signature_contents_capacity_ > 9'999'999'999ULL - kSignatureUpdateOverhead) {
+        return std::unexpected(
+            GeneratorError{GeneratorErrorKind::InvalidArgument,
+                           "Signature capacity must be a positive even hex length within PDF offset limits"});
+    }
+    if (signer_initialization_error_) {
+        return std::unexpected(map_signing_error(*signer_initialization_error_));
+    }
     using Clock = std::chrono::steady_clock;
     const auto t_ingest_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
 
@@ -72,7 +111,7 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
 
         const auto t_render_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         // 2. Render
-        auto render_res = engine_.render(layout);
+        auto render_res = engine_.render(layout, signature_contents_capacity_ + kSignatureUpdateOverhead);
 
         if (timing != nullptr) {
             const auto t_render_end = Clock::now();
@@ -89,42 +128,54 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
 
         std::vector<uint8_t> final_bytes = std::move(*render_res);
 
-        // 3. Signature Slot Preparation (In-Place Incremental Append)
-        // All three backends (Haru, Cairo, Native) guaranteed spare capacity via
-        // buffer.reserve(size + kSignatureBlockSize) upon completing visual rendering.
-        // Therefore, appending the ISO 32000-compliant /Sig dictionary, ByteRange,
-        // and 8 KB placeholder incurs zero buffer reallocations or heap copies.
-        SignatureSlot slot = append_signature_slot(final_bytes);
-
-        if (enable_signing_ && signer_ != nullptr) {
-            const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-            const SigningContext signing_context{
-                .document_id = doc.document_id,
-                .customer_id = job.customer_id,
-            };
-            // 4. Sign
-            auto sign_res = signer_->sign(final_bytes, signing_context);
-
-            if (timing != nullptr) {
-                const auto t_sign_end = Clock::now();
-                timing->sign_seconds += std::chrono::duration<double>(t_sign_end - t_sign_start).count();
+        const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
+        const auto failure = [&](const SigningError& error) {
+            auto mapped = map_signing_error(error);
+            mapped.message = "Failed to sign document '" + doc.document_id + "': " + mapped.message;
+            return std::unexpected(std::move(mapped));
+        };
+        auto slot_result = append_signature_slot(final_bytes, signature_contents_capacity_);
+        if (!slot_result) {
+            return failure(slot_result.error());
+        }
+        SignatureSlot slot = *slot_result;
+        const auto t_hash_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
+        auto digest = calculate_signing_digest(final_bytes, slot);
+        if (timing != nullptr) {
+            timing->hash_seconds += std::chrono::duration<double>(Clock::now() - t_hash_start).count();
+        }
+        if (!digest) {
+            return failure(digest.error());
+        }
+        if (enable_signing_) {
+            const SigningContext signing_context{.document_id = doc.document_id, .customer_id = job.customer_id};
+            auto signature =
+                signer_->sign_digest(*digest, signing_context, timing ? &timing->signer_call_seconds : nullptr);
+            if (!signature) {
+                return failure(signature.error());
             }
-
-            if (!sign_res) {
-                // All-or-nothing guarantee: stop on first signing failure, discard accumulated results, invoke zero
-                // callbacks
-                return std::unexpected(GeneratorError{
-                    .kind = GeneratorErrorKind::SigningError,
-                    .message = "Failed to sign document '" + doc.document_id + "': " + sign_res.error().message,
-                });
+            auto inserted = insert_signature(final_bytes, slot, *signature);
+            if (!inserted) {
+                return failure(inserted.error());
             }
-            final_bytes = std::move(*sign_res);
-            slot.is_signed = true;
+        }
+        const auto t_checksum_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
+        auto artifact_hash = calculate_pdf_hash(final_bytes);
+        if (timing != nullptr) {
+            timing->hash_seconds += std::chrono::duration<double>(Clock::now() - t_checksum_start).count();
+        }
+        if (!artifact_hash) {
+            return failure(artifact_hash.error());
+        }
+        if (timing != nullptr) {
+            timing->sign_seconds += std::chrono::duration<double>(Clock::now() - t_sign_start).count();
         }
 
         generated.documents.push_back(PdfDocument{
             .document_id = doc.document_id,
             .pdf_bytes = std::move(final_bytes),
+            .sha256_hash = *artifact_hash,
+            .signing_digest = *digest,
             .signature_slot = slot,
         });
     }

@@ -1,6 +1,7 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/domain/generated_pdfs.hpp"
 
+#include <charconv>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -32,6 +33,7 @@ struct CliOptions {
     std::string ingestor = "simdjson";
     bool compression = true;
     bool enable_signing = false;
+    size_t signature_capacity = nordiska::kDefaultSignatureSlotSize;
     bool quiet = false;
     bool verbose = false;
     bool json_summary = false;
@@ -53,7 +55,8 @@ void print_usage(std::string_view program_name) {
               << "  -e, --ingestor <engine>    JSON ingestor: 'simdjson' (default) or 'nlohmann'\n"
               << "      --no-compression       Disable Flate compression in generated PDF streams (faster, larger)\n"
               << "      --compression <bool>   Enable or disable PDF stream compression (default: true)\n"
-              << "      --signing              Enable PDF signing seam on generated documents (default: false)\n"
+              << "      --signing              Call C signer and embed CMS hex (default: false)\n"
+              << "      --signature-capacity <n> Reserved CMS hex characters (default: 8192)\n"
               << "  -q, --quiet                Quiet mode (suppress progress messages, only report errors)\n"
               << "  -v, --verbose              Verbose mode (print detailed breakdown and elapsed timing)\n"
               << "      --json-summary         Output machine-readable JSON execution summary to stdout\n"
@@ -147,6 +150,21 @@ CliOptions parse_cli(int argc, char* argv[]) {
                 options.compression = true;
             } else {
                 std::cerr << "Error: invalid value '" << val << "' for --compression (expected true or false)\n";
+                std::exit(ExitCode::CliUsage);
+            }
+            continue;
+        }
+        if (argument == "--signature-capacity") {
+            if (++index >= argc) {
+                std::cerr << "Error: --signature-capacity requires an even hex-character count\n";
+                std::exit(ExitCode::CliUsage);
+            }
+            const std::string_view value = argv[index];
+            const auto [end, error] =
+                std::from_chars(value.data(), value.data() + value.size(), options.signature_capacity);
+            if (error != std::errc{} || end != value.data() + value.size() || options.signature_capacity == 0 ||
+                options.signature_capacity % 2 != 0) {
+                std::cerr << "Error: --signature-capacity requires a positive even hex-character count\n";
                 std::exit(ExitCode::CliUsage);
             }
             continue;
@@ -277,6 +295,7 @@ int main(int argc, char* argv[]) {
 
         config.compression = options.compression;
         config.enable_signing = options.enable_signing;
+        config.signature_contents_capacity = options.signature_capacity;
 
         // 3. Execute batch generation
         const nordiska::PdfGenerator generator(config);
@@ -299,6 +318,10 @@ int main(int argc, char* argv[]) {
                 return ExitCode::IngestError;
             case nordiska::GeneratorErrorKind::InvalidArgument:
                 return ExitCode::CliUsage;
+            case nordiska::GeneratorErrorKind::SignaturePreparationFailed:
+            case nordiska::GeneratorErrorKind::HashingFailed:
+            case nordiska::GeneratorErrorKind::InvalidSignatureOutput:
+            case nordiska::GeneratorErrorKind::SignatureTooLarge:
             case nordiska::GeneratorErrorKind::SigningError:
                 return ExitCode::SigningError;
             case nordiska::GeneratorErrorKind::ResourceLimitExceeded:

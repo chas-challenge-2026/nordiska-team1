@@ -82,7 +82,7 @@ void print_usage(std::string_view prog_name) {
         << "  --ingestor <simd|nlohmann>  JSON ingestor (default: simdjson)\n"
         << "  --no-compression            Disable Flate stream compression in PDF rendering\n"
         << "  --compression <true|false>  Configure PDF stream compression (default: true)\n"
-        << "  --instrumented              Enable fine-grained phase profiling (Ingest, Layout, Render)\n"
+        << "  --instrumented              Enable phase profiling, including hashing and signer call\n"
         << "  --iterations <N>            Measurement iterations (default: 1)\n"
         << "  --warmups <N>               Warmup iterations (default: 1)\n"
         << "  -h, --help                  Print this help message\n";
@@ -456,6 +456,9 @@ int main(int argc, char* argv[]) {
             double total_cpu_ingest = 0.0;
             double total_cpu_layout = 0.0;
             double total_cpu_render = 0.0;
+            double total_sign = 0.0;
+            double total_hash = 0.0;
+            double total_signer_call = 0.0;
 
             for (const auto& ws : worker_stats) {
                 total_customers += ws.customers;
@@ -472,6 +475,9 @@ int main(int argc, char* argv[]) {
                     total_cpu_ingest += ws.timing.ingest_seconds;
                     total_cpu_layout += ws.timing.layout_seconds;
                     total_cpu_render += ws.timing.render_seconds;
+                    total_sign += ws.timing.sign_seconds;
+                    total_hash += ws.timing.hash_seconds;
+                    total_signer_call += ws.timing.signer_call_seconds;
                 }
             }
 
@@ -507,14 +513,16 @@ int main(int argc, char* argv[]) {
                       << " tx/sec)\n\n";
 
             if (options.instrumented) {
-                const double total_cpu_pipeline = total_cpu_ingest + total_cpu_layout + total_cpu_render;
+                const double total_cpu_pipeline = total_cpu_ingest + total_cpu_layout + total_cpu_render + total_sign;
                 const double wall_equiv_ingest =
                     (num_workers > 0) ? (total_cpu_ingest / num_workers) : total_cpu_ingest;
                 const double wall_equiv_layout =
                     (num_workers > 0) ? (total_cpu_layout / num_workers) : total_cpu_layout;
                 const double wall_equiv_render =
                     (num_workers > 0) ? (total_cpu_render / num_workers) : total_cpu_render;
-                const double wall_equiv_sum = wall_equiv_ingest + wall_equiv_layout + wall_equiv_render;
+                const double wall_equiv_sign = total_sign / num_workers;
+                const double wall_equiv_sum =
+                    wall_equiv_ingest + wall_equiv_layout + wall_equiv_render + wall_equiv_sign;
 
                 const double pct_ingest =
                     (total_cpu_pipeline > 0.0) ? (total_cpu_ingest / total_cpu_pipeline * 100.0) : 0.0;
@@ -553,6 +561,10 @@ int main(int argc, char* argv[]) {
                     << std::setprecision(1) << pct_render << " %   " << std::setw(9) << std::setprecision(1)
                     << render_docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3) << ms_per_doc_render
                     << " ms\n"
+                    << "  Signing phase:      " << std::setw(8) << std::setprecision(2) << total_sign << " s    "
+                    << std::setw(8) << wall_equiv_sign << " s\n"
+                    << "    Hashing:          " << std::setprecision(6) << total_hash << " s (included above)\n"
+                    << "    Signer call:      " << total_signer_call << " s (included above; zero when disabled)\n"
                     << "  ------------------------------------------------------------------------------------\n"
                     << "  Sum of Phases:      " << std::setw(8) << std::setprecision(2) << total_cpu_pipeline
                     << " s    " << std::setw(8) << std::setprecision(2) << wall_equiv_sum << " s    " << " 100.0 %   "

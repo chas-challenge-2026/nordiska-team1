@@ -2,6 +2,7 @@
 
 #include "nordiska/layout/document_layout.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -31,8 +32,8 @@ class PdfEngine {
   public:
     struct Impl {
         virtual ~Impl() = default;
-        [[nodiscard]] virtual std::expected<std::vector<uint8_t>, RenderError>
-        render(const DocumentLayout& layout) const = 0;
+        [[nodiscard]] virtual std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout,
+                                                                                      size_t tail_capacity) const = 0;
     };
 
     explicit PdfEngine(PdfEngineConfig config = {});
@@ -46,7 +47,8 @@ class PdfEngine {
     PdfEngine(const PdfEngine&) = delete;
     PdfEngine& operator=(const PdfEngine&) = delete;
 
-    [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout) const;
+    [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout,
+                                                                          size_t tail_capacity = 0) const;
 
   private:
     std::unique_ptr<Impl> impl_;

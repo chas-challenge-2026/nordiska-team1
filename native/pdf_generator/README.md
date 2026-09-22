@@ -34,14 +34,14 @@ native/pdf_generator/
 │   ├── ingestion/                # JSON ingestor interface & factory
 │   ├── layout/                   # Deterministic layout structures (DocumentLayout)
 │   ├── rendering/                # PDF rendering engine abstraction (PdfEngine)
-│   └── signing/                  # PDF signing abstraction & stub seam (PdfSigner)
+│   └── signing/                  # Digest signing interface & PDF preparation
 ├── src/                          # Subsystem implementations
 │   ├── application/              # PdfGenerator pipeline driver
 │   ├── c_api/                    # C ABI implementation & boundary validation
 │   ├── ingestion/                # simdjson (default) & nlohmann JSON parsers
 │   ├── layout/                   # LayoutBuilder (typography, tables, flow)
 │   ├── rendering/                # Native (default), Haru (bump arena), Cairo
-│   └── signing/                  # PdfSigner stub & all-or-nothing enforcement
+│   └── signing/                  # C signer adapter, PDF preparation & hashing
 ├── cli/                          # Standalone CLI binary (pdf_generator)
 ├── src/benchmark/                # Multi-threaded performance harness
 ├── tests/                        # CTest automated test suites
@@ -189,7 +189,7 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 - `-e, --ingestor <simdjson|nlohmann>`: JSON ingestor (default: `simdjson`).
 - `--no-compression`: Disable Flate stream compression for maximum rendering speed.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
-- `--signing`: Enable PDF signing seam on generated documents (default: `false`).
+- `--signing`: Call the C signer and embed its CMS hex in generated documents (default: `false`).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.
@@ -219,3 +219,8 @@ cat input.json | ./build/pdf_generator -o output/ --json-summary
 ctest --test-dir build --output-on-failure
 ```
 
+
+## PDF signature preparation and signing
+
+See [PDF signing integration](docs/pdf_signing_integration.md) for capacity units,
+the C signer dependency, error/ownership contracts, and current stub limitations.

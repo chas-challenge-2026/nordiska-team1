@@ -258,8 +258,8 @@ int main() {
         for (const auto& doc : (*batch_res)->documents) {
             const auto& slot = doc.signature_slot;
             require(slot.offset > 0, "signature slot offset must be non-zero");
-            require(slot.max_length == 105032,
-                    "signature slot max_length must be 105032 bytes (BankID/Signicat standard)");
+            require(slot.max_length == nordiska::kDefaultSignatureSlotSize,
+                    "signature slot must use configured default hex capacity");
             require(!slot.is_signed, "initial signature slot must not be marked signed");
             require(slot.offset + slot.max_length < doc.pdf_bytes.size(), "slot must fit within pdf bytes");
             require(doc.pdf_bytes[slot.offset - 1] == '<', "preceding byte must be opening '<'");
@@ -269,7 +269,7 @@ int main() {
             }
             std::string_view pdf_sv(reinterpret_cast<const char*>(doc.pdf_bytes.data()), doc.pdf_bytes.size());
             require(pdf_sv.find("/Type /Sig") != std::string_view::npos, "PDF must contain /Type /Sig dictionary");
-            require(pdf_sv.find("/ByteRange [ ") != std::string_view::npos, "PDF must contain /ByteRange");
+            require(pdf_sv.find("/ByteRange [") != std::string_view::npos, "PDF must contain /ByteRange");
         }
     }
 

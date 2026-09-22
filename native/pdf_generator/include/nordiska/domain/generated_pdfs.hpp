@@ -8,12 +8,9 @@
 
 namespace nordiska {
 
-// Production BankID / Signicat PAdES slot size (extracted from real Nordiska contract)
-inline constexpr size_t kDefaultSignatureSlotSize = 105032; // 105,032 hex characters (52,516 bytes)
-
-// Total capacity needed when appending the signature incremental update block
-// (includes widget annotation, /Sig dictionary, ByteRange, 105,032-char placeholder, xref, trailer)
-inline constexpr size_t kSignatureBlockSize = 115000;
+// Capacity is measured in hex characters, excluding the < > delimiters. Callers can select a larger slot.
+inline constexpr size_t kDefaultSignatureSlotSize = 8192;
+inline constexpr size_t kSignatureUpdateOverhead = 4096;
 
 struct SignatureSlot {
     size_t offset{0};
@@ -24,7 +21,9 @@ struct SignatureSlot {
 struct PdfDocument {
     std::string document_id;
     std::vector<uint8_t> pdf_bytes;
+    // Hash of the complete delivered artifact, distinct from the signing digest.
     std::array<uint8_t, 32> sha256_hash{};
+    std::array<uint8_t, 32> signing_digest{};
     SignatureSlot signature_slot{};
 };
 
