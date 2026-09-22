@@ -274,53 +274,120 @@ public class DbInitializer
         {
             var faqItems = new List<FaqEntry>
             {
+                // Swedish FAQs
                 FaqEntry.Create(
                     "När betalas räntan ut?",
                     "Räntan beräknas dagligen och betalas ut den 31 december varje år.",
                     "Ränta",
-                    "ränta, räntan, räntesats, procent, utbetalning"
+                    "ränta, räntan, räntesats, procent, utbetalning",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Hur gör jag en insättning?",
                     "Logga in och välj Insättning / Uttag i menyn. Ange belopp och bekräfta. Pengarna syns direkt på kontot.",
                     "Insättning",
-                    "insättning, insättningar, sätta, pengar, överföring"
+                    "insättning, insättningar, sätta, pengar, överföring",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Hur gör jag ett uttag?",
                     "Logga in och välj Insättning / Uttag i menyn, välj Uttag som typ. Max 50 000 kr per transaktion.",
                     "Uttag",
-                    "uttag, uttaget, ta, gräns"
+                    "uttag, uttaget, ta, gräns",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Var hittar jag mitt årsbesked?",
                     "Årsbeskedet ingår i skatteunderlaget. Välj Skatteunderlag i menyn och ladda ner filen för det år du vill se.",
                     "Rapporter",
-                    "årsbesked, årsbeskedet, skatt, deklaration, deklarationen"
+                    "årsbesked, årsbeskedet, skatt, deklaration, deklarationen",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Hur får jag ett kontoutdrag?",
                     "Dina senaste transaktioner visas på Mitt konto. Fullständigt kontoutdrag ingår i skatteunderlaget.",
                     "Rapporter",
-                    "kontoutdrag, utdrag, transaktioner, historik"
+                    "kontoutdrag, utdrag, transaktioner, historik",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Var hittar jag villkoren för mitt sparkonto?",
                     "Villkoren finns på sidan Insättning / Uttag under Information. Fullständiga avtalsvillkor skickas per post.",
                     "Villkor",
-                    "villkor, villkoren, avtal, regler"
+                    "villkor, villkoren, avtal, regler",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Hur öppnar jag ett nytt sparkonto?",
                     "Kontakta kundtjänst på 08-123 456 78 så hjälper vi dig att öppna ett nytt sparkonto.",
                     "Konto",
-                    "öppna, öppnar, nytt, konto, skapa"
+                    "öppna, öppnar, nytt, konto, skapa",
+                    "sv"
                 ),
                 FaqEntry.Create(
                     "Hur avslutar jag mitt sparkonto?",
                     "Ta ut hela saldot och kontakta sedan kundtjänst på 08-123 456 78 för att avsluta kontot.",
                     "Konto",
-                    "avsluta, avslutar, stänga, säga, upp"
+                    "avsluta, avslutar, stänga, säga, upp",
+                    "sv"
+                ),
+
+                // English FAQs
+                FaqEntry.Create(
+                    "When is interest paid?",
+                    "Interest is calculated daily and paid on December 31st each year.",
+                    "Interest",
+                    "interest, rate, payment, percentage, yield",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "How do I make a deposit?",
+                    "Log in and choose Deposit / Withdrawal in the menu. Enter amount and confirm. The funds appear immediately.",
+                    "Deposit",
+                    "deposit, deposits, put, money, transfer",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "How do I make a withdrawal?",
+                    "Log in and choose Deposit / Withdrawal in the menu, select Withdrawal. Maximum 50,000 SEK per transaction.",
+                    "Withdrawal",
+                    "withdrawal, withdraw, limit, transfer",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "Where can I find my annual statement?",
+                    "The annual statement is included in the tax documents. Choose Tax Documents in the menu and download the file for the desired year.",
+                    "Reports",
+                    "annual statement, tax, statement, tax return, report",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "How do I get an account statement?",
+                    "Your latest transactions are shown under My Account. Complete statements are included in the tax documents.",
+                    "Reports",
+                    "statement, account statement, transactions, history",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "Where can I find the terms for my savings account?",
+                    "Terms can be found on the Deposit / Withdrawal page under Information. Full agreement terms are sent by post.",
+                    "Terms",
+                    "terms, agreement, rules, conditions, policy",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "How do I open a new savings account?",
+                    "Contact customer support at 08-123 456 78 and we will help you open a new savings account.",
+                    "Account",
+                    "open, new, account, create, savings",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "How do I close my savings account?",
+                    "Withdraw your full balance and then contact customer support at 08-123 456 78 to close the account.",
+                    "Account",
+                    "close, closing, terminate, cancel, delete",
+                    "en"
                 )
             };
 
