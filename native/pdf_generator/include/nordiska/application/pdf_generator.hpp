@@ -71,6 +71,10 @@ class PdfGenerator {
     bool enable_signing_{false};
     size_t signature_contents_capacity_;
     std::optional<SigningError> signer_initialization_error_;
+
+    [[nodiscard]] static GeneratorError map_signing_error(const SigningError& error);
+    [[nodiscard]] std::unexpected<GeneratorError> map_signing_failure(const SigningError& error,
+                                                                      std::string_view document_id) const;
 };
 
 } // namespace nordiska

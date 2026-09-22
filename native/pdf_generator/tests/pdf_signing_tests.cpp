@@ -165,7 +165,7 @@ void test_renderers() {
             require(slot->max_length == capacity && !slot->is_signed, "slot metadata mismatch");
             require(text(pdf).find("/AcroForm << /SigFlags 3 /Fields [") != std::string_view::npos,
                     "signature field must be connected to catalog");
-            auto digest = nordiska::calculate_signing_digest(pdf, *slot);
+            auto digest = nordiska::compute_byte_range_digest(pdf, *slot);
             require(digest.has_value() && *digest == independent_hash(covered_bytes(pdf)), "wrong signing digest");
             const auto prepared = pdf;
             const auto prepared_slot = *slot;
@@ -181,9 +181,9 @@ void test_renderers() {
             require(std::all_of(pdf.begin() + slot->offset + 6, pdf.begin() + slot->offset + capacity,
                                 [](uint8_t c) { return c == '0'; }),
                     "remaining slot must contain ASCII zeros");
-            require(nordiska::calculate_signing_digest(pdf, *slot).value() == *digest,
+            require(nordiska::compute_byte_range_digest(pdf, *slot).value() == *digest,
                     "insertion changed signing digest");
-            require(nordiska::calculate_pdf_hash(pdf).value() != nordiska::calculate_pdf_hash(prepared).value(),
+            require(nordiska::hash_final_document(pdf).value() != nordiska::hash_final_document(prepared).value(),
                     "artifact hash did not change");
             require(!nordiska::insert_signature(pdf, *slot, "3000"), "second insertion must fail");
             auto exact_pdf = prepared;
@@ -203,7 +203,7 @@ void test_renderers() {
     require(!nordiska::append_signature_slot(bad) && bad == original, "malformed PDF must fail without mutation");
     require(!nordiska::append_signature_slot(bad, 0), "zero slot accepted");
     require(!nordiska::append_signature_slot(bad, 3), "odd slot accepted");
-    require(!nordiska::calculate_signing_digest(bad, {.offset = 1, .max_length = SIZE_MAX}), "overflow slot accepted");
+    require(!nordiska::compute_byte_range_digest(bad, {.offset = 1, .max_length = SIZE_MAX}), "overflow slot accepted");
 }
 
 void test_c_adapter() {

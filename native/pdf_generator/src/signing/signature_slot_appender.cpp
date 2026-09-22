@@ -258,15 +258,15 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
     return SignatureSlot{.offset = slot_offset, .max_length = capacity, .is_signed = false};
 }
 
-std::expected<Sha256Digest, SigningError> calculate_signing_digest(std::span<const uint8_t> pdf,
-                                                                   const SignatureSlot& slot) {
+std::expected<Sha256Digest, SigningError> compute_byte_range_digest(std::span<const uint8_t> pdf,
+                                                                    const SignatureSlot& slot) {
     if (!valid_slot(pdf, slot)) {
         return std::unexpected(SigningError{SigningErrorKind::InvalidArgument, "Invalid signature slot bounds"});
     }
     return hash_ranges(pdf.first(slot.offset - 1), pdf.subspan(slot.offset + slot.max_length + 1));
 }
 
-std::expected<Sha256Digest, SigningError> calculate_pdf_hash(std::span<const uint8_t> pdf) {
+std::expected<Sha256Digest, SigningError> hash_final_document(std::span<const uint8_t> pdf) {
     return hash_ranges(pdf);
 }
 

@@ -28,7 +28,9 @@ GeneratorError map_ingest_error(const IngestError& err) noexcept {
     };
 }
 
-GeneratorError map_signing_error(const SigningError& error) {
+} // namespace
+
+GeneratorError PdfGenerator::map_signing_error(const SigningError& error) {
     auto kind = GeneratorErrorKind::SigningError;
     switch (error.kind) {
     case SigningErrorKind::InvalidPdf:
@@ -49,7 +51,12 @@ GeneratorError map_signing_error(const SigningError& error) {
     return {kind, error.message};
 }
 
-} // namespace
+std::unexpected<GeneratorError> PdfGenerator::map_signing_failure(const SigningError& error,
+                                                                  std::string_view document_id) const {
+    auto mapped = map_signing_error(error);
+    mapped.message = "Failed to sign document '" + std::string(document_id) + "': " + mapped.message;
+    return std::unexpected(std::move(mapped));
+}
 
 PdfGenerator::PdfGenerator(GeneratorConfig config)
     : ingestor_(config.ingestor), engine_(config.engine, config.compression), signer_(std::move(config.custom_signer)),
@@ -129,43 +136,38 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         std::vector<uint8_t> final_bytes = std::move(*render_res);
 
         const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        const auto failure = [&](const SigningError& error) {
-            auto mapped = map_signing_error(error);
-            mapped.message = "Failed to sign document '" + doc.document_id + "': " + mapped.message;
-            return std::unexpected(std::move(mapped));
-        };
         auto slot_result = append_signature_slot(final_bytes, signature_contents_capacity_);
         if (!slot_result) {
-            return failure(slot_result.error());
+            return map_signing_failure(slot_result.error(), doc.document_id);
         }
         SignatureSlot slot = *slot_result;
         const auto t_hash_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto digest = calculate_signing_digest(final_bytes, slot);
+        auto digest = compute_byte_range_digest(final_bytes, slot);
         if (timing != nullptr) {
             timing->hash_seconds += std::chrono::duration<double>(Clock::now() - t_hash_start).count();
         }
         if (!digest) {
-            return failure(digest.error());
+            return map_signing_failure(digest.error(), doc.document_id);
         }
         if (enable_signing_) {
             const SigningContext signing_context{.document_id = doc.document_id, .customer_id = job.customer_id};
             auto signature =
                 signer_->sign_digest(*digest, signing_context, timing ? &timing->signer_call_seconds : nullptr);
             if (!signature) {
-                return failure(signature.error());
+                return map_signing_failure(signature.error(), doc.document_id);
             }
             auto inserted = insert_signature(final_bytes, slot, *signature);
             if (!inserted) {
-                return failure(inserted.error());
+                return map_signing_failure(inserted.error(), doc.document_id);
             }
         }
         const auto t_checksum_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto artifact_hash = calculate_pdf_hash(final_bytes);
+        auto artifact_hash = hash_final_document(final_bytes);
         if (timing != nullptr) {
             timing->hash_seconds += std::chrono::duration<double>(Clock::now() - t_checksum_start).count();
         }
         if (!artifact_hash) {
-            return failure(artifact_hash.error());
+            return map_signing_failure(artifact_hash.error(), doc.document_id);
         }
         if (timing != nullptr) {
             timing->sign_seconds += std::chrono::duration<double>(Clock::now() - t_sign_start).count();
