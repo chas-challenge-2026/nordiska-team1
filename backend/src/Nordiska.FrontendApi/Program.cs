@@ -131,17 +131,6 @@ builder.Services
     })
     .AddRoles<IdentityRole<long>>()
     .AddEntityFrameworkStores<BankingDbContext>();
-builder.Services.AddProblemDetails(options =>
-{
-    options.CustomizeProblemDetails = context =>
-    {
-        context.ProblemDetails.Extensions["traceId"] =
-            System.Diagnostics.Activity.Current?.Id
-            ?? context.HttpContext.TraceIdentifier;
-    };
-});
-
-
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
 // Service for bank id  
@@ -179,7 +168,7 @@ builder.Services.AddCors(options =>
             };
 
         policy.WithOrigins(allowedOrigins)
-              .WithMethods("GET", "POST", "PUT", "PATCH", "OPTIONS")
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
               .WithHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With")
               .WithExposedHeaders("Content-Disposition")
               .AllowCredentials();

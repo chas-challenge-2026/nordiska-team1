@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
@@ -37,7 +38,7 @@ public sealed class TaxReportService : ITaxReportService
     public async Task<TaxReportJobResponse> CreateJobAsync(long customerId, long accountId, int year, CancellationToken cancellationToken = default)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new InvalidOperationException($"Account with ID {accountId} was not found.");
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
         if (account.CustomerId != customerId)
         {
@@ -139,7 +140,7 @@ public sealed class TaxReportService : ITaxReportService
     public async Task<(byte[] FileBytes, string FileName)> GenerateDirectReportAsync(long customerId, long accountId, int year, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new InvalidOperationException($"Account with ID {accountId} was not found.");
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
         if (!isAdmin && account.CustomerId != customerId)
         {
@@ -156,36 +157,24 @@ public sealed class TaxReportService : ITaxReportService
     private async Task<TaxReportData> BuildReportDataAsync(long customerId, long accountId, int year, CancellationToken cancellationToken)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new InvalidOperationException($"Account with ID {accountId} was not found.");
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
         var customer = await _customerService.GetByIdAsync(customerId, cancellationToken)
-            ?? throw new InvalidOperationException($"Customer with ID {customerId} was not found.");
-
-        var currentBalance = await _transactionService.GetBalanceAsync(accountId, cancellationToken);
+            ?? throw new NotFoundException($"Customer with ID {customerId} was not found.");
 
         var transactions = (await _transactionService.QueryAsync(accountId, cancellationToken)).ToList();
 
-        // Calculate opening balance per Jan 1 of specified tax year
         var yearStartDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var yearEndDate = new DateTime(year, 12, 31, 23, 59, 59, DateTimeKind.Utc);
 
+        // Ledger amounts are already signed (withdrawals and outgoing transfers are negative)
         var openingBalance = transactions
             .Where(t => t.CreatedAt < yearStartDate)
-            .Sum(t => t.Type.Equals("deposit", StringComparison.OrdinalIgnoreCase) ? t.Amount : -t.Amount);
-
-        var totalDeposits = transactions
-            .Where(t => t.CreatedAt >= yearStartDate && t.CreatedAt <= yearEndDate && t.Type.Equals("deposit", StringComparison.OrdinalIgnoreCase))
             .Sum(t => t.Amount);
 
-        var totalWithdrawals = transactions
-            .Where(t => t.CreatedAt >= yearStartDate && t.CreatedAt <= yearEndDate && t.Type.Equals("withdrawal", StringComparison.OrdinalIgnoreCase))
+        var closingBalance = transactions
+            .Where(t => t.CreatedAt <= yearEndDate)
             .Sum(t => t.Amount);
-
-        var closingBalance = openingBalance + totalDeposits - totalWithdrawals;
-        if (closingBalance == 0 && currentBalance > 0 && year >= DateTime.UtcNow.Year)
-        {
-            closingBalance = currentBalance;
-        }
 
         // Estimate annual interest earned
         var interestEarned = Math.Round(closingBalance * account.InterestRate, 2);

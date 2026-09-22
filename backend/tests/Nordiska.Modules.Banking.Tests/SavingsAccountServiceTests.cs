@@ -1,4 +1,5 @@
 using System.Threading;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure;
@@ -53,8 +54,8 @@ public class SavingsAccountServiceTests
     {
         var seed = new[]
         {
-            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "Standard", Balance = 100 },
-            new SavingsAccount { Id = 2, CustomerId = 2, AccountNumber = "A2", AccountType = "Premium", Balance = 200 }
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "standard", Balance = 100 },
+            new SavingsAccount { Id = 2, CustomerId = 2, AccountNumber = "A2", AccountType = "premium", Balance = 200 }
         };
 
         var repo = new FakeSavingsRepo(seed);
@@ -89,7 +90,7 @@ public class SavingsAccountServiceTests
         var repo = new FakeSavingsRepo();
         var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
 
-        var req = new OpenSavingsAccountRequest(1, "SE1234", "Standard", 500m, 0.5m);
+        var req = new OpenSavingsAccountRequest(1, "SE1234", "standard", 500m, 0.025m);
 
         var created = await service.CreateAsync(req);
 
@@ -98,6 +99,8 @@ public class SavingsAccountServiceTests
         Assert.Equal(req.CustomerId, created.CustomerId);
         Assert.Equal(req.AccountNumber, created.AccountNumber);
         Assert.Equal(req.InitialDeposit, created.Balance);
+        Assert.Equal("standard", created.AccountType);
+        Assert.Equal(0.025m, created.InterestRate);
     }
 
     [Fact]
@@ -105,7 +108,7 @@ public class SavingsAccountServiceTests
     {
         var seed = new[]
         {
-            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "Standard", Balance = 0, Status = "active" }
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "standard", Balance = 0, Status = "active" }
         };
 
         var repo = new FakeSavingsRepo(seed);
@@ -118,16 +121,60 @@ public class SavingsAccountServiceTests
     }
 
     [Fact]
-    public async Task CloseAccount_WithPositiveBalance_ThrowsInvalidOperationException()
+    public async Task CloseAccount_WithPositiveBalance_ThrowsConflictException()
     {
         var seed = new[]
         {
-            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "Standard", Balance = 500m, Status = "active" }
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "standard", Balance = 500m, Status = "active" }
         };
 
         var repo = new FakeSavingsRepo(seed);
         var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CloseAccountAsync(1));
+        await Assert.ThrowsAsync<ConflictException>(() => service.CloseAccountAsync(1));
+    }
+
+    [Fact]
+    public async Task GetById_NotFound_ThrowsNotFoundException()
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        await Assert.ThrowsAsync<NotFoundException>(() => service.GetByIdAsync(42));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Create_WithoutAccountNumber_GeneratesNorNumber(string accountNumber)
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var created = await service.CreateAsync(new OpenSavingsAccountRequest(1, accountNumber));
+
+        Assert.Matches(@"^NOR-\d{6}$", created.AccountNumber);
+    }
+
+    [Fact]
+    public async Task Create_WithAccountNumber_TrimsWhitespace()
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var created = await service.CreateAsync(new OpenSavingsAccountRequest(1, "  SE1234  "));
+
+        Assert.Equal("SE1234", created.AccountNumber);
+    }
+
+    [Fact]
+    public async Task Create_WithUnsupportedAccountType_ThrowsNotFoundException()
+    {
+        var repo = new FakeSavingsRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var req = new OpenSavingsAccountRequest(1, "NOR-999999", "unsupported_crypto_type");
+
+        await Assert.ThrowsAsync<NotFoundException>(() => service.CreateAsync(req));
     }
 }
