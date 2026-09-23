@@ -1,28 +1,43 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Modal from "./modals/Modal";
 import InputField from "./forms/InputField";
 import { CollapsibleFormBtns } from "./forms/CollapsibleFormButtons";
-import { useCreateAccount } from "../hooks/useAccounts";
+import { useCreateAccount, useAccountTypes } from "../hooks/useAccounts";
 import type { AccountTypes } from "../services/accountsService";
 import { useUserStore } from "../store/userStore";
 
 type CreateAccountModalProps = {
     onClose: () => void;
+    isModalOpen: boolean;
 };
 
-export default function CreateAccountModal({ onClose }: CreateAccountModalProps) {
+interface AccountTypeOption {
+    value: AccountTypes,
+    label: string,
+    rate: string,
+}
+
+interface AccountTypeResponse {
+    accountType: AccountTypes;
+    interestRate: number;
+    description: string;
+}
+
+export default function CreateAccountModal({ onClose, isModalOpen = false }: CreateAccountModalProps) {
     const { t } = useTranslation();
     const createAccount = useCreateAccount();
     const { user } = useUserStore();
+    const { data: accountTypes, isLoading, error } = useAccountTypes();
 
-    const ACCOUNT_TYPE_OPTIONS: { value: AccountTypes; label: string }[] = [
-        { value: "Savings", label: t("accounts-route.account-type-saving") },
-        { value: "Standard", label: t("accounts-route.account-type-standard") },
-        { value: "Sparkonto Flex", label: t("accounts-route.account-type-flex") },
-        { value: "Fasträntekonto Fix", label: t("accounts-route.account-type-fixed") },
-        { value: "Premium", label: t("accounts-route.account-type-premium") },
-    ];
+    const accountTypeOptions = useMemo<AccountTypeOption[]>(() => {
+        if (!accountTypes) return [];
+        return accountTypes.map((item: AccountTypeResponse) => ({
+            value: item.accountType as AccountTypes,
+            label: t(`accounts-route.account-type-${item.accountType}`),
+            rate: `${(item.interestRate * 100).toFixed(1)}%`,
+        }));
+    }, [accountTypes, t]);
 
     const [accountName, setAccountName] = useState("");
     const [accountType, setAccountType] = useState<AccountTypes | "">("");
@@ -75,7 +90,7 @@ export default function CreateAccountModal({ onClose }: CreateAccountModalProps)
     }
 
     return (
-        <Modal onClose={onClose} title={t("accounts-route.new-account")}>
+        <Modal isOpen={isModalOpen} onClose={onClose} title={t("accounts-route.new-account")}>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
                 <h2 className="text-lg font-semibold text-dark-navy">{t("accounts-route.new-account")}</h2>
 
@@ -104,6 +119,7 @@ export default function CreateAccountModal({ onClose }: CreateAccountModalProps)
                         name="accountType"
                         value={accountType}
                         required
+                        disabled={isLoading || !!error}
                         onChange={(e) => setAccountType(e.target.value as AccountTypes)}
                         aria-invalid={!!accountTypeError}
                         aria-describedby={accountTypeError ? "accountType-error" : undefined}
@@ -111,11 +127,15 @@ export default function CreateAccountModal({ onClose }: CreateAccountModalProps)
                             }`}
                     >
                         <option value="" disabled>
-                            {t("accounts-route.select-account-type")}
+                            {isLoading
+                                ? t("accounts-route.loading-account-types")
+                                : error
+                                    ? t("accounts-route.error-account-types")
+                                    : t("accounts-route.select-account-type")}
                         </option>
-                        {ACCOUNT_TYPE_OPTIONS.map((opt) => (
+                        {accountTypeOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
-                                {opt.label}
+                                {opt.label} - {t("generic.interest")}: {opt.rate}
                             </option>
                         ))}
                     </select>
@@ -131,18 +151,6 @@ export default function CreateAccountModal({ onClose }: CreateAccountModalProps)
                     error={depositError}
                     suffix="sek"
                 />
-
-                <InputField
-                    name="interestRate"
-                    type="number"
-                    label={t("accounts-route.interest-rate")}
-                    placeholder="0"
-                    value={interestRate}
-                    onChange={setInterestRate}
-                    error={rateError}
-                    suffix="%"
-                />
-
                 {createAccount.isError && (
                     <p className="text-sm text-red-700">{t("accounts-route.create-account-error")}</p>
                 )}
