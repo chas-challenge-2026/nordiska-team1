@@ -42,5 +42,4 @@ public record SearchFaqRequest(
     string? Category = null,
     [param: StringLength(200)]
     string? Keyword = null
- 
 );
