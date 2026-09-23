@@ -118,8 +118,7 @@ GeneratedPdfs / C ABI Delivery Callback
 - C++23 capable compiler (GCC 13+ or Clang 17+)
 - CMake 3.25+
 - Ninja build system
-- vcpkg dependencies (automatically resolved via `vcpkg.json` manifest)
-- `$VCPKG_ROOT` environment variable exported (e.g. `export VCPKG_ROOT=$HOME/vcpkg`)
+- Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
 
 ### Build Presets (`CMakePresets.json`)
 
@@ -149,11 +148,11 @@ cmake --build --preset release -j
 #### Manual CMake Invocation (Fallback without presets)
 ```bash
 # Debug
-cmake -B build/debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -G Ninja
+cmake -B build/debug -S . -DCMAKE_BUILD_TYPE=Debug -G Ninja
 cmake --build build/debug -j
 
 # Release
-cmake -B build/release -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -G Ninja
+cmake -B build/release -S . -DCMAKE_BUILD_TYPE=Release -G Ninja
 cmake --build build/release -j
 ```
 

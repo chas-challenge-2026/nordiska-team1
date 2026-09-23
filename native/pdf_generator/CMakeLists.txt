@@ -5,6 +5,7 @@ project(nordiska_pdf_generator LANGUAGES C CXX)
 include(CTest)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,13 +13,69 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-find_package(unofficial-libharu CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(simdjson CONFIG REQUIRED)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+include(FetchContent)
+
+# 1. ZLIB (System package)
 find_package(ZLIB REQUIRED)
+
+# 2. OpenSSL (System package)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+
+# 3. Cairo (System package via pkg-config)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
+
+# 4. nlohmann_json (System package or FetchContent fallback)
+find_package(nlohmann_json 3.11 CONFIG QUIET)
+if(NOT nlohmann_json_FOUND)
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+# 5. simdjson (System package or FetchContent fallback)
+find_package(simdjson CONFIG QUIET)
+if(NOT simdjson_FOUND)
+    FetchContent_Declare(
+        simdjson
+        GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+        GIT_TAG v3.10.1
+    )
+    FetchContent_MakeAvailable(simdjson)
+endif()
+
+# 6. libharu (Config package, system library, or FetchContent fallback)
+find_package(unofficial-libharu CONFIG QUIET)
+if(NOT unofficial-libharu_FOUND)
+    find_path(HPDF_INCLUDE_DIR NAMES hpdf.h)
+    find_library(HPDF_LIB NAMES hpdf libhpdf)
+    if(HPDF_INCLUDE_DIR AND HPDF_LIB)
+        add_library(unofficial::libharu::hpdf UNKNOWN IMPORTED)
+        set_target_properties(unofficial::libharu::hpdf PROPERTIES
+            IMPORTED_LOCATION "${HPDF_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${HPDF_INCLUDE_DIR}"
+        )
+    else()
+        FetchContent_Declare(
+            libharu
+            GIT_REPOSITORY https://github.com/libharu/libharu.git
+            GIT_TAG v2.4.6
+        )
+        set(LIBHPDF_EXAMPLES OFF CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(libharu)
+        if(TARGET hpdf AND NOT TARGET unofficial::libharu::hpdf)
+            target_include_directories(hpdf PUBLIC
+                $<BUILD_INTERFACE:${libharu_SOURCE_DIR}/include>
+                $<BUILD_INTERFACE:${libharu_BINARY_DIR}/include>
+            )
+            add_library(unofficial::libharu::hpdf ALIAS hpdf)
+        endif()
+    endif()
+endif()
 
 # pdf-signer integration — we compile the signer developer's C sources from his
 # module directory, using the same settings as his Makefile: C11, his include/,
