@@ -27,6 +27,8 @@ type PlannedRow = {
     plannedName: string;
     plannedSum: number;
     plannedNote?: string;
+    plannedActionsLabel?: string;
+    onOpenActions?: () => void;
 };
 
 type RowProps = BaseRowProps & (TransactionRow | AccountRow | PlannedRow);
@@ -58,8 +60,27 @@ export default function TableRow(props: RowProps) {
         case "planned":
             return (
                 <div className="border-b border-primary-blue font-montserrat pb-4">
-                    <p className="flex uppercase text-xs tracking-[0.08em]">{props.plannedDate}</p>
-                    <p className="flex justify-between text-[15px] font-bold"><span>{props.plannedName}</span><span>{props.plannedSum.toLocaleString()} sek</span></p>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 justify-between text-[15px] font-bold">
+                            <span className="truncate">{props.plannedName}</span>
+                            <span>{props.plannedSum.toLocaleString()} sek</span>
+                        </div>
+                        {props.onOpenActions && (
+                            <button
+                                type="button"
+                                onClick={props.onOpenActions}
+                                aria-label={props.plannedActionsLabel ?? "Actions"}
+                                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-secondary hover:bg-gray-100"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <circle cx="10" cy="4" r="1.6" />
+                                    <circle cx="10" cy="10" r="1.6" />
+                                    <circle cx="10" cy="16" r="1.6" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                    <p className="mt-1 flex uppercase text-xs tracking-[0.08em] text-secondary">{props.plannedDate}</p>
                     {props.plannedNote && (
                         <p className="text-xs text-secondary">{props.plannedNote}</p>
                     )}

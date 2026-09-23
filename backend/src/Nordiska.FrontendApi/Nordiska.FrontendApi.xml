@@ -368,11 +368,12 @@
             API endpoints for managing customer bank accounts and account information.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.GetAll(System.String,System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.GetAll(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves bank accounts. Non-admin users only receive their own accounts. Optionally filters by account type.
             </summary>
             <param name="type">Optional account type filter (e.g., 'saving', 'standard', 'flex', 'fix', 'premium').</param>
+            <param name="status">Optional account status filter ('active' or 'closed')</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">List of bank accounts.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>

@@ -62,6 +62,8 @@
       "to": "To date",
       "deposites": "Deposites only",
       "withdraws": "Withdraws only",
+      "type-deposit": "Deposit",
+      "type-withdraw": "Withdrawal",
       "transactions": "Latest transactions",
       "all-transactions": "Show more transactions",
       "less-transactions": "Show fewer transactions",
@@ -122,6 +124,11 @@
 "404-route": {
     "title": "Page not found.",
     "paragraph": "The page you are looking for could not be found.",
+    "button": "Back to home"
+},
+"500-route": {
+    "title": "Something went wrong.",
+    "paragraph": "An internal server error occurred. Please try again shortly.",
     "button": "Back to home"
 },
 "page-header": {
@@ -230,7 +237,16 @@
     "planned": {
         "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
         "note-to": "To {{name}}",
-        "note-internal": "Between your own accounts"
+        "note-internal": "Between your own accounts",
+        "actions-label": "More options",
+        "actions-heading": "Planned transfer",
+        "action-edit": "Edit",
+        "action-delete": "Delete",
+        "edit-heading": "Change date",
+        "edit-date-label": "New date",
+        "delete-heading": "Delete planned transfer",
+        "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
+        "delete-confirm": "Yes, delete"
     }
 },
 "get-pdf-button": {
