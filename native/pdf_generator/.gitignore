@@ -7,3 +7,4 @@ tools/synthetic-input-generator/generated/
 !samples_for_signing/**/*.pdf
 
 treeclimber*
+*.csv
