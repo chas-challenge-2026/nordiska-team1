@@ -16,7 +16,6 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 /// </summary>
 [ApiController]
 [Route("api/account-types")]
-[Route("api/banking/account-types")]
 [Tags("Account Types")]
 public class AccountTypesController : ControllerBase
 {
