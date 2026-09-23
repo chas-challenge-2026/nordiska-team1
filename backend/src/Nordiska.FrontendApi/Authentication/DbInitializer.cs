@@ -173,6 +173,17 @@ public class DbInitializer
         }
         await db.SaveChangesAsync();
 
+        // Automatically clean up any legacy account type configs (e.g. 'Fasträntekonto Fix', 'Sparkonto Flex')
+        var validTypes = standardConfigs.Select(c => c.AccountType).ToList();
+        var legacyConfigs = await db.AccountTypeConfigs
+            .Where(x => !validTypes.Contains(x.AccountType))
+            .ToListAsync();
+        if (legacyConfigs.Any())
+        {
+            db.AccountTypeConfigs.RemoveRange(legacyConfigs);
+            await db.SaveChangesAsync();
+        }
+
         // 1. Seed / Update Anna Smith's Accounts
         var anna = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198202116050");
         if (anna != null)
