@@ -37,7 +37,6 @@ export default function App() {
             <ErrorBoundary key={location.pathname}>
                 <AppRoutes/>
             </ErrorBoundary>
-            <AppRoutes/>
 
             {/* TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut: */}
             {showWarning && (
