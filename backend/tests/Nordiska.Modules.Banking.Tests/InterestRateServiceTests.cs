@@ -23,6 +23,25 @@ public class InterestRateServiceTests
             GetAllCalls++;
             return Task.FromResult<IEnumerable<AccountTypeConfig>>(_store.ToList());
         }
+
+        public Task<AccountTypeConfig?> GetByTypeAsync(string accountType, CancellationToken cancellationToken = default)
+        {
+            var match = _store.FirstOrDefault(x => string.Equals(x.AccountType, accountType, StringComparison.OrdinalIgnoreCase));
+            return Task.FromResult(match);
+        }
+
+        public Task CreateAsync(AccountTypeConfig entity, CancellationToken cancellationToken = default)
+        {
+            _store.Add(entity);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(AccountTypeConfig entity, CancellationToken cancellationToken = default)
+        {
+            var idx = _store.FindIndex(x => string.Equals(x.AccountType, entity.AccountType, StringComparison.OrdinalIgnoreCase));
+            if (idx >= 0) _store[idx] = entity;
+            return Task.CompletedTask;
+        }
     }
 
     [Fact]
@@ -33,7 +52,8 @@ public class InterestRateServiceTests
             new AccountTypeConfig { AccountType = "saving", InterestRate = 0.035m, Description = "Sparkonto" },
             new AccountTypeConfig { AccountType = "fix", InterestRate = 0.041m, Description = "Fasträntekonto" }
         });
-        var service = new InterestRateService(repo, new MemoryCache(new MemoryCacheOptions()), new TestLogger<InterestRateService>());
+        var configService = new AccountTypeConfigService(repo, new MemoryCache(new MemoryCacheOptions()), new TestLogger<AccountTypeConfigService>());
+        var service = new InterestRateService(configService);
 
         var rates = (await service.GetAllAsync()).ToList();
 
@@ -48,7 +68,8 @@ public class InterestRateServiceTests
         {
             new AccountTypeConfig { AccountType = "saving", InterestRate = 0.035m, Description = "Sparkonto" }
         });
-        var service = new InterestRateService(repo, new MemoryCache(new MemoryCacheOptions()), new TestLogger<InterestRateService>());
+        var configService = new AccountTypeConfigService(repo, new MemoryCache(new MemoryCacheOptions()), new TestLogger<AccountTypeConfigService>());
+        var service = new InterestRateService(configService);
 
         await service.GetAllAsync();
         await service.GetAllAsync();

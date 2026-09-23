@@ -108,3 +108,4 @@ postgres_data/
 coverage/
 tmp/
 temp/
+.claude/

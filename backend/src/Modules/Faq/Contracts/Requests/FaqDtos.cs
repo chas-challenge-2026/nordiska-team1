@@ -36,12 +36,10 @@ public record UpdateFaqRequest(
 );
 
 public record SearchFaqRequest(
-    [StringLength(500)]
+    [param: StringLength(500)]
     string? SearchTerm = null,
-
-    [StringLength(200)]
+    [param: StringLength(200)]
     string? Category = null,
-
-    [StringLength(200)]
+    [param: StringLength(200)]
     string? Keyword = null
 );

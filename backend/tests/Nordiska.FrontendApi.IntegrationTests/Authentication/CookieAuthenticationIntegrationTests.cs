@@ -145,6 +145,34 @@ public class TestAuthService : IAuthService
 
         return new AuthenticationResultDto(false, "Ogiltig e-postadress eller lösenord.");
     }
+
+    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response)
+    {
+        Customer? customer = null;
+        if (long.TryParse(customerIdOrEmail, out var id))
+        {
+            customer = _customers.Values.FirstOrDefault(c => c.Id == id);
+        }
+
+        if (customer == null && _customers.TryGetValue(customerIdOrEmail, out var c))
+        {
+            customer = c;
+        }
+
+        if (customer != null)
+        {
+            var token = await _jwtProvider.Generate(customer);
+            response.AppendAuthCookie(token, 15);
+            var completeData = new BankIdCollectResponseDto(
+                "COMPLETE",
+                null,
+                new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name)
+            );
+            return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
+        }
+
+        return new AuthenticationResultDto(false, "Användaren hittades inte.");
+    }
 }
 
 public class TestSavingsAccountRepository : ISavingsAccountRepository
@@ -316,6 +344,41 @@ public class TestCustomerService : ICustomerService
     }
 }
 
+public class TestAccountTypeConfigRepository : IAccountTypeConfigRepository
+{
+    private static readonly List<AccountTypeConfig> _configs = new()
+    {
+        new AccountTypeConfig { AccountType = "flex", InterestRate = 0.0350m, Description = "Flexible savings account with variable interest rate." },
+        new AccountTypeConfig { AccountType = "fix", InterestRate = 0.0410m, Description = "Fixed-term savings account with 3-month lock-in." },
+        new AccountTypeConfig { AccountType = "standard", InterestRate = 0.0250m, Description = "Standard savings account for everyday savings." },
+        new AccountTypeConfig { AccountType = "saving", InterestRate = 0.0350m, Description = "High-yield savings account." },
+        new AccountTypeConfig { AccountType = "premium", InterestRate = 0.0400m, Description = "Premium savings account with top-tier interest rate." }
+    };
+
+    public Task<IEnumerable<AccountTypeConfig>> GetAllAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<AccountTypeConfig>>(_configs);
+
+    public Task<AccountTypeConfig?> GetByTypeAsync(string accountType, CancellationToken cancellationToken = default)
+        => Task.FromResult(_configs.FirstOrDefault(c => string.Equals(c.AccountType, accountType, StringComparison.OrdinalIgnoreCase)));
+
+    public Task CreateAsync(AccountTypeConfig entity, CancellationToken cancellationToken = default)
+    {
+        _configs.Add(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(AccountTypeConfig entity, CancellationToken cancellationToken = default)
+    {
+        var existing = _configs.FirstOrDefault(c => string.Equals(c.AccountType, entity.AccountType, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            existing.InterestRate = entity.InterestRate;
+            existing.Description = entity.Description;
+        }
+        return Task.CompletedTask;
+    }
+}
+
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -337,6 +400,9 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<ICustomerService>();
             services.AddScoped<ICustomerService, TestCustomerService>();
+
+            services.RemoveAll<IAccountTypeConfigRepository>();
+            services.AddScoped<IAccountTypeConfigRepository, TestAccountTypeConfigRepository>();
         });
     }
 }
@@ -632,5 +698,59 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebA
         using var meDoc = JsonDocument.Parse(meContent);
         var email = meDoc.RootElement.GetProperty("email").GetString();
         email.Should().Be("anna@exempel.se");
+    }
+
+    [Fact]
+    public async Task RefreshSession_WhenAuthenticated_Refreshes_AuthCookie()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        // Act 1: Login with seeded customer Anna
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "anna@exempel.se",
+            password = "password123"
+        });
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Act 2: Call /api/auth/refresh to extend session
+        var refreshResponse = await client.PostAsync("/api/auth/refresh", null);
+
+        // Assert
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        refreshResponse.Headers.Contains("Set-Cookie").Should().BeTrue();
+
+        var setCookieHeader = refreshResponse.Headers.GetValues("Set-Cookie").FirstOrDefault();
+        setCookieHeader.Should().NotBeNull();
+        setCookieHeader.Should().Contain("access_token=");
+        setCookieHeader.Should().Contain("httponly");
+        setCookieHeader.Should().Contain("path=/");
+
+        var refreshContent = await refreshResponse.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(refreshContent);
+        var name = doc.RootElement.GetProperty("name").GetString();
+        name.Should().Be("Anna Smith");
+    }
+
+    [Fact]
+    public async Task RefreshSession_WhenUnauthenticated_Returns_Unauthorized()
+    {
+        // Arrange: Client without cookies
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+            AllowAutoRedirect = false
+        });
+
+        // Act
+        var refreshResponse = await client.PostAsync("/api/auth/refresh", null);
+
+        // Assert
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

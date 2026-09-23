@@ -55,7 +55,7 @@ export function useBankIdCollect(orderRef: string) {
         if (query.data?.status === "COMPLETE" && query.data.customer) {
             setUser(query.data.customer);
         }
-    }, [query.data]);
+    }, [query.data, setUser]);
 
     return query;
 }

@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTransaction, getTransactions } from "../services/transactionsService";
+import {
+    createTransaction,
+    getTransactions,
+    transferFunds,
+    createPlannedTransaction,
+    cancelPlannedTransaction,
+} from "../services/transactionsService";
+import { accountKey } from "./useAccounts";
 
 export const transactionKey = {
     all: ["transactions"] as const,
@@ -21,4 +28,38 @@ export function useCreateTransaction() {
             queryClient.invalidateQueries({ queryKey: transactionKey.all });
         },
     })
+}
+
+export function useTransferFunds() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: transferFunds,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: transactionKey.all });
+            queryClient.invalidateQueries({ queryKey: accountKey.all });
+        },
+    });
+}
+
+export function useCreatePlannedTransaction() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: createPlannedTransaction,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: transactionKey.all });
+        },
+    });
+}
+
+export function useCancelPlannedTransaction() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: cancelPlannedTransaction,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: transactionKey.all });
+        },
+    });
 }
