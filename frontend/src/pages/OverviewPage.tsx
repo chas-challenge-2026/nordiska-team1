@@ -15,10 +15,6 @@ const CARD_COMPONENTS: Record<CardId, ComponentType> = {
     transactions: RecentTransactionsCard,
 };
 
-/**
- * Overview page. Mobile: single column. Desktop (lg): 2x2 grid, equal row heights.
- * Edit mode: cards reorderable via drag handle or arrow keys. Order saved to localStorage.
- */
 export default function OverviewPage() {
     const { t } = useTranslation();
     const { order, setOrder, move, reset } = useCardOrder();

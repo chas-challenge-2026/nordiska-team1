@@ -9,7 +9,6 @@ type TableProps = {
     handleClick?: () => void;
 };
 
-/** i18n keys per variant. No actionKey = no button. */
 const HEADERS: Record<TableType, { titleKey: string; actionKey?: string }> = {
     account: { titleKey: "table.my-accounts", actionKey: "generic.edit" },
     planned: { titleKey: "table.planned-transactions" },
@@ -17,10 +16,6 @@ const HEADERS: Record<TableType, { titleKey: string; actionKey?: string }> = {
     savings: { titleKey: "overview-route.savings-title" },
 };
 
-/**
- * Titled section: header (title + optional action button) above `children`.
- * Title and button text chosen by `tableType`.
- */
 export default function Table({ tableType, children, handleClick }: TableProps) {
     const { t } = useTranslation();
     const { titleKey, actionKey } = HEADERS[tableType];

@@ -41,7 +41,6 @@ type TwoLineRowProps = {
     amountClassName?: string;
 };
 
-/** Shared layout for "transaction" and "account": small detail line above name + amount. */
 function TwoLineRow({ detail, detailRight, name, amount, amountClassName = "" }: TwoLineRowProps) {
     return (
         <div className={ROW_CLASS}>
@@ -57,7 +56,6 @@ function TwoLineRow({ detail, detailRight, name, amount, amountClassName = "" }:
     );
 }
 
-/** Renders single table row, variant chosen by `rowType`. */
 export default function TableRow(props: RowProps) {
     const { t } = useTranslation();
 

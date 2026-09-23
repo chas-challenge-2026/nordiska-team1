@@ -12,7 +12,6 @@ export default function PlannedTransfersCard() {
     const { t } = useTranslation();
     const { data: transactions, isPending, isError } = useTransactions();
 
-    // setHours returns the new timestamp: local midnight today.
     const startOfToday = new Date().setHours(0, 0, 0, 0);
 
     const upcoming = (transactions ?? [])

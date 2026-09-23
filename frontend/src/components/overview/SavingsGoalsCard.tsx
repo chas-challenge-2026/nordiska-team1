@@ -28,7 +28,6 @@ const MOCK_SAVINGS: SavingsOverview = {
     ],
 };
 
-/** Share of total reached, 0–100. Rounded down, so 100 only when actually reached. */
 function toPercent(value: number, total: number): number {
     if (!Number.isFinite(value) || !Number.isFinite(total) || total <= 0) return 0;
     return Math.min(100, Math.max(0, Math.floor((value / total) * 100)));
@@ -37,7 +36,6 @@ function toPercent(value: number, total: number): number {
 function SavingsDonut({ percent, label }: { percent: number; label: string }) {
     const text = (percent / 100).toLocaleString(undefined, { style: "percent" });
 
-    // Inline style: runtime percent. Conic gradient starts at top, runs clockwise.
     return (
         <div
             role="img"

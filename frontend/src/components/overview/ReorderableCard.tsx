@@ -33,7 +33,6 @@ export default function ReorderableCard({ id, label, isEditing, onKeyboardMove, 
         e.preventDefault();
         const handle = e.currentTarget;
         onKeyboardMove(id, delta);
-        // DOM node moves on reorder; restore focus so user can keep moving.
         requestAnimationFrame(() => handle.focus());
     }
 
