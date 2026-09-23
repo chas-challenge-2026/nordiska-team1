@@ -20,14 +20,15 @@ public static class DependencyInjection
 
         // Register repositories and services for the banking module (FAQ-style)
         services.AddScoped<ISavingsAccountRepository, SavingsAccountRepository>();
+        services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISavingsAccountService, SavingsAccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ICustomerService, CustomerService>();
 
-        // Interest rates are read often and change rarely, so they are cached in memory
+        // Interest rates & account types are read often and change rarely, so they are cached in memory
         services.AddMemoryCache();
-        services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
+        services.AddScoped<IAccountTypeConfigService, AccountTypeConfigService>();
         services.AddScoped<IInterestRateService, InterestRateService>();
 
         // Policy rate comes from the Riksbank SWEA API. Bad config should fail at startup, not on the first request.
