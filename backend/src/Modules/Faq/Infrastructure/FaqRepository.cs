@@ -191,4 +191,4 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         await db.SaveChangesAsync(cancellationToken);
         return entry.ToResponse();
     }
-}
+}
