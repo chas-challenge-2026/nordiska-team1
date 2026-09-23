@@ -16,7 +16,8 @@ public record BankIdCollectResponseDto(
 public record CustomerResponseDto(
     long Id,
     string Email,
-    string Name
+    string Name,
+    string? Token = null
 );
 
 public record AuthenticationResultDto(

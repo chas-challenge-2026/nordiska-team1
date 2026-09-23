@@ -32,6 +32,7 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
         "POST api/auth/logout",
         "GET api/faqs/{id:int}",
         "GET api/faqs/search",
+        "GET api/operational-messages",
 
         // Registered by AddBankIdAuth, ActiveLogin marks its own login flow as anonymous
         "GET ActiveLogin/BankId/Auth",
