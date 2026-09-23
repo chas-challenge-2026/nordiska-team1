@@ -95,9 +95,17 @@ export default function RegisterPage() {
                         }
                     }
 
-                    if (status === 409) setFormError(t("register-route.error-conflict"));
-                    else if (status === 429) setFormError(t("register-route.error-rate-limit"));
-                    else setFormError(t("register-route.error-generic"));
+                    if (status === 409) {
+                        setFormError(t("register-route.error-conflict"));
+                    } else if (status === 429) {
+                        setFormError(t("register-route.error-rate-limit"));
+                    } else if (status === undefined || status >= 500) {
+                        // Serverfel eller inget svar alls (nätverksfel, backend nere) -
+                        // samma hantering som övriga sidor.
+                        navigate("/error-500");
+                    } else {
+                        setFormError(t("register-route.error-generic"));
+                    }
                 },
             }
         );
