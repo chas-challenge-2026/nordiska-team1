@@ -130,4 +130,12 @@ if(BUILD_TESTING)
     add_executable(nordiska_pdf_generator_c_api_tests tests/pdf_generator_c_api_tests.cpp)
     target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core)
     add_test(NAME nordiska_pdf_generator_c_api_tests COMMAND nordiska_pdf_generator_c_api_tests)
+
+    set_tests_properties(
+        nordiska_pdf_signing_tests
+        nordiska_diagnostics_tests
+        nordiska_json_ingestor_tests
+        nordiska_pdf_generator_c_api_tests
+        PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
 endif()

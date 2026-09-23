@@ -253,6 +253,9 @@ int main() {
     if (!std::filesystem::exists(golden_path)) {
         golden_path = "../docs/golden_customer_batch_sample.json";
     }
+    if (!std::filesystem::exists(golden_path)) {
+        golden_path = "../../docs/golden_customer_batch_sample.json";
+    }
     if (std::filesystem::exists(golden_path)) {
         std::ifstream file(golden_path);
         require(file.is_open(), "could not open golden sample file");

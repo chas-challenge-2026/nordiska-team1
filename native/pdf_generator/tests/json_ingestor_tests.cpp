@@ -29,6 +29,9 @@ int main() {
     if (!std::filesystem::exists(golden_path)) {
         golden_path = "../docs/golden_customer_batch_sample.json";
     }
+    if (!std::filesystem::exists(golden_path)) {
+        golden_path = "../../docs/golden_customer_batch_sample.json";
+    }
     require(std::filesystem::exists(golden_path), "golden sample file must exist");
 
     std::ifstream file(golden_path);

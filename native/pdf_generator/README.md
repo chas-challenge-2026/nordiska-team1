@@ -119,22 +119,50 @@ GeneratedPdfs / C ABI Delivery Callback
 - CMake 3.25+
 - Ninja build system
 - vcpkg dependencies (automatically resolved via `vcpkg.json` manifest)
+- `$VCPKG_ROOT` environment variable exported (e.g. `export VCPKG_ROOT=$HOME/vcpkg`)
 
-### Build Targets
+### Build Presets (`CMakePresets.json`)
 
+CMake presets provide reproducible configuration and compilation for both Debug and Release environments.
+
+#### Debug Build (Recommended for development & debugging)
+Outputs to `build/debug/` with full debug symbols:
 ```bash
-# Configure (from native/pdf_generator directory)
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=build/vcpkg_installed/x64-linux/scripts/buildsystems/vcpkg.cmake -G Ninja
+# Configure
+cmake --preset debug
 
 # Build all targets
-cmake --build build -j
+cmake --build --preset debug -j
+```
+
+#### Release Build (Recommended for benchmarking & production deployment)
+Outputs to `build/release/` with optimizations enabled:
+```bash
+# Configure
+cmake --preset release
+
+# Build all targets
+cmake --build --preset release -j
+```
+
+
+#### Manual CMake Invocation (Fallback without presets)
+```bash
+# Debug
+cmake -B build/debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -G Ninja
+cmake --build build/debug -j
+
+# Release
+cmake -B build/release -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -G Ninja
+cmake --build build/release -j
 ```
 
 ### Build Artifacts
-- `build/libnordiska_pdf_generator_c_api.so`: Exported C ABI shared library for .NET P/Invoke.
-- `build/pdf_generator`: Standalone CLI worker.
-- `build/pdf_generator_benchmark`: Multi-worker benchmarking tool.
-- `build/nordiska_*_tests`: CTest unit test executables.
+Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/release/`):
+- `libnordiska_pdf_generator_c_api.so`: Exported C ABI shared library for .NET P/Invoke.
+- `pdf_generator`: Standalone CLI worker.
+- `pdf_generator_benchmark`: Multi-worker benchmarking tool.
+- `nordiska_*_tests`: CTest unit test executables.
 
 ---
 
@@ -179,7 +207,9 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 ## 6. CLI Usage
 
 ```bash
-./build/pdf_generator [OPTIONS] [INPUT_JSON]
+./build/debug/pdf_generator [OPTIONS] [INPUT_JSON]
+# or for release:
+./build/release/pdf_generator [OPTIONS] [INPUT_JSON]
 ```
 
 ### Options:
@@ -198,10 +228,10 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 
 ```bash
 # Generate batch with dedicated Native engine (fastest)
-./build/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native --no-compression
+./build/release/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native --no-compression
 
 # Process piped payload from stdin with JSON output summary
-cat input.json | ./build/pdf_generator -o output/ --json-summary
+cat input.json | ./build/release/pdf_generator -o output/ --json-summary
 ```
 
 ---
@@ -215,12 +245,90 @@ cat input.json | ./build/pdf_generator -o output/ --json-summary
 # 2. Verify formatting without modifications (CI check)
 ./tools/check-format.sh
 
-# 3. Run automated CTest test suite
-ctest --test-dir build --output-on-failure
+# 3. Run automated CTest test suite with presets
+ctest --preset debug
+ctest --preset release
+
+# Or run directly against specific build directory
+ctest --test-dir build/debug --output-on-failure
+ctest --test-dir build/release --output-on-failure
 ```
 
+---
 
-## PDF signature preparation and signing
+## 8. Interactive Debugging with GDB & LLDB
+
+Binaries compiled under the `debug` preset include full DWARF debug symbols and frame pointers without aggressive compiler optimizations.
+
+### Debugging the Standalone CLI
+
+#### GDB
+```bash
+# Launch CLI under GDB with arguments
+gdb --args build/debug/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native -v
+
+# Common GDB commands:
+(gdb) break main                                          # Break at program entry point
+(gdb) break nordiska::application::PdfGenerator::generate # Break at core orchestrator
+(gdb) break nordiska::layout::LayoutBuilder::build        # Break at layout calculation
+(gdb) run                                                 # Start execution (r)
+(gdb) next                                                # Step over (n)
+(gdb) step                                                # Step into (s)
+(gdb) print job.customer_name                             # Inspect variables (p)
+(gdb) info locals                                         # Print all local variables
+(gdb) backtrace                                           # Print stack trace upon crash (bt)
+(gdb) continue                                            # Resume execution (c)
+```
+
+#### LLDB
+```bash
+# Launch CLI under LLDB with arguments
+lldb -- build/debug/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native -v
+
+# Common LLDB commands:
+(lldb) breakpoint set --name main
+(lldb) breakpoint set --name nordiska::application::PdfGenerator::generate
+(lldb) run               # Start execution (r)
+(lldb) thread step-over  # Step over (n)
+(lldb) thread step-in    # Step into (s)
+(lldb) frame variable    # Inspect local variables (fr v)
+(lldb) thread backtrace  # Print call stack (bt)
+(lldb) thread continue   # Resume execution (c)
+```
+
+### Debugging Unit Test Failures
+
+To isolate and step through a specific test suite or failure:
+```bash
+# GDB
+gdb --args build/debug/nordiska_pdf_signing_tests
+(gdb) run
+(gdb) backtrace
+
+# LLDB
+lldb -- build/debug/nordiska_pdf_signing_tests
+(lldb) run
+(lldb) thread backtrace
+```
+
+### Debugging C API Shared Library Interop
+
+When debugging host integration (.NET P/Invoke or test harnesses) against `libnordiska_pdf_generator_c_api.so`:
+```bash
+# Run C API unit test suite directly under GDB
+gdb --args build/debug/nordiska_pdf_generator_c_api_tests
+
+# Or attach GDB to an existing host process loading the library
+gdb -p <PID>
+(gdb) sharedlibrary libnordiska_pdf_generator_c_api.so
+(gdb) break nordiska_pdf_v1_generate_customer_batch
+(gdb) continue
+```
+
+---
+
+## 9. PDF Signature Preparation and Signing
 
 See [PDF signing integration](docs/pdf_signing_integration.md) for capacity units,
 the C signer dependency, error/ownership contracts, and current stub limitations.
+
