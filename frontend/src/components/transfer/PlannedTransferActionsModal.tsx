@@ -9,6 +9,7 @@ import type { PlannedTransfer } from "../../constants/transferAccounts";
 type View = "menu" | "edit" | "confirm-delete";
 
 type PlannedTransferActionsModalProps = {
+    isOpen: boolean;
     transfer: PlannedTransfer;
     onClose: () => void;
     onSaveDate: (newDate: string) => void;
@@ -20,6 +21,7 @@ type PlannedTransferActionsModalProps = {
  * "..."-ikonen. Samma Modal-skal som resten av appen, med tre vyer inuti.
  */
 export default function PlannedTransferActionsModal({
+    isOpen,
     transfer,
     onClose,
     onSaveDate,
@@ -36,13 +38,15 @@ export default function PlannedTransferActionsModal({
 
     return (
         <Modal
+            isOpen={isOpen}
             onClose={onClose}
+            onCloseAnimationComplete={() => setView("menu")}
             title={
                 view === "edit"
                     ? t("page-transfer.planned.edit-heading")
                     : view === "confirm-delete"
-                      ? t("page-transfer.planned.delete-heading")
-                      : t("page-transfer.planned.actions-heading")
+                        ? t("page-transfer.planned.delete-heading")
+                        : t("page-transfer.planned.actions-heading")
             }
             widthClassName="w-full max-w-[420px]"
         >
@@ -51,8 +55,8 @@ export default function PlannedTransferActionsModal({
                     {view === "edit"
                         ? t("page-transfer.planned.edit-heading")
                         : view === "confirm-delete"
-                          ? t("page-transfer.planned.delete-heading")
-                          : transfer.name}
+                            ? t("page-transfer.planned.delete-heading")
+                            : transfer.name}
                 </h3>
             </div>
 

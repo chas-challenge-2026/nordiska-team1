@@ -6,6 +6,7 @@ import type { PanInfo } from "motion/react";
 type ModalProps = {
     isOpen: boolean;
     onClose: () => void;
+    onCloseAnimationComplete?: () => void;
     title: string;
     children: ReactNode;
     widthClassName?: string;
@@ -24,6 +25,7 @@ const DRAG_CLOSE_VISIBLE_RATIO = 0.05; // close once only 5% of the modal remain
 export default function Modal({
     isOpen,
     onClose,
+    onCloseAnimationComplete,
     title,
     children,
     widthClassName = "w-full sm:w-[560px]",
@@ -104,7 +106,7 @@ export default function Modal({
     };
 
     return (
-        <AnimatePresence>
+        <AnimatePresence onExitComplete={onCloseAnimationComplete}>
             {isOpen && (
                 <motion.div
                     className="fixed inset-0 z-50 flex items-end justify-center bg-dark-navy/45 sm:items-center sm:p-10"

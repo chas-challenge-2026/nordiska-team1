@@ -58,6 +58,7 @@ export default function TransferModals({
         <>
             {modal !== null && (
                 <Modal
+                    isOpen={modal !== null}
                     onClose={onCloseModal}
                     title={
                         addAccountOpen
@@ -95,6 +96,7 @@ export default function TransferModals({
 
             {showBankId && toAccount && (
                 <Modal
+                    isOpen={showBankId && !!toAccount}
                     onClose={onCancelBankId}
                     title={t("page-transfer.bankid.heading")}
                     widthClassName="w-full max-w-[480px]"

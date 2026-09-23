@@ -18,6 +18,7 @@ export default function InactivityWarning({remainingSeconds, onStayLoggedIn, onL
         <Modal
             title={t("inactivity-warning.doc-title")}
             onClose={onStayLoggedIn}
+            isOpen={true}
             widthClassName="w-[480px]"
             closeOnOverlayClick={false}
             closeOnEscape={false}>
