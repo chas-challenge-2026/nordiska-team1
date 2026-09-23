@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "swedencentral"
+    },
+    "appName": {
+      "value": "nordiska-sparbanken"
+    },
+    "dbAdminUsername": {
+      "value": "nordiska_admin"
+    },
+    "dbAdminPassword": {
+      "value": "CHANGE_ME_SECURE_PASSWORD"
+    },
+    "jwtSecretKey": {
+      "value": "CHANGE_ME_SUPER_SECRET_SIGNING_KEY_MIN_32_CHARS"
+    }
+  }
+}
