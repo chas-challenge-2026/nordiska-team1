@@ -60,6 +60,8 @@
     "to": "Till datum",
     "deposites": "Endast insättningar",
     "withdraws": "Endast uttag",
+    "type-deposit": "Insättning",
+    "type-withdraw": "Uttag",
     "transactions": "Senaste transaktioner",
     "all-transactions": "Visa fler transaktioner",
     "less-transactions": "Visa färre transaktioner",
@@ -102,6 +104,11 @@
 "404-route": {
     "title": "Sidan kunde inte hittas.",
     "paragraph": "Sidan du letar efter kunde inte hittas.",
+    "button": "Tillbaka till hem"
+},
+"500-route": {
+    "title": "Något gick fel.",
+    "paragraph": "Ett internt serverfel uppstod. Försök igen om en stund.",
     "button": "Tillbaka till hem"
 },
 "page-header": {
@@ -210,7 +217,16 @@
     "planned": {
         "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
         "note-to": "Till {{name}}",
-        "note-internal": "Mellan egna konton"
+        "note-internal": "Mellan egna konton",
+        "actions-label": "Fler alternativ",
+        "actions-heading": "Planerad överföring",
+        "action-edit": "Redigera",
+        "action-delete": "Ta bort",
+        "edit-heading": "Ändra datum",
+        "edit-date-label": "Nytt datum",
+        "delete-heading": "Ta bort planerad överföring",
+        "delete-confirm-text": "Vill du ta bort \"{{name}}\"? Det går inte att ångra.",
+        "delete-confirm": "Ja, ta bort"
     }
 },
 "get-pdf-button": {

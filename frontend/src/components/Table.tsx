@@ -33,9 +33,8 @@ export default function Table({tableType, children, handleClick}: TableProps) {
         case "planned":
             return (
                 <div className="font-montserrat flex flex-col gap-8">
-                    <div className="border-b-nordiska-orange border-b-3 flex justify-between pb-2.5">
+                    <div className="border-b-nordiska-orange border-b-3 pb-2.5">
                         <h2 className="font-semibold text-[26px]">{t("table.planned-transactions")}</h2>
-                        <button className="uppercase text-primary-blue hover:text-nordiska-blue" onClick={() => handleClick()}>{t("generic.handle")}</button>
                     </div>
                     {children}
                 </div>

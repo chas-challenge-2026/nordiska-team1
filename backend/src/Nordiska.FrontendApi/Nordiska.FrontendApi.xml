@@ -86,6 +86,11 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.PlannedTransactionsBackgroundWorker">
+            <summary>
+            Background worker that periodically polls and executes pending planned and recurring transactions.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest">
             <summary>
             Request payload for updating customer profile information.
@@ -317,11 +322,78 @@
             API endpoints for managing and querying FAQ knowledge base entries.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetByLanguage(System.String,System.Int32,System.Int32,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves paginated FAQ entries for a specific language with optional search, category, and keyword filters.
+            </summary>
+            <param name="lang">The language code (e.g. 'sv', 'en').</param>
+            <param name="page">Page index (1-based, default 1).</param>
+            <param name="pageSize">Page size (default 20, max 100).</param>
+            <param name="search">Free text search term across question, answer, and keywords.</param>
+            <param name="category">Category filter (e.g. 'Ränta', 'Interest').</param>
+            <param name="keyword">Keyword filter (e.g. 'ränta', 'deposit').</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Paginated list of FAQ entries matching the criteria.</response>
+            <response code="400">Validation failed for query parameters.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetCategories(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves distinct FAQ categories available for a specific language.
+            </summary>
+            <param name="lang">The language code (e.g. 'sv', 'en').</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of distinct category names for the language.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.IncreaseHelpful(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Increases the helpfulness count of an FAQ entry by 1.
+            </summary>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry with updated helpfulness count.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.DecreaseHelpful(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+            </summary>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry with updated helpfulness count.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Patch(System.Int32,Nordiska.Modules.Faq.Contracts.Requests.PatchFaqRequest,System.Threading.CancellationToken)">
+            <summary>
+            Partially updates an FAQ entry. Requires the faq:manage permission.
+            </summary>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="request">The partial update payload containing fields to update.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry updated successfully.</response>
+            <response code="400">Validation failed on the provided data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.PatchWithLang(System.String,System.Int32,Nordiska.Modules.Faq.Contracts.Requests.PatchFaqRequest,System.Threading.CancellationToken)">
+            <summary>
+            Partially updates an FAQ entry by language and ID. Requires the faq:manage permission.
+            </summary>
+            <param name="lang">The language code (e.g. 'sv', 'en').</param>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="request">The partial update payload containing fields to update.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry updated successfully.</response>
+            <response code="400">Validation failed on the provided data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Create(Nordiska.Modules.Faq.Contracts.Requests.CreateFaqRequest,System.Threading.CancellationToken)">
             <summary>
             Creates a new FAQ entry. Requires the faq:manage permission.
             </summary>
-            <param name="request">The FAQ creation payload containing question, answer, category, and keywords.</param>
+            <param name="request">The FAQ creation payload containing question, answer, category, keywords, and lang.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="201">FAQ entry created successfully.</response>
             <response code="400">Validation failed on the provided FAQ data.</response>
@@ -352,6 +424,11 @@
             <response code="400">Invalid identifier.</response>
             <response code="404">FAQ entry not found.</response>
         </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Search(Nordiska.Modules.Faq.Contracts.Requests.SearchFaqRequest,System.Threading.CancellationToken)">
+            <summary>
+            Searches FAQ entries across categories and keywords.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Controllers.TestController">
             <summary>
             Controller providing test endpoints for authenticated scenarios.
@@ -368,11 +445,12 @@
             API endpoints for managing customer bank accounts and account information.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.GetAll(System.String,System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.GetAll(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves bank accounts. Non-admin users only receive their own accounts. Optionally filters by account type.
             </summary>
             <param name="type">Optional account type filter (e.g., 'saving', 'standard', 'flex', 'fix', 'premium').</param>
+            <param name="status">Optional account status filter ('active' or 'closed')</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">List of bank accounts.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
@@ -548,6 +626,86 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">The current policy rate and the date it took effect.</response>
             <response code="503">The Riksbank couldn't be reached and there is no earlier rate to fall back on.</response>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController">
+            <summary>
+            API endpoints for viewing and managing operational messages, system alerts, and header banners.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.GetActive(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all currently active and unexpired operational messages for public display.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of active operational messages.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all operational messages (including inactive and expired) for administrative overview.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of all operational messages.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a specific operational message by its ID.
+            </summary>
+            <param name="id">The unique identifier of the message.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Operational message details.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Create(Nordiska.Modules.Banking.Contracts.Requests.CreateOperationalMessageRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new bilingual operational message.
+            </summary>
+            <param name="request">Payload containing Swedish and English titles/messages, severity, and scheduling.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Operational message created successfully.</response>
+            <response code="400">Invalid payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Update(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.UpdateOperationalMessageRequest,System.Threading.CancellationToken)">
+            <summary>
+            Fully updates an existing operational message.
+            </summary>
+            <param name="id">The unique identifier of the message to update.</param>
+            <param name="request">Payload with updated message data.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Operational message updated successfully.</response>
+            <response code="400">Invalid payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Patch(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.PatchOperationalMessageRequest,System.Threading.CancellationToken)">
+            <summary>
+            Partially updates an existing operational message (e.g. toggling active state or priority).
+            </summary>
+            <param name="id">The unique identifier of the message.</param>
+            <param name="request">Payload containing only the fields to update.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Operational message patched successfully.</response>
+            <response code="400">Invalid payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Delete(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Deletes an operational message by its ID.
+            </summary>
+            <param name="id">The unique identifier of the message to delete.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Message deleted successfully.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController">
             <summary>

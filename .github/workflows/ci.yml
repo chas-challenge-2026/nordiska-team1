@@ -122,4 +122,3 @@ jobs:
           push: false
           tags: nordiska-portal:ci-test
           cache-from: type=gha
-          cache-to: type=gha,mode=max

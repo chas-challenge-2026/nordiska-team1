@@ -15,7 +15,10 @@ public record CreateFaqRequest(
     string? Category = null,
 
     [StringLength(500)]
-    string? Keywords = null
+    string? Keywords = null,
+
+    [StringLength(10)]
+    string? Lang = "sv"
 );
 
 public record UpdateFaqRequest(
@@ -23,24 +26,58 @@ public record UpdateFaqRequest(
     int Id,
 
     [property: StringLength(500, MinimumLength = 5)]
-    string? Question,
+    string? Question = null,
 
     [property: StringLength(2000, MinimumLength = 1)]
-    string? Answer,
+    string? Answer = null,
 
     [property: StringLength(200)]
-    string? Category,
+    string? Category = null,
 
     [property: StringLength(500)]
-    string? Keywords
+    string? Keywords = null,
+
+    [property: StringLength(10)]
+    string? Lang = null
+);
+
+public record PatchFaqRequest(
+    [property: StringLength(500, MinimumLength = 5)]
+    string? Title = null,
+
+    [property: StringLength(500, MinimumLength = 5)]
+    string? Question = null,
+
+    [property: StringLength(2000, MinimumLength = 1)]
+    string? Answer = null,
+
+    [property: StringLength(200)]
+    string? Category = null,
+
+    [property: StringLength(500)]
+    string? Keywords = null,
+
+    [property: StringLength(10)]
+    string? Lang = null
 );
 
 public record SearchFaqRequest(
-    [property: StringLength(500)]
+    [param: StringLength(500)]
     string? SearchTerm = null,
-    [property: StringLength(200)]
+    [param: StringLength(200)]
     string? Category = null,
-    [property: StringLength(200)]
-    string? Keyword = null
- 
+    [param: StringLength(200)]
+    string? Keyword = null,
+    [param: StringLength(10)]
+    string? Lang = null
 );
+
+public record FaqQueryParameters(
+    int Page = 1,
+    int PageSize = 20,
+    string? SearchTerm = null,
+    string? Category = null,
+    string? Keyword = null,
+    string? Lang = null
+);
+
