@@ -93,6 +93,12 @@ export default function RegisterPage() {
                             setFieldErrors(backendErrors);
                             return;
                         }
+                        // Backend skickar i dag ingen 409 för dubbletter, bara 400 med
+                        // ett enkelt { message }-fel (t.ex. "e-post finns redan"). Utan
+                        // fältfel att peka ut är det enda 400-scenariot vi vet om just
+                        // nu en dubblett, så vi visar samma meddelande som 409 hade fått.
+                        setFormError(t("register-route.error-conflict"));
+                        return;
                     }
 
                     if (status === 409) {
