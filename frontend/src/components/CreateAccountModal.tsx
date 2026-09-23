@@ -42,10 +42,8 @@ export default function CreateAccountModal({ onClose, isModalOpen = false }: Cre
     const [accountName, setAccountName] = useState("");
     const [accountType, setAccountType] = useState<AccountTypes | "">("");
     const [initialDeposit, setInitialDeposit] = useState("");
-    const [interestRate, setInterestRate] = useState("");
     const [accountTypeError, setAccountTypeError] = useState<string>();
     const [depositError, setDepositError] = useState<string>();
-    const [rateError, setRateError] = useState<string>();
 
     function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
@@ -67,13 +65,6 @@ export default function CreateAccountModal({ onClose, isModalOpen = false }: Cre
             setDepositError(undefined);
         }
 
-        const parsedRate = interestRate.trim() === "" ? undefined : Number(interestRate);
-        if (parsedRate !== undefined && Number.isNaN(parsedRate)) {
-            setRateError(t("accounts-route.invalid-interest-rate"));
-            hasError = true;
-        } else {
-            setRateError(undefined);
-        }
 
         if (hasError || !accountType) return;
 
@@ -83,7 +74,6 @@ export default function CreateAccountModal({ onClose, isModalOpen = false }: Cre
                 accountName: accountName.trim() === "" ? null : accountName,
                 accountType,
                 initialDeposit: parsedDeposit,
-                interestRate: parsedRate === undefined ? undefined : parsedRate / 100,
             },
             { onSuccess: onClose }
         );
