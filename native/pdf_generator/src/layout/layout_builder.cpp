@@ -23,17 +23,20 @@ PageLayout create_page() {
 
 } // namespace
 
-DocumentLayout LayoutBuilder::build(const Document& doc) {
+std::expected<DocumentLayout, LayoutError> LayoutBuilder::build(const Document& doc) {
     if (std::holds_alternative<AccountStatement>(doc.content)) {
         return build_statement(std::get<AccountStatement>(doc.content));
     }
     if (std::holds_alternative<AnnualTaxReport>(doc.content)) {
         return build_tax_report(std::get<AnnualTaxReport>(doc.content));
     }
-    return DocumentLayout{.pages = {create_page()}};
+    return std::unexpected(LayoutError{
+        .kind = LayoutErrorKind::UnsupportedDocumentType,
+        .message = "Unsupported document content type",
+    });
 }
 
-DocumentLayout LayoutBuilder::build_statement(const AccountStatement& stmt) {
+std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_statement(const AccountStatement& stmt) {
     DocumentLayout doc;
     PageLayout page = create_page();
 
@@ -153,7 +156,7 @@ DocumentLayout LayoutBuilder::build_statement(const AccountStatement& stmt) {
     return doc;
 }
 
-DocumentLayout LayoutBuilder::build_tax_report(const AnnualTaxReport& tax) {
+std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_tax_report(const AnnualTaxReport& tax) {
     DocumentLayout doc;
     PageLayout page = create_page();
 

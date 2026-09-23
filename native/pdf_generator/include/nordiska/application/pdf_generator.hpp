@@ -2,6 +2,7 @@
 
 #include "nordiska/domain/generated_pdfs.hpp"
 #include "nordiska/ingestion/json_ingestor.hpp"
+#include "nordiska/layout/layout_builder.hpp"
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 #include "nordiska/signing/signature_slot_appender.hpp"
@@ -80,6 +81,7 @@ class PdfGenerator {
     size_t signature_contents_capacity_;
     std::optional<SigningError> signer_initialization_error_;
 
+    [[nodiscard]] static GeneratorError map_layout_error(const LayoutError& error, std::string_view document_id);
     [[nodiscard]] static GeneratorError map_signing_error(const SigningError& error);
     [[nodiscard]] std::unexpected<GeneratorError> map_signing_failure(const SigningError& error,
                                                                       std::string_view document_id) const;

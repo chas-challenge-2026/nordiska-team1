@@ -1,5 +1,6 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/c_api/pdf_generator_c_api.h"
+#include "nordiska/layout/layout_builder.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 
 #include <cstdint>
@@ -374,5 +375,53 @@ int main() {
         require(ctx_signer->seen_docs[1] == "account1_tax", "doc 1 must be account1_tax");
         require(ctx_signer->seen_customers[0] == 1 && ctx_signer->seen_customers[1] == 1,
                 "customer_id must be 1 for all documents");
+    }
+
+    // 13. Step NOR-206: LayoutBuilder std::expected return and error handling
+    {
+        // 13.1 Success paths
+        nordiska::AccountStatement stmt;
+        stmt.account_number = "NKM-99999";
+        stmt.title = "Test Statement";
+        auto stmt_res = nordiska::LayoutBuilder::build_statement(stmt);
+        require(stmt_res.has_value(), "build_statement must succeed for valid statement");
+        require(!stmt_res->pages.empty(), "statement layout must produce at least one page");
+
+        nordiska::AnnualTaxReport tax;
+        tax.account_number = "NKM-99999";
+        tax.tax_year = "2025";
+        auto tax_res = nordiska::LayoutBuilder::build_tax_report(tax);
+        require(tax_res.has_value(), "build_tax_report must succeed for valid tax report");
+        require(!tax_res->pages.empty(), "tax report layout must produce at least one page");
+
+        nordiska::Document doc{
+            .document_id = "test_doc",
+            .content = stmt,
+        };
+        auto doc_res = nordiska::LayoutBuilder::build(doc);
+        require(doc_res.has_value(), "build must succeed for valid Document containing statement");
+
+        // 13.2 Multi-page statement succeeds naturally without artificial page limits
+        nordiska::AccountStatement multi_page_stmt;
+        multi_page_stmt.account_number = "NKM-MULTIPAGE";
+        multi_page_stmt.transactions.resize(150, nordiska::StatementTransaction{
+                                                     .date = "2026-01-01",
+                                                     .type = "Köp",
+                                                     .description = "Test transaction",
+                                                     .amount_display = "-10,00 SEK",
+                                                     .balance_after_display = "1 000,00 SEK",
+                                                 });
+        auto multi_res = nordiska::LayoutBuilder::build_statement(multi_page_stmt);
+        require(multi_res.has_value(), "multi-page statement must succeed without arbitrary page limit");
+        require(multi_res->pages.size() > 1, "150 transactions must produce multiple pages");
+
+        // 13.3 Error types
+        const nordiska::LayoutError err{
+            .kind = nordiska::LayoutErrorKind::UnsupportedDocumentType,
+            .message = "Unsupported document content type",
+        };
+        require(err.kind == nordiska::LayoutErrorKind::UnsupportedDocumentType,
+                "LayoutErrorKind should match UnsupportedDocumentType");
+        require(err.message == "Unsupported document content type", "LayoutError message mismatch");
     }
 }

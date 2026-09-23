@@ -30,6 +30,21 @@ GeneratorError map_ingest_error(const IngestError& err) noexcept {
 
 } // namespace
 
+GeneratorError PdfGenerator::map_layout_error(const LayoutError& error, std::string_view document_id) {
+    auto kind = GeneratorErrorKind::InternalError;
+    switch (error.kind) {
+    case LayoutErrorKind::InvalidDocumentData:
+    case LayoutErrorKind::UnsupportedDocumentType:
+        kind = GeneratorErrorKind::InvalidInput;
+        break;
+    case LayoutErrorKind::InternalError:
+    default:
+        kind = GeneratorErrorKind::InternalError;
+        break;
+    }
+    return {kind, "Failed to layout document '" + std::string(document_id) + "': " + error.message};
+}
+
 GeneratorError PdfGenerator::map_signing_error(const SigningError& error) {
     auto kind = GeneratorErrorKind::SigningError;
     switch (error.kind) {
@@ -109,12 +124,17 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
     for (const Document& doc : job.documents) {
         const auto t_layout_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         // 1. Layout
-        DocumentLayout layout = LayoutBuilder::build(doc);
+        auto layout_res = LayoutBuilder::build(doc);
+        if (!layout_res) {
+            return std::unexpected(map_layout_error(layout_res.error(), doc.document_id));
+        }
 
         if (timing != nullptr) {
             const auto t_layout_end = Clock::now();
             timing->layout_seconds += std::chrono::duration<double>(t_layout_end - t_layout_start).count();
         }
+
+        DocumentLayout layout = std::move(*layout_res);
 
         const auto t_render_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         // 2. Render
