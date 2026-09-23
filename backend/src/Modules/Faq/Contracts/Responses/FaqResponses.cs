@@ -6,7 +6,13 @@ public record FaqEntryResponse(
     string Answer,
     string Category,
     int HelpfulCount,
-    string Keywords
-);
+    IReadOnlyList<string> Keywords,
+    string Lang = "sv",
+    DateTime? CreatedAt = null,
+    DateTime? UpdatedAt = null)
+{
+    public string Title => Question;
+}
 
 public sealed record FaqCreatedResponse(int Id);
+

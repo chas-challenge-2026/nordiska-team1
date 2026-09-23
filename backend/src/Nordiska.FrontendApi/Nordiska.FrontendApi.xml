@@ -86,6 +86,11 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.PlannedTransactionsBackgroundWorker">
+            <summary>
+            Background worker that periodically polls and executes pending planned and recurring transactions.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest">
             <summary>
             Request payload for updating customer profile information.
@@ -317,11 +322,78 @@
             API endpoints for managing and querying FAQ knowledge base entries.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetByLanguage(System.String,System.Int32,System.Int32,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves paginated FAQ entries for a specific language with optional search, category, and keyword filters.
+            </summary>
+            <param name="lang">The language code (e.g. 'sv', 'en').</param>
+            <param name="page">Page index (1-based, default 1).</param>
+            <param name="pageSize">Page size (default 20, max 100).</param>
+            <param name="search">Free text search term across question, answer, and keywords.</param>
+            <param name="category">Category filter (e.g. 'Ränta', 'Interest').</param>
+            <param name="keyword">Keyword filter (e.g. 'ränta', 'deposit').</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Paginated list of FAQ entries matching the criteria.</response>
+            <response code="400">Validation failed for query parameters.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetCategories(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves distinct FAQ categories available for a specific language.
+            </summary>
+            <param name="lang">The language code (e.g. 'sv', 'en').</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of distinct category names for the language.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.IncreaseHelpful(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Increases the helpfulness count of an FAQ entry by 1.
+            </summary>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry with updated helpfulness count.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.DecreaseHelpful(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+            </summary>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry with updated helpfulness count.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Patch(System.Int32,Nordiska.Modules.Faq.Contracts.Requests.PatchFaqRequest,System.Threading.CancellationToken)">
+            <summary>
+            Partially updates an FAQ entry. Requires the faq:manage permission.
+            </summary>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="request">The partial update payload containing fields to update.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry updated successfully.</response>
+            <response code="400">Validation failed on the provided data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.PatchWithLang(System.String,System.Int32,Nordiska.Modules.Faq.Contracts.Requests.PatchFaqRequest,System.Threading.CancellationToken)">
+            <summary>
+            Partially updates an FAQ entry by language and ID. Requires the faq:manage permission.
+            </summary>
+            <param name="lang">The language code (e.g. 'sv', 'en').</param>
+            <param name="id">The unique identifier of the FAQ entry.</param>
+            <param name="request">The partial update payload containing fields to update.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">FAQ entry updated successfully.</response>
+            <response code="400">Validation failed on the provided data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+            <response code="404">FAQ entry not found.</response>
+        </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Create(Nordiska.Modules.Faq.Contracts.Requests.CreateFaqRequest,System.Threading.CancellationToken)">
             <summary>
             Creates a new FAQ entry. Requires the faq:manage permission.
             </summary>
-            <param name="request">The FAQ creation payload containing question, answer, category, and keywords.</param>
+            <param name="request">The FAQ creation payload containing question, answer, category, keywords, and lang.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="201">FAQ entry created successfully.</response>
             <response code="400">Validation failed on the provided FAQ data.</response>
@@ -351,6 +423,11 @@
             <response code="200">FAQ entry retrieved successfully.</response>
             <response code="400">Invalid identifier.</response>
             <response code="404">FAQ entry not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Search(Nordiska.Modules.Faq.Contracts.Requests.SearchFaqRequest,System.Threading.CancellationToken)">
+            <summary>
+            Searches FAQ entries across categories and keywords.
+            </summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Controllers.TestController">
             <summary>
