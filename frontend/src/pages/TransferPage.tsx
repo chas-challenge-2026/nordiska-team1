@@ -91,7 +91,10 @@ export default function TransferPage() {
                     backendId: tx.id,
                     date: (tx.plannedDate ?? tx.createdAt).slice(0, 10),
                     name: tx.label?.trim() || t("page-transfer.default-name"),
-                    note: tx.repeating ?? "",
+                    note:
+                        tx.repeating === "month"
+                            ? t("page-transfer.repeating.month")
+                            : (tx.repeating ?? ""),
                     sum: tx.amount,
                     accountId: tx.accountId,
                     targetAccountId: tx.targetAccountId,
@@ -311,7 +314,7 @@ export default function TransferPage() {
             );
     };
 
-    const handleDeletePlannedTransfer = (transfer: PlannedTransfer) => {
+    const handleDeletePlannedTransfer = async (transfer: PlannedTransfer) => {
         if (transfer.source === "local") {
             setLocalPlannedTransfers((prev) =>
                 prev.filter((p) => p.localId !== transfer.localId),
@@ -320,7 +323,7 @@ export default function TransferPage() {
         }
 
         if (transfer.backendId === undefined) return;
-        cancelPlannedMutation.mutateAsync(transfer.backendId);
+        await cancelPlannedMutation.mutateAsync(transfer.backendId);
     };
 
     const startTransfer = () => {

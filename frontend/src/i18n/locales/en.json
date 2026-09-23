@@ -171,6 +171,9 @@
     "amount-error": "Amount exceeds the balance on {{account}}",
     "date-label": "Transfer date",
     "recurring-label": "Recurring every month",
+    "repeating": {
+        "month": "Monthly"
+    },
     "cta-submit-internal": "Confirm transfer",
     "cta-submit-external": "Confirm with BankID",
     "cta-hint-incomplete": "Fill in accounts and amount.",
@@ -227,7 +230,9 @@
         "edit-date-label": "New date",
         "delete-heading": "Delete planned transfer",
         "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
-        "delete-confirm": "Yes, delete"
+        "delete-confirm": "Yes, delete",
+        "delete-confirm-loading": "Deleting...",
+        "delete-error": "Could not delete the transfer. Please try again."
     }
 },
 "get-pdf-button": {

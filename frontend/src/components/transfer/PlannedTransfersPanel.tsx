@@ -8,7 +8,7 @@ import type { PlannedTransfer } from "../../constants/transferAccounts";
 type PlannedTransfersPanelProps = {
     upcomingTransfers: PlannedTransfer[];
     onEditTransfer: (transfer: PlannedTransfer, newDate: string) => void;
-    onDeleteTransfer: (transfer: PlannedTransfer) => void;
+    onDeleteTransfer: (transfer: PlannedTransfer) => Promise<void>;
 };
 
 export default function PlannedTransfersPanel({
@@ -50,8 +50,8 @@ export default function PlannedTransfersPanel({
                         onEditTransfer(activeTransfer, newDate);
                         setActiveTransfer(null);
                     }}
-                    onConfirmDelete={() => {
-                        onDeleteTransfer(activeTransfer);
+                    onConfirmDelete={async () => {
+                        await onDeleteTransfer(activeTransfer);
                         setActiveTransfer(null);
                     }}
                 />

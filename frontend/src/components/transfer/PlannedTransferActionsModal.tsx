@@ -12,7 +12,7 @@ type PlannedTransferActionsModalProps = {
     transfer: PlannedTransfer;
     onClose: () => void;
     onSaveDate: (newDate: string) => void;
-    onConfirmDelete: () => void;
+    onConfirmDelete: () => Promise<void>;
 };
 
 /**
@@ -28,10 +28,24 @@ export default function PlannedTransferActionsModal({
     const { t } = useTranslation();
     const [view, setView] = useState<View>("menu");
     const [date, setDate] = useState(transfer.date);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState(false);
 
     const handleSaveDate = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSaveDate(date);
+    };
+
+    const handleConfirmDelete = async () => {
+        setIsDeleting(true);
+        setDeleteError(false);
+        try {
+            await onConfirmDelete();
+        } catch {
+            setDeleteError(true);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     return (
@@ -99,20 +113,29 @@ export default function PlannedTransferActionsModal({
                             name: transfer.name,
                         })}
                     </p>
+                    {deleteError && (
+                        <p className="m-0 text-sm text-red-600">
+                            {t("page-transfer.planned.delete-error")}
+                        </p>
+                    )}
                     <div className="flex justify-end gap-6 pt-2">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="cursor-pointer font-bold uppercase text-secondary"
+                            disabled={isDeleting}
+                            className="cursor-pointer font-bold uppercase text-secondary disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {t("generic.cancel")}
                         </button>
                         <button
                             type="button"
-                            onClick={onConfirmDelete}
-                            className="cursor-pointer font-bold uppercase text-red-600"
+                            onClick={handleConfirmDelete}
+                            disabled={isDeleting}
+                            className="cursor-pointer font-bold uppercase text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {t("page-transfer.planned.delete-confirm")}
+                            {isDeleting
+                                ? t("page-transfer.planned.delete-confirm-loading")
+                                : t("page-transfer.planned.delete-confirm")}
                         </button>
                     </div>
                 </div>

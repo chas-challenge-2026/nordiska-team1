@@ -170,6 +170,9 @@
     "amount-error": "Belopp överstiger saldo på {{account}}",
     "date-label": "Överföringsdatum",
     "recurring-label": "Återkommande varje månad",
+    "repeating": {
+        "month": "Månadsvis"
+    },
     "cta-submit-internal": "Bekräfta överföring",
     "cta-submit-external": "Bekräfta med BankID",
     "cta-hint-incomplete": "Fyll i konton och belopp.",
@@ -226,7 +229,9 @@
         "edit-date-label": "Nytt datum",
         "delete-heading": "Ta bort planerad överföring",
         "delete-confirm-text": "Vill du ta bort \"{{name}}\"? Det går inte att ångra.",
-        "delete-confirm": "Ja, ta bort"
+        "delete-confirm": "Ja, ta bort",
+        "delete-confirm-loading": "Tar bort...",
+        "delete-error": "Det gick inte att ta bort överföringen. Försök igen."
     }
 },
 "get-pdf-button": {
