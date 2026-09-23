@@ -69,7 +69,9 @@
     "loading-accounts": "Laddar konton...",
     "accounts-error": "Ett problem uppstod vid hämtning av konton",
     "loading-transactions": "Laddar transaktioner...",
-    "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner"
+    "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner",
+    "showing-count_one": "Visar {{shown}} av {{count}} transaktion",
+    "showing-count_other": "Visar {{shown}} av {{count}} transaktioner"
 },
 "accounts-route": {
     "yearly-interest": "Beräknad årsränta",
@@ -96,6 +98,29 @@
     "invalid-amount": "ogiltigt belopp",
     "invalid-interest-rate": "ogiltig ränta",
     "create-account-error": "Kunde inte skapa kontot. Försök igen."
+},
+"overview-route": {
+    "savings-title": "Sparmål",
+    "savings-total": "Totalt sparat",
+    "savings-next-goal": "Nästa mål:",
+    "savings-eta": "Uppnås om {{time}}",
+    "savings-progress-label": "{{percent}} % av nästa mål uppnått",
+    "loading-planned": "Laddar planerade överföringar...",
+    "planned-error": "Det gick inte att ladda planerade överföringar",
+    "no-planned": "Inga kommande överföringar.",
+    "planned-unnamed": "Namnlös överföring",
+    "no-transactions": "Inga transaktioner än.",
+    "edit-start": "Redigera layout",
+    "edit-done": "Klar",
+    "edit-reset": "Återställ ordning",
+    "edit-reset-done": "Kortens ordning har återställts.",
+    "edit-instructions": "Dra ett kort i handtaget, eller fokusera handtaget och flytta kortet med piltangenterna.",
+    "edit-moved": "{{card}} flyttades till plats {{position}} av {{total}}.",
+    "edit-handle-label": "Flytta {{card}}",
+    "card-accounts": "Mina konton",
+    "card-savings": "Sparmål",
+    "card-planned": "Planerade överföringar",
+    "card-transactions": "Senaste transaktioner"
 },
 "login-route": {
     "title": "Logga in",
