@@ -104,6 +104,7 @@
     "paragraph": "Fill in your details and we will create your customer account at Nordiska.",
     "name": "name",
     "personal-num": "personal number",
+    "personal-num-placeholder": "YYYYMMDDXXXX",
     "submit": "Become a customer",
     "submitting": "Creating account...",
     "name-error": "Enter your name",

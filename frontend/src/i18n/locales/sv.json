@@ -103,6 +103,7 @@
     "paragraph": "Fyll i dina uppgifter så skapar vi ditt kundkonto hos Nordiska.",
     "name": "namn",
     "personal-num": "personnummer",
+    "personal-num-placeholder": "ÅÅÅÅMMDDXXXX",
     "submit": "Bli kund",
     "submitting": "Skapar konto...",
     "name-error": "Ange ditt namn",

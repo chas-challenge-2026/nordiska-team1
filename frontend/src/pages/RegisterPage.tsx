@@ -154,7 +154,7 @@ export default function RegisterPage() {
                                 name="personalNum"
                                 type="text"
                                 label={t("register-route.personal-num")}
-                                placeholder="ÅÅÅÅMMDDXXXX"
+                                placeholder={t("register-route.personal-num-placeholder")}
                                 value={personalNum}
                                 required
                                 onChange={setPersonalNum}
