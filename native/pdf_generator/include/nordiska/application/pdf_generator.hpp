@@ -4,6 +4,7 @@
 #include "nordiska/ingestion/json_ingestor.hpp"
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
+#include "nordiska/signing/signature_slot_appender.hpp"
 
 #include <cstdint>
 #include <expected>
@@ -32,6 +33,13 @@ struct PipelineTiming {
     double sign_seconds{0.0};        // End-to-end signing phase, including preparation and insertion.
     double hash_seconds{0.0};        // Subset: signing digest plus final artifact checksum.
     double signer_call_seconds{0.0}; // Subset: only the external signing function call.
+
+    SignaturePreparationTiming preparation;
+    double prepare_seconds{};
+    double digest_seconds{};
+    double checksum_seconds{};
+    double signer_wrapper_seconds{};
+    double insert_seconds{};
 
     [[nodiscard]] double total_seconds() const noexcept {
         return ingest_seconds + layout_seconds + render_seconds + sign_seconds;

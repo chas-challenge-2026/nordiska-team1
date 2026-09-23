@@ -3,6 +3,7 @@
 #include "nordiska/signing/signature_slot_appender.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -157,7 +158,12 @@ void test_renderers() {
             auto& pdf = *rendered;
             const auto original = pdf;
             const auto* address = pdf.data();
-            auto slot = nordiska::append_signature_slot(pdf, capacity);
+            auto untimed_pdf = pdf;
+            auto untimed_slot = nordiska::append_signature_slot(untimed_pdf, capacity);
+            nordiska::SignaturePreparationTiming preparation;
+            auto slot = nordiska::append_signature_slot(pdf, capacity, &preparation);
+            require(untimed_slot.has_value() && untimed_pdf == pdf,
+                    "instrumentation must not change signature preparation output");
             require(slot.has_value(), slot ? "" : slot.error().message.c_str());
             require(pdf.data() == address, "signature append must not reallocate renderer output");
             require(std::equal(original.begin(), original.end(), pdf.begin()),
@@ -228,6 +234,18 @@ void test_c_adapter() {
             require(timing.hash_seconds > previous_hash_time, "hash timing must accumulate across batches");
             require(timing.signer_call_seconds > previous_call_time,
                     "external call timing must accumulate across batches");
+            require(std::abs(timing.hash_seconds - timing.digest_seconds - timing.checksum_seconds) < 1e-9,
+                    "hash total must equal its two passes");
+            require(timing.sign_seconds >= timing.prepare_seconds + timing.digest_seconds + timing.checksum_seconds +
+                                               timing.signer_wrapper_seconds + timing.insert_seconds,
+                    "disjoint signing passes must fit their parent");
+            const auto& p = timing.preparation;
+            require(timing.prepare_seconds >= p.locate_xref_seconds + p.trailer_seconds + p.xref_entries_seconds +
+                                                  p.catalog_seconds + p.metadata_copy_seconds + p.format_seconds +
+                                                  p.buffer_write_seconds,
+                    "preparation passes must fit their parent");
+            require(timing.signer_wrapper_seconds >= timing.signer_call_seconds,
+                    "external signing call must fit its wrapper");
             require(timing.sign_seconds >= timing.hash_seconds + timing.signer_call_seconds,
                     "nested timings must fit within the end-to-end signing phase");
             require(result.has_value(), result ? "" : result.error().message.c_str());

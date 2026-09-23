@@ -136,7 +136,11 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         std::vector<uint8_t> final_bytes = std::move(*render_res);
 
         const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto slot_result = append_signature_slot(final_bytes, signature_contents_capacity_);
+        auto slot_result =
+            append_signature_slot(final_bytes, signature_contents_capacity_, timing ? &timing->preparation : nullptr);
+        if (timing) {
+            timing->prepare_seconds += std::chrono::duration<double>(Clock::now() - t_sign_start).count();
+        }
         if (!slot_result) {
             return map_signing_failure(slot_result.error(), doc.document_id);
         }
@@ -144,19 +148,29 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         const auto t_hash_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         auto digest = compute_byte_range_digest(final_bytes, slot);
         if (timing != nullptr) {
-            timing->hash_seconds += std::chrono::duration<double>(Clock::now() - t_hash_start).count();
+            const auto seconds = std::chrono::duration<double>(Clock::now() - t_hash_start).count();
+            timing->digest_seconds += seconds;
+            timing->hash_seconds += seconds;
         }
         if (!digest) {
             return map_signing_failure(digest.error(), doc.document_id);
         }
         if (enable_signing_) {
             const SigningContext signing_context{.document_id = doc.document_id, .customer_id = job.customer_id};
+            const auto signer_start = timing ? Clock::now() : Clock::time_point{};
             auto signature =
                 signer_->sign_digest(*digest, signing_context, timing ? &timing->signer_call_seconds : nullptr);
+            if (timing) {
+                timing->signer_wrapper_seconds += std::chrono::duration<double>(Clock::now() - signer_start).count();
+            }
             if (!signature) {
                 return map_signing_failure(signature.error(), doc.document_id);
             }
+            const auto insert_start = timing ? Clock::now() : Clock::time_point{};
             auto inserted = insert_signature(final_bytes, slot, *signature);
+            if (timing) {
+                timing->insert_seconds += std::chrono::duration<double>(Clock::now() - insert_start).count();
+            }
             if (!inserted) {
                 return map_signing_failure(inserted.error(), doc.document_id);
             }
@@ -164,7 +178,9 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         const auto t_checksum_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         auto artifact_hash = hash_final_document(final_bytes);
         if (timing != nullptr) {
-            timing->hash_seconds += std::chrono::duration<double>(Clock::now() - t_checksum_start).count();
+            const auto seconds = std::chrono::duration<double>(Clock::now() - t_checksum_start).count();
+            timing->checksum_seconds += seconds;
+            timing->hash_seconds += seconds;
         }
         if (!artifact_hash) {
             return map_signing_failure(artifact_hash.error(), doc.document_id);

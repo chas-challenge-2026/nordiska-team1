@@ -128,24 +128,32 @@ Benchmark mode: API=cabi, workers=8, target_customers=10000, renderer=haru, inge
 
 ### 4. Phase Breakdown & Profiling (`--instrumented`)
 
-To measure exactly where CPU time is spent across the three pipeline stages (JSON Ingestion, Layout Builder, PDF Render Engine) and verify sanity against total wall time:
+The timers use `steady_clock` and report summed worker **elapsed** time, not CPU
+time. Use one worker to investigate individual passes; use uninstrumented runs
+for throughput and compare both modes to estimate instrumentation overhead.
 
 ```bash
-./build/pdf_generator_benchmark --workers 8 --target-customers 10000 --instrumented
+./build/pdf_generator_benchmark --api direct --workers 1 --target-customers 1000 --iterations 3 --warmups 3 --renderer native --signing --instrumented
 ```
 
-Sample output:
-```text
---- Pipeline Phase Breakdown (--instrumented) ---
-  Phase               CPU Time      Wall Equiv      Share     Throughput       CPU / Doc
-  JSON Ingestion:        17.51 s        2.19 s      60.6 %     15581.0 docs/s     0.513 ms
-  Layout Builder:         0.91 s        0.11 s       3.2 %    298965.1 docs/s     0.027 ms
-  PDF Render Engine:     10.46 s        1.31 s      36.2 %     26085.7 docs/s     0.307 ms
-  ------------------------------------------------------------------------------------
-  Sum of Phases:         28.88 s        3.61 s     100.0 %      9446.4 docs/s     0.847 ms
-  Total Wall Time:       29.11 s        3.64 s           -      9372.6 docs/s     0.854 ms
-  Sanity Check:       Sum of phases (3.61 s) matches wall time (3.64 s) within 28.42 ms (0.8% delta, worker scheduling overhead)
-```
+The report separates ingestion, layout, rendering and the inclusive signing
+pipeline. Signing contains preparation (xref location, trailer parsing, xref
+entry traversal, catalog parsing, metadata copying, update formatting/ByteRange
+patching, buffer reserve/writes), signing digest, signer wrapper, CMS insertion,
+and final artifact checksum. Nested rows are already included in their parents.
+The wrapper includes allocation/copying; the external-call row is provided by
+the signer and remains zero for the benchmark stub.
+
+`--signing` uses a fixed 8192-character hex stub, not real PKCS#11/CMS.
+Signing off still performs slot preparation and both hashes.
+Options unavailable through the C ABI select direct C++ and the banner reports
+the effective API. All requested warmup calls run before measurement.
+
+Wall timing includes thread/generator setup, result disposal and bookkeeping.
+Dividing summed phase time by workers is not a measurement of wall time;
+per-phase throughput is therefore not reported. Fine-grained timings include
+clock-reading overhead and scheduling effects, especially for sub-microsecond
+passes. Renderer timing remains inclusive of its internal rendering work.
 
 ---
 
@@ -160,7 +168,7 @@ Sample output:
 - **JSON Ingestion**: Time spent parsing UTF-8 JSON into domain structures (`nlohmann::json` or `simdjson`).
 - **Layout Builder**: Time spent in deterministic typography, pagination, table column math, and visual block flow.
 - **PDF Render Engine**: Time spent drawing vector shapes, paths, text primitives, and compiling binary PDF streams.
-- **Sanity Check**: Compares the sum of the three pipeline phases against measured total wall time to verify timing accuracy without measurement distortion.
+- **Signing pipeline**: Inclusive preparation, hashing, signer and insertion elapsed time. Nested pass totals are checked against their parents by the signing tests; this is not proof of zero measurement overhead.
 
 ### Memory & High-Water Mark Metrics
 - **Input RAM footprint**: Exact memory occupied in RAM by the pre-loaded JSON customer payloads (including average and maximum single-batch sizes).

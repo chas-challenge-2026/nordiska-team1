@@ -1,6 +1,7 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/c_api/pdf_generator_c_api.h"
 #include "nordiska/diagnostics/benchmark_metrics.hpp"
+#include "nordiska/signing/pdf_signer.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -19,6 +20,26 @@
 #include <vector>
 
 namespace {
+
+// Stub signer: returns a fixed 8 192-char hex string (same size as his current stub) without
+// requiring SoftHSM or any real crypto. Used by --signing in the benchmark to measure our
+// full pipeline cost (slot append, both SHA-256 hashes, hex insertion) independent of the
+// real signer's environment and crypto latency.
+class StubPdfSigner final : public nordiska::PdfSigner {
+  public:
+    [[nodiscard]] std::expected<std::string, nordiska::SigningError>
+    sign_digest(std::span<const uint8_t, 32>, const nordiska::SigningContext&, double* call_seconds) override {
+        if (call_seconds != nullptr) {
+            *call_seconds += 0.0; // stub: zero crypto latency by design
+        }
+        return kStubHex;
+    }
+
+  private:
+    static const std::string kStubHex;
+};
+
+const std::string StubPdfSigner::kStubHex(8192, '0');
 
 using Clock = std::chrono::steady_clock;
 
@@ -62,6 +83,7 @@ struct Options {
     std::string renderer = "haru";
     std::string ingestor = "simdjson";
     bool compression = true;
+    bool signing = false;
     std::size_t target_customers = 0; // if > 0, cycles through payloads until target_customers reached
     std::size_t iterations = 1;
     std::size_t warmups = 1;
@@ -82,6 +104,7 @@ void print_usage(std::string_view prog_name) {
         << "  --ingestor <simd|nlohmann>  JSON ingestor (default: simdjson)\n"
         << "  --no-compression            Disable Flate stream compression in PDF rendering\n"
         << "  --compression <true|false>  Configure PDF stream compression (default: true)\n"
+        << "  --signing                   Use fixed CMS stub and embed into each PDF (default: false)\n"
         << "  --instrumented              Enable phase profiling, including hashing and signer call\n"
         << "  --iterations <N>            Measurement iterations (default: 1)\n"
         << "  --warmups <N>               Warmup iterations (default: 1)\n"
@@ -138,6 +161,8 @@ Options parse_options(int argc, char* argv[]) {
             } else {
                 throw std::invalid_argument("invalid value for --compression: " + val);
             }
+        } else if (arg == "--signing") {
+            options.signing = true;
         } else if (arg == "--instrumented") {
             options.instrumented = true;
         } else if (arg == "--iterations") {
@@ -281,9 +306,9 @@ int main(int argc, char* argv[]) {
         const std::size_t customers_to_run =
             (options.target_customers > 0) ? options.target_customers : payloads.size();
 
-        const bool use_direct =
-            (options.api != "cabi") || options.instrumented || !options.compression || (options.renderer != "haru");
-        std::string api_mode_str = options.instrumented ? "direct C++ (phase timing)" : options.api;
+        const bool use_direct = (options.api != "cabi") || options.signing || options.ingestor != "simdjson" ||
+                                options.instrumented || !options.compression || (options.renderer != "haru");
+        std::string api_mode_str = use_direct ? "direct C++" : "cabi";
         if (!options.compression && options.api == "cabi" && !options.instrumented) {
             api_mode_str = "direct C++ (uncompressed override)";
         } else if (options.renderer != "haru" && options.api == "cabi" && !options.instrumented) {
@@ -295,10 +320,15 @@ int main(int argc, char* argv[]) {
                   << "Benchmark mode: API=" << api_mode_str << ", workers=" << options.workers
                   << ", target_customers=" << customers_to_run << ", renderer=" << options.renderer
                   << ", ingestor=" << options.ingestor << ", compression=" << (options.compression ? "true" : "false")
+                  << ", signing=" << (options.signing ? "true" : "false")
                   << (options.instrumented ? ", instrumented=true" : "") << "\n\n";
 
         nordiska::GeneratorConfig direct_config;
         direct_config.compression = options.compression;
+        direct_config.enable_signing = options.signing;
+        if (options.signing) {
+            direct_config.custom_signer = std::make_shared<StubPdfSigner>();
+        }
         if (options.renderer == "haru") {
             direct_config.engine = nordiska::PdfEngineKind::Libharu;
         } else if (options.renderer == "cairo") {
@@ -320,7 +350,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Warmup
-        if (options.warmups > 0) {
+        for (std::size_t warmup = 0; warmup < options.warmups; ++warmup) {
             const auto& sample = payloads[0];
             if (!use_direct) {
                 CallbackState cb_state;
@@ -457,7 +487,6 @@ int main(int argc, char* argv[]) {
             double total_cpu_layout = 0.0;
             double total_cpu_render = 0.0;
             double total_sign = 0.0;
-            double total_hash = 0.0;
             double total_signer_call = 0.0;
 
             for (const auto& ws : worker_stats) {
@@ -476,7 +505,6 @@ int main(int argc, char* argv[]) {
                     total_cpu_layout += ws.timing.layout_seconds;
                     total_cpu_render += ws.timing.render_seconds;
                     total_sign += ws.timing.sign_seconds;
-                    total_hash += ws.timing.hash_seconds;
                     total_signer_call += ws.timing.signer_call_seconds;
                 }
             }
@@ -513,74 +541,54 @@ int main(int argc, char* argv[]) {
                       << " tx/sec)\n\n";
 
             if (options.instrumented) {
-                const double total_cpu_pipeline = total_cpu_ingest + total_cpu_layout + total_cpu_render + total_sign;
-                const double wall_equiv_ingest =
-                    (num_workers > 0) ? (total_cpu_ingest / num_workers) : total_cpu_ingest;
-                const double wall_equiv_layout =
-                    (num_workers > 0) ? (total_cpu_layout / num_workers) : total_cpu_layout;
-                const double wall_equiv_render =
-                    (num_workers > 0) ? (total_cpu_render / num_workers) : total_cpu_render;
-                const double wall_equiv_sign = total_sign / num_workers;
-                const double wall_equiv_sum =
-                    wall_equiv_ingest + wall_equiv_layout + wall_equiv_render + wall_equiv_sign;
-
-                const double pct_ingest =
-                    (total_cpu_pipeline > 0.0) ? (total_cpu_ingest / total_cpu_pipeline * 100.0) : 0.0;
-                const double pct_layout =
-                    (total_cpu_pipeline > 0.0) ? (total_cpu_layout / total_cpu_pipeline * 100.0) : 0.0;
-                const double pct_render =
-                    (total_cpu_pipeline > 0.0) ? (total_cpu_render / total_cpu_pipeline * 100.0) : 0.0;
-
-                const double ingest_docs_per_sec = (wall_equiv_ingest > 0.0) ? (total_docs / wall_equiv_ingest) : 0.0;
-                const double layout_docs_per_sec = (wall_equiv_layout > 0.0) ? (total_docs / wall_equiv_layout) : 0.0;
-                const double render_docs_per_sec = (wall_equiv_render > 0.0) ? (total_docs / wall_equiv_render) : 0.0;
-
-                const double ms_per_doc_ingest = (total_docs > 0) ? ((total_cpu_ingest * 1000.0) / total_docs) : 0.0;
-                const double ms_per_doc_layout = (total_docs > 0) ? ((total_cpu_layout * 1000.0) / total_docs) : 0.0;
-                const double ms_per_doc_render = (total_docs > 0) ? ((total_cpu_render * 1000.0) / total_docs) : 0.0;
-
-                const double delta_seconds = elapsed_seconds - wall_equiv_sum;
-                const double delta_percent =
-                    (elapsed_seconds > 0.0) ? (std::abs(delta_seconds) / elapsed_seconds * 100.0) : 0.0;
-
-                std::cout
-                    << "--- Pipeline Phase Breakdown (--instrumented) ---\n"
-                    << "  Phase               CPU Time      Wall Equiv      Share     Throughput       CPU / Doc\n"
-                    << "  JSON Ingestion:     " << std::setw(8) << std::fixed << std::setprecision(2)
-                    << total_cpu_ingest << " s    " << std::setw(8) << std::setprecision(2) << wall_equiv_ingest
-                    << " s    " << std::setw(6) << std::setprecision(1) << pct_ingest << " %   " << std::setw(9)
-                    << std::setprecision(1) << ingest_docs_per_sec << " docs/s   " << std::setw(7)
-                    << std::setprecision(3) << ms_per_doc_ingest << " ms\n"
-                    << "  Layout Builder:     " << std::setw(8) << std::setprecision(2) << total_cpu_layout << " s    "
-                    << std::setw(8) << std::setprecision(2) << wall_equiv_layout << " s    " << std::setw(6)
-                    << std::setprecision(1) << pct_layout << " %   " << std::setw(9) << std::setprecision(1)
-                    << layout_docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3) << ms_per_doc_layout
-                    << " ms\n"
-                    << "  PDF Render Engine:  " << std::setw(8) << std::setprecision(2) << total_cpu_render << " s    "
-                    << std::setw(8) << std::setprecision(2) << wall_equiv_render << " s    " << std::setw(6)
-                    << std::setprecision(1) << pct_render << " %   " << std::setw(9) << std::setprecision(1)
-                    << render_docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3) << ms_per_doc_render
-                    << " ms\n"
-                    << "  Signing phase:      " << std::setw(8) << std::setprecision(2) << total_sign << " s    "
-                    << std::setw(8) << wall_equiv_sign << " s\n"
-                    << "    Hashing:          " << std::setprecision(6) << total_hash << " s (included above)\n"
-                    << "    Signer call:      " << total_signer_call << " s (included above; zero when disabled)\n"
-                    << "  ------------------------------------------------------------------------------------\n"
-                    << "  Sum of Phases:      " << std::setw(8) << std::setprecision(2) << total_cpu_pipeline
-                    << " s    " << std::setw(8) << std::setprecision(2) << wall_equiv_sum << " s    " << " 100.0 %   "
-                    << std::setw(9) << std::setprecision(1)
-                    << (wall_equiv_sum > 0.0 ? total_docs / wall_equiv_sum : 0.0) << " docs/s   " << std::setw(7)
-                    << std::setprecision(3) << (total_docs > 0 ? (total_cpu_pipeline * 1000.0) / total_docs : 0.0)
-                    << " ms\n"
-                    << "  Total Wall Time:    " << std::setw(8) << std::setprecision(2)
-                    << (elapsed_seconds * num_workers) << " s    " << std::setw(8) << std::setprecision(2)
-                    << elapsed_seconds << " s    " << "       -   " << std::setw(9) << std::setprecision(1)
-                    << docs_per_sec << " docs/s   " << std::setw(7) << std::setprecision(3)
-                    << (total_docs > 0 ? (elapsed_seconds * num_workers * 1000.0) / total_docs : 0.0) << " ms\n"
-                    << "  Sanity Check:       Sum of phases (" << std::setprecision(2) << wall_equiv_sum
-                    << " s) matches wall time (" << elapsed_seconds << " s) within " << std::setprecision(2)
-                    << std::abs(delta_seconds * 1000.0) << " ms (" << std::setprecision(1) << delta_percent
-                    << "% delta, worker scheduling overhead)\n\n";
+                const auto report = [&](const char* label, double seconds) {
+                    std::cout << "  " << std::left << std::setw(30) << label << std::right << std::fixed
+                              << std::setprecision(3) << seconds * 1000.0 << " ms total; "
+                              << (total_docs ? seconds * 1e6 / total_docs : 0.0) << " us/doc\n";
+                };
+                const auto sum = [&](double nordiska::PipelineTiming::*field) {
+                    double value = 0;
+                    for (const auto& ws : worker_stats) {
+                        value += ws.timing.*field;
+                    }
+                    return value;
+                };
+                const auto prep_sum = [&](double nordiska::SignaturePreparationTiming::*field) {
+                    double value = 0;
+                    for (const auto& ws : worker_stats) {
+                        value += ws.timing.preparation.*field;
+                    }
+                    return value;
+                };
+                std::cout << "--- Summed worker elapsed times (not CPU time) ---\n"
+                          << "  Nested rows are included in their parent; us/doc is worker time, not latency.\n";
+                report("Ingestion", total_cpu_ingest);
+                report("Layout", total_cpu_layout);
+                report("Render", total_cpu_render);
+                report("Signing pipeline (inclusive)", total_sign);
+                report("  Preparation (inclusive)", sum(&nordiska::PipelineTiming::prepare_seconds));
+                report("    Locate xref", prep_sum(&nordiska::SignaturePreparationTiming::locate_xref_seconds));
+                report("    Trailer parse", prep_sum(&nordiska::SignaturePreparationTiming::trailer_seconds));
+                report("    Xref entries", prep_sum(&nordiska::SignaturePreparationTiming::xref_entries_seconds));
+                report("    Catalog parse", prep_sum(&nordiska::SignaturePreparationTiming::catalog_seconds));
+                report("    Metadata copy", prep_sum(&nordiska::SignaturePreparationTiming::metadata_copy_seconds));
+                report("    Format update / ByteRange",
+                       prep_sum(&nordiska::SignaturePreparationTiming::format_seconds));
+                report("    Reserve / write buffer",
+                       prep_sum(&nordiska::SignaturePreparationTiming::buffer_write_seconds));
+                report("  Signing digest", sum(&nordiska::PipelineTiming::digest_seconds));
+                report("  Signer wrapper (inclusive)", sum(&nordiska::PipelineTiming::signer_wrapper_seconds));
+                report("    External call (reported)", total_signer_call);
+                report("  CMS insertion", sum(&nordiska::PipelineTiming::insert_seconds));
+                report("  Final artifact checksum", sum(&nordiska::PipelineTiming::checksum_seconds));
+                const double accounted =
+                    sum(&nordiska::PipelineTiming::prepare_seconds) + sum(&nordiska::PipelineTiming::digest_seconds) +
+                    sum(&nordiska::PipelineTiming::signer_wrapper_seconds) +
+                    sum(&nordiska::PipelineTiming::insert_seconds) + sum(&nordiska::PipelineTiming::checksum_seconds);
+                report("  Signing unassigned", total_sign - accounted);
+                report("Pipeline measured total", total_cpu_ingest + total_cpu_layout + total_cpu_render + total_sign);
+                std::cout << "  Wall time also includes thread/generator lifecycle, result disposal, bookkeeping,\n"
+                          << "  unmeasured glue, timer overhead and scheduling. No phase/wall equivalence assumed.\n\n";
             }
 
             std::cout << "--- Memory Utilization & High Watermark ---\n"

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 #include <format>
 #include <memory>
 #include <openssl/evp.h>
@@ -65,7 +66,16 @@ struct PdfStructure {
     std::string trailer_body;
 };
 
-std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> bytes) {
+std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> bytes,
+                                                      SignaturePreparationTiming* timing) {
+    auto previous = timing ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+    const auto checkpoint = [&](double SignaturePreparationTiming::*field) {
+        if (timing) {
+            const auto now = std::chrono::steady_clock::now();
+            timing->*field += std::chrono::duration<double>(now - previous).count();
+            previous = now;
+        }
+    };
     const auto invalid = [](std::string message) {
         return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, std::move(message)});
     };
@@ -90,6 +100,7 @@ std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> b
     if (!consume(xref, "xref")) {
         return invalid("Only classic cross-reference tables from our renderers are supported");
     }
+    checkpoint(&SignaturePreparationTiming::locate_xref_seconds);
     const auto trailer_pos = xref.find("trailer");
     if (trailer_pos == std::string_view::npos) {
         return invalid("Missing trailer");
@@ -117,6 +128,7 @@ std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> b
         return invalid("Invalid trailer object references");
     }
 
+    checkpoint(&SignaturePreparationTiming::trailer_seconds);
     auto table = xref.substr(0, trailer_pos);
     std::optional<size_t> root_offset;
     skip_space(table);
@@ -143,6 +155,7 @@ std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> b
     if (!root_offset || *root_offset >= *xref_offset) {
         return invalid("Catalog missing from xref");
     }
+    checkpoint(&SignaturePreparationTiming::xref_entries_seconds);
     auto catalog = pdf.substr(*root_offset, *xref_offset - *root_offset);
     const auto catalog_id = read_number(catalog);
     const auto catalog_gen = read_number(catalog);
@@ -168,6 +181,7 @@ std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> b
         return invalid("Catalog already contains a form or version override");
     }
 
+    checkpoint(&SignaturePreparationTiming::catalog_seconds);
     // Preserve existing trailer metadata (/Info, /ID) while replacing /Size below.
     const auto size_position = trailer.size() - after_key(trailer, "/Size")->size();
     auto size_value = trailer.substr(size_position);
@@ -177,7 +191,9 @@ std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> b
     const auto digits_end = trailer.size() - size_value.size();
     std::string trailer_body(trailer);
     trailer_body.replace(digits_start, digits_end - digits_start, std::to_string(*count + 2));
-    return PdfStructure{*xref_offset, *count, *root, std::string(catalog), std::move(trailer_body)};
+    PdfStructure result{*xref_offset, *count, *root, std::string(catalog), std::move(trailer_body)};
+    checkpoint(&SignaturePreparationTiming::metadata_copy_seconds);
+    return result;
 }
 
 bool valid_slot(std::span<const uint8_t> pdf, const SignatureSlot& slot) {
@@ -202,7 +218,8 @@ std::expected<Sha256Digest, SigningError> hash_ranges(std::span<const uint8_t> f
 
 } // namespace
 
-std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uint8_t>& pdf, size_t capacity) {
+std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uint8_t>& pdf, size_t capacity,
+                                                                 SignaturePreparationTiming* timing) {
     if (capacity == 0 || capacity % 2 != 0) {
         return std::unexpected(SigningError{SigningErrorKind::InvalidArgument,
                                             "Signature capacity must be a positive even number of hex characters"});
@@ -211,10 +228,11 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
         return std::unexpected(
             SigningError{SigningErrorKind::ResourceLimitExceeded, "PDF signature capacity too large"});
     }
-    auto structure = inspect_pdf(pdf);
+    auto structure = inspect_pdf(pdf, timing);
     if (!structure) {
         return std::unexpected(structure.error());
     }
+    const auto format_start = timing ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     const auto& [previous_xref, object_count, root_id, catalog_body, trailer_body] = *structure;
     const size_t field_id = object_count;
     const size_t signature_id = object_count + 1;
@@ -251,10 +269,18 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
     }
     // For our renderers the tail is already reserved. The fallback also permits
     // direct helper callers without relying on an unchecked capacity promise.
+    const auto write_start = timing ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+    if (timing) {
+        timing->format_seconds += std::chrono::duration<double>(write_start - format_start).count();
+    }
     pdf.reserve(final_size);
     pdf.insert(pdf.end(), prefix.begin(), prefix.end());
     pdf.resize(pdf.size() + capacity, '0');
     pdf.insert(pdf.end(), suffix.begin(), suffix.end());
+    if (timing) {
+        timing->buffer_write_seconds +=
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - write_start).count();
+    }
     return SignatureSlot{.offset = slot_offset, .max_length = capacity, .is_signed = false};
 }
 
