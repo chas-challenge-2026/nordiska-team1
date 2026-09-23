@@ -1,8 +1,6 @@
-type BaseRowProps = {
-    id: string;
-    onClick?: () => void;
-    className?: string;
-};
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../utils/currency";
 
 type TransactionRow = {
     rowType: "transaction";
@@ -31,45 +29,78 @@ type PlannedRow = {
     onOpenActions?: () => void;
 };
 
-type RowProps = BaseRowProps & (TransactionRow | AccountRow | PlannedRow);
+type RowProps = TransactionRow | AccountRow | PlannedRow;
 
-/**
- * Renders single table row, variant chosen by `rowType`.
- *
- * Variants:
- * - "transaction": date/time + recipient/amount
- * - "planned": date + name/sum
- * - "account": type/number/interest + name/balance
- *
- */
+const ROW_CLASS = "min-w-0 border-b border-primary-blue font-montserrat";
 
+type TwoLineRowProps = {
+    detail: ReactNode;
+    detailRight: ReactNode;
+    name: string;
+    amount: string;
+    amountClassName?: string;
+};
+
+/** Shared layout for "transaction" and "account": small detail line above name + amount. */
+function TwoLineRow({ detail, detailRight, name, amount, amountClassName = "" }: TwoLineRowProps) {
+    return (
+        <div className={ROW_CLASS}>
+            <p className="flex flex-wrap justify-between gap-x-2 gap-y-1 pb-2 text-[10px] uppercase sm:pb-4 sm:text-xs">
+                <span className="min-w-0 wrap-break-word">{detail}</span>
+                <span className="shrink-0 whitespace-nowrap">{detailRight}</span>
+            </p>
+            <p className="flex items-baseline justify-between gap-2 pb-3 text-base font-semibold sm:pb-4 sm:text-xl">
+                <span className="min-w-0 wrap-break-word">{name}</span>
+                <span className={`shrink-0 whitespace-nowrap ${amountClassName}`}>{amount}</span>
+            </p>
+        </div>
+    );
+}
+
+/** Renders single table row, variant chosen by `rowType`. */
 export default function TableRow(props: RowProps) {
+    const { t } = useTranslation();
+
     switch (props.rowType) {
-        case "transaction":
+        case "transaction": {
+            const amount = props.transactionAmount;
             return (
-                <div className="border-b border-primary-blue font-montserrat">
-                    <p className="flex justify-between uppercase text-xs pb-4">
-                        <span>{props.transactionDate}</span><span>kl {props.transactionTime}</span>
-                    </p>
-                    <p className="flex justify-between text-xl font-semibold pb-4">
-                        <span>{props.transactionRecipient}</span>
-                        <span>{props.transactionAmount.toLocaleString()} sek</span>
-                    </p>
-                </div>
-            )
+                <TwoLineRow
+                    detail={props.transactionDate}
+                    detailRight={props.transactionTime}
+                    name={props.transactionRecipient}
+                    amount={formatCurrency(amount, { signed: true })}
+                    amountClassName={amount < 0 ? "text-red-700" : "text-green-700"}
+                />
+            );
+        }
+        case "account": {
+            const interest = (props.accountInterest).toLocaleString(undefined, {
+                style: "percent",
+                maximumFractionDigits: 2,
+            });
+            return (
+                <TwoLineRow
+                    detail={<>{props.accountType} <span className="font-semibold">{props.accountNumber}</span></>}
+                    detailRight={<>{t("generic.interest")} <strong>{interest}</strong></>}
+                    name={props.accountName}
+                    amount={formatCurrency(props.accountBalance)}
+                />
+            );
+        }
         case "planned":
             return (
-                <div className="border-b border-primary-blue font-montserrat pb-4">
+                <div className={`${ROW_CLASS} pb-4`}>
                     <div className="flex items-center justify-between gap-2">
-                        <div className="flex min-w-0 flex-1 justify-between text-[15px] font-bold">
-                            <span className="truncate">{props.plannedName}</span>
-                            <span>{props.plannedSum.toLocaleString()} sek</span>
+                        <div className="flex min-w-0 flex-1 justify-between gap-2 text-sm font-bold sm:text-[15px]">
+                            <span className="min-w-0 truncate">{props.plannedName}</span>
+                            <span className="shrink-0 whitespace-nowrap">{formatCurrency(props.plannedSum)}</span>
                         </div>
                         {props.onOpenActions && (
                             <button
                                 type="button"
                                 onClick={props.onOpenActions}
-                                aria-label={props.plannedActionsLabel ?? "Actions"}
+                                aria-label={props.plannedActionsLabel ?? t("page-transfer.planned.actions-label")}
                                 className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-secondary hover:bg-gray-100"
                             >
                                 <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -80,32 +111,9 @@ export default function TableRow(props: RowProps) {
                             </button>
                         )}
                     </div>
-                    <p className="mt-1 flex uppercase text-xs tracking-[0.08em] text-secondary">{props.plannedDate}</p>
-                    {props.plannedNote && (
-                        <p className="text-xs text-secondary">{props.plannedNote}</p>
-                    )}
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-secondary sm:text-xs">{props.plannedDate}</p>
+                    {props.plannedNote && <p className="wrap-break-word text-xs text-secondary">{props.plannedNote}</p>}
                 </div>
-            )
-        case "account":
-            return (
-                <div className="border-b border-primary-blue font-montserrat">
-                    <p className="flex justify-between uppercase text-xs pb-4">
-                        <span>{props.accountType} <span className="font-semibold">{props.accountNumber}</span>
-                        </span><span>Ränta <strong>{props.accountInterest}%</strong></span>
-                    </p>
-                    <p className="flex justify-between text-xl font-semibold pb-4">
-                        <span>{props.accountName}</span>
-                        <span>{props.accountBalance.toLocaleString()} sek</span>
-                    </p>
-                </div>
-            )
-        default:
-            return (
-                <div className="border-b border-primary-blue font-montserrat">
-                    <p className="font-bold text-2xl">
-                        Någonting gick fel vid hämtning av datan.
-                    </p>
-                </div>
-            )
+            );
     }
 }
