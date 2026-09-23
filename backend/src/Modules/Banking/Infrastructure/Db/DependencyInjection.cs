@@ -30,8 +30,6 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddScoped<IAccountTypeConfigService, AccountTypeConfigService>();
         services.AddScoped<IInterestRateService, InterestRateService>();
-        services.AddScoped<IOperationalMessageRepository, OperationalMessageRepository>();
-        services.AddScoped<IOperationalMessageService, OperationalMessageService>();
 
         // Policy rate comes from the Riksbank SWEA API. Bad config should fail at startup, not on the first request.
         services.AddOptions<RiksbankOptions>()

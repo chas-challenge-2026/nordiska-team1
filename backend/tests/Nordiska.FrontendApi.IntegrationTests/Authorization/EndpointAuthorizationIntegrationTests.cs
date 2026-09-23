@@ -32,7 +32,6 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
         "POST api/auth/logout",
         "GET api/faqs/{id:int}",
         "GET api/faqs/search",
-        "GET api/operational-messages",
         "GET api/faqs/{lang:alpha}",
         "GET api/faqs/{lang:alpha}/categories",
         "POST api/faqs/{id:int}/increase",
