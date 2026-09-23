@@ -627,6 +627,86 @@
             <response code="200">The current policy rate and the date it took effect.</response>
             <response code="503">The Riksbank couldn't be reached and there is no earlier rate to fall back on.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController">
+            <summary>
+            API endpoints for viewing and managing operational messages, system alerts, and header banners.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.GetActive(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all currently active and unexpired operational messages for public display.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of active operational messages.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all operational messages (including inactive and expired) for administrative overview.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of all operational messages.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a specific operational message by its ID.
+            </summary>
+            <param name="id">The unique identifier of the message.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Operational message details.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Create(Nordiska.Modules.Banking.Contracts.Requests.CreateOperationalMessageRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new bilingual operational message.
+            </summary>
+            <param name="request">Payload containing Swedish and English titles/messages, severity, and scheduling.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Operational message created successfully.</response>
+            <response code="400">Invalid payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Update(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.UpdateOperationalMessageRequest,System.Threading.CancellationToken)">
+            <summary>
+            Fully updates an existing operational message.
+            </summary>
+            <param name="id">The unique identifier of the message to update.</param>
+            <param name="request">Payload with updated message data.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Operational message updated successfully.</response>
+            <response code="400">Invalid payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Patch(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.PatchOperationalMessageRequest,System.Threading.CancellationToken)">
+            <summary>
+            Partially updates an existing operational message (e.g. toggling active state or priority).
+            </summary>
+            <param name="id">The unique identifier of the message.</param>
+            <param name="request">Payload containing only the fields to update.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Operational message patched successfully.</response>
+            <response code="400">Invalid payload.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController.Delete(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Deletes an operational message by its ID.
+            </summary>
+            <param name="id">The unique identifier of the message to delete.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Message deleted successfully.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if user is not an administrator.</response>
+            <response code="404">Message was not found.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController">
             <summary>
             API endpoints for querying and executing account transactions (deposits and withdrawals) using the ledger pattern.

@@ -14,6 +14,7 @@ public sealed class BankingDbContext(
     public DbSet<AccountTypeConfig> AccountTypeConfigs => Set<AccountTypeConfig>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<OperationalMessage> OperationalMessages => Set<OperationalMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
