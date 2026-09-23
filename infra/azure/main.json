@@ -1,0 +1,299 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "4242464771325847844"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for resources (e.g. swedencentral, westeurope, italynorth)"
+      }
+    },
+    "appName": {
+      "type": "string",
+      "defaultValue": "nordiska-sparbanken",
+      "metadata": {
+        "description": "Base name for the application resources"
+      }
+    },
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "[format('env-{0}', parameters('appName'))]",
+      "metadata": {
+        "description": "Name for the Container Apps Environment"
+      }
+    },
+    "acrName": {
+      "type": "string",
+      "defaultValue": "[format('acrnordiska{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Name for the Azure Container Registry (must be globally unique, alphanumeric)"
+      }
+    },
+    "dbAdminUsername": {
+      "type": "string",
+      "defaultValue": "nordiska_admin",
+      "metadata": {
+        "description": "PostgreSQL server administrator username"
+      }
+    },
+    "dbAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "PostgreSQL server administrator password"
+      }
+    },
+    "jwtSecretKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "JWT secret key for signing customer session tokens (min 32 chars)"
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+      "metadata": {
+        "description": "Initial container image to deploy (default: placeholder image until first CI/CD build)"
+      }
+    }
+  },
+  "variables": {
+    "acrPullRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ef3-4680-a075-32614d47b0d4')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[format('log-{0}', parameters('appName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2023-07-01",
+      "name": "[parameters('acrName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Basic"
+      },
+      "properties": {
+        "adminUserEnabled": true
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2023-03-01-preview",
+      "name": "[format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id))]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_B1ms",
+        "tier": "Burstable"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('dbAdminUsername')]",
+        "administratorLoginPassword": "[parameters('dbAdminPassword')]",
+        "version": "15",
+        "storage": {
+          "storageSizeGB": 32
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "apiVersion": "2023-03-01-preview",
+      "name": "[format('{0}/{1}', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id)), 'AllowAllAzureServicesAndResourcesWithinAzureIps')]",
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id)))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
+      "apiVersion": "2023-03-01-preview",
+      "name": "[format('{0}/{1}', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id)), 'nordiska_db')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id)))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('environmentName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', format('log-{0}', parameters('appName'))), '2022-10-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', format('log-{0}', parameters('appName'))), '2022-10-01').primarySharedKey]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', format('log-{0}', parameters('appName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('appName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 8080,
+            "allowInsecure": false,
+            "transport": "auto"
+          },
+          "registries": [
+            {
+              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2023-07-01').loginServer]",
+              "identity": "system"
+            }
+          ],
+          "secrets": [
+            {
+              "name": "db-connection",
+              "value": "[format('Host={0};Database=nordiska_db;Username={1};Password={2};SSL Mode=Require;', reference(resourceId('Microsoft.DBforPostgreSQL/flexibleServers', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id))), '2023-03-01-preview').fullyQualifiedDomainName, parameters('dbAdminUsername'), parameters('dbAdminPassword'))]"
+            },
+            {
+              "name": "jwt-secret",
+              "value": "[parameters('jwtSecretKey')]"
+            }
+          ]
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "nordiska-app",
+              "image": "[parameters('containerImage')]",
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              },
+              "env": [
+                {
+                  "name": "ASPNETCORE_ENVIRONMENT",
+                  "value": "Production"
+                },
+                {
+                  "name": "ConnectionStrings__BankingDb",
+                  "secretRef": "db-connection"
+                },
+                {
+                  "name": "ConnectionStrings__FaqDb",
+                  "secretRef": "db-connection"
+                },
+                {
+                  "name": "ConnectionStrings__ReportingDb",
+                  "secretRef": "db-connection"
+                },
+                {
+                  "name": "Jwt__SecretKey",
+                  "secretRef": "jwt-secret"
+                },
+                {
+                  "name": "Jwt__Issuer",
+                  "value": "NordiskaSparbanken"
+                },
+                {
+                  "name": "Jwt__Audience",
+                  "value": "NordiskaSparbankenPortal"
+                },
+                {
+                  "name": "Jwt__TokenLifetimeInMinutes",
+                  "value": "15"
+                },
+                {
+                  "name": "ActiveLogin__BankId__Environment",
+                  "value": "Simulated"
+                },
+                {
+                  "name": "Banking__PlannedWorkerIntervalSeconds",
+                  "value": "60"
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 0,
+            "maxReplicas": 1
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id)))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), resourceId('Microsoft.App/containerApps', parameters('appName')), variables('acrPullRoleDefinitionId'))]",
+      "properties": {
+        "roleDefinitionId": "[variables('acrPullRoleDefinitionId')]",
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2023-05-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+        "[resourceId('Microsoft.App/containerApps', parameters('appName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "applicationUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Public HTTPS URL to access the Nordiska Sparbanken portal"
+      },
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2023-05-01').configuration.ingress.fqdn)]"
+    },
+    "acrLoginServer": {
+      "type": "string",
+      "metadata": {
+        "description": "Login server for Azure Container Registry"
+      },
+      "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2023-07-01').loginServer]"
+    },
+    "postgresFqdn": {
+      "type": "string",
+      "metadata": {
+        "description": "Fully Qualified Domain Name of PostgreSQL Flexible Server"
+      },
+      "value": "[reference(resourceId('Microsoft.DBforPostgreSQL/flexibleServers', format('psql-{0}-{1}', parameters('appName'), uniqueString(resourceGroup().id))), '2023-03-01-preview').fullyQualifiedDomainName]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the provisioned Azure Container App"
+      },
+      "value": "[parameters('appName')]"
+    }
+  }
+}
