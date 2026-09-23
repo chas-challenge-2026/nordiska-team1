@@ -13,6 +13,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IPdfReportGenerator, PdfReportGenerator>();
         services.AddScoped<ITaxReportService, TaxReportService>();
+        services.AddScoped<ITaxReportJobRepository, TaxReportJobRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
 
         return services.AddModulePostgresDbContext<ReportingDbContext>(
