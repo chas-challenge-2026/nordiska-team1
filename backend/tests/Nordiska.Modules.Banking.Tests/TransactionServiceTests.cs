@@ -140,11 +140,32 @@ public class TransactionServiceTests
         public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
 
+        public Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
+        {
+            var pending = _store
+                .Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc)
+                .OrderBy(l => l.PlannedDate)
+                .ThenBy(l => l.Id)
+                .ToList();
+            return Task.FromResult(pending);
+        }
+
         public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
         {
             entry.Id = _next++;
             _store.Add(entry);
             return Task.FromResult(entry.Id);
+        }
+
+        public Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            var idx = _store.FindIndex(l => l.Id == entry.Id);
+            if (idx >= 0)
+            {
+                _store[idx] = entry;
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
         }
 
         public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)

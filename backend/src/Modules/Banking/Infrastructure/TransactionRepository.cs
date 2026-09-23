@@ -92,6 +92,15 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
     public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => db.LedgerEntries.FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
+    public async Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
+    {
+        return await db.LedgerEntries
+            .Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc)
+            .OrderBy(l => l.PlannedDate)
+            .ThenBy(l => l.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -99,6 +108,14 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
         db.LedgerEntries.Add(entry);
         await db.SaveChangesAsync(cancellationToken);
         return entry.Id;
+    }
+
+    public async Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        db.LedgerEntries.Update(entry);
+        var rows = await db.SaveChangesAsync(cancellationToken);
+        return rows > 0;
     }
 
     public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
