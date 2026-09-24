@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type AccountTypes, getAccount, getAllAccounts, createAccount, closeAccount } from "../services/accountsService";
+import { type AccountTypes, type accountStatuses, getAccount, getAllAccounts, createAccount, closeAccount, getAccountTypes } from "../services/accountsService";
 
 interface CreateAccountInput {
     customerId: number;
@@ -14,10 +14,14 @@ export const accountKey = {
     detail: (id: number) => [...accountKey.all, id] as const,
 };
 
-export function useGetAccounts() {
+export const accountTypesKey = {
+    all: ["account-types"] as const,
+}
+
+export function useGetAccounts(status?: accountStatuses) {
     return useQuery({
-        queryKey: accountKey.all,
-        queryFn: getAllAccounts,
+        queryKey: [...accountKey.all, status],
+        queryFn: () => getAllAccounts(status),
     });
 }
 
@@ -32,7 +36,7 @@ export function useGetAccount(id: number) {
 export function useCreateAccount() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (input: CreateAccountInput) => createAccount(input.customerId, input.accountName, input.accountType, input.initialDeposit, input.interestRate),
+        mutationFn: (input: CreateAccountInput) => createAccount(input.customerId, input.accountName, input.accountType, input.initialDeposit),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: accountKey.all })
         },
@@ -44,8 +48,15 @@ export function useCloseAccount() {
     return useMutation({
         mutationFn: (id: number) => closeAccount(id),
         onSuccess: (_, id) => {
-            queryClient.invalidateQueries({queryKey: accountKey.all})
-            queryClient.invalidateQueries({queryKey: accountKey.detail(id)})
+            queryClient.invalidateQueries({ queryKey: accountKey.all })
+            queryClient.invalidateQueries({ queryKey: accountKey.detail(id) })
         }
+    })
+}
+
+export function useAccountTypes() {
+    return useQuery({
+        queryKey: accountTypesKey.all,
+        queryFn: getAccountTypes,
     })
 }

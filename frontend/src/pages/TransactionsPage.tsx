@@ -57,24 +57,23 @@ export default function TransactionsPage() {
                 />
             </div>
 
-            {isFilterModalOpen && (
-                <Modal
-                    title='Filters & Accounts'
-                    onClose={() => setIsFilterModalOpen(false)}
-                    widthClassName='w-[90vw]'
-                >
-                    <div className='flex flex-col gap-4 overflow-y-auto p-6'>
-                        <TransactionFilter onChange={setFilters} onReset={() => setFilters(initialFilters)} />
-                        <AccountSelector
-                            accounts={accounts ?? []}
-                            selectedIds={effectiveSelectedIds}
-                            onChange={setSelectedAccountIds}
-                            isLoading={accountsLoading}
-                            isError={accountsError}
-                        />
-                    </div>
-                </Modal>
-            )}
+            <Modal
+                title='Filters & Accounts'
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                widthClassName='w-[90vw]'
+            >
+                <div className='flex flex-col gap-4 overflow-y-auto p-6'>
+                    <TransactionFilter onChange={setFilters} onReset={() => setFilters(initialFilters)} />
+                    <AccountSelector
+                        accounts={accounts ?? []}
+                        selectedIds={effectiveSelectedIds}
+                        onChange={setSelectedAccountIds}
+                        isLoading={accountsLoading}
+                        isError={accountsError}
+                    />
+                </div>
+            </Modal>
         </div>
     );
 }

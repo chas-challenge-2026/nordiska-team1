@@ -90,13 +90,20 @@
     "account-type-saving": "Sparkonto",
     "account-type-standard": "Standardkonto",
     "account-type-flex": "Flexkonto",
-    "account-type-fixed": "Fasträntekonto",
+    "account-type-fix": "Fasträntekonto",
     "account-type-premium": "Premiumkonto",
     "initial-deposit": "Startinsättning",
     "interest-rate": "Ränta",
     "invalid-amount": "ogiltigt belopp",
     "invalid-interest-rate": "ogiltig ränta",
-    "create-account-error": "Kunde inte skapa kontot. Försök igen."
+    "create-account-error": "Kunde inte skapa kontot. Försök igen.",
+    "close-account": "Stäng konto",
+    "close-account-warning": "Stäng konto \"{{accountNumber}}\"? Kontot går ej att återöppna.",
+    "close-confirmation": "Stäng konto bekräftelse",
+    "close-error": "Det gick ej att stänga kontot. Försök igen.",
+    "closing": "Stänger...",
+    "loading-account-types": "Laddar kontotyper...",
+    "error-account-types": "Kunde inte hämta kontotyper"
 },
 "register-route": {
     "title": "Bli kund",

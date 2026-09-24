@@ -18,10 +18,11 @@ export default function PlannedTransfersPanel({
 }: PlannedTransfersPanelProps) {
     const { t } = useTranslation();
     const [activeTransfer, setActiveTransfer] = useState<PlannedTransfer | null>(null);
+    const [displayedTransfer, setDisplayedTransfer] = useState<PlannedTransfer | null>(null);
 
     return (
         <div className="border-t border-[#E5EAF0] px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:border-t-0 lg:border-l lg:px-10 lg:pt-8 lg:pb-10">
-            <Table tableType="planned" handleClick={() => {}}>
+            <Table tableType="planned" handleClick={() => { }}>
                 <div className="max-h-[420px] overflow-y-auto">
                     {upcomingTransfers.map((planned) => (
                         <TableRow
@@ -33,7 +34,10 @@ export default function PlannedTransfersPanel({
                             plannedNote={planned.note}
                             plannedSum={planned.sum}
                             plannedActionsLabel={t("page-transfer.planned.actions-label")}
-                            onOpenActions={() => setActiveTransfer(planned)}
+                            onOpenActions={() => {
+                                setDisplayedTransfer(planned);
+                                setActiveTransfer(planned);
+                            }}
                         />
                     ))}
                 </div>
@@ -42,16 +46,17 @@ export default function PlannedTransfersPanel({
                 {t("page-transfer.planned.footnote")}
             </p>
 
-            {activeTransfer && (
+            {displayedTransfer && (
                 <PlannedTransferActionsModal
-                    transfer={activeTransfer}
+                    isOpen={activeTransfer !== null}
+                    transfer={displayedTransfer}
                     onClose={() => setActiveTransfer(null)}
                     onSaveDate={(newDate) => {
-                        onEditTransfer(activeTransfer, newDate);
+                        onEditTransfer(activeTransfer!, newDate);
                         setActiveTransfer(null);
                     }}
                     onConfirmDelete={() => {
-                        onDeleteTransfer(activeTransfer);
+                        onDeleteTransfer(activeTransfer!);
                         setActiveTransfer(null);
                     }}
                 />

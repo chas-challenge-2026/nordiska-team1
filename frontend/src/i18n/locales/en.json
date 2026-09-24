@@ -91,13 +91,20 @@
     "account-type-saving": "Savings account",
     "account-type-standard": "Standard account",
     "account-type-flex": "Flex account",
-    "account-type-fixed": "Fixed-rate account",
+    "account-type-fix": "Fixed-rate account",
     "account-type-premium": "Premium account",
     "initial-deposit": "Initial deposit",
     "interest-rate": "Interest rate",
     "invalid-amount": "Invalid amount",
     "invalid-interest-rate": "Invalid interest rate",
-    "create-account-error": "Could not create account. Try again."
+    "create-account-error": "Could not create account. Try again.",
+    "close-account": "Close account",
+    "close-account-warning": "Close account \"{{accountNumber}}\"? This cannot be undone.",
+    "close-confirmation": "Close account confirmation",
+    "close-error": "Failed to close account. Try again.",
+    "closing": "Closing...",
+    "loading-account-types": "Loading types...",
+    "error-account-types": "Could not load account types"
 },
   "register-route": {
     "title": "Become a customer",

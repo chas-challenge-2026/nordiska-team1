@@ -10,7 +10,7 @@ import { useEffect } from "react";
 // "Standard" är den enklaste av de kontotyper som är seedade i backend
 // (se AccountTypeConfig). Startinsättning skickas inte med - backend sätter 0 som standard.
 const DEFAULT_ACCOUNT_NAME = "Sparkonto";
-const DEFAULT_ACCOUNT_TYPE = "Standard";
+const DEFAULT_ACCOUNT_TYPE = "standard";
 
 
 export function useLogin() {
