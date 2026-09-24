@@ -71,7 +71,9 @@
       "loading-accounts": "Loading accounts...",
       "accounts-error": "There was an issue loading accounts",
       "loading-transactions": "Loading transactions...",
-      "transactions-error": "There was an issue loading transactions"
+      "transactions-error": "There was an issue loading transactions",
+      "showing-count_one": "Showing {{shown}} of {{count}} transaction",
+      "showing-count_other": "Showing {{shown}} of {{count}} transactions"
   },
 "accounts-route": {
     "yearly-interest": "Yearly interest amount",
@@ -98,6 +100,33 @@
     "invalid-amount": "Invalid amount",
     "invalid-interest-rate": "Invalid interest rate",
     "create-account-error": "Could not create account. Try again."
+},
+"overview-route": {
+    "savings-title": "Savings goals",
+    "savings-total": "Total saved",
+    "savings-next-goal": "Next goal:",
+    "savings-eta": "Reached in {{time}}",
+    "savings-progress-label": "{{percent}}% of next goal reached",
+
+    "loading-planned": "Loading planned transfers...",
+    "planned-error": "There was an issue loading planned transfers",
+    "no-planned": "No upcoming transfers.",
+    "planned-unnamed": "Unnamed transfer",
+
+    "no-transactions": "No transactions yet.",
+
+    "edit-start": "Edit layout",
+    "edit-done": "Done",
+    "edit-reset": "Reset order",
+    "edit-reset-done": "Card order reset.",
+    "edit-instructions": "Drag a card by its handle, or focus the handle and use the arrow keys to move it.",
+    "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
+    "edit-handle-label": "Move {{card}}",
+
+    "card-accounts": "My accounts",
+    "card-savings": "Savings goals",
+    "card-planned": "Planned transfers",
+    "card-transactions": "Latest transactions"
 },
   "register-route": {
     "title": "Become a customer",

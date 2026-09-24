@@ -1,55 +1,40 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+type TableType = "account" | "planned" | "transaction" | "savings";
+
 type TableProps = {
-    tableType: "transaction" | "account" | "planned";
-    children: React.ReactNode;
-    handleClick: () => void;
-}
+    tableType: TableType;
+    children: ReactNode;
+    handleClick?: () => void;
+};
 
-/**
- * Renders titled table section, variant chosen by `tableType`. Header + action
- * button above `children` (row list).
- *
- * Variants:
- * - "account": "Mina Konton" / "ändra"
- * - "planned": "Planerade överföringar" / "hantera"
- * - "transaction": "Senaste transaktioner" / "visa alla"
- */
+const HEADERS: Record<TableType, { titleKey: string; actionKey?: string }> = {
+    account: { titleKey: "table.my-accounts", actionKey: "generic.edit" },
+    planned: { titleKey: "table.planned-transactions" },
+    transaction: { titleKey: "table.latest-transactions", actionKey: "generic.show-all" },
+    savings: { titleKey: "overview-route.savings-title" },
+};
 
-export default function Table({tableType, children, handleClick}: TableProps) {
+export default function Table({ tableType, children, handleClick }: TableProps) {
     const { t } = useTranslation();
+    const { titleKey, actionKey } = HEADERS[tableType];
 
-    switch (tableType) {
-        case "account": 
-            return (
-                <div className="font-montserrat flex flex-col gap-8 min-w-200">
-                    <div className="border-b-nordiska-orange border-b-4 flex justify-between items-end">
-                        <h1 className="font-semibold text-4xl">Mina Konton</h1>
-                        <button className="uppercase text-primary-blue hover:text-nordiska-blue" onClick={() => handleClick()}>ändra</button>
-                    </div>
-                    {children}
-                </div>
-            )
-        case "planned":
-            return (
-                <div className="font-montserrat flex flex-col gap-8">
-                    <div className="border-b-nordiska-orange border-b-3 pb-2.5">
-                        <h2 className="font-semibold text-[26px]">{t("table.planned-transactions")}</h2>
-                    </div>
-                    {children}
-                </div>
-            )
-        case "transaction":
-            return (
-                <div className="font-montserrat flex flex-col gap-8">
-                    <div className="border-b-nordiska-orange border-b-3 flex justify-between">
-                        <h1 className="font-semibold text-4xl">Senaste transaktioner</h1>
-                        <button className="uppercase text-primary-blue hover:text-nordiska-blue" onClick={() => handleClick()}>visa alla</button>
-                    </div>
-                    {children}
-                </div>
-            )
-        default:
-            return null
-    }
+    return (
+        <div className="flex w-full min-w-0 flex-col gap-4 font-montserrat sm:gap-8">
+            <div className="flex items-end justify-between gap-4 border-b-3 border-b-nordiska-orange pb-2.5">
+                <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px]">{t(titleKey)}</h2>
+                {actionKey && handleClick && (
+                    <button
+                        type="button"
+                        onClick={handleClick}
+                        className="shrink-0 cursor-pointer whitespace-nowrap text-sm uppercase text-primary-blue hover:text-nordiska-blue sm:text-base"
+                    >
+                        {t(actionKey)}
+                    </button>
+                )}
+            </div>
+            {children}
+        </div>
+    );
 }
