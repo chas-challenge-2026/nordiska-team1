@@ -87,7 +87,7 @@ export function useBankIdCollect(orderRef: string) {
                 return false;
             }
 
-            return 200;
+            return 1500;
         },
     });
 

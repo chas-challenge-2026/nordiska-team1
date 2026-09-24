@@ -3,6 +3,7 @@ import InputField from "../components/forms/InputField";
 import { useEffect, useState } from "react";
 import { useLogin, useBankIdInitate, useBankIdCollect } from "../hooks/useLogin";
 import { Link, useNavigate } from "react-router";
+import BankIdQrCode from "../components/auth/BankIdQrCode";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -12,12 +13,16 @@ export default function LoginPage() {
 
     const [personalNum, setPersonalNum] = useState("");
     const [orderRef, setOrderRef] = useState("");
+    const [bankIdData, setBankIdData] = useState<{
+        orderRef: string;
+        autoStartToken: string;
+        qrStartToken: string;
+        qrStartSecret: string;
+    } | null>(null);
 
     const {mutate: login, isPending:loginPending, isError: loginIsError, error: loginError } = useLogin();
 
-    const {mutate: bankIdInit} = useBankIdInitate();
-    // const {mutate: bankIdInit, isPending: bankIdInitPending, isError:bankIdInitIsError, error: bankIdInitError } = useBankIdInitate();
-
+    const {mutate: bankIdInit, isPending: bankIdInitPending, isError: bankIdInitIsError, error: bankIdInitError } = useBankIdInitate();
 
     const bankIdCollect = useBankIdCollect(orderRef);
     const status = bankIdCollect.data?.status;
@@ -39,13 +44,21 @@ export default function LoginPage() {
         bankIdInit(
             personalNum,
             {
-                onSuccess: (data) => setOrderRef(data.orderRef),
+                onSuccess: (data) => {
+                    setBankIdData(data);
+                    setOrderRef(data.orderRef);
+                },
             }
-        )
+        );
+    }
+
+    function handleBankIdCancel() {
+        setBankIdData(null);
+        setOrderRef("");
     }
 
     useEffect(() => {
-        if (status==="COMPLETE") {
+        if (status === "COMPLETE") {
             navigate("/");
         }
     }, [status, navigate]);
@@ -84,23 +97,37 @@ export default function LoginPage() {
                         {loginIsError && <p className="text-red-500">{loginError.message}</p>}
                         {registerLink}
 
-                    <section>
-                            <p className="mt-5"> Logga in med BankID-ish</p> 
-                            <form onSubmit={handleBankIdInit}>
-                                <InputField 
-                                name="personalnum" 
-                                type="text" 
-                                label="Personnummer" 
-                                placeholder="Personnummer" 
-                                value={personalNum} 
-                                onChange={setPersonalNum} /> 
-
-                                <button type="submit" disabled={status === "PENDING"} className="cursor-pointer">
-                                    {status === "PENDING" ? "Loggar in ..." : "Logga in"}
-                                </button>
-                                
-                            </form>
-
+                        <section className="mt-4 border-t pt-3">
+                            <p className="font-semibold text-sm mb-2 text-[#1c3844]">Logga in med BankID</p>
+                            {bankIdData ? (
+                                <BankIdQrCode
+                                    qrStartToken={bankIdData.qrStartToken}
+                                    qrStartSecret={bankIdData.qrStartSecret}
+                                    autoStartToken={bankIdData.autoStartToken}
+                                    onCancel={handleBankIdCancel}
+                                />
+                            ) : (
+                                <form onSubmit={handleBankIdInit} className="flex flex-col gap-2">
+                                    <InputField
+                                        name="personalnum"
+                                        type="text"
+                                        label="Personnummer (12 siffror)"
+                                        placeholder="198202116050"
+                                        value={personalNum}
+                                        onChange={setPersonalNum}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={bankIdInitPending}
+                                        className="rounded bg-[#1c3844] py-2 text-sm font-semibold text-white transition hover:bg-[#235971] cursor-pointer"
+                                    >
+                                        {bankIdInitPending ? "Startar BankID..." : "Starta BankID"}
+                                    </button>
+                                    {bankIdInitIsError && (
+                                        <p className="text-xs text-red-500 mt-1">{bankIdInitError.message}</p>
+                                    )}
+                                </form>
+                            )}
                         </section>
                 </div>
             </section>
@@ -149,23 +176,37 @@ export default function LoginPage() {
 
                         {registerLink}
 
-                        <section>
-                            <p className="mt-5"> Logga in med BankID-ish</p> 
-                            <form onSubmit={handleBankIdInit}>
-                                <InputField 
-                                name="personalnum" 
-                                type="text" 
-                                label="Personnummer" 
-                                placeholder="Personnummer" 
-                                value={personalNum} 
-                                onChange={setPersonalNum} /> 
-
-                                <button type="submit" disabled={status === "PENDING"}>
-                                    {status === "PENDING" ? "Loggar in ..." : "Logga in"}
-                                </button>
-                                
-                            </form>
-
+                        <section className="mt-4 border-t pt-3">
+                            <p className="font-semibold text-sm mb-2 text-[#1c3844]">Logga in med BankID</p>
+                            {bankIdData ? (
+                                <BankIdQrCode
+                                    qrStartToken={bankIdData.qrStartToken}
+                                    qrStartSecret={bankIdData.qrStartSecret}
+                                    autoStartToken={bankIdData.autoStartToken}
+                                    onCancel={handleBankIdCancel}
+                                />
+                            ) : (
+                                <form onSubmit={handleBankIdInit} className="flex flex-col gap-2">
+                                    <InputField
+                                        name="personalnum"
+                                        type="text"
+                                        label="Personnummer (12 siffror)"
+                                        placeholder="198202116050"
+                                        value={personalNum}
+                                        onChange={setPersonalNum}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={bankIdInitPending}
+                                        className="rounded bg-[#1c3844] py-2 text-sm font-semibold text-white transition hover:bg-[#235971]"
+                                    >
+                                        {bankIdInitPending ? "Startar BankID..." : "Starta BankID"}
+                                    </button>
+                                    {bankIdInitIsError && (
+                                        <p className="text-xs text-red-500 mt-1">{bankIdInitError.message}</p>
+                                    )}
+                                </form>
+                            )}
                         </section>
                         
                     </div>
