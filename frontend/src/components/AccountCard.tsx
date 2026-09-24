@@ -33,7 +33,7 @@ export default function AccountCard({ account }: AccountCardProps) {
             <div>
                 <p className="font-semibold text-dark-navy">{account.accountName}</p>
                 <p className="flex flex-wrap items-center gap-2 text-sm text-secondary">
-                    <span>{t(`accounts-route.account-type-${account.accountType.toLowerCase()}`)} {account.accountNumber}</span>
+                    <span>{t(`accounts-route.account-type-${account.accountType}`)} {account.accountNumber}</span>
                     |
                     <span>{t("generic.interest")} {(account.interestRate * 100).toLocaleString("sv-SE")}%</span>
                     {canClose && (
