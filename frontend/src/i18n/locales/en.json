@@ -120,7 +120,27 @@
 },
 "login-route": {
     "title": "Log in",
-    "paragraph": "Please identify yourself with BankID to continue to the customer portal."
+    "paragraph": "Please identify yourself with BankID to continue to the customer portal.",
+    "bankid-intro": "Identify yourself with BankID to log in to your savings account",
+    "bankid-mobile": "BankID on mobile",
+    "bankid-desktop": "BankID on this computer",
+    "manual-link": "Log in with personal number or email",
+    "bankid-submit": "Log in with BankID",
+    "bankid-submitting": "Waiting for BankID...",
+    "or-email": "or with email",
+    "email": "email",
+    "email-placeholder": "name@example.com",
+    "password": "password",
+    "submit": "Log in",
+    "submitting": "Logging in...",
+    "back": "Back",
+    "qr-help": "Open the BankID app and scan the QR code",
+    "qr-expired": "The QR code has expired",
+    "retry": "Try again",
+    "starting-app": "Starting the BankID app...",
+    "open-app-again": "Open BankID again",
+    "failed": "The BankID login was cancelled. Please try again.",
+    "not-found": "We could not find a customer with that personal number."
 },
 "404-route": {
     "title": "Page not found.",

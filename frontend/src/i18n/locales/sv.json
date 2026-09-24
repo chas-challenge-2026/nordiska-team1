@@ -119,7 +119,27 @@
 },
 "login-route": {
     "title": "Logga in",
-    "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen."
+    "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen.",
+    "bankid-intro": "Identifiera dig med BankID för att logga in på ditt sparkonto",
+    "bankid-mobile": "BankID på mobil",
+    "bankid-desktop": "BankID på dator",
+    "manual-link": "Logga in med personnummer eller e-post",
+    "bankid-submit": "Logga in med BankID",
+    "bankid-submitting": "Väntar på BankID...",
+    "or-email": "eller med e-post",
+    "email": "e-post",
+    "email-placeholder": "namn@exempel.se",
+    "password": "lösenord",
+    "submit": "Logga in",
+    "submitting": "Loggar in...",
+    "back": "Tillbaka",
+    "qr-help": "Öppna BankID-appen och skanna QR-koden",
+    "qr-expired": "QR-koden har gått ut",
+    "retry": "Försök igen",
+    "starting-app": "Startar BankID-appen...",
+    "open-app-again": "Öppna BankID igen",
+    "failed": "Inloggningen med BankID avbröts. Försök igen.",
+    "not-found": "Vi hittade ingen kund med det personnumret."
 },
 "404-route": {
     "title": "Sidan kunde inte hittas.",
