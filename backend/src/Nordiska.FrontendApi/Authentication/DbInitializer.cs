@@ -77,28 +77,7 @@ public class DbInitializer
             existingErik.NormalizedEmail = "ERIK@EXAMPLE.COM";
             await db.SaveChangesAsync();
         }
-
-        // The BankID simulator always returns this fixed personal number,
-        // regardless of what was passed in the Requirement. We need a
-        // matching customer so CollectBankIdAsync can find them.
-        var simulatedPersonalNum = "199908072391";
-        var existingSimulated = await db.Customers
-            .FirstOrDefaultAsync(c => c.PersonalNum == simulatedPersonalNum);
-
-        if (existingSimulated == null)
-        {
-            var simulatedCustomer = new Customer
-            {
-                UserName = "simulated@bankid.se",
-                Name = "BankID Simulerad",
-                PersonalNum = simulatedPersonalNum,
-                Email = "simulated@bankid.se",
-                PhoneNumber = "+46700000000",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await userManager.CreateAsync(simulatedCustomer);
-        }
+        
 
         var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole<long>>>();
         if (roleManager != null)
