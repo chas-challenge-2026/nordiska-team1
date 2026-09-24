@@ -46,6 +46,7 @@ public class DbInitializer
         {
             existingCustomer.UserName = "anna@example.com";
             existingCustomer.Email = "anna@example.com";
+            existingCustomer.PersonalNum = testPersonalNum;
             existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
             existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
             await db.SaveChangesAsync();
@@ -77,7 +78,6 @@ public class DbInitializer
             existingErik.NormalizedEmail = "ERIK@EXAMPLE.COM";
             await db.SaveChangesAsync();
         }
-        
 
         var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole<long>>>();
         if (roleManager != null)
@@ -91,20 +91,33 @@ public class DbInitializer
                 await roleManager.CreateAsync(new IdentityRole<long>("Customer"));
             }
 
+            var adminPersonalNum = "200505032383";
             var adminEmail = "admin@nordiska.se";
-            var adminCustomer = await userManager.FindByEmailAsync(adminEmail);
+            var adminCustomer = await db.Customers.FirstOrDefaultAsync(c => 
+                c.PersonalNum == adminPersonalNum || c.Email == adminEmail || c.UserName == adminEmail);
+
             if (adminCustomer == null)
             {
                 adminCustomer = new Customer
                 {
                     UserName = adminEmail,
-                    Name = "Admin Nordiska",
-                    PersonalNum = "197001019999",
+                    Name = "Jesper Adminsson",
+                    PersonalNum = adminPersonalNum,
                     Email = adminEmail,
                     PhoneNumber = "+46700999999",
                     CreatedAt = DateTime.UtcNow
                 };
                 await userManager.CreateAsync(adminCustomer);
+            }
+            else
+            {
+                adminCustomer.PersonalNum = adminPersonalNum;
+                adminCustomer.Name = "Jesper Adminsson";
+                adminCustomer.Email = adminEmail;
+                adminCustomer.UserName = adminEmail;
+                adminCustomer.NormalizedEmail = adminEmail.ToUpperInvariant();
+                adminCustomer.NormalizedUserName = adminEmail.ToUpperInvariant();
+                await db.SaveChangesAsync();
             }
 
             if (!await userManager.IsInRoleAsync(adminCustomer, "Admin"))
