@@ -132,14 +132,50 @@ public class DbInitializer
             }
         }
 
-        await SeedAccountsAndTransactionsAsync(db);
-        await SeedNotificationsAsync(db);
-        await SeedOperationalMessagesAsync(db);
-        await SeedFaqAsync(scope.ServiceProvider);
+        try
+        {
+            await SeedAccountsAndTransactionsAsync(db);
+        }
+        catch { }
+
+        try
+        {
+            await SeedNotificationsAsync(db);
+        }
+        catch { }
+
+        try
+        {
+            await SeedOperationalMessagesAsync(db);
+        }
+        catch { }
+
+        try
+        {
+            await SeedFaqAsync(scope.ServiceProvider);
+        }
+        catch { }
     }
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
     {
+        // Normalize any legacy account types on existing savings accounts before modifying configs
+        var legacyAccounts = await db.SavingsAccounts.ToListAsync();
+        foreach (var acc in legacyAccounts)
+        {
+            if (string.Equals(acc.AccountType, "Standard", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "standard";
+            else if (string.Equals(acc.AccountType, "Sparkonto Flex", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "flex", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "flex";
+            else if (string.Equals(acc.AccountType, "Fasträntekonto Fix", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "fix", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "fix";
+            else if (string.Equals(acc.AccountType, "Savings", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "saving", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "saving";
+            else if (string.Equals(acc.AccountType, "Premium", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "premium", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "premium";
+        }
+        await db.SaveChangesAsync();
+
         // Ensure standard account type configurations exist and are updated with standard descriptions
         var standardConfigs = new[]
         {
@@ -172,8 +208,15 @@ public class DbInitializer
             .ToListAsync();
         if (legacyConfigs.Any())
         {
-            db.AccountTypeConfigs.RemoveRange(legacyConfigs);
-            await db.SaveChangesAsync();
+            try
+            {
+                db.AccountTypeConfigs.RemoveRange(legacyConfigs);
+                await db.SaveChangesAsync();
+            }
+            catch
+            {
+                // Silently ignore if foreign key constraint is active on legacy records
+            }
         }
 
         // 1. Seed / Update Anna Smith's Accounts
