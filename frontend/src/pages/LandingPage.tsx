@@ -73,6 +73,21 @@ export default function LandingPage({ inactive = false, loggedOut = false }: pag
                             />
                         </Link>
                     )}
+
+                    {!loggedOut && !inactive && (
+                        <Link
+                            to="/register"
+                            className="group -mt-4 flex min-h-14 w-full max-w-xl items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] border-2 border-white px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-white/10 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:-mt-6 lg:text-2xl"
+                        >
+                            <span>{t("welcome-route.register-button")}</span>
+                            <img
+                                aria-hidden="true"
+                                src="/icons/arrow-right.svg"
+                                alt=""
+                                className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"
+                            />
+                        </Link>
+                    )}
                 </div>
             </section>
         </main>

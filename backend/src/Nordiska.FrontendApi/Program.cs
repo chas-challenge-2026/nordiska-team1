@@ -144,7 +144,20 @@ if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
 }
 else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddBankId(bankId => bankId.UseTestEnvironment());
+    var certPath = Path.Combine(AppContext.BaseDirectory, "Certificates", "FPTestcert5_20240610.p12");
+    if (!File.Exists(certPath))
+    {
+        certPath = Path.Combine(builder.Environment.ContentRootPath, "Certificates", "FPTestcert5_20240610.p12");
+    }
+
+    builder.Services.AddBankId(bankId =>
+    {
+        bankId.UseTestEnvironment();
+        if (File.Exists(certPath))
+        {
+            bankId.UseClientCertificate(() => new System.Security.Cryptography.X509Certificates.X509Certificate2(certPath, "qwerty123"));
+        }
+    });
 }
 builder.Services
     .AddAuthentication()
