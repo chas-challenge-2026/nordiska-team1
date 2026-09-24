@@ -45,6 +45,15 @@ export default function CreateAccountModal({ onClose, isModalOpen = false }: Cre
     const [accountTypeError, setAccountTypeError] = useState<string>();
     const [depositError, setDepositError] = useState<string>();
 
+    function resetForm() {
+        setAccountName("");
+        setAccountType("");
+        setInitialDeposit("");
+        setAccountTypeError(undefined);
+        setDepositError(undefined);
+        createAccount.reset();
+    }
+
     function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
 
@@ -80,7 +89,7 @@ export default function CreateAccountModal({ onClose, isModalOpen = false }: Cre
     }
 
     return (
-        <Modal isOpen={isModalOpen} onClose={onClose} title={t("accounts-route.new-account")}>
+        <Modal isOpen={isModalOpen} onClose={onClose} onCloseAnimationComplete={resetForm} title={t("accounts-route.new-account")}>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
                 <h2 className="text-lg font-semibold text-dark-navy">{t("accounts-route.new-account")}</h2>
 
