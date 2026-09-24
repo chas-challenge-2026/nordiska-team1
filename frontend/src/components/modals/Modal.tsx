@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type {
     ReactNode,
     MouseEvent as ReactMouseEvent,
@@ -7,6 +7,7 @@ import type {
 } from "react";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import type { PanInfo } from "motion/react";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 type ModalProps = {
     isOpen: boolean;
@@ -22,20 +23,6 @@ type ModalProps = {
 
 const DRAG_CLOSE_THRESHOLD_PX = 200;
 const DRAG_CLOSE_VELOCITY = 500; // px/s
-
-function useIsMobile(query = "(max-width: 639px)") {
-    const [matches, setMatches] = useState(
-        () => typeof window !== "undefined" && window.matchMedia(query).matches,
-    );
-    useEffect(() => {
-        const mediaQuery = window.matchMedia(query);
-        const onChange = (e: MediaQueryListEvent) => setMatches(e.matches);
-        setMatches(mediaQuery.matches);
-        mediaQuery.addEventListener("change", onChange);
-        return () => mediaQuery.removeEventListener("change", onChange);
-    }, [query]);
-    return matches;
-}
 
 function useBodyScrollLock(locked: boolean) {
     useLayoutEffect(() => {
