@@ -83,10 +83,10 @@ Seeded test accounts available out of the box:
 | Property | Value |
 | :--- | :--- |
 | **Host** | `localhost` (or `db` inside Docker network) |
-| **Port** | `5432` |
+| **Port** | `5433` for the v2 local Docker setup |
 | **Database** | `nordiska_v2` |
 | **Username** | `nordiska_migrator` |
-| **Password** | `migrator_secret_123` |
+| **Password** | The value of `NORDISKA_MIGRATOR_PASSWORD` in `infra/v2/.env` |
 
 ### How to Authenticate via BankID Simulator (in Scalar):
 

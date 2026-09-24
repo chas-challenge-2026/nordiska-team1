@@ -1,7 +1,11 @@
 ﻿using System.Data.Common;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Banking.Infrastructure.Db;
 using Npgsql;
 namespace Nordiska.DevSetup;
 
@@ -9,10 +13,14 @@ internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
-        if (args.Length != 1)
+        if (args.Length == 0)
         {
             Console.Error.WriteLine(
-                "Pass the repository root as the first argument.");
+                "Usage:\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root>\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> seed-transactions [customerId] [batchSize]\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> report-pressure-test [customerId] [accountId] [year] [batchSize] [delayMs]\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> direct-report-pressure-test [customerId] [accountId] [year] [batchSize] [delayMs] [baseUrl] [bearerToken]");
 
             return 1;
         }
@@ -20,6 +28,49 @@ internal static class Program
         try
         {
             var root = Path.GetFullPath(args[0]);
+
+            if (args.Length > 1 &&
+                string.Equals(args[1], "seed-transactions", StringComparison.OrdinalIgnoreCase))
+            {
+                var customerId = args.Length > 2 ? long.Parse(args[2]) : 1;
+                var batchSize = args.Length > 3 ? int.Parse(args[3]) : 1000;
+                await SeedTransactionsUntilStoppedAsync(root, customerId, batchSize);
+                return 0;
+            }
+
+            if (args.Length > 1 &&
+                string.Equals(args[1], "report-pressure-test", StringComparison.OrdinalIgnoreCase))
+            {
+                var customerId = args.Length > 2 ? long.Parse(args[2]) : 1;
+                var accountId = args.Length > 3 ? long.Parse(args[3]) : 0;
+                var year = args.Length > 4 ? int.Parse(args[4]) : DateTime.UtcNow.Year;
+                var batchSize = args.Length > 5 ? int.Parse(args[5]) : 10;
+                var delayMs = args.Length > 6 ? int.Parse(args[6]) : 250;
+                await PressureTestReportsUntilStoppedAsync(root, customerId, accountId, year, batchSize, delayMs);
+                return 0;
+            }
+
+            if (args.Length > 1 &&
+                string.Equals(args[1], "direct-report-pressure-test", StringComparison.OrdinalIgnoreCase))
+            {
+                var customerId = args.Length > 2 ? long.Parse(args[2]) : 1;
+                var accountId = args.Length > 3 ? long.Parse(args[3]) : 0;
+                var year = args.Length > 4 ? int.Parse(args[4]) : DateTime.UtcNow.Year;
+                var batchSize = args.Length > 5 ? int.Parse(args[5]) : 10;
+                var delayMs = args.Length > 6 ? int.Parse(args[6]) : 250;
+                var baseUrl = args.Length > 7 ? args[7] : "http://localhost:5031";
+                var bearerToken = args.Length > 8 ? args[8] : null;
+                await PressureTestDirectReportsUntilStoppedAsync(root, customerId, accountId, year, batchSize, delayMs, baseUrl, bearerToken);
+                return 0;
+            }
+
+            if (args.Length != 1)
+            {
+                Console.Error.WriteLine(
+                    "Pass the repository root as the first argument or use a dedicated dev mode such as seed-transactions or report-pressure-test.");
+
+                return 1;
+            }
 
             await DatabaseSetup.CheckDockerAsync(root);
             await DatabaseSetup.RestoreToolsAsync(root);
@@ -44,6 +95,359 @@ internal static class Program
             Console.Error.WriteLine(exception.Message);
             return 1;
         }
+    }
+
+    private static async Task SeedTransactionsUntilStoppedAsync(string root, long customerId, int batchSize)
+    {
+        if (batchSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
+
+        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        if (!File.Exists(envPath))
+            throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
+
+        var passwords = DatabaseSetup.ReadEnv(root);
+        var connectionString = DatabaseSetup.CreateConnectionString(
+            "nordiska_api",
+            passwords["NORDISKA_API_PASSWORD"]);
+
+        var options = new DbContextOptionsBuilder<BankingDbContext>()
+            .UseNpgsql(connectionString)
+            .Options;
+
+        await using var db = new BankingDbContext(options);
+
+        if (!await db.Database.CanConnectAsync())
+            throw new InvalidOperationException("Could not connect to the local Nordiska database.");
+
+        var customer = await db.Customers
+            .FirstOrDefaultAsync(c => c.Id == customerId);
+
+        if (customer is null)
+            throw new InvalidOperationException($"Customer with id {customerId} was not found.");
+
+        var account = await db.SavingsAccounts
+            .Where(a => a.CustomerId == customerId)
+            .OrderBy(a => a.Id)
+            .FirstOrDefaultAsync();
+
+        if (account is null)
+        {
+            account = new SavingsAccount
+            {
+                CustomerId = customerId,
+                AccountNumber = $"SEED-{customerId}-{DateTime.UtcNow:yyMMddHHmmss}",
+                AccountType = "flex",
+                Balance = 0m,
+                InterestRate = 0.0350m,
+                CreatedAt = DateTime.UtcNow,
+                Status = "active"
+            };
+
+            db.SavingsAccounts.Add(account);
+            await db.SaveChangesAsync();
+        }
+
+        var totalInserted = 0;
+        var loop = 0;
+        Console.WriteLine($"Seeding transactions for customer {customerId} on account {account.Id} ({account.AccountNumber}). Press Enter or Ctrl+C to stop.");
+
+        using var shutdown = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            shutdown.Cancel();
+        };
+
+        try
+        {
+            while (!shutdown.IsCancellationRequested)
+            {
+                var batchInserted = 0;
+
+                while (batchInserted < batchSize && !shutdown.IsCancellationRequested)
+                {
+                    var isDeposit = (loop + batchInserted) % 2 == 0;
+                    var amount = 25m + ((loop + batchInserted) % 12) * 50m;
+                    var ledgerEntry = new LedgerEntry
+                    {
+                        AccountId = account.Id,
+                        Type = isDeposit ? "deposit" : "withdrawal",
+                        Amount = isDeposit ? amount : -amount,
+                        Label = $"Seed {totalInserted + 1}",
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    db.LedgerEntries.Add(ledgerEntry);
+                    account.Balance += isDeposit ? amount : -amount;
+                    account.UpdatedAt = DateTime.UtcNow;
+
+                    batchInserted++;
+                    totalInserted++;
+                    loop++;
+                }
+
+                await db.SaveChangesAsync();
+                Console.WriteLine($"Inserted {batchInserted} transactions. Running total: {totalInserted}.");
+
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true).Key;
+                    if (key == ConsoleKey.Enter || key == ConsoleKey.Escape)
+                    {
+                        break;
+                    }
+                }
+
+                if (!shutdown.IsCancellationRequested)
+                {
+                    await Task.Delay(500, shutdown.Token);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the user presses Ctrl+C.
+        }
+
+        Console.WriteLine($"Stopped. Total seeded transactions: {totalInserted}.");
+    }
+
+    private static async Task PressureTestReportsUntilStoppedAsync(
+        string root,
+        long customerId,
+        long accountId,
+        int year,
+        int batchSize,
+        int delayMs)
+    {
+        if (batchSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
+
+        if (delayMs < 0)
+            throw new ArgumentOutOfRangeException(nameof(delayMs), "Delay must be zero or greater.");
+
+        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        if (!File.Exists(envPath))
+            throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
+
+        var passwords = DatabaseSetup.ReadEnv(root);
+        var connectionString = DatabaseSetup.CreateConnectionString(
+            "nordiska_api",
+            passwords["NORDISKA_API_PASSWORD"]);
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        if (accountId == 0)
+        {
+            await using var banking = new BankingDbContext(
+                new DbContextOptionsBuilder<BankingDbContext>()
+                    .UseNpgsql(connectionString)
+                    .Options);
+
+            accountId = await banking.SavingsAccounts
+                .Where(a => a.CustomerId == customerId)
+                .OrderBy(a => a.Id)
+                .Select(a => a.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        if (accountId == 0)
+            throw new InvalidOperationException($"No savings account was found for customer {customerId}.");
+
+        var totalSubmitted = 0;
+        Console.WriteLine(
+            $"Pressure testing report generation for customer {customerId}, account {accountId}, year {year}. " +
+            $"Batch size: {batchSize}. Press Enter or Ctrl+C to stop.");
+
+        using var shutdown = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            shutdown.Cancel();
+        };
+
+        try
+        {
+            while (!shutdown.IsCancellationRequested)
+            {
+                var queuedThisLoop = 0;
+                while (queuedThisLoop < batchSize && !shutdown.IsCancellationRequested)
+                {
+                    var jobId = Guid.NewGuid();
+                    var createdAt = DateTime.UtcNow;
+                    var commandText = @"
+                        INSERT INTO reporting.tax_report_jobs (
+                            ""Id"",
+                            ""CustomerId"",
+                            ""AccountId"",
+                            ""Year"",
+                            ""Status"",
+                            ""DownloadUrl"",
+                            ""CreatedAt"",
+                            ""UpdatedAt""
+                        )
+                        VALUES (
+                            @Id,
+                            @CustomerId,
+                            @AccountId,
+                            @Year,
+                            @Status,
+                            @DownloadUrl,
+                            @CreatedAt,
+                            @UpdatedAt
+                        );";
+
+                    await using (var command = new NpgsqlCommand(commandText, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", jobId);
+                        command.Parameters.AddWithValue("@CustomerId", customerId);
+                        command.Parameters.AddWithValue("@AccountId", accountId);
+                        command.Parameters.AddWithValue("@Year", year);
+                        command.Parameters.AddWithValue("@Status", "Pending");
+                        command.Parameters.AddWithValue("@DownloadUrl", $"/api/reports/jobs/{jobId}/download");
+                        command.Parameters.AddWithValue("@CreatedAt", createdAt);
+                        command.Parameters.AddWithValue("@UpdatedAt", createdAt);
+                        await command.ExecuteNonQueryAsync(shutdown.Token);
+                    }
+
+                    totalSubmitted++;
+                    queuedThisLoop++;
+                }
+
+                Console.WriteLine($"Queued {queuedThisLoop} report jobs. Total submitted: {totalSubmitted}.");
+
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true).Key;
+                    if (key == ConsoleKey.Enter || key == ConsoleKey.Escape)
+                    {
+                        break;
+                    }
+                }
+
+                if (!shutdown.IsCancellationRequested && delayMs > 0)
+                {
+                    await Task.Delay(delayMs, shutdown.Token);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the user presses Ctrl+C.
+        }
+
+        Console.WriteLine($"Stopped. Total report jobs queued: {totalSubmitted}.");
+    }
+
+    private static async Task PressureTestDirectReportsUntilStoppedAsync(
+        string root,
+        long customerId,
+        long accountId,
+        int year,
+        int batchSize,
+        int delayMs,
+        string baseUrl,
+        string? bearerToken)
+    {
+        if (batchSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
+
+        if (delayMs < 0)
+            throw new ArgumentOutOfRangeException(nameof(delayMs), "Delay must be zero or greater.");
+
+        if (accountId == 0)
+        {
+            var envPath = Path.Combine(root, "infra", "v2", ".env");
+            if (!File.Exists(envPath))
+                throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
+
+            var passwords = DatabaseSetup.ReadEnv(root);
+            var connectionString = DatabaseSetup.CreateConnectionString(
+                "nordiska_api",
+                passwords["NORDISKA_API_PASSWORD"]);
+
+            await using var banking = new BankingDbContext(
+                new DbContextOptionsBuilder<BankingDbContext>()
+                    .UseNpgsql(connectionString)
+                    .Options);
+
+            accountId = await banking.SavingsAccounts
+                .Where(a => a.CustomerId == customerId)
+                .OrderBy(a => a.Id)
+                .Select(a => a.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        if (accountId == 0)
+            throw new InvalidOperationException($"No savings account was found for customer {customerId}.");
+
+        var client = new HttpClient { BaseAddress = new Uri(baseUrl.TrimEnd('/')) };
+        if (!string.IsNullOrWhiteSpace(bearerToken))
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        }
+
+        var totalRequests = 0;
+        Console.WriteLine(
+            $"Hammering direct tax report generation for customer {customerId}, account {accountId}, year {year}. " +
+            $"Batch size: {batchSize}. Base URL: {baseUrl}. Press Enter or Ctrl+C to stop.");
+
+        using var shutdown = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            shutdown.Cancel();
+        };
+
+        try
+        {
+            while (!shutdown.IsCancellationRequested)
+            {
+                var loopCount = 0;
+                while (loopCount < batchSize && !shutdown.IsCancellationRequested)
+                {
+                    var requestUri = $"/api/reports/tax-report?accountId={accountId}&year={year}";
+                    using var response = await client.GetAsync(requestUri, shutdown.Token);
+                    totalRequests++;
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var contentLength = response.Content.Headers.ContentLength ?? 0;
+                        Console.WriteLine($"Request {totalRequests}: HTTP {(int)response.StatusCode} ({contentLength} bytes)");
+                    }
+                    else
+                    {
+                        var body = await response.Content.ReadAsStringAsync(shutdown.Token);
+                        var preview = body.Length > 200 ? body[..200] : body;
+                        Console.WriteLine($"Request {totalRequests}: HTTP {(int)response.StatusCode} - {preview}");
+                    }
+
+                    loopCount++;
+                }
+
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true).Key;
+                    if (key == ConsoleKey.Enter || key == ConsoleKey.Escape)
+                    {
+                        break;
+                    }
+                }
+
+                if (!shutdown.IsCancellationRequested && delayMs > 0)
+                {
+                    await Task.Delay(delayMs, shutdown.Token);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when the user presses Ctrl+C.
+        }
+
+        Console.WriteLine($"Stopped. Total requests sent: {totalRequests}.");
     }
 }
 

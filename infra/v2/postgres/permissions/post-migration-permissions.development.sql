@@ -40,6 +40,32 @@ GRANT USAGE
     ON ALL SEQUENCES IN SCHEMA banking, faq, reporting
     TO nordiska_api;
 
+REVOKE ALL
+    ON ALL TABLES IN SCHEMA banking, reporting
+    FROM nordiska_reporting_worker;
+
+GRANT USAGE
+    ON SCHEMA banking, reporting
+    TO nordiska_reporting_worker;
+
+GRANT SELECT
+    ON ALL TABLES IN SCHEMA banking
+    TO nordiska_reporting_worker;
+
+GRANT SELECT, INSERT, UPDATE
+    ON ALL TABLES IN SCHEMA reporting
+    TO nordiska_reporting_worker;
+
+ALTER DEFAULT PRIVILEGES
+    FOR ROLE nordiska_migrator
+    IN SCHEMA banking
+    GRANT SELECT ON TABLES TO nordiska_reporting_worker;
+
+ALTER DEFAULT PRIVILEGES
+    FOR ROLE nordiska_migrator
+    IN SCHEMA reporting
+    GRANT SELECT, INSERT, UPDATE ON TABLES TO nordiska_reporting_worker;
+
 DO $$
 DECLARE
     schema_name text;

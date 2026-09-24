@@ -40,6 +40,25 @@
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <NativePdfBuildDirectory>$(MSBuildThisFileDirectory)..\..\..\native\pdf_generator\build</NativePdfBuildDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativePdfRuntimeFiles Include="$(NativePdfBuildDirectory)\*.dll" />
+  </ItemGroup>
+
+  <Target Name="CopyNativePdfRuntime" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Warning
+      Condition="'@(NativePdfRuntimeFiles)' == ''"
+      Text="Native PDF runtime not found. Build native/pdf_generator before running PDF generation." />
+    <Copy
+      Condition="'@(NativePdfRuntimeFiles)' != ''"
+      SourceFiles="@(NativePdfRuntimeFiles)"
+      DestinationFolder="$(TargetDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
+
 
 
 </Project>
