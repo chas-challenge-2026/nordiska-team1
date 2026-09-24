@@ -122,6 +122,7 @@
     "card-savings": "Sparmål",
     "card-planned": "Planerade överföringar",
     "card-transactions": "Senaste transaktioner"
+},
 "register-route": {
     "title": "Bli kund",
     "paragraph": "Fyll i dina uppgifter så skapar vi ditt kundkonto hos Nordiska.",
