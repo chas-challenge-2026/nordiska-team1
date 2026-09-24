@@ -8,11 +8,18 @@ import type { PlannedTransfer } from "../../constants/transferAccounts";
 
 type View = "menu" | "edit" | "confirm-delete";
 
+/** "cleanup" = nya överföringen skapades men den gamla kunde inte tas bort. */
+export type EditPlannedError = "save" | "cleanup" | null;
+
 type PlannedTransferActionsModalProps = {
     transfer: PlannedTransfer;
     onClose: () => void;
     onSaveDate: (newDate: string) => void;
-    onConfirmDelete: () => Promise<void>;
+    isSaving: boolean;
+    editError: EditPlannedError;
+    onConfirmDelete: () => void;
+    isDeleting: boolean;
+    deleteError: boolean;
 };
 
 /**
@@ -23,29 +30,19 @@ export default function PlannedTransferActionsModal({
     transfer,
     onClose,
     onSaveDate,
+    isSaving,
+    editError,
     onConfirmDelete,
+    isDeleting,
+    deleteError,
 }: PlannedTransferActionsModalProps) {
     const { t } = useTranslation();
     const [view, setView] = useState<View>("menu");
     const [date, setDate] = useState(transfer.date);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [deleteError, setDeleteError] = useState(false);
 
     const handleSaveDate = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSaveDate(date);
-    };
-
-    const handleConfirmDelete = async () => {
-        setIsDeleting(true);
-        setDeleteError(false);
-        try {
-            await onConfirmDelete();
-        } catch {
-            setDeleteError(true);
-        } finally {
-            setIsDeleting(false);
-        }
     };
 
     return (
@@ -102,7 +99,24 @@ export default function PlannedTransferActionsModal({
                         value={date}
                         onChange={setDate}
                     />
-                    <CollapsibleFormBtns onClose={onClose} />
+                    {editError && (
+                        <p className="m-0 text-sm text-red-600">
+                            {editError === "cleanup"
+                                ? t("page-transfer.planned.edit-cleanup-error")
+                                : t("page-transfer.planned.edit-error")}
+                        </p>
+                    )}
+                    <CollapsibleFormBtns
+                        onClose={onClose}
+                        isSubmitting={isSaving}
+                        submitLabel={
+                            isSaving
+                                ? t("page-transfer.planned.edit-save-loading")
+                                : undefined
+                        }
+                        // Nytt försök efter "cleanup" skulle skapa ännu en dubblett.
+                        submitDisabled={editError === "cleanup"}
+                    />
                 </form>
             )}
 
@@ -129,7 +143,7 @@ export default function PlannedTransferActionsModal({
                         </button>
                         <button
                             type="button"
-                            onClick={handleConfirmDelete}
+                            onClick={onConfirmDelete}
                             disabled={isDeleting}
                             className="cursor-pointer font-bold uppercase text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >

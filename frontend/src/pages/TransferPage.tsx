@@ -283,6 +283,7 @@ export default function TransferPage() {
     const handleEditPlannedTransfer = (
         transfer: PlannedTransfer,
         newDate: string,
+        onSaved: () => void,
     ) => {
         if (transfer.source === "local") {
             setLocalPlannedTransfers((prev) =>
@@ -292,38 +293,67 @@ export default function TransferPage() {
                         : p,
                 ),
             );
+            onSaved();
             return;
         }
 
-        if (transfer.backendId === undefined || transfer.accountId === undefined) {
+        const { backendId, accountId } = transfer;
+        if (backendId === undefined || accountId === undefined) {
             return;
         }
 
-        cancelPlannedMutation
-            .mutateAsync(transfer.backendId)
-            .then(() =>
-                createPlannedMutation.mutateAsync({
-                    accountId: transfer.accountId!,
-                    type: (transfer.type as "Deposit" | "Withdraw") ?? "Withdraw",
-                    amount: transfer.sum,
-                    plannedDate: toPlannedDateIso(newDate),
-                    label: transfer.label,
-                    targetAccountId: transfer.targetAccountId,
-                    repeating: transfer.repeating,
-                }),
-            );
+        // Backend saknar uppdatering, så datumbyte = skapa ny + ta bort gammal.
+        // Skapa först: misslyckas något blir det i värsta fall en dubblett,
+        // aldrig en försvunnen överföring.
+        createPlannedMutation.mutate(
+            {
+                accountId,
+                type: (transfer.type as "Deposit" | "Withdraw") ?? "Withdraw",
+                amount: transfer.sum,
+                plannedDate: toPlannedDateIso(newDate),
+                label: transfer.label,
+                targetAccountId: transfer.targetAccountId,
+                repeating: transfer.repeating,
+            },
+            {
+                onSuccess: () =>
+                    cancelPlannedMutation.mutate(backendId, {
+                        onSuccess: onSaved,
+                    }),
+            },
+        );
     };
 
-    const handleDeletePlannedTransfer = async (transfer: PlannedTransfer) => {
+    const resetPlannedMutations = () => {
+        createPlannedMutation.reset();
+        cancelPlannedMutation.reset();
+    };
+
+    // "cleanup" = nya överföringen skapades men den gamla kunde inte tas bort.
+    const editPlannedError = createPlannedMutation.isError
+        ? "save"
+        : cancelPlannedMutation.isError
+          ? "cleanup"
+          : null;
+
+    const handleDeletePlannedTransfer = (
+        transfer: PlannedTransfer,
+        onDeleted: () => void,
+    ) => {
+        // Lokala överföringar tas bort direkt och går inte via mutationen,
+        // så de påverkar aldrig isPending/isError.
         if (transfer.source === "local") {
             setLocalPlannedTransfers((prev) =>
                 prev.filter((p) => p.localId !== transfer.localId),
             );
+            onDeleted();
             return;
         }
 
         if (transfer.backendId === undefined) return;
-        await cancelPlannedMutation.mutateAsync(transfer.backendId);
+        cancelPlannedMutation.mutate(transfer.backendId, {
+            onSuccess: onDeleted,
+        });
     };
 
     const startTransfer = () => {
@@ -471,6 +501,14 @@ export default function TransferPage() {
                     upcomingTransfers={upcomingTransfers}
                     onEditTransfer={handleEditPlannedTransfer}
                     onDeleteTransfer={handleDeletePlannedTransfer}
+                    isSaving={
+                        createPlannedMutation.isPending ||
+                        cancelPlannedMutation.isPending
+                    }
+                    editError={editPlannedError}
+                    isDeleting={cancelPlannedMutation.isPending}
+                    deleteError={cancelPlannedMutation.isError}
+                    onResetStatus={resetPlannedMutations}
                 />
             </div>
 
