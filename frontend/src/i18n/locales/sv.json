@@ -38,7 +38,8 @@
 "welcome-route": {
     "title": "Kundportalen",
     "paragraph": "För en samlad överblick över dina konton och ditt sparande.",
-    "button": "Logga in"
+    "button": "Logga in",
+    "register-button": "Bli kund"
 },
 "inactivity-route": {
     "title": "Du är utloggad",
@@ -96,6 +97,25 @@
     "invalid-amount": "ogiltigt belopp",
     "invalid-interest-rate": "ogiltig ränta",
     "create-account-error": "Kunde inte skapa kontot. Försök igen."
+},
+"register-route": {
+    "title": "Bli kund",
+    "paragraph": "Fyll i dina uppgifter så skapar vi ditt kundkonto hos Nordiska.",
+    "name": "namn",
+    "personal-num": "personnummer",
+    "personal-num-placeholder": "ÅÅÅÅMMDDXXXX",
+    "submit": "Bli kund",
+    "submitting": "Skapar konto...",
+    "name-error": "Ange ditt namn",
+    "email-error": "Ange en giltig e-postadress",
+    "personal-num-error": "Ange ett giltigt personnummer (12 siffror)",
+    "error-conflict": "Det går inte att skapa ett konto med de uppgifterna. Är du redan kund? Försök att logga in.",
+    "error-rate-limit": "För många försök. Vänta en stund och försök igen.",
+    "error-generic": "Något gick fel. Försök igen senare.",
+    "already-customer": "Redan kund?",
+    "login-link": "Logga in",
+    "not-customer": "Inte kund än?",
+    "link": "Bli kund"
 },
 "login-route": {
     "title": "Logga in",

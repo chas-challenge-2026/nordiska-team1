@@ -39,7 +39,8 @@
 "welcome-route": {
     "title": "Customer Portal",
     "paragraph": "For a complete overview of your accounts and savings.",
-    "button": "Log in"
+    "button": "Log in",
+    "register-button": "Become a customer"
 },
 "inactivity-route": {
     "title": "You have been logged out",
@@ -98,7 +99,26 @@
     "invalid-interest-rate": "Invalid interest rate",
     "create-account-error": "Could not create account. Try again."
 },
-  "login-route": {
+  "register-route": {
+    "title": "Become a customer",
+    "paragraph": "Fill in your details and we will create your customer account at Nordiska.",
+    "name": "name",
+    "personal-num": "personal number",
+    "personal-num-placeholder": "YYYYMMDDXXXX",
+    "submit": "Become a customer",
+    "submitting": "Creating account...",
+    "name-error": "Enter your name",
+    "email-error": "Enter a valid email address",
+    "personal-num-error": "Enter a valid personal number (12 digits)",
+    "error-conflict": "An account cannot be created with those details. Already a customer? Try logging in.",
+    "error-rate-limit": "Too many attempts. Please wait a moment and try again.",
+    "error-generic": "Something went wrong. Please try again later.",
+    "already-customer": "Already a customer?",
+    "login-link": "Log in",
+    "not-customer": "Not a customer yet?",
+    "link": "Become a customer"
+},
+"login-route": {
     "title": "Log in",
     "paragraph": "Please identify yourself with BankID to continue to the customer portal."
 },

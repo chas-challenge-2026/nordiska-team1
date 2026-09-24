@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import InputField from "../components/forms/InputField";
 import { useEffect, useState } from "react";
 import { useLogin, useBankIdInitate, useBankIdCollect } from "../hooks/useLogin";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -50,6 +50,15 @@ export default function LoginPage() {
         }
     }, [status, navigate]);
 
+    const registerLink = (
+        <p className="mt-5 text-sm text-dark-navy">
+            {t("register-route.not-customer")}{" "}
+            <Link to="/register" className="font-bold text-nordiska-blue underline">
+                {t("register-route.link")}
+            </Link>
+        </p>
+    );
+
     return (
     <main className="min-h-screen w-full bg-login-bg">
         {/* ----- DESKTOP ----- */}
@@ -73,6 +82,7 @@ export default function LoginPage() {
                             <button type="submit" disabled={loginPending} className="cursor-pointer">{loginPending ? "Loggas in..." : "Logga in"}</button>
                         </form>
                         {loginIsError && <p className="text-red-500">{loginError.message}</p>}
+                        {registerLink}
 
                     <section>
                             <p className="mt-5"> Logga in med BankID-ish</p> 
@@ -136,6 +146,8 @@ export default function LoginPage() {
                                 {loginError.message} 
                             </p> 
                         )} 
+
+                        {registerLink}
 
                         <section>
                             <p className="mt-5"> Logga in med BankID-ish</p> 
