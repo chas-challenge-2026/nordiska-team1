@@ -146,6 +146,12 @@ export default function TransferPage() {
 
     const query = search.trim().toLowerCase();
     const selectedId = modal === "from" ? fromId : toId;
+    // Kontot som är valt på andra sidan går inte att välja (samma från och till).
+    const otherSideId = modal === "from" ? toId : fromId;
+    const otherSideReason =
+        modal === "from"
+            ? t("page-transfer.modal.selected-as-to")
+            : t("page-transfer.modal.selected-as-from");
 
     const buildGroups = (): AccountPickerGroup[] => {
         // Saldo visas bara för egna konton, aldrig för externa mottagare.
@@ -158,6 +164,8 @@ export default function TransferPage() {
                     meta: a.meta,
                     balance: a.own ? `${formatSek(a.balance)} sek` : undefined,
                     selected: a.id === selectedId,
+                    disabledReason:
+                        a.id === otherSideId ? otherSideReason : undefined,
                 }));
 
         let groups: AccountPickerGroup[] = [];
