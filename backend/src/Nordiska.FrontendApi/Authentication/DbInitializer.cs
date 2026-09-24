@@ -453,11 +453,15 @@ public class DbInitializer
             return;
         }
 
-        if (!await faqDb.FaqEntries.AnyAsync())
+        var hasSwedish = await faqDb.FaqEntries.AnyAsync(e => e.Language == "sv");
+        var hasEnglish = await faqDb.FaqEntries.AnyAsync(e => e.Language == "en");
+
+        var itemsToAdd = new List<FaqEntry>();
+
+        if (!hasSwedish)
         {
-            var faqItems = new List<FaqEntry>
+            itemsToAdd.AddRange(new[]
             {
-                // Swedish FAQs
                 FaqEntry.Create(
                     "När betalas räntan ut?",
                     "Räntan beräknas dagligen och betalas ut den 31 december varje år.",
@@ -513,9 +517,14 @@ public class DbInitializer
                     "Konto",
                     "avsluta, avslutar, stänga, säga, upp",
                     "sv"
-                ),
+                )
+            });
+        }
 
-                // English FAQs
+        if (!hasEnglish)
+        {
+            itemsToAdd.AddRange(new[]
+            {
                 FaqEntry.Create(
                     "When is interest paid?",
                     "Interest is calculated daily and paid on December 31st each year.",
@@ -572,9 +581,12 @@ public class DbInitializer
                     "close, closing, terminate, cancel, delete",
                     "en"
                 )
-            };
+            });
+        }
 
-            faqDb.FaqEntries.AddRange(faqItems);
+        if (itemsToAdd.Count > 0)
+        {
+            faqDb.FaqEntries.AddRange(itemsToAdd);
             await faqDb.SaveChangesAsync();
         }
     }
