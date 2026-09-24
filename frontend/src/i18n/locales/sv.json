@@ -124,8 +124,8 @@
     "bankid-mobile": "BankID på mobil",
     "bankid-desktop": "BankID på dator",
     "manual-link": "Logga in med personnummer eller e-post",
-    "bankid-submit": "Logga in med BankID",
-    "bankid-submitting": "Väntar på BankID...",
+    "bankid-submit": "Logga in",
+    "bankid-submitting": "Loggar in...",
     "or-email": "eller med e-post",
     "email": "e-post",
     "email-placeholder": "namn@exempel.se",
@@ -134,12 +134,9 @@
     "submitting": "Loggar in...",
     "back": "Tillbaka",
     "qr-help": "Öppna BankID-appen och skanna QR-koden",
-    "qr-expired": "QR-koden har gått ut",
-    "retry": "Försök igen",
-    "starting-app": "Startar BankID-appen...",
-    "open-app-again": "Öppna BankID igen",
-    "failed": "Inloggningen med BankID avbröts. Försök igen.",
-    "not-found": "Vi hittade ingen kund med det personnumret."
+    "not-found": "Vi hittade ingen kund med det personnumret.",
+    "invalid-credentials": "Fel e-post eller lösenord.",
+    "locked": "Kontot är tillfälligt spärrat. Försök igen senare."
 },
 "404-route": {
     "title": "Sidan kunde inte hittas.",

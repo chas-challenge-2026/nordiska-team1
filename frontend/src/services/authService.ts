@@ -7,7 +7,7 @@ import type { User } from "../types/types";
 //     role: string;
 // }
 
-interface BankIdInitRes {
+export interface BankIdInitRes {
     orderRef: string;
     autoStartToken: string;
     qrStartToken: string;
