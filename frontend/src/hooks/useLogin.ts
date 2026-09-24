@@ -7,11 +7,10 @@ import { useUserStore } from "../store/userStore";
 import { useEffect } from "react";
 
 // Namn och kontotyp för det sparkonto som skapas automatiskt åt varje ny kund.
-// "Standard" är den enda ränte-/avgiftsfria kontotypen som är seedad i backend
-// (se AccountTypeConfig) — det närmaste vi har ett vanligt "bankkonto".
+// "Standard" är den enklaste av de kontotyper som är seedade i backend
+// (se AccountTypeConfig). Startinsättning skickas inte med - backend sätter 0 som standard.
 const DEFAULT_ACCOUNT_NAME = "Sparkonto";
 const DEFAULT_ACCOUNT_TYPE = "Standard";
-const DEFAULT_ACCOUNT_INITIAL_DEPOSIT = 0;
 
 
 export function useLogin() {
@@ -43,7 +42,7 @@ export function useRegister() {
             let accountCreated = true;
             if (user) {
                 try {
-                    await createAccount(user.id, DEFAULT_ACCOUNT_NAME, DEFAULT_ACCOUNT_TYPE, DEFAULT_ACCOUNT_INITIAL_DEPOSIT);
+                    await createAccount(user.id, DEFAULT_ACCOUNT_NAME, DEFAULT_ACCOUNT_TYPE);
                     queryClient.invalidateQueries({ queryKey: accountKey.all });
                 } catch (err) {
                     // Kunden är redan registrerad och inloggad - det ska inte
