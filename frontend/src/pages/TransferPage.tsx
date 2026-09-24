@@ -148,6 +148,7 @@ export default function TransferPage() {
     const selectedId = modal === "from" ? fromId : toId;
 
     const buildGroups = (): AccountPickerGroup[] => {
+        // Saldo visas bara för egna konton, aldrig för externa mottagare.
         const wrap = (accounts: TransferAccount[]) =>
             accounts
                 .filter((a) => matchesSearch(a, query))
@@ -155,17 +156,7 @@ export default function TransferPage() {
                     id: a.id,
                     name: a.name,
                     meta: a.meta,
-                    selected: a.id === selectedId,
-                }));
-
-        const wrapFrom = (accounts: OwnAccount[]) =>
-            accounts
-                .filter((a) => matchesSearch(a, query))
-                .map((a) => ({
-                    id: a.id,
-                    name: a.name,
-                    meta: a.meta,
-                    balance: `${formatSek(a.balance)} sek`,
+                    balance: a.own ? `${formatSek(a.balance)} sek` : undefined,
                     selected: a.id === selectedId,
                 }));
 
@@ -175,7 +166,7 @@ export default function TransferPage() {
             groups = [
                 {
                     title: t("page-transfer.modal.group-own"),
-                    items: wrapFrom(ownAccounts),
+                    items: wrap(ownAccounts),
                 },
             ];
         } else if (modal === "to") {
