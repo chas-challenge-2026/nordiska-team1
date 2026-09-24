@@ -275,11 +275,32 @@ public class TestTransactionRepository : ITransactionRepository
     public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
 
+    public Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
+    {
+        var pending = _store
+            .Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc)
+            .OrderBy(l => l.PlannedDate)
+            .ThenBy(l => l.Id)
+            .ToList();
+        return Task.FromResult(pending);
+    }
+
     public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
     {
         entry.Id = _next++;
         _store.Add(entry);
         return Task.FromResult(entry.Id);
+    }
+
+    public Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(l => l.Id == entry.Id);
+        if (idx >= 0)
+        {
+            _store[idx] = entry;
+            return Task.FromResult(true);
+        }
+        return Task.FromResult(false);
     }
 
     public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
@@ -379,6 +400,77 @@ public class TestAccountTypeConfigRepository : IAccountTypeConfigRepository
     }
 }
 
+public class TestOperationalMessageRepository : IOperationalMessageRepository
+{
+    private static readonly List<OperationalMessage> _store = new()
+    {
+        new OperationalMessage
+        {
+            Id = 1,
+            TitleSv = "Planerat driftunderhåll",
+            TitleEn = "Scheduled maintenance",
+            MessageSv = "Underhåll utförs i helgen.",
+            MessageEn = "Maintenance during weekend.",
+            Severity = "warning",
+            Priority = 10,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            EndDate = DateTime.UtcNow.AddDays(7),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        }
+    };
+    private static long _next = 10;
+
+    public Task<IEnumerable<OperationalMessage>> GetActiveAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var active = _store
+            .Where(m => m.IsActive
+                        && (m.StartDate == null || m.StartDate <= now)
+                        && (m.EndDate == null || m.EndDate >= now))
+            .OrderByDescending(m => m.Priority)
+            .ThenByDescending(m => m.CreatedAt)
+            .ToList();
+        return Task.FromResult<IEnumerable<OperationalMessage>>(active);
+    }
+
+    public Task<IEnumerable<OperationalMessage>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var all = _store
+            .OrderByDescending(m => m.Priority)
+            .ThenByDescending(m => m.CreatedAt)
+            .ToList();
+        return Task.FromResult<IEnumerable<OperationalMessage>>(all);
+    }
+
+    public Task<OperationalMessage?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var match = _store.FirstOrDefault(m => m.Id == id);
+        return Task.FromResult(match);
+    }
+
+    public Task CreateAsync(OperationalMessage entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _next++;
+        _store.Add(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(OperationalMessage entity, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(m => m.Id == entity.Id);
+        if (idx >= 0) _store[idx] = entity;
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var count = _store.RemoveAll(m => m.Id == id);
+        return Task.FromResult(count > 0);
+    }
+}
+
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -403,6 +495,9 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IAccountTypeConfigRepository>();
             services.AddScoped<IAccountTypeConfigRepository, TestAccountTypeConfigRepository>();
+
+            services.RemoveAll<IOperationalMessageRepository>();
+            services.AddScoped<IOperationalMessageRepository, TestOperationalMessageRepository>();
         });
     }
 }

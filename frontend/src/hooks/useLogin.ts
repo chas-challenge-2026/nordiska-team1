@@ -1,7 +1,16 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { login, checkSession, bankIdInitiate, bankIdCollect } from "../services/authService";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { login, register, checkSession, bankIdInitiate, bankIdCollect } from "../services/authService";
+import type { RegisterCustomerRequest } from "../services/authService";
+import { createAccount } from "../services/accountsService";
+import { accountKey } from "./useAccounts";
 import { useUserStore } from "../store/userStore";
 import { useEffect } from "react";
+
+// Namn och kontotyp för det sparkonto som skapas automatiskt åt varje ny kund.
+// "Standard" är den enklaste av de kontotyper som är seedade i backend
+// (se AccountTypeConfig). Startinsättning skickas inte med - backend sätter 0 som standard.
+const DEFAULT_ACCOUNT_NAME = "Sparkonto";
+const DEFAULT_ACCOUNT_TYPE = "Standard";
 
 
 export function useLogin() {
@@ -13,6 +22,37 @@ export function useLogin() {
         onSuccess: async () => {
             const user = await checkSession();
             setUser(user);
+        },
+    });
+}
+
+export function useRegister() {
+    const setUser = useUserStore((state) => state.setUser);
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (data: RegisterCustomerRequest) => {
+            await register(data);
+            const user = await checkSession();
+            setUser(user);
+
+            // Varje ny kund ska ha ett konto direkt. Detta är ett riktigt
+            // anrop mot backend (inte simulerat) - samma endpoint som
+            // "Nytt konto" på Bankkonton-sidan använder.
+            let accountCreated = true;
+            if (user) {
+                try {
+                    await createAccount(user.id, DEFAULT_ACCOUNT_NAME, DEFAULT_ACCOUNT_TYPE);
+                    queryClient.invalidateQueries({ queryKey: accountKey.all });
+                } catch (err) {
+                    // Kunden är redan registrerad och inloggad - det ska inte
+                    // stoppas av att det automatiska kontot inte kunde skapas.
+                    accountCreated = false;
+                    console.error("Kunde inte skapa sparkonto automatiskt vid registrering.", err);
+                }
+            }
+
+            return { user, accountCreated };
         },
     });
 }

@@ -39,6 +39,18 @@ export async function login(email: string, password: string): Promise<void> {
     await axiosInstance.post("/auth/login", { email, password });
 }
 
+export interface RegisterCustomerRequest {
+    name: string;
+    email: string;
+    personalNum: string;
+    phoneNumber?: string;
+}
+
+/** Registers a new customer. On success the backend also logs the customer in via cookie. */
+export async function register(data: RegisterCustomerRequest): Promise<void> {
+    await axiosInstance.post("/auth/register", data);
+}
+
 export async function logout(): Promise<void> {
     await axiosInstance.post("/auth/logout");
 }

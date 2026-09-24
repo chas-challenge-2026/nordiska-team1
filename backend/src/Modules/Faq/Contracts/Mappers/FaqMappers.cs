@@ -12,7 +12,8 @@ public static class FaqMappers
             req.Question,
             req.Answer,
             req.Category,
-            req.Keywords);
+            req.Keywords,
+            req.Lang ?? "sv");
     }
 
     public static void ApplyUpdate(this FaqEntry target, UpdateFaqRequest req)
@@ -26,15 +27,41 @@ public static class FaqMappers
                 ? target.Answer
                 : req.Answer,
 
-            string.IsNullOrWhiteSpace(req.Category)
-                ? target.Category
-                : req.Category,
+            req.Category ?? target.Category,
+            req.Keywords ?? target.Keywords,
+            req.Lang ?? target.Language);
+    }
 
-            string.IsNullOrWhiteSpace(req.Keywords)
-                ? target.Keywords
-                : req.Keywords);
+    public static void ApplyPatch(this FaqEntry target, PatchFaqRequest req)
+    {
+        var newQuestion = !string.IsNullOrWhiteSpace(req.Question)
+            ? req.Question
+            : (!string.IsNullOrWhiteSpace(req.Title) ? req.Title : target.Question);
+
+        var newAnswer = !string.IsNullOrWhiteSpace(req.Answer) ? req.Answer : target.Answer;
+        var newCategory = req.Category ?? target.Category;
+        var newKeywords = req.Keywords ?? target.Keywords;
+        var newLang = req.Lang ?? target.Language;
+
+        target.ReviseEntry(newQuestion, newAnswer, newCategory, newKeywords, newLang);
     }
 
     public static FaqEntryResponse ToResponse(this FaqEntry e)
-        => new(e.Id, e.Question, e.Answer, e.Category, e.HelpfulCount, e.Keywords);
+    {
+        var keywordsList = string.IsNullOrWhiteSpace(e.Keywords)
+            ? Array.Empty<string>()
+            : e.Keywords.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        return new FaqEntryResponse(
+            e.Id,
+            e.Question,
+            e.Answer,
+            e.Category,
+            e.HelpfulCount,
+            keywordsList,
+            e.Language,
+            e.CreatedAt,
+            e.UpdatedAt);
+    }
 }
+

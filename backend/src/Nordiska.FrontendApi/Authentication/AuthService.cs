@@ -210,7 +210,7 @@ public class AuthService : IAuthService
         var token = await _jwtProvider.Generate(customer);
         response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
 
-        var customerDto = new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name);
+        var customerDto = new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name, token);
         var completeData = new BankIdCollectResponseDto("COMPLETE", null, customerDto);
 
         return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
