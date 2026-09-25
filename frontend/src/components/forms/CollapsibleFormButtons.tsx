@@ -2,10 +2,16 @@ import { useTranslation } from "react-i18next";
 
 type CollapsibleFormBtnsProps = {
     onClose: () => void;
+    isSubmitting?: boolean;
+    submitDisabled?: boolean;
+    submitLabel?: string;
 };
 
 export function CollapsibleFormBtns({
     onClose,
+    isSubmitting = false,
+    submitDisabled = false,
+    submitLabel,
 }: CollapsibleFormBtnsProps) {
 
     const {t} = useTranslation();
@@ -15,16 +21,18 @@ export function CollapsibleFormBtns({
             <button
                 type="button"
                 onClick={onClose}
-                className="text-error uppercase cursor-pointer"
+                disabled={isSubmitting}
+                className="text-error uppercase cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
                 {t("generic.cancel")}
             </button>
 
             <button
                 type="submit"
-                className="text-success uppercase cursor-pointer"
+                disabled={isSubmitting || submitDisabled}
+                className="text-success uppercase cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
-                {t("generic.save")}
+                {submitLabel ?? t("generic.save")}
             </button>
         </div>
     );
