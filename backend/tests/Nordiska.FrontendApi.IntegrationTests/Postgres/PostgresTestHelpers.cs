@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
@@ -33,8 +34,15 @@ public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Pr
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
-        builder.UseSetting("RateLimiting:Transactions:PermitLimit", "10000");
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["RateLimiting:Auth:PermitLimit"] = "10000",
+                ["RateLimiting:Transactions:PermitLimit"] = "10000",
+                ["ActiveLogin:BankId:Environment"] = "Simulated"
+            });
+        });
     }
 }
 

@@ -30,13 +30,14 @@ public class AccountsController : ControllerBase
     /// Retrieves bank accounts. Non-admin users only receive their own accounts. Optionally filters by account type.
     /// </summary>
     /// <param name="type">Optional account type filter (e.g., 'saving', 'standard', 'flex', 'fix', 'premium').</param>
+    /// <param name="status">Optional account status filter ('active' or 'closed')</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">List of bank accounts.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<SavingsAccountResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<SavingsAccountResponse>>> GetAll([FromQuery] string? type, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<SavingsAccountResponse>>> GetAll([FromQuery] string? type,[FromQuery] string? status, CancellationToken cancellationToken)
     {
         // Filter in the query so other customers' accounts never leave the database
         var results = User.IsAdmin()
@@ -46,6 +47,10 @@ public class AccountsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(type))
         {
             results = results.Where(a => a.AccountType.Equals(type, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            results = results.Where(a => a.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
         }
         return Ok(results);
     }

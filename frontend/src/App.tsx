@@ -3,6 +3,7 @@ import AppRoutes from './routes/AppRoutes'
 import { useUserStore } from './store/userStore'
 import { useSessionCheck } from './hooks/useSessionCheck'
 import PageHeader from './components/header/PageHeader'
+import ErrorBoundary from './components/ErrorBoundary'
 import { useLocation } from 'react-router'
 
 // TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut:
@@ -33,7 +34,9 @@ export default function App() {
     return (
         <>
             <PageHeader protectedHeader={protectedHeader}/>
-            <AppRoutes/>
+            <ErrorBoundary key={location.pathname}>
+                <AppRoutes/>
+            </ErrorBoundary>
 
             {/* TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut: */}
             {showWarning && (

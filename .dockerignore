@@ -18,6 +18,9 @@ Thumbs.db
 # 2. Build Outputs & Packages
 **/bin/
 **/obj/
+**/build/
+**/CMakeCache.txt
+**/CMakeFiles/
 **/artifacts/
 **/TestResults/
 **/node_modules/
