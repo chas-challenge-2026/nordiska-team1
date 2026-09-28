@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -92,29 +93,68 @@ public class AuthController : ControllerBase
     /// Creates a new customer identity record and immediately sets the HttpOnly authentication cookie.
     /// </remarks>
     /// <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
+    /// <param name="validator">Validator for customer registration request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Customer registered successfully and session established.</response>
-    /// <response code="400">Registration validation failed or email already registered.</response>
+    /// <response code="400">Registration validation failed (e.g. invalid personal number or email format).</response>
+    /// <response code="409">Conflict: email address or personal number is already registered.</response>
     [AllowAnonymous]
     [HttpPost("register")]
     [AuditAction("AUTH_REGISTER")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestDto request)
+    [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterCustomerRequestDto request,
+        [FromServices] IValidator<RegisterCustomerRequestDto> validator,
+        CancellationToken cancellationToken)
     {
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            foreach (var error in validationResult.Errors)
+            {
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            }
+            return ValidationProblem(ModelState);
+        }
+
         var result = await _authService.RegisterCustomerAsync(request, Response);
 
         if (!result.IsSuccess)
         {
-            if (result.Errors != null)
+            if (result.FailureReason == AuthFailureReason.Conflict)
             {
-                return BadRequest(new { message = result.ErrorMessage, errors = result.Errors });
+                var problem = new ProblemDetails
+                {
+                    Status = StatusCodes.Status409Conflict,
+                    Title = "Conflict",
+                    Detail = result.ErrorMessage
+                };
+                if (!string.IsNullOrWhiteSpace(result.ConflictCode))
+                {
+                    problem.Extensions["code"] = result.ConflictCode;
+                }
+                return StatusCode(StatusCodes.Status409Conflict, problem);
             }
 
-            return BadRequest(new { message = result.ErrorMessage });
+            if (result.Errors != null)
+            {
+                foreach (var err in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, err);
+                }
+                return ValidationProblem(ModelState);
+            }
+
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request",
+                detail: result.ErrorMessage ?? "Registreringen misslyckades.");
         }
 
-        return Ok(new { token = result.Token });
+        return Ok(result.Customer ?? new CustomerResponseDto(0, request.Email, request.Name, result.Token));
     }
 
     /// <summary>
