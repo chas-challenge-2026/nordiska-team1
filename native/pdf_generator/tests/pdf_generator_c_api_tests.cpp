@@ -1,6 +1,8 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/c_api/pdf_generator_c_api.h"
 #include "nordiska/layout/layout_builder.hpp"
+#include "nordiska/rendering/pdf_engine.hpp"
+#include "nordiska/rendering/utf8_to_cp1252.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 
 #include <cstdint>
@@ -426,5 +428,94 @@ int main() {
         require(err.kind == nordiska::LayoutErrorKind::UnsupportedDocumentType,
                 "LayoutErrorKind should match UnsupportedDocumentType");
         require(err.message == "Unsupported document content type", "LayoutError message mismatch");
+    }
+
+    // 14. Step NOR-214: UTF-8 to CP1252 conversion, Unicode minus (U+2212), typography and single-? fallback
+    {
+        // 14.1 Unicode minus sign (U+2212) maps to ASCII '-'
+        std::string amount_cp1252;
+        nordiska::utf8_to_cp1252_append("−645,50 SEK", amount_cp1252);
+        require(amount_cp1252 == "-645,50 SEK", "Unicode minus must map to ASCII '-' in CP1252");
+        require(amount_cp1252.find("???") == std::string::npos, "Must not emit ??? for Unicode minus");
+
+        // 14.2 PDF escaped string conversion handles Unicode minus and special characters
+        std::string pdf_escaped;
+        nordiska::append_pdf_escaped_text(pdf_escaped, "−645,50 SEK (konto\\valuta)");
+        require(pdf_escaped == "-645,50 SEK \\(konto\\\\valuta\\)",
+                "append_pdf_escaped_text must escape '(' ')' '\\' while mapping Unicode minus");
+
+        // 14.3 Swedish characters and Euro symbol continue to render cleanly
+        std::string swedish_text;
+        nordiska::utf8_to_cp1252_append("Åke & Älva på Österlen: 100 €", swedish_text);
+        require(swedish_text.find("???") == std::string::npos, "Swedish characters and Euro must not emit ???");
+        require(swedish_text.find('\x80') != std::string::npos, "Euro symbol must map to 0x80 in CP1252");
+
+        // 14.4 Swedish thousands separator (narrow no-break space U+202F) maps to space
+        std::string grouped_amount;
+        nordiska::utf8_to_cp1252_append("1\xE2\x80\xAF"
+                                        "234\xE2\x80\xAF"
+                                        "567,89 SEK",
+                                        grouped_amount);
+        require(grouped_amount == "1 234 567,89 SEK", "Narrow no-break space (U+202F) must map to space, not ???");
+
+        // 14.5 En-dash (U+2013), Swedish quotes (U+201D), and ellipsis (U+2026)
+        std::string typography;
+        nordiska::utf8_to_cp1252_append("Period: 2025\xE2\x80\x93"
+                                        "2026 \xE2\x80\x9D"
+                                        "Nordiska\xE2\x80\x9D \xE2\x80\xA6",
+                                        typography);
+        require(typography.find("???") == std::string::npos, "Typography must not emit ???");
+        require(typography.find('\x96') != std::string::npos, "En-dash must map to 0x96 in CP1252");
+        require(typography.find('\x94') != std::string::npos, "Right double quote must map to 0x94 in CP1252");
+        require(typography.find('\x85') != std::string::npos, "Ellipsis must map to 0x85 in CP1252");
+
+        // 14.6 Invisible formatting characters (BOM U+FEFF, ZWS U+200B) are safely dropped
+        std::string invisible_stripped;
+        nordiska::utf8_to_cp1252_append("BOM\xEF\xBB\xBF"
+                                        "Test\xE2\x80\x8B"
+                                        "End",
+                                        invisible_stripped);
+        require(invisible_stripped == "BOMTestEnd", "Invisible formatting characters must be dropped");
+
+        // 14.7 Unrecognized multi-byte sequences consume continuation bytes and emit single '?'
+        std::string fallback_2byte;
+        nordiska::utf8_to_cp1252_append("Cyrillic \xD0\x94 letter", fallback_2byte);
+        require(fallback_2byte == "Cyrillic ? letter", "Unrecognized 2-byte sequence must emit single '?'");
+
+        std::string fallback_4byte;
+        nordiska::utf8_to_cp1252_append("Emoji \xF0\x9F\x98\x80 test", fallback_4byte);
+        require(fallback_4byte == "Emoji ? test", "Unrecognized 4-byte sequence must emit single '?'");
+
+        // 14.8 End-to-end rendering in Native and Libharu engines with Unicode minus
+        nordiska::AccountStatement stmt;
+        stmt.account_number = "SE1234567890";
+        stmt.title = "Kontoutdrag";
+        stmt.transactions.push_back(nordiska::StatementTransaction{
+            .date = "2026-01-20",
+            .type = "Uttag",
+            .description = "Uttag bankomat",
+            .amount_display = "−645,50 SEK",
+            .balance_after_display = "10 000,00 SEK",
+        });
+
+        auto layout_res = nordiska::LayoutBuilder::build_statement(stmt);
+        require(layout_res.has_value(), "Statement layout build must succeed");
+
+        // Native engine (uncompressed stream verification)
+        nordiska::PdfEngine native_engine(nordiska::PdfEngineKind::Native, false);
+        auto native_pdf_res = native_engine.render(*layout_res);
+        require(native_pdf_res.has_value(), "Native engine render must succeed");
+        std::string native_pdf_str(native_pdf_res->begin(), native_pdf_res->end());
+        require(native_pdf_str.find("(-645,50 SEK) Tj") != std::string::npos,
+                "Native PDF output must contain '(-645,50 SEK) Tj'");
+        require(native_pdf_str.find("???") == std::string::npos, "Native PDF output must not contain ???");
+
+        // Libharu engine (uncompressed stream verification)
+        nordiska::PdfEngine haru_engine(nordiska::PdfEngineKind::Libharu, false);
+        auto haru_pdf_res = haru_engine.render(*layout_res);
+        require(haru_pdf_res.has_value(), "Haru engine render must succeed");
+        std::string haru_pdf_str(haru_pdf_res->begin(), haru_pdf_res->end());
+        require(haru_pdf_str.find("-645,50 SEK") != std::string::npos, "Libharu PDF output must contain '-645,50 SEK'");
+        require(haru_pdf_str.find("???") == std::string::npos, "Libharu PDF output must not contain ???");
     }
 }
