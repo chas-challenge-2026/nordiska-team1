@@ -76,9 +76,7 @@ export default function TransferPage() {
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
     const [customs, setCustoms] = useState<Payee[]>([]);
-    const [localPlannedTransfers, setLocalPlannedTransfers] = useState
-    PlannedTransfer[]
-        > ([]);
+    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<PlannedTransfer[]>([]);
 
     const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
 
