@@ -17,11 +17,23 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 
 ### Changes Applied
 1. **Updated Stage 1 (`native-builder`) in `Dockerfile`**:
-   - Added required Debian development packages for modern CMake and package fallbacks: `git`, `libssl-dev`, `zlib1g-dev`, `libsimdjson-dev`.
+   - Pinned exact Debian Bookworm package versions to eliminate silent version drift:
+     - `cmake=3.25.1-1`
+     - `pkg-config=1.8.1-1`
+     - `libcairo2-dev=1.16.0-7`
+     - `libhpdf-dev=2.3.0+dfsg-1+b1`
+     - `nlohmann-json3-dev=3.11.2-2`
+     - `libssl-dev=3.0.22-1~deb12u1`
+     - `zlib1g-dev=1:1.2.13.dfsg-1`
+     - `libsimdjson-dev=3.0.1-1`
+   - Added `-DFETCHCONTENT_FULLY_DISCONNECTED=ON` to the CMake configuration to strictly forbid network access and prevent silent cloning from GitHub during builds.
    - Changed `COPY native/pdf_generator/ ./` to `COPY native/ native/` so that `native/pdf-signer` is available to the PDF generator build.
    - Updated CMake target invocation to `--target nordiska_pdf_generator_c_api` (matching the active target defined in `CMakeLists.txt`).
 2. **Updated Stage 4 (`final`) in `Dockerfile`**:
-   - Updated copy source to `libnordiska_pdf_generator_c_api.so`.
-   - Created a backward-compatibility symlink `/usr/local/lib/libnordiska_document_c_api.so -> /usr/local/lib/libnordiska_pdf_generator_c_api.so` followed by `ldconfig`.
+   - Pinned exact runtime dependencies:
+     - `libcairo2=1.16.0-7`
+     - `libhpdf-2.3.0=2.3.0+dfsg-1+b1`
+   - Updated copy source exclusively to the canonical library `libnordiska_pdf_generator_c_api.so` (discarding legacy naming entirely) followed by `ldconfig`.
 3. **Verification**:
-   - Executed full multi-stage Docker build: completed successfully with exit code 0 (`580a56f43659dca275d6fda736940d31cdc493cc12e61`).
+   - Executed full multi-stage Docker build with exact pins and offline enforcement: completed successfully with exit code 0 (`07d7ce881da1f1675a95adad7d19e4c330f8e68244f19`).
+

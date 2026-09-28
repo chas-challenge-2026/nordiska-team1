@@ -6,15 +6,14 @@ FROM gcc:13-bookworm AS native-builder
 WORKDIR /src
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    cmake \
-    git \
-    pkg-config \
-    libcairo2-dev \
-    libhpdf-dev \
-    nlohmann-json3-dev \
-    libssl-dev \
-    zlib1g-dev \
-    libsimdjson-dev \
+    cmake=3.25.1-1 \
+    pkg-config=1.8.1-1 \
+    libcairo2-dev=1.16.0-7 \
+    libhpdf-dev=2.3.0+dfsg-1+b1 \
+    nlohmann-json3-dev=3.11.2-2 \
+    libssl-dev=3.0.22-1~deb12u1 \
+    zlib1g-dev=1:1.2.13.dfsg-1 \
+    libsimdjson-dev=3.0.1-1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Provide CMake config bridge for Debian's system libhpdf
@@ -26,6 +25,7 @@ WORKDIR /src/native/pdf_generator
 
 RUN cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
+    -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
     -DBUILD_TESTING=OFF \
     && cmake --build build --config Release --target nordiska_pdf_generator_c_api
 
@@ -66,14 +66,14 @@ WORKDIR /app
 
 # Install runtime libraries for Cairo & Haru PDF rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcairo2 \
-    libhpdf-2.3.0 \
+    libcairo2=1.16.0-7 \
+    libhpdf-2.3.0=2.3.0+dfsg-1+b1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend-builder /app/publish .
 COPY --from=frontend-builder /app/frontend/dist ./wwwroot
 COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_pdf_generator_c_api.so /usr/local/lib/
-RUN ln -s /usr/local/lib/libnordiska_pdf_generator_c_api.so /usr/local/lib/libnordiska_document_c_api.so && ldconfig
+RUN ldconfig
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
