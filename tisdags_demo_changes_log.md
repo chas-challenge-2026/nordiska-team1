@@ -136,43 +136,7 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 
 ---
 
-## 9. Suggested Follow-up Issues (Linear) for Post-Demo Polish
-
-The following 4 issues are proposed for the teams to bring the reporting and document generator modules to full commercial/legal compliance:
-
-### Issue 1: Include Customer National ID (Personnummer) in Payloads & PDF
-- **Component:** `.NET Backend` + `Native C++ Layout`
-- **Summary:** Swedish tax reports (Skatteverket KU20) and official bank statements legally require the customer's *personnummer* (or organization number) alongside the name.
-- **Scope:**
-  1. Read `customer.NationalId` in `TaxReportService.cs`.
-  2. Add `customer_national_id` property to `AnnualTaxReportPayload` and `AccountStatementPayload` in `PdfBatchDtos.cs`.
-  3. Update `json_ingestor.cpp` and `layout_builder.cpp` to place `"Personnummer: YYYYMMDD-XXXX"` in document headers.
-
-### Issue 2: Multi-Page Statement Pagination (Headers & Page Numbers)
-- **Component:** `Native C++ Layout` (`pdf_generator`)
-- **Summary:** When an account statement has many transactions and overflows `kMaxY` (720pt), page 2 continues transaction rows without column headers or page number indicators.
-- **Scope:**
-  1. In `LayoutBuilder::build_statement()`, re-render table headers (`Datum | Typ | Beskrivning | Belopp | Saldo`) at `y = 54.0F` on subsequent pages.
-  2. Add page number footer (`"Sida X av Y"`) at the bottom of each page.
-
-### Issue 3: Bank Organization Number & Clearing Info in PDF Header
-- **Component:** `Native C++ Layout` / Configuration
-- **Summary:** Official banking documents must identify the financial institution, its corporate organization number, and clearing details.
-- **Scope:**
-  1. Add static bank metadata ("Nordiska Sparbanken AB", "Org.nr 556123-4567", "Säte: Stockholm", "Clearing: 9020") to the PDF header template.
-  2. Maintain as pre-configured constants in the layout generator since it is invariant across customers.
-
-### Issue 4: Transaction Reference / OCR Support in Ledger & PDF
-- **Component:** `Database Schema` + `.NET Backend`
-- **Summary:** Transactions currently only carry `type` and `description`. Banking transactions (especially bill payments and inter-bank transfers) require a reference / OCR identifier.
-- **Scope:**
-  1. Add nullable `reference` / `ocr` column to `Transactions` table via EF Core migration.
-  2. Map into `TransactionDto` and `StatementTransactionPayload.Reference`.
-  3. Render reference in the statement PDF transaction table.
-
----
-
-## 10. Fix Statement Running Balances (`Saldo`) & Opening Balance Calculation
+## 9. Fix Statement Running Balances (`Saldo`) & Opening Balance Calculation
 
 ### What I changed and why:
 - **File:** `backend/src/Modules/Reporting/Infrastructure/TaxReportService.cs`
