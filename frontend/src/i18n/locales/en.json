@@ -24,7 +24,10 @@
         "balance": "Balance",
         "tax-report": "Tax report",
         "log-out": "Log out",
-        "stay": "Stay"
+        "stay": "Stay",
+        "next": "Next",
+        "previous": "Previous",
+        "page": "Page"
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",

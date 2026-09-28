@@ -23,7 +23,10 @@
         "balance": "Saldo",
         "tax-report": "Skatteunderlag",
         "log-out": "Logga ut",
-        "stay": "Stanna kvar"
+        "stay": "Stanna kvar",
+        "next": "Nästa",
+        "previous": "Föregående",
+        "page": "Sida"
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",

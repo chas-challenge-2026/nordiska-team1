@@ -10,34 +10,19 @@ export interface TransactionFilters {
 }
 
 interface TransactionFilterProps {
+    filters: TransactionFilters;
     onChange: (filters: TransactionFilters) => void;
     onReset: () => void;
 }
 
-const initialFilters: TransactionFilters = {
-    search: '',
-    dateFrom: '',
-    dateTo: '',
-    onlyDeposits: false,
-    onlyWithdrawals: false,
-};
-
-export default function TransactionFilter({ onChange, onReset }: TransactionFilterProps) {
-    const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
+export default function TransactionFilter({ filters, onChange, onReset }: TransactionFilterProps) {
     const { t } = useTranslation();
 
     const typeFilter = filters.onlyDeposits ? 'deposits' : filters.onlyWithdrawals ? 'withdrawals' : 'all';
 
     const update = (patch: Partial<TransactionFilters>) => {
-        const next = { ...filters, ...patch };
-        setFilters(next);
-        onChange(next);
+        onChange({ ...filters, ...patch });
     };
-
-    function resetFilter() {
-        setFilters(initialFilters);
-        onReset();
-    }
 
     return (
         <search className="bg-white p-4">
@@ -112,7 +97,7 @@ export default function TransactionFilter({ onChange, onReset }: TransactionFilt
                 </label>
             </fieldset>
 
-            <button onClick={() => resetFilter()} className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue mt-4 bg-primary-blue text-white font-semibold">
+            <button onClick={onReset} className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue mt-4 bg-primary-blue text-white font-semibold">
                 {t("generic.reset")}
             </button>
         </search>
