@@ -9,7 +9,7 @@ export default function PageNavigation() {
     return (
         <>
         {/* ----- DESKTOP ----- */}
-        <nav className="hidden md:flex w-screen bg-white justify-start pl-5 gap-10 h-[47px] pb-[4px] border-b-2 border-light-gray sticky top-[75px]">
+        <nav className="hidden md:flex w-screen bg-white justify-start pl-5 gap-10 h-[47px] pb-[4px] border-b-2 border-light-gray sticky top-[75px] z-40">
             <PageLink title={t("page-navigation.overview")} route="/" />
             <PageLink title={t("page-navigation.accounts")} route="/accounts" />
             <PageLink title={t("page-navigation.transactions")} route="/transactions" />
@@ -35,7 +35,7 @@ export default function PageNavigation() {
             </div>
 
             <div
-                onClick={() => navigate("/overview")}
+                onClick={() => navigate("/")}
                 className="relative flex flex-1 flex-col items-center justify-center after:absolute after:right-0 after:top-[10%] after:h-[80%] after:w-px after:bg-white">
                 <img src="/icons/overview.svg" alt="" className="h-6 w-6 invert" />
                 <p className="mt-1 text-[8pt] text-white"> {t("page-navigation.overview")} </p>
