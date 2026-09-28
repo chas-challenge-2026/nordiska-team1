@@ -1,5 +1,7 @@
 #include "nordiska/rendering/haru_pdf_engine.hpp"
 
+#include "nordiska/rendering/utf8_to_cp1252.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <hpdf.h>
@@ -13,37 +15,6 @@ namespace nordiska {
 namespace {
 
 thread_local std::string t_cp1252_scratch;
-
-bool is_pure_ascii(std::string_view sv) noexcept {
-    for (unsigned char c : sv) {
-        if (c >= 0x80) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// UTF-8 to CP1252 conversion for Swedish banking document characters in libharu
-void utf8_to_cp1252_append(std::string_view utf8, std::string& out) {
-    out.reserve(out.size() + utf8.size());
-    for (std::size_t index = 0; index < utf8.size(); ++index) {
-        const auto character = static_cast<unsigned char>(utf8[index]);
-        if (character < 0x80) {
-            out.push_back(static_cast<char>(character));
-        } else if (character == 0xC3 && index + 1 < utf8.size()) {
-            out.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index]) + 0x40));
-        } else if (character == 0xC2 && index + 1 < utf8.size()) {
-            out.push_back(static_cast<char>(static_cast<unsigned char>(utf8[++index])));
-        } else if (character == 0xE2 && index + 2 < utf8.size() &&
-                   static_cast<unsigned char>(utf8[index + 1]) == 0x82 &&
-                   static_cast<unsigned char>(utf8[index + 2]) == 0xAC) {
-            out.push_back(static_cast<char>(0x80)); // Euro symbol
-            index += 2;
-        } else {
-            out.push_back('?');
-        }
-    }
-}
 
 struct HaruDocDeleter {
     void operator()(HPDF_Doc doc) const noexcept {
