@@ -40,7 +40,7 @@ export default function TransactionsPage() {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    useEffect(() => () => clearTimeout(searchTimeoutRef.current), [])
+    useEffect(() => () => clearTimeout(searchTimeoutRef.current), []);
 
     const params: TransactionParams = {
         Page: page,
