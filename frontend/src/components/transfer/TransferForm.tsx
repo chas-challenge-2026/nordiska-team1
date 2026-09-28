@@ -91,6 +91,11 @@ export default function TransferForm({
                                 ? toAccount.meta
                                 : t("page-transfer.to-meta-placeholder")
                         }
+                        balance={
+                            toAccount?.own
+                                ? `${formatSek(toAccount.balance)} sek`
+                                : undefined
+                        }
                         onClick={onOpenToModal}
                     />
                 </div>

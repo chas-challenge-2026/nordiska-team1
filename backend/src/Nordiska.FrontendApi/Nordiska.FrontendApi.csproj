@@ -40,6 +40,8 @@
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 
-
+  <ItemGroup>
+    <None Update="Certificates\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>
