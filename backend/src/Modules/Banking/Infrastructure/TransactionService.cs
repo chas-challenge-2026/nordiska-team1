@@ -72,7 +72,8 @@ public class TransactionService : ITransactionService
         var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
             ?? throw new NotFoundException($"Account {request.AccountId} not found.");
 
-        var isWithdrawal = string.Equals(request.Type, "withdrawal", StringComparison.OrdinalIgnoreCase);
+        var isWithdrawal = string.Equals(request.Type, "withdrawal", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.Type, "withdraw", StringComparison.OrdinalIgnoreCase);
         var isDeposit = string.Equals(request.Type, "deposit", StringComparison.OrdinalIgnoreCase);
 
         if (!isWithdrawal && !isDeposit)
@@ -97,7 +98,7 @@ public class TransactionService : ITransactionService
         var entry = new LedgerEntry
         {
             AccountId = request.AccountId,
-            Type = request.Type.ToLowerInvariant(),
+            Type = isWithdrawal ? "withdrawal" : "deposit",
             Amount = delta,
             Label = request.Label,
             CreatedAt = DateTime.UtcNow
@@ -216,6 +217,86 @@ public class TransactionService : ITransactionService
         }
 
         return await _txRepo.DeleteAsync(id, cancellationToken);
+    }
+
+    public async Task<TransactionResponse?> ProcessPlannedTransactionAsync(long ledgerEntryId, CancellationToken cancellationToken = default)
+    {
+        var entry = await _txRepo.GetByIdAsync(ledgerEntryId, cancellationToken);
+        if (entry is null || !entry.IsPlanned)
+        {
+            _logger.LogWarning("Planned transaction {TxId} not found or is not marked as planned.", ledgerEntryId);
+            return null;
+        }
+
+        var isTransfer = string.Equals(entry.Type, "transfer", StringComparison.OrdinalIgnoreCase) || entry.TargetAccountId.HasValue;
+        var isWithdrawal = string.Equals(entry.Type, "withdrawal", StringComparison.OrdinalIgnoreCase) || string.Equals(entry.Type, "withdraw", StringComparison.OrdinalIgnoreCase);
+        var isDeposit = string.Equals(entry.Type, "deposit", StringComparison.OrdinalIgnoreCase);
+
+        if (!isTransfer && !isWithdrawal && !isDeposit)
+        {
+            _logger.LogError("Unsupported transaction type '{Type}' for planned transaction {TxId}.", entry.Type, entry.Id);
+            return null;
+        }
+
+        TransactionResponse result;
+        try
+        {
+            if (isTransfer)
+            {
+                if (!entry.TargetAccountId.HasValue)
+                {
+                    _logger.LogError("Planned transfer {TxId} has no TargetAccountId specified.", entry.Id);
+                    return null;
+                }
+
+                result = await TransferAsync(
+                    new TransferRequest(entry.AccountId, entry.TargetAccountId.Value, entry.Amount, entry.Label),
+                    cancellationToken);
+            }
+            else
+            {
+                result = await ExecuteAsync(
+                    new TransactionRequest(entry.AccountId, isWithdrawal ? "withdrawal" : "deposit", entry.Amount, entry.Label),
+                    cancellationToken);
+            }
+        }
+        catch (ConflictException ex)
+        {
+            _logger.LogWarning(ex, "Failed to execute planned transaction {TxId} on account {AccountId} due to business rule violation (e.g. insufficient funds): {Message}", entry.Id, entry.AccountId, ex.Message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error executing planned transaction {TxId} on account {AccountId}: {Message}", entry.Id, entry.AccountId, ex.Message);
+            throw;
+        }
+
+        // Handle recurring or single-execution cleanup
+        if (!string.IsNullOrWhiteSpace(entry.Repeating))
+        {
+            var rep = entry.Repeating.Trim().ToLowerInvariant();
+            var nextDate = rep switch
+            {
+                "week" => (entry.PlannedDate ?? DateTime.UtcNow).AddDays(7),
+                "month" => (entry.PlannedDate ?? DateTime.UtcNow).AddMonths(1),
+                "year" => (entry.PlannedDate ?? DateTime.UtcNow).AddYears(1),
+                _ => (DateTime?)null
+            };
+
+            if (nextDate.HasValue)
+            {
+                entry.PlannedDate = nextDate.Value;
+                await _txRepo.UpdateAsync(entry, cancellationToken);
+                _logger.LogInformation("Advanced recurring planned transaction {TxId} to next date {NextDate} (repeating: {Repeating})", entry.Id, nextDate.Value, entry.Repeating);
+                return result;
+            }
+        }
+
+        // Single execution plan completed -> remove the planned entry
+        await _txRepo.DeleteAsync(entry.Id, cancellationToken);
+        _logger.LogInformation("Consumed and removed single planned transaction {TxId} for account {AccountId}", entry.Id, entry.AccountId);
+
+        return result;
     }
 
     private static TransactionResponse ToResponse(LedgerEntry l)

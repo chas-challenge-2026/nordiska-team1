@@ -60,5 +60,8 @@
   </Target>
 
 
+  <ItemGroup>
+    <None Update="Certificates\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

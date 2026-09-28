@@ -85,6 +85,16 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
     }
 
     [Fact]
+    public async Task FullUpdateCustomer_ForOtherCustomer_Returns_404NotFound()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.PutAsJsonAsync("/api/customers/2", new { id = 2, name = "Kapad" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task Transfer_FromOtherCustomersAccount_Returns_404NotFound()
     {
         var client = await CreateAuthenticatedClientAsync();

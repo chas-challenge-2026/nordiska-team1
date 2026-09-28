@@ -51,18 +51,22 @@ public class AuthService : IAuthService
     {
         try
         {
-            var requirement = !string.IsNullOrWhiteSpace(request?.PersonalNum)
-                ? new Requirement(personalNumber: request.PersonalNum)
+            var cleanPersonalNum = request?.PersonalNum?.Replace("-", "")?.Trim();
+
+            var requirement = !string.IsNullOrWhiteSpace(cleanPersonalNum)
+                ? new Requirement(personalNumber: cleanPersonalNum)
                 : null;
 
+            var effectiveIp = string.IsNullOrWhiteSpace(clientIp) || clientIp == "::1" ? "127.0.0.1" : clientIp;
+
             var response = await _bankIdAppApiClient.AuthAsync(new AuthRequest(
-                endUserIp: clientIp,
+                endUserIp: effectiveIp,
                 requirement: requirement
             ));
 
-            if (!string.IsNullOrWhiteSpace(request?.PersonalNum))
+            if (!string.IsNullOrWhiteSpace(cleanPersonalNum))
             {
-                _simulatedOrderPersonalNumbers[response.OrderRef] = request.PersonalNum.Replace("-", "").Trim();
+                _simulatedOrderPersonalNumbers[response.OrderRef] = cleanPersonalNum;
             }
 
             var initiateData = new BankIdInitiateResponseDto(
@@ -76,7 +80,11 @@ public class AuthService : IAuthService
         }
         catch (BankIdApiException ex)
         {
-            return new AuthenticationResultDto(false, $"Could not start BankID API: {ex.Message}");
+            return new AuthenticationResultDto(false, $"BankID API error: {ex.ErrorCode} - {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return new AuthenticationResultDto(false, $"Could not start BankID: {ex.Message}");
         }
     }
 
@@ -210,7 +218,7 @@ public class AuthService : IAuthService
         var token = await _jwtProvider.Generate(customer);
         response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
 
-        var customerDto = new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name);
+        var customerDto = new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name, token);
         var completeData = new BankIdCollectResponseDto("COMPLETE", null, customerDto);
 
         return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
