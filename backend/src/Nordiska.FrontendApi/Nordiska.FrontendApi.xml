@@ -262,7 +262,7 @@
             <response code="200">Current status of the authentication (e.g. PENDING or COMPLETE with customer profile).</response>
             <response code="401">Authentication failed or customer not found.</response>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Register(Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto)">
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Register(Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto,FluentValidation.IValidator{Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto},System.Threading.CancellationToken)">
             <summary>
             Registers a new customer and establishes an authenticated session.
             </summary>
@@ -270,8 +270,11 @@
             Creates a new customer identity record and immediately sets the HttpOnly authentication cookie.
             </remarks>
             <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
+            <param name="validator">Validator for customer registration request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Customer registered successfully and session established.</response>
-            <response code="400">Registration validation failed or email already registered.</response>
+            <response code="400">Registration validation failed (e.g. invalid personal number or email format).</response>
+            <response code="409">Conflict: email address or personal number is already registered.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Contracts.Requests.LoginRequest)">
             <summary>
