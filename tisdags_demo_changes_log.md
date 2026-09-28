@@ -110,16 +110,63 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 
 ---
 
-## 7. Dynamic Linker & Shared Library Fix (`Dockerfile`)
+## 7. Docker Runtime Dynamic Dependencies (`libsimdjson14` & GCC 13 `libstdc++`)
 
 ### What I changed and why:
-- **File:** `Dockerfile` (Stage 4 `final`)
-  - Added `libsimdjson14=3.0.1-1` to the runtime `apt-get install`.
-  - Added `COPY --from=native-builder /usr/local/lib64/libstdc++.so.6* /usr/local/lib/` before running `ldconfig`.
-  - Why: The 500 error was caused by a `System.DllNotFoundException` at the P/Invoke boundary because `libnordiska_pdf_generator_c_api.so` could not resolve `libsimdjson.so.14` and required `GLIBCXX_3.4.31` (from GCC 13's `libstdc++6`), which wasn't in the default Debian 12 base image. With these additions, all native dependencies are resolved, verified via `ldd`, and live PDF/ZIP generation returns 200 OK.
+- **File:** `Dockerfile` (Stage 4)
+  - Installed runtime package `libsimdjson14=3.0.1-1` in Debian Bookworm.
+  - Copied GCC 13's `libstdc++.so.6*` from `native-builder` into `/usr/local/lib/` and executed `ldconfig`.
+  - **Why:** The native C++ library `libnordiska_pdf_generator_c_api.so` was built in Stage 1 with GCC 13 using `<format>` and `std::expected` (requiring `GLIBCXX_3.4.31` and `GLIBCXX_3.4.32`) and dynamically linked against `libsimdjson.so.14`. Without these, ASP.NET Core threw a runtime `DllNotFoundException` when attempting to P/Invoke the native library.
 
+---
 
+## 8. PDF Signature Verification & Findings
 
+### Verification:
+- Inspected generated PDFs (`skatteunderlag` and `kontoutdrag`).
+- Adobe/ISO signature structure is correctly prepared:
+  - AcroForm with `/SigFlags 3`
+  - Signature dictionary: `/Type /Sig`, `/Filter /Adobe.PPKLite`, `/SubFilter /ETSI.CAdES.detached`
+  - Calculated byte range: `/ByteRange [ 0 3568 11762 189 ]`
+  - Signature contents slot: 8,192 hex characters (`/Contents <...>`).
+- **Signature Status:** The contents slot currently consists of 8,192 zeroes (`0000...0000`).
+- **Why:**
+  1. `native/pdf_generator/src/c_api/pdf_generator_c_api.cpp` has `.enable_signing = false` intentionally set for C API callers.
+  2. `native/pdf-signer/src/pdf_sign.c` requires a SoftHSM token (`/usr/lib/libsofthsm2.so`, PIN env var, local cert) not present in Docker, and the C signing function is currently an initial test stub returning repeating hex patterns.
 
+---
 
+## 9. Suggested Follow-up Issues (Linear) for Post-Demo Polish
+
+The following 4 issues are proposed for the teams to bring the reporting and document generator modules to full commercial/legal compliance:
+
+### Issue 1: Include Customer National ID (Personnummer) in Payloads & PDF
+- **Component:** `.NET Backend` + `Native C++ Layout`
+- **Summary:** Swedish tax reports (Skatteverket KU20) and official bank statements legally require the customer's *personnummer* (or organization number) alongside the name.
+- **Scope:**
+  1. Read `customer.NationalId` in `TaxReportService.cs`.
+  2. Add `customer_national_id` property to `AnnualTaxReportPayload` and `AccountStatementPayload` in `PdfBatchDtos.cs`.
+  3. Update `json_ingestor.cpp` and `layout_builder.cpp` to place `"Personnummer: YYYYMMDD-XXXX"` in document headers.
+
+### Issue 2: Multi-Page Statement Pagination (Headers & Page Numbers)
+- **Component:** `Native C++ Layout` (`pdf_generator`)
+- **Summary:** When an account statement has many transactions and overflows `kMaxY` (720pt), page 2 continues transaction rows without column headers or page number indicators.
+- **Scope:**
+  1. In `LayoutBuilder::build_statement()`, re-render table headers (`Datum | Typ | Beskrivning | Belopp | Saldo`) at `y = 54.0F` on subsequent pages.
+  2. Add page number footer (`"Sida X av Y"`) at the bottom of each page.
+
+### Issue 3: Bank Organization Number & Clearing Info in PDF Header
+- **Component:** `Native C++ Layout` / Configuration
+- **Summary:** Official banking documents must identify the financial institution, its corporate organization number, and clearing details.
+- **Scope:**
+  1. Add static bank metadata ("Nordiska Sparbanken AB", "Org.nr 556123-4567", "Säte: Stockholm", "Clearing: 9020") to the PDF header template.
+  2. Maintain as pre-configured constants in the layout generator since it is invariant across customers.
+
+### Issue 4: Transaction Reference / OCR Support in Ledger & PDF
+- **Component:** `Database Schema` + `.NET Backend`
+- **Summary:** Transactions currently only carry `type` and `description`. Banking transactions (especially bill payments and inter-bank transfers) require a reference / OCR identifier.
+- **Scope:**
+  1. Add nullable `reference` / `ocr` column to `Transactions` table via EF Core migration.
+  2. Map into `TransactionDto` and `StatementTransactionPayload.Reference`.
+  3. Render reference in the statement PDF transaction table.
 
