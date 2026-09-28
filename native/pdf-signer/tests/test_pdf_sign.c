@@ -1,5 +1,5 @@
 #include "pdf_sign.h"
-
+#include "tsa_client.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -267,7 +267,6 @@ static int test_pdf_sign_returns_valid_cms(pdf_signer_t* signer) {
 
   return 0;
 }
-
 
 int main(void) {
   int failed = 0;
