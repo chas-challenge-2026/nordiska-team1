@@ -140,15 +140,20 @@ public class TransactionFlowIntegrationTests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
 
+        var accountType = await db.AccountTypeConfigs
+            .AsNoTracking()
+            .FirstAsync();
+
         var account = new SavingsAccount
         {
             CustomerId = customerId,
             AccountNumber = $"NOR-T{Guid.NewGuid().ToString("N")[..12]}",
-            AccountType = "Standard",
+            AccountType = accountType.AccountType,
             Balance = balance,
-            InterestRate = 0.025m,
+            InterestRate = accountType.InterestRate,
             CreatedAt = DateTime.UtcNow
         };
+
         db.SavingsAccounts.Add(account);
         await db.SaveChangesAsync();
 
@@ -161,6 +166,7 @@ public class TransactionFlowIntegrationTests : IAsyncLifetime
                 Amount = balance,
                 CreatedAt = DateTime.UtcNow
             });
+
             await db.SaveChangesAsync();
         }
 

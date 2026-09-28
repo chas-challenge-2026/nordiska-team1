@@ -42,7 +42,7 @@ public class AccountLifecycleIntegrationTests : IAsyncLifetime
         stored!.CustomerId.Should().Be(customer.Id);
         stored.AccountNumber.Should().Be(created.AccountNumber);
         stored.AccountName.Should().Be("Resekassa");
-        stored.AccountType.Should().Be("Standard");
+        stored.AccountType.Should().Be("standard");
         stored.Status.Should().Be("active");
 
         var accounts = await client.GetFromJsonAsync<List<SavingsAccountResponse>>("/api/accounts");
