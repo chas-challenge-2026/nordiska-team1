@@ -4,6 +4,7 @@ import ProtectedRoute from "./ProtectedRoute";
 // Open
 import LoginPage from "../pages/LoginPage";
 import LandingPage from "../pages/LandingPage";
+import RegisterPage from "../pages/RegisterPage";
 // import CollapsiblePlayground from "../pages/CollapsiblePlayground";
 import PageNotFound from "../pages/PageNotFound";
 import ServerError from "../pages/ServerError";
@@ -22,6 +23,7 @@ export default function AppRoutes() {
             {/* <Route path="/dev/collapsible" element={<CollapsiblePlayground />} /> */}
             <Route path="/welcome" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/inactive" element={<LandingPage inactive />} />
             <Route path="/logged-out" element={<LandingPage loggedOut />} />
 

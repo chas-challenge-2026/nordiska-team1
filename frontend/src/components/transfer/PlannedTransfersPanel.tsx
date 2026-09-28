@@ -3,21 +3,48 @@ import { useTranslation } from "react-i18next";
 import Table from "../Table";
 import TableRow from "../TableRow";
 import PlannedTransferActionsModal from "./PlannedTransferActionsModal";
+import type { EditPlannedError } from "./PlannedTransferActionsModal";
 import type { PlannedTransfer } from "../../constants/transferAccounts";
 
 type PlannedTransfersPanelProps = {
     upcomingTransfers: PlannedTransfer[];
-    onEditTransfer: (transfer: PlannedTransfer, newDate: string) => void;
-    onDeleteTransfer: (transfer: PlannedTransfer) => void;
+    onEditTransfer: (
+        transfer: PlannedTransfer,
+        newDate: string,
+        onSaved: () => void,
+    ) => void;
+    onDeleteTransfer: (transfer: PlannedTransfer, onDeleted: () => void) => void;
+    isSaving: boolean;
+    editError: EditPlannedError;
+    isDeleting: boolean;
+    deleteError: boolean;
+    onResetStatus: () => void;
 };
 
 export default function PlannedTransfersPanel({
     upcomingTransfers,
     onEditTransfer,
     onDeleteTransfer,
+    isSaving,
+    editError,
+    isDeleting,
+    deleteError,
+    onResetStatus,
 }: PlannedTransfersPanelProps) {
     const { t } = useTranslation();
     const [activeTransfer, setActiveTransfer] = useState<PlannedTransfer | null>(null);
+
+    // Mutationerna lever i TransferPage, så deras status nollställs vid öppna/stäng
+    // för att ett gammalt fel inte ska synas på nästa överföring.
+    const openActions = (transfer: PlannedTransfer) => {
+        onResetStatus();
+        setActiveTransfer(transfer);
+    };
+
+    const closeActions = () => {
+        onResetStatus();
+        setActiveTransfer(null);
+    };
 
     return (
         <div className="border-t border-[#E5EAF0] px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:border-t-0 lg:border-l lg:px-10 lg:pt-8 lg:pb-10">
@@ -33,7 +60,7 @@ export default function PlannedTransfersPanel({
                             plannedNote={planned.note}
                             plannedSum={planned.sum}
                             plannedActionsLabel={t("page-transfer.planned.actions-label")}
-                            onOpenActions={() => setActiveTransfer(planned)}
+                            onOpenActions={() => openActions(planned)}
                         />
                     ))}
                 </div>
@@ -45,15 +72,17 @@ export default function PlannedTransfersPanel({
             {activeTransfer && (
                 <PlannedTransferActionsModal
                     transfer={activeTransfer}
-                    onClose={() => setActiveTransfer(null)}
-                    onSaveDate={(newDate) => {
-                        onEditTransfer(activeTransfer, newDate);
-                        setActiveTransfer(null);
-                    }}
-                    onConfirmDelete={() => {
-                        onDeleteTransfer(activeTransfer);
-                        setActiveTransfer(null);
-                    }}
+                    onClose={closeActions}
+                    onSaveDate={(newDate) =>
+                        onEditTransfer(activeTransfer, newDate, closeActions)
+                    }
+                    isSaving={isSaving}
+                    editError={editError}
+                    onConfirmDelete={() =>
+                        onDeleteTransfer(activeTransfer, closeActions)
+                    }
+                    isDeleting={isDeleting}
+                    deleteError={deleteError}
                 />
             )}
         </div>

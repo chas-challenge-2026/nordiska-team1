@@ -46,6 +46,7 @@ public class DbInitializer
         {
             existingCustomer.UserName = "anna@example.com";
             existingCustomer.Email = "anna@example.com";
+            existingCustomer.PersonalNum = testPersonalNum;
             existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
             existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
             await db.SaveChangesAsync();
@@ -78,28 +79,6 @@ public class DbInitializer
             await db.SaveChangesAsync();
         }
 
-        // The BankID simulator always returns this fixed personal number,
-        // regardless of what was passed in the Requirement. We need a
-        // matching customer so CollectBankIdAsync can find them.
-        var simulatedPersonalNum = "199908072391";
-        var existingSimulated = await db.Customers
-            .FirstOrDefaultAsync(c => c.PersonalNum == simulatedPersonalNum);
-
-        if (existingSimulated == null)
-        {
-            var simulatedCustomer = new Customer
-            {
-                UserName = "simulated@bankid.se",
-                Name = "BankID Simulerad",
-                PersonalNum = simulatedPersonalNum,
-                Email = "simulated@bankid.se",
-                PhoneNumber = "+46700000000",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await userManager.CreateAsync(simulatedCustomer);
-        }
-
         var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole<long>>>();
         if (roleManager != null)
         {
@@ -112,20 +91,33 @@ public class DbInitializer
                 await roleManager.CreateAsync(new IdentityRole<long>("Customer"));
             }
 
+            var adminPersonalNum = "200505032383";
             var adminEmail = "admin@nordiska.se";
-            var adminCustomer = await userManager.FindByEmailAsync(adminEmail);
+            var adminCustomer = await db.Customers.FirstOrDefaultAsync(c => 
+                c.PersonalNum == adminPersonalNum || c.Email == adminEmail || c.UserName == adminEmail);
+
             if (adminCustomer == null)
             {
                 adminCustomer = new Customer
                 {
                     UserName = adminEmail,
-                    Name = "Admin Nordiska",
-                    PersonalNum = "197001019999",
+                    Name = "Jesper Adminsson",
+                    PersonalNum = adminPersonalNum,
                     Email = adminEmail,
                     PhoneNumber = "+46700999999",
                     CreatedAt = DateTime.UtcNow
                 };
                 await userManager.CreateAsync(adminCustomer);
+            }
+            else
+            {
+                adminCustomer.PersonalNum = adminPersonalNum;
+                adminCustomer.Name = "Jesper Adminsson";
+                adminCustomer.Email = adminEmail;
+                adminCustomer.UserName = adminEmail;
+                adminCustomer.NormalizedEmail = adminEmail.ToUpperInvariant();
+                adminCustomer.NormalizedUserName = adminEmail.ToUpperInvariant();
+                await db.SaveChangesAsync();
             }
 
             if (!await userManager.IsInRoleAsync(adminCustomer, "Admin"))
@@ -140,14 +132,50 @@ public class DbInitializer
             }
         }
 
-        await SeedAccountsAndTransactionsAsync(db);
-        await SeedNotificationsAsync(db);
-        await SeedOperationalMessagesAsync(db);
-        await SeedFaqAsync(scope.ServiceProvider);
+        try
+        {
+            await SeedAccountsAndTransactionsAsync(db);
+        }
+        catch { }
+
+        try
+        {
+            await SeedNotificationsAsync(db);
+        }
+        catch { }
+
+        try
+        {
+            await SeedOperationalMessagesAsync(db);
+        }
+        catch { }
+
+        try
+        {
+            await SeedFaqAsync(scope.ServiceProvider);
+        }
+        catch { }
     }
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
     {
+        // Normalize any legacy account types on existing savings accounts before modifying configs
+        var legacyAccounts = await db.SavingsAccounts.ToListAsync();
+        foreach (var acc in legacyAccounts)
+        {
+            if (string.Equals(acc.AccountType, "Standard", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "standard";
+            else if (string.Equals(acc.AccountType, "Sparkonto Flex", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "flex", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "flex";
+            else if (string.Equals(acc.AccountType, "Fasträntekonto Fix", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "fix", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "fix";
+            else if (string.Equals(acc.AccountType, "Savings", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "saving", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "saving";
+            else if (string.Equals(acc.AccountType, "Premium", StringComparison.OrdinalIgnoreCase) || string.Equals(acc.AccountType, "premium", StringComparison.OrdinalIgnoreCase))
+                acc.AccountType = "premium";
+        }
+        await db.SaveChangesAsync();
+
         // Ensure standard account type configurations exist and are updated with standard descriptions
         var standardConfigs = new[]
         {
@@ -180,8 +208,15 @@ public class DbInitializer
             .ToListAsync();
         if (legacyConfigs.Any())
         {
-            db.AccountTypeConfigs.RemoveRange(legacyConfigs);
-            await db.SaveChangesAsync();
+            try
+            {
+                db.AccountTypeConfigs.RemoveRange(legacyConfigs);
+                await db.SaveChangesAsync();
+            }
+            catch
+            {
+                // Silently ignore if foreign key constraint is active on legacy records
+            }
         }
 
         // 1. Seed / Update Anna Smith's Accounts
@@ -418,11 +453,15 @@ public class DbInitializer
             return;
         }
 
-        if (!await faqDb.FaqEntries.AnyAsync())
+        var hasSwedish = await faqDb.FaqEntries.AnyAsync(e => e.Language == "sv");
+        var hasEnglish = await faqDb.FaqEntries.AnyAsync(e => e.Language == "en");
+
+        var itemsToAdd = new List<FaqEntry>();
+
+        if (!hasSwedish)
         {
-            var faqItems = new List<FaqEntry>
+            itemsToAdd.AddRange(new[]
             {
-                // Swedish FAQs
                 FaqEntry.Create(
                     "När betalas räntan ut?",
                     "Räntan beräknas dagligen och betalas ut den 31 december varje år.",
@@ -478,9 +517,14 @@ public class DbInitializer
                     "Konto",
                     "avsluta, avslutar, stänga, säga, upp",
                     "sv"
-                ),
+                )
+            });
+        }
 
-                // English FAQs
+        if (!hasEnglish)
+        {
+            itemsToAdd.AddRange(new[]
+            {
                 FaqEntry.Create(
                     "When is interest paid?",
                     "Interest is calculated daily and paid on December 31st each year.",
@@ -537,9 +581,12 @@ public class DbInitializer
                     "close, closing, terminate, cancel, delete",
                     "en"
                 )
-            };
+            });
+        }
 
-            faqDb.FaqEntries.AddRange(faqItems);
+        if (itemsToAdd.Count > 0)
+        {
+            faqDb.FaqEntries.AddRange(itemsToAdd);
             await faqDb.SaveChangesAsync();
         }
     }

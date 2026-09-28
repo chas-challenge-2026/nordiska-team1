@@ -144,7 +144,20 @@ if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
 }
 else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddBankId(bankId => bankId.UseTestEnvironment());
+    var certPath = Path.Combine(AppContext.BaseDirectory, "Certificates", "FPTestcert5_20240610.p12");
+    if (!File.Exists(certPath))
+    {
+        certPath = Path.Combine(builder.Environment.ContentRootPath, "Certificates", "FPTestcert5_20240610.p12");
+    }
+
+    builder.Services.AddBankId(bankId =>
+    {
+        bankId.UseTestEnvironment();
+        if (File.Exists(certPath))
+        {
+            bankId.UseClientCertificate(() => new System.Security.Cryptography.X509Certificates.X509Certificate2(certPath, "qwerty123"));
+        }
+    });
 }
 builder.Services
     .AddAuthentication()
@@ -186,23 +199,39 @@ builder.Services.AddRateLimitingPolicies(builder.Configuration);
 var app = builder.Build();
 
 // Automatic database migrations on startup (Banking, FAQ, Reporting)
-try
+using (var migrationScope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
+    var services = migrationScope.ServiceProvider;
 
-    var bankingDb = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
-    await bankingDb.Database.MigrateAsync();
+    try
+    {
+        var bankingDb = services.GetRequiredService<BankingDbContext>();
+        await bankingDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic Banking database migration could not be completed: {Message}", ex.Message);
+    }
 
-    var faqDb = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
-    await faqDb.Database.MigrateAsync();
+    try
+    {
+        var faqDb = services.GetRequiredService<FaqDbContext>();
+        await faqDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic FAQ database migration could not be completed: {Message}", ex.Message);
+    }
 
-    var reportingDb = scope.ServiceProvider.GetRequiredService<ReportingDbContext>();
-    await reportingDb.Database.MigrateAsync();
-}
-catch (Exception ex)
-{
-    // If the database is unreachable (e.g. during unit tests), log a warning
-    app.Logger.LogWarning(ex, "Automatic database migration could not be completed at startup: {Message}", ex.Message);
+    try
+    {
+        var reportingDb = services.GetRequiredService<ReportingDbContext>();
+        await reportingDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic Reporting database migration could not be completed: {Message}", ex.Message);
+    }
 }
 
 //look out for the order of middleware, it matters.
