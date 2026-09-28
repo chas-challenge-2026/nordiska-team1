@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCloseAccount } from "../hooks/useAccounts";
 import type { Account } from "../services/accountsService";
+import { downloadTaxReport } from "../services/reportsService";
 import { formatCurrency } from "../utils/currency";
 import { useTranslation } from "react-i18next";
 import Modal from "./modals/Modal";
@@ -14,6 +15,20 @@ export default function AccountCard({ account }: AccountCardProps) {
     const { mutate: closeAccount, isError, error, isPending, reset } = useCloseAccount();
     const { t } = useTranslation();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isDownloadingTaxReport, setIsDownloadingTaxReport] = useState(false);
+    const [taxReportError, setTaxReportError] = useState<string | null>(null);
+
+    async function handleDownloadTaxReport() {
+        try {
+            setIsDownloadingTaxReport(true);
+            setTaxReportError(null);
+            await downloadTaxReport(account.id, account.accountNumber);
+        } catch (err) {
+            setTaxReportError(err instanceof Error ? err.message : "Kunde inte ladda ner skatteunderlag.");
+        } finally {
+            setIsDownloadingTaxReport(false);
+        }
+    }
 
     const canClose = account.balance === 0;
 
@@ -64,13 +79,21 @@ export default function AccountCard({ account }: AccountCardProps) {
                         {t("accounts-route.yearly-interest-info")}
                     </p>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => { }}
-                    className="whitespace-nowrap rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-blue-accent"
-                >
-                    {t("generic.tax-report")}
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                    <button
+                        type="button"
+                        onClick={handleDownloadTaxReport}
+                        disabled={isDownloadingTaxReport}
+                        className="whitespace-nowrap rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-blue-accent disabled:opacity-50"
+                    >
+                        {isDownloadingTaxReport ? "Laddar ner..." : t("generic.tax-report")}
+                    </button>
+                    {taxReportError && (
+                        <p role="alert" className="text-xs text-red-600">
+                            {taxReportError}
+                        </p>
+                    )}
+                </div>
             </div>
 
             <Modal isOpen={isConfirmOpen} onClose={() => setIsConfirmOpen(false)} title={t("accounts-route.close-confirmation")}>

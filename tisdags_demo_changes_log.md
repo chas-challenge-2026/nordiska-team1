@@ -66,4 +66,17 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 - **File:** `backend/src/Modules/Reporting/Infrastructure/PdfReportGenerator.cs`
   - Injected `PdfGenerationService` and formatted tax report numbers with Swedish culture (`sv-SE`), serializing the typed `CustomerBatchEnvelope` into JSON and invoking native generation.
 
+---
+
+## 4. Frontend UI Wiring
+
+### What I changed and why:
+- **File:** `frontend/src/services/reportsService.ts`
+  - Added `downloadTaxReport(accountId, accountNumber, year)` helper calling `GET /api/reports/tax-report` with `responseType: "blob"`.
+  - Downloads the PDF with an automatic file name `skatteunderlag_{year}_{accountNumber}.pdf`.
+- **File:** `frontend/src/components/AccountCard.tsx`
+  - Replaced empty `onClick={() => {}}` on the "Skatteunderlag" button with `handleDownloadTaxReport()`.
+  - Added loading indicator (`"Laddar ner..."`) and inline error feedback if the report generation fails.
+
+
 
