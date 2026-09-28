@@ -145,3 +145,16 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 - **File:** `backend/src/Modules/Reporting/Infrastructure/PdfReportGenerator.cs`
   - Calculated chronological running balances starting from `OpeningBalance` and populated `BalanceAfterDisplay` for each transaction row.
   - **Why:** The `Saldo` column in the statement PDF was previously blank because `BalanceAfterDisplay: ""` was empty. It now displays the running account balance after every transaction.
+
+---
+
+## 10. Mobile Navigation & Demo Launch Instructions
+
+### What I changed and why:
+- **File:** `frontend/public/icons/documents.svg` & `frontend/src/components/PageNavigation.tsx`
+  - Added "Dokument" button to the mobile bottom navigation bar so the documents page can be tested and accessed on phones and narrow viewports.
+- **How to run the demo:**
+  From the `infra` folder:
+  ```bash
+  cd infra && docker compose up -d --build app
+  ```

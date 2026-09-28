@@ -44,9 +44,16 @@ export default function PageNavigation() {
 
             <div
                 onClick={() => navigate("/transfer")}
-                className="flex flex-1 flex-col items-center justify-center">
+                className="relative flex flex-1 flex-col items-center justify-center after:absolute after:right-0 after:top-[10%] after:h-[80%] after:w-px after:bg-white">
                 <img src="/icons/transfers.svg" alt="" className="h-6 w-6 invert" />
                 <p className="mt-1 text-[8pt] text-white"> {t("page-navigation.transfers")} </p>
+            </div>
+
+            <div
+                onClick={() => navigate("/documents")}
+                className="flex flex-1 flex-col items-center justify-center">
+                <img src="/icons/documents.svg" alt="" className="h-6 w-6 invert" />
+                <p className="mt-1 text-[8pt] text-white"> Dokument </p>
             </div>
         </nav>
         </>
