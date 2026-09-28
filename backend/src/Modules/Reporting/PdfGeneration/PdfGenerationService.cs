@@ -24,7 +24,7 @@ namespace Nordiska.Modules.Reporting.PdfGeneration;
 internal static unsafe class NativeGenerateCallback
 {
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    internal static int Recieve(byte* bytes, nuint len, nuint docIndex, nint ctx)
+    internal static int Recieve(NativePdfBatchView* batch, nint ctx)
     {
         ReportGenerationState? state = null;
         try
@@ -32,7 +32,15 @@ internal static unsafe class NativeGenerateCallback
             state = (ReportGenerationState)GCHandle.FromIntPtr(ctx).Target!;
             lock (state.ThreadSyncronizer)
             {
-                state.Doc = new ReadOnlySpan<byte>(bytes, (int)len).ToArray();
+                if (batch != null)
+                {
+                    for (nuint i = 0; i < batch->DocumentCount; i++)
+                    {
+                        var doc = batch->Documents[i];
+                        string docId = Marshal.PtrToStringUTF8((nint)doc.DocumentId) ?? $"doc_{i}";
+                        state.Documents[docId] = new ReadOnlySpan<byte>(doc.Bytes, (int)doc.Length).ToArray();
+                    }
+                }
             }
             return 0;
         }
@@ -66,7 +74,7 @@ internal sealed class ReportGenerationState
     internal DateTimeOffset? FinishedAt { get; set; }
     internal object ThreadSyncronizer { get; } = new object();
     internal int MaxDocBytes { get; }
-    internal byte[]? Doc;
+    internal readonly Dictionary<string, byte[]> Documents = new();
     internal Exception? Failed = null;
     internal ReportGenerationState(int maxDocBytes)
     {
@@ -80,14 +88,6 @@ public class PdfGenerationService
 {
 
     private static readonly UTF8Encoding Utf8 = new(false, true); //TODO
-
-    public static string GetNativeVersion()
-    {
-        nint versionPointer = NativeMethods.Version();
-
-        return Marshal.PtrToStringAnsi(versionPointer)
-            ?? throw new InvalidOperationException("Native version returned null.");
-    }
 
     /*
         .NET Garbage collector (GC) flyttar inte stora objekt (large object heaps (alla objekt större än ca 85kb)).
@@ -108,42 +108,29 @@ public class PdfGenerationService
     */
     private static bool ShouldRentMemory(int limit) => limit > 1000;
 
-    public unsafe byte[] Generate(string json)
+    public unsafe Dictionary<string, byte[]> GenerateBatch(string json)
     {
-
         int byteCount = Encoding.UTF8.GetByteCount(json);
         bool shouldRent = ShouldRentMemory(byteCount);
         byte[] jsonBytes = shouldRent ? ArrayPool<byte>.Shared.Rent(byteCount) : new byte[byteCount];
 
-        // 64 Mb (tillfälligt)
         int maxBytes = 64_000_000;
-        // vår state som håller både progress och även response efter genereringen
         var state = new ReportGenerationState(maxBytes);
-        // skyddar state från GC av uppenbara skäl
         GCHandle gcCtx = default;
 
         try
         {
-
             int bufferedBytes = Encoding.UTF8.GetBytes(json, 0, json.Length, jsonBytes, 0);
-            // GC skyddade bytes för error meddelande
-            Span<byte> errorBytes = stackalloc byte[1024];
             gcCtx = GCHandle.Alloc(state, GCHandleType.Normal);
             NativeStatus response;
 
-
-            fixed (byte* jsonPounter = jsonBytes)
-            fixed (byte* errorPointer = errorBytes)
+            fixed (byte* jsonPointer = jsonBytes)
             {
-
-                response = NativeMethods.Generate(
-                    jsonPounter,
+                response = NativeMethods.GenerateCustomerBatch(
+                    jsonPointer,
                     (nuint)bufferedBytes,
                     &NativeGenerateCallback.Recieve,
-                    GCHandle.ToIntPtr(gcCtx),
-                    errorPointer,
-                    (nuint)errorBytes.Length);
-
+                    GCHandle.ToIntPtr(gcCtx));
             }
 
             lock (state.ThreadSyncronizer)
@@ -155,26 +142,33 @@ public class PdfGenerationService
 
                 if (response != NativeStatus.Ok)
                 {
-                    int end = errorBytes.IndexOf((byte)0);
-                    string msg = Encoding.UTF8.GetString(end < 0 ? errorBytes : errorBytes[..end]);
-                    throw new InvalidOperationException($"Error from Native: {msg}");
+                    byte* errPtr = NativeMethods.GetLastError();
+                    string msg = errPtr != null ? Marshal.PtrToStringUTF8((nint)errPtr) ?? "Unknown native error" : "Unknown native error";
+                    throw new InvalidOperationException($"Error from Native ({response}): {msg}");
                 }
 
-                return state.Doc ?? throw new InvalidOperationException("No PDF returned!"); //TODO bättre felmeddelanden
+                if (state.Documents.Count == 0)
+                {
+                    throw new InvalidOperationException("No PDF documents returned in batch!");
+                }
+
+                return new Dictionary<string, byte[]>(state.Documents);
             }
         }
-
         finally
         {
-            // frigör resurserna så GC kan rensa 
             if (gcCtx.IsAllocated) gcCtx.Free();
             if (shouldRent)
             {
                 ArrayPool<byte>.Shared.Return(jsonBytes, clearArray: true);
             }
         }
+    }
 
-
+    public byte[] Generate(string json)
+    {
+        var batch = GenerateBatch(json);
+        return batch.Values.First();
     }
 
 

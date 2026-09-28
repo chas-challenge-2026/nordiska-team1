@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Reporting.Application;
+using Nordiska.Modules.Reporting.PdfGeneration;
 
 namespace Nordiska.Modules.Reporting.Infrastructure.Db;
 
@@ -11,6 +12,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddSingleton<PdfGenerationService>();
         services.AddScoped<IPdfReportGenerator, PdfReportGenerator>();
         services.AddScoped<ITaxReportService, TaxReportService>();
         services.AddScoped<IAuditLogService, AuditLogService>();

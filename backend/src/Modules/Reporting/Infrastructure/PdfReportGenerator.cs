@@ -1,21 +1,56 @@
-using System.Text;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Nordiska.Modules.Reporting.PdfGeneration;
 
 namespace Nordiska.Modules.Reporting.Infrastructure;
 
 /// <summary>
-/// PDF generator engine stub.
-/// Implement the full native C++ / worker generator here.
+/// PDF generator engine utilizing the native C++ generator via PdfGenerationService.
 /// </summary>
 public sealed class PdfReportGenerator : IPdfReportGenerator
 {
+    private static readonly CultureInfo SwedishCulture = new("sv-SE");
+    private readonly PdfGenerationService _pdfGenerationService;
+
+    public PdfReportGenerator(PdfGenerationService pdfGenerationService)
+    {
+        _pdfGenerationService = pdfGenerationService;
+    }
+
     public Task<byte[]> GenerateTaxReportPdfAsync(TaxReportData data, CancellationToken cancellationToken = default)
     {
-        // Minimal PDF header stub so controller endpoints and tests can return valid PDF MIME content
-        // Replace this with your C++ ProcessStartInfo / PInvoke call when ready!
-        var minimalPdf = "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n185\n%%EOF\n";
+        var payload = new AnnualTaxReportPayload(
+            Title: "Kontrolluppgift för ränteinkomst",
+            TaxYear: data.Year.ToString(SwedishCulture),
+            AccountNumber: data.AccountNumber,
+            AccountName: data.AccountName,
+            TotalInterestEarned: $"{data.TotalInterestEarned.ToString("N2", SwedishCulture)} SEK",
+            PreliminaryTaxDeducted: $"{data.TotalTaxWithheld.ToString("N2", SwedishCulture)} SEK",
+            ReportedToAuthority: "Skatteverket"
+        );
 
-        return Task.FromResult(Encoding.ASCII.GetBytes(minimalPdf));
+        var envelope = new CustomerBatchEnvelope(
+            SchemaVersion: "1.0",
+            CustomerId: (ulong)data.CustomerId,
+            CustomerName: data.CustomerName,
+            CreatedAt: data.GeneratedAt.ToString("o", CultureInfo.InvariantCulture),
+            Documents: new List<PdfDocumentEnvelope>
+            {
+                new(
+                    DocumentId: $"tax-{data.Year}-{data.AccountId}",
+                    Kind: "annual_tax_report",
+                    Version: "1.0",
+                    Document: payload
+                )
+            }
+        );
+
+        var json = JsonSerializer.Serialize(envelope);
+        var pdfBytes = _pdfGenerationService.Generate(json);
+
+        return Task.FromResult(pdfBytes);
     }
 }

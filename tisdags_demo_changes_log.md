@@ -37,3 +37,33 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 3. **Verification**:
    - Executed full multi-stage Docker build with exact pins and offline enforcement: completed successfully with exit code 0 (`07d7ce881da1f1675a95adad7d19e4c330f8e68244f19`).
 
+---
+
+## 2. Backend C# P/Invoke Interface
+
+### What I changed and why:
+- **File:** `backend/src/Modules/Reporting/NativeCalls/PdfGenerationCalls.cs`
+  - Switched `LibraryName` to `"nordiska_pdf_generator_c_api"` (the real `.so` library name).
+  - Updated P/Invoke to call `nordiska_pdf_v1_generate_customer_batch` instead of the old `nordiska_document_generate_json`.
+  - Added matching C# structs `NativePdfDocumentView` and `NativePdfBatchView` using `LayoutKind.Sequential` to read the batch delivered by native C++.
+- **File:** `backend/src/Modules/Reporting/PdfGeneration/PdfGenerationService.cs`
+  - Updated callback and state to unpack all documents in the batch into a dictionary keyed by `document_id`.
+  - Added `GenerateBatch()` to return the entire document dictionary, and kept `Generate()` to return the requested PDF.
+  - Removed obsolete `GetNativeVersion()`.
+- **File:** `backend/src/Modules/Reporting/Infrastructure/PdfReportGenerator.cs`
+  - Replaced dummy PDF stub with real call to `PdfGenerationService.Generate(json)`, mapping `TaxReportData` to the native `annual_tax_report` JSON schema.
+
+---
+
+## 3. Strongly Typed Batch DTOs & Localization
+
+### What I changed and why:
+- **File:** `backend/src/Modules/Reporting/PdfGeneration/PdfBatchDtos.cs`
+  - Created strongly typed C# records (`CustomerBatchEnvelope`, `PdfDocumentEnvelope`, `AnnualTaxReportPayload`, `AccountStatementPayload`, `StatementTransactionPayload`).
+  - Why: Decouples the .NET domain models from the JSON schema. Guarantees that .NET owns all calculations and localization formatting, sending pure pre-formatted strings to C++ so the native engine never needs to reformat or guess currencies.
+- **File:** `backend/src/Modules/Reporting/Infrastructure/Db/DependencyInjection.cs`
+  - Registered `PdfGenerationService` as a singleton in DI so `PdfReportGenerator` can inject it.
+- **File:** `backend/src/Modules/Reporting/Infrastructure/PdfReportGenerator.cs`
+  - Injected `PdfGenerationService` and formatted tax report numbers with Swedish culture (`sv-SE`), serializing the typed `CustomerBatchEnvelope` into JSON and invoking native generation.
+
+
