@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Api.Models;
+using ActiveLogin.Identity.Swedish;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -51,13 +52,28 @@ public class AuthService : IAuthService
     {
         try
         {
-            var cleanPersonalNum = request?.PersonalNum?.Replace("-", "")?.Trim();
+            string? cleanPersonalNum = null;
+            if (!string.IsNullOrWhiteSpace(request?.PersonalNum))
+            {
+                if (PersonalIdentityNumber.TryParse(request.PersonalNum, out var pin))
+                {
+                    cleanPersonalNum = pin.To12DigitString();
+                }
+                else
+                {
+                    cleanPersonalNum = request.PersonalNum.Replace("-", "").Trim();
+                }
+            }
 
             var requirement = !string.IsNullOrWhiteSpace(cleanPersonalNum)
                 ? new Requirement(personalNumber: cleanPersonalNum)
                 : null;
 
-            var effectiveIp = string.IsNullOrWhiteSpace(clientIp) || clientIp == "::1" ? "127.0.0.1" : clientIp;
+            var effectiveIp = clientIp?.Replace("::ffff:", "").Trim();
+            if (string.IsNullOrWhiteSpace(effectiveIp) || effectiveIp == "::1" || effectiveIp == "localhost")
+            {
+                effectiveIp = "127.0.0.1";
+            }
 
             var response = await _bankIdAppApiClient.AuthAsync(new AuthRequest(
                 endUserIp: effectiveIp,
@@ -153,19 +169,44 @@ public class AuthService : IAuthService
 
     public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
     {
-        var existingCustomer = await _userManager.FindByEmailAsync(request.Email);
-        if (existingCustomer != null)
+        var cleanEmail = request.Email?.Trim() ?? string.Empty;
+        var existingCustomerByEmail = await _userManager.FindByEmailAsync(cleanEmail);
+        if (existingCustomerByEmail != null)
         {
-            return new AuthenticationResultDto(false, "En användare med denna e-post finns redan.");
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med denna e-post finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "EMAIL_TAKEN");
+        }
+
+        string cleanPersonalNum;
+        if (PersonalIdentityNumber.TryParse(request.PersonalNum, out var pin))
+        {
+            cleanPersonalNum = pin.To12DigitString();
+        }
+        else
+        {
+            cleanPersonalNum = request.PersonalNum?.Replace("-", "").Trim() ?? string.Empty;
+        }
+
+        var existingCustomerByPersonalNum = await _db.Customers.AnyAsync(c => c.PersonalNum == cleanPersonalNum);
+        if (existingCustomerByPersonalNum)
+        {
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med detta personnummer finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "PERSONAL_NUM_TAKEN");
         }
 
         var newCustomer = new Customer
         {
-            UserName = request.Email,
-            Name = request.Name,
-            PersonalNum = (request.PersonalNum ?? string.Empty).Replace("-", "").Trim(),
-            Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
+            UserName = cleanEmail,
+            Name = request.Name?.Trim() ?? string.Empty,
+            PersonalNum = cleanPersonalNum,
+            Email = cleanEmail,
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -179,7 +220,14 @@ public class AuthService : IAuthService
 
         var token = await _jwtProvider.Generate(newCustomer);
         response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-        return new AuthenticationResultDto(true, null, Token: token);
+
+        var customerDto = new CustomerResponseDto(newCustomer.Id, newCustomer.Email ?? string.Empty, newCustomer.Name, token);
+
+        return new AuthenticationResultDto(
+            IsSuccess: true,
+            ErrorMessage: null,
+            Token: token,
+            Customer: customerDto);
     }
 
     public async Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response)
