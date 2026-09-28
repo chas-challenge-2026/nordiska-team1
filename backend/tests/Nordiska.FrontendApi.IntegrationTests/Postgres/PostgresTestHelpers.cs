@@ -10,6 +10,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
+using Xunit;
+
+// Disable parallel test execution across all integration tests to prevent race conditions
+// when multiple WebApplicationFactory instances migrate/seed the shared database simultaneously.
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Nordiska.FrontendApi.IntegrationTests.Postgres;
 
