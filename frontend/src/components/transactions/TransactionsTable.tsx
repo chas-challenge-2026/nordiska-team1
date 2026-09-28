@@ -15,6 +15,7 @@ interface TransactionTableProps {
     onPageChange: (page: number) => void;
     isLoading: boolean;
     isError: boolean;
+    emptyMessage?: string;
 }
 
 function transactionTypeLabel(type: Transaction["type"], t: TFunction): string {
@@ -36,7 +37,7 @@ function groupByDate(transactions: Transaction[]): { dateKey: string; items: Tra
     return groups;
 }
 
-export default function TransactionTable({ transactions, totalCount, totalPages, page, hasNextPage, isPlaceholderData, onPageChange, isLoading, isError }: TransactionTableProps) {
+export default function TransactionTable({ transactions, totalCount, totalPages, page, hasNextPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
     const { t } = useTranslation();
     const listId = useId();
     const groupedItems = useMemo(() => groupByDate(transactions), [transactions]);
@@ -59,6 +60,9 @@ export default function TransactionTable({ transactions, totalCount, totalPages,
                         aria-busy={isPlaceholderData}
                         className={`flex-1 min-h-0 overflow-y-auto ${isPlaceholderData ? 'opacity-50' : ''}`}
                     >
+                        {transactions.length === 0 && emptyMessage && (
+                            <p className="py-6 text-center text-sm text-secondary">{emptyMessage}</p>
+                        )}
                         {groupedItems.map(group => (
                             <div key={group.dateKey} className="mb-3">
                                 <h4 className="text-xs font-medium text-secondary mb-1 border-b-2 border-gray-200">
