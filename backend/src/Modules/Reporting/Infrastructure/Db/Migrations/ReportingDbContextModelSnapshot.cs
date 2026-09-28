@@ -18,7 +18,7 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("reporting")
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "8.0.30")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -52,7 +52,13 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Action");
+
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("audit_entries", "reporting");
                 });
@@ -90,6 +96,57 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                     b.HasIndex("AccountId", "Year");
 
                     b.ToTable("tax_reports", "reporting");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.TaxReportJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("DownloadUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ErrorCode")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "Year");
+
+                    b.HasIndex("CustomerId", "CreatedAt");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("tax_report_jobs", "reporting");
                 });
 #pragma warning restore 612, 618
         }
