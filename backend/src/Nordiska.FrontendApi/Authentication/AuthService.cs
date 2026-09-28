@@ -153,19 +153,28 @@ public class AuthService : IAuthService
 
     public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
     {
+        var cleanPersonalNum = (request.PersonalNum ?? string.Empty).Replace("-", "").Trim();
+
         var existingCustomer = await _userManager.FindByEmailAsync(request.Email);
         if (existingCustomer != null)
         {
             return new AuthenticationResultDto(false, "En användare med denna e-post finns redan.");
         }
 
+        var existingByPersonalNum = await _db.Customers.AnyAsync(c => c.PersonalNum == cleanPersonalNum);
+        if (existingByPersonalNum)
+        {
+            return new AuthenticationResultDto(false, "En användare med detta personnummer finns redan.");
+        }
+
         var newCustomer = new Customer
         {
             UserName = request.Email,
             Name = request.Name,
-            PersonalNum = (request.PersonalNum ?? string.Empty).Replace("-", "").Trim(),
+            PersonalNum = cleanPersonalNum,
             Email = request.Email,
             PhoneNumber = request.PhoneNumber,
+            PasswordHash = string.Empty,
             CreatedAt = DateTime.UtcNow
         };
 
