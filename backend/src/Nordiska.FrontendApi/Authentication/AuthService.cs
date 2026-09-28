@@ -159,6 +159,7 @@ public class AuthService : IAuthService
             return new AuthenticationResultDto(false, "En användare med denna e-post finns redan.");
         }
 
+        var cleanPersonalNum = (request.PersonalNum ?? string.Empty).Replace("-", "").Trim();
         var newCustomer = new Customer
         {
             UserName = request.Email,
