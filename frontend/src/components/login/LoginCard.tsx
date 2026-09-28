@@ -3,29 +3,37 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { isAxiosError } from "axios";
 import { useBankIdCollect, useBankIdInitate, useLogin } from "../../hooks/useLogin";
+import type { BankIdInitRes } from "../../services/authService";
+import BankIdQrCode from "../auth/BankIdQrCode";
 import { BankIdLogo } from "../icons/BankIdIcons";
+import { autoStartUrl } from "../../utils/bankId";
 import BankIdChooser from "./BankIdChooser";
 import ManualLoginForm from "./ManualLoginForm";
-import MockQrCode from "./MockQrCode";
 
-type Step = "choose" | "mobile" | "manual";
+type Step = "choose" | "otherDevice" | "thisDevice" | "manual";
 
 /**
- * Hela inloggningskortet. BankID-delen är mock: QR-koden gör ingenting och
- * "BankID på dator" leder till formuläret, där man loggar in med
- * personnummer eller e-post och lösenord precis som tidigare.
+ * Hela inloggningskortet.
+ * - "BankID på annan enhet": riktig QR-kod som skannas med BankID-appen i mobilen.
+ * - "BankID på denna enhet": öppnar BankID-appen på samma enhet (dator eller mobil).
+ * - Formuläret (via länken): personnummer öppnar BankID-appen låst till det
+ *   personnumret (i Simulated-läget loggar det in direkt), eller e-post och lösenord.
  */
 export default function LoginCard() {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
     const [step, setStep] = useState<Step>("choose");
+    const [bankIdData, setBankIdData] = useState<BankIdInitRes | null>(null);
     const [orderRef, setOrderRef] = useState("");
+    // Personnumret följer med när man trycker "Försök igen"
+    const [personalNum, setPersonalNum] = useState<string>();
     const [emailError, setEmailError] = useState<string>();
 
     const { mutate: initiate, isPending: initPending, error: initError, reset: resetInit } = useBankIdInitate();
     const collect = useBankIdCollect(orderRef);
     const status = collect.data?.status;
+    const hintCode = collect.data?.hintCode?.toLowerCase();
     const { mutate: login, isPending: loginPending } = useLogin();
 
     useEffect(() => {
@@ -34,42 +42,61 @@ export default function LoginCard() {
         }
     }, [status, navigate]);
 
-    function goTo(nextStep: Step) {
+    function clearOrder() {
+        setBankIdData(null);
         setOrderRef("");
         resetInit();
+    }
+
+    function goTo(nextStep: Step) {
+        clearOrder();
+        setPersonalNum(undefined);
         setEmailError(undefined);
         setStep(nextStep);
     }
 
-    function handlePersonalNumLogin(personalNum: string) {
-        setOrderRef("");
-        initiate(personalNum, {
-            onSuccess: (data) => setOrderRef(data.orderRef),
+    function startBankId(nextStep: Step, pnr?: string) {
+        clearOrder();
+        setPersonalNum(pnr);
+        setStep(nextStep);
+
+        initiate(pnr, {
+            onSuccess: (data) => {
+                setBankIdData(data);
+                setOrderRef(data.orderRef);
+                // Allt utom QR-koden startar BankID-appen på den här enheten
+                if (nextStep !== "otherDevice") {
+                    window.location.href = autoStartUrl(data.autoStartToken);
+                }
+            },
         });
     }
 
-    // Samma flöde som tidigare: initiate med personnummer och sedan pollas collect tills det är klart
-    const personalNumPending =
-        initPending || (!!orderRef && !collect.error && status !== "FAILED" && status !== "COMPLETE");
-
-    function personalNumError(): string | undefined {
+    function bankIdError(): string | undefined {
         if (initError) {
             return isAxiosError(initError) && initError.response?.status === 429
                 ? t("register-route.error-rate-limit")
-                : t("register-route.error-generic");
+                : t("login-route.failed");
         }
         if (collect.error) {
-            // Backend svarar 401 både för okänd kund och för andra fel, så vi skiljer på meddelandet
+            // Backend svarar 401 både för okänd kund och för BankID-fel, så vi skiljer på meddelandet
             const message = isAxiosError(collect.error) ? String(collect.error.response?.data?.message ?? "") : "";
             return message.toLowerCase().includes("customer")
                 ? t("login-route.not-found")
-                : t("register-route.error-generic");
+                : t("login-route.failed");
         }
         if (status === "FAILED") {
-            return t("register-route.error-generic");
+            if (hintCode === "startfailed") return t("login-route.start-failed");
+            if (hintCode === "usercancel") return t("login-route.user-cancel");
+            return t("login-route.failed");
         }
         return undefined;
     }
+
+    const error = bankIdError();
+    const bankIdPending = initPending || (!!orderRef && !error && status !== "COMPLETE");
+    // BankID-appen har öppnats och väntar på att användaren godkänner
+    const waitingForApp = status === "PENDING" && (hintCode === "started" || hintCode === "usersign");
 
     function handleEmailLogin(email: string, password: string) {
         setEmailError(undefined);
@@ -88,25 +115,64 @@ export default function LoginCard() {
         );
     }
 
-    if (step === "mobile") {
+    if (step === "otherDevice" || step === "thisDevice") {
         return (
             <div className="flex flex-col items-center px-2 py-4 text-center">
                 <BankIdLogo className="h-14 w-auto text-login-bg" />
-                <div className="mt-4 rounded-lg border border-[#E5EAF0] bg-white p-2 shadow-sm">
-                    <MockQrCode className="h-44 w-44 text-dark-navy" />
-                </div>
-                <p className="mt-3 text-sm text-secondary">{t("login-route.qr-help")}</p>
-                <button
-                    type="button"
-                    onClick={() => goTo("manual")}
-                    className="mt-5 cursor-pointer text-sm font-semibold text-nordiska-blue underline"
-                >
-                    {t("login-route.manual-link")}
-                </button>
+
+                {!error && !waitingForApp && step === "otherDevice" && (
+                    bankIdData ? (
+                        <BankIdQrCode
+                            qrStartToken={bankIdData.qrStartToken}
+                            qrStartSecret={bankIdData.qrStartSecret}
+                        />
+                    ) : (
+                        <p className="mt-6 text-sm text-secondary">{t("login-route.qr-loading")}</p>
+                    )
+                )}
+
+                {!error && !waitingForApp && step === "thisDevice" && (
+                    <div className="mt-6 flex flex-col items-center gap-3">
+                        <p className="text-sm text-secondary">{t("login-route.starting-app")}</p>
+                        {bankIdData && (
+                            <a
+                                href={autoStartUrl(bankIdData.autoStartToken)}
+                                className="text-sm font-semibold text-nordiska-blue underline"
+                            >
+                                {t("login-route.open-app-again")}
+                            </a>
+                        )}
+                    </div>
+                )}
+
+                {!error && waitingForApp && (
+                    <p className="mt-6 text-sm font-semibold text-dark-navy">{t("login-route.waiting-for-app")}</p>
+                )}
+
+                {error && (
+                    <div className="mt-4 flex w-full flex-col items-center gap-3">
+                        <p className="text-sm font-semibold text-dark-navy" role="alert">{error}</p>
+                        <button
+                            type="button"
+                            onClick={() => startBankId(step, personalNum)}
+                            className="w-full cursor-pointer rounded-md border-0 bg-nordiska-blue py-3 text-base font-bold text-white hover:bg-login-bg"
+                        >
+                            {t("login-route.retry")}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => goTo("manual")}
+                            className="cursor-pointer text-sm font-semibold text-nordiska-blue underline"
+                        >
+                            {t("login-route.manual-link")}
+                        </button>
+                    </div>
+                )}
+
                 <button
                     type="button"
                     onClick={() => goTo("choose")}
-                    className="mt-4 cursor-pointer border-b border-secondary pb-0.5 text-sm font-semibold text-secondary"
+                    className="mt-5 cursor-pointer border-b border-secondary pb-0.5 text-sm font-semibold text-secondary"
                 >
                     {t("generic.cancel")}
                 </button>
@@ -117,9 +183,9 @@ export default function LoginCard() {
     if (step === "manual") {
         return (
             <ManualLoginForm
-                onBankIdSubmit={handlePersonalNumLogin}
-                bankIdPending={personalNumPending}
-                bankIdError={personalNumError()}
+                onBankIdSubmit={(pnr) => startBankId("manual", pnr)}
+                bankIdPending={bankIdPending}
+                bankIdError={error}
                 onEmailSubmit={handleEmailLogin}
                 emailPending={loginPending}
                 emailError={emailError}
@@ -130,8 +196,8 @@ export default function LoginCard() {
 
     return (
         <BankIdChooser
-            onMobile={() => goTo("mobile")}
-            onDesktop={() => goTo("manual")}
+            onOtherDevice={() => startBankId("otherDevice")}
+            onThisDevice={() => startBankId("thisDevice")}
             onManual={() => goTo("manual")}
         />
     );

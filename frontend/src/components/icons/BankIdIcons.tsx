@@ -62,6 +62,17 @@ export function DesktopIcon({ className }: IconProps) {
     );
 }
 
+export function QrIcon({ className }: IconProps) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+            <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+            <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+            <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+            <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    );
+}
+
 export function ArrowRightIcon({ className }: IconProps) {
     return (
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>

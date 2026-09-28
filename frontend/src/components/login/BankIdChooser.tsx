@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { ArrowRightIcon, BankIdLogo, DesktopIcon, PhoneIcon } from "../icons/BankIdIcons";
+import { ArrowRightIcon, BankIdLogo, DesktopIcon, PhoneIcon, QrIcon } from "../icons/BankIdIcons";
+import { isMobileDevice } from "../../utils/bankId";
 
 type BankIdChooserProps = {
-    onMobile: () => void;
-    onDesktop: () => void;
+    onOtherDevice: () => void;
+    onThisDevice: () => void;
     onManual: () => void;
     /** Visas bara om den skickas in, t.ex. när man kommit hit från ett annat steg. */
     onCancel?: () => void;
@@ -12,14 +13,19 @@ type BankIdChooserProps = {
 
 /**
  * Startvyn i inloggningskortet, byggd för att likna BankID:s egen
- * inloggning: välj BankID på mobil (QR-kod) eller på dator (autostart).
+ * inloggning: BankID på annan enhet (QR-kod) eller på denna enhet (öppnar appen här).
  */
-export default function BankIdChooser({ onMobile, onDesktop, onManual, onCancel }: BankIdChooserProps) {
+export default function BankIdChooser({ onOtherDevice, onThisDevice, onManual, onCancel }: BankIdChooserProps) {
     const { t } = useTranslation();
 
     const options = [
-        { key: "mobile", label: t("login-route.bankid-mobile"), Icon: PhoneIcon, onClick: onMobile },
-        { key: "desktop", label: t("login-route.bankid-desktop"), Icon: DesktopIcon, onClick: onDesktop },
+        { key: "other-device", label: t("login-route.bankid-other-device"), Icon: QrIcon, onClick: onOtherDevice },
+        {
+            key: "this-device",
+            label: t("login-route.bankid-this-device"),
+            Icon: isMobileDevice() ? PhoneIcon : DesktopIcon,
+            onClick: onThisDevice,
+        },
     ];
 
     return (
