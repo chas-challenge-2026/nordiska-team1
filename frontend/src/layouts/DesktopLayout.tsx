@@ -4,7 +4,7 @@ import PageNavigation from "../components/PageNavigation";
 
 export default function DesktopLayout() {
     return (
-        <div className="h-dvh flex flex-col">
+        <div className="flex flex-1 flex-col">
             <PageNavigation />
 
             {/* ANIMATION PÅ DETTA */}
