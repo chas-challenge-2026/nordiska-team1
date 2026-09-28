@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nordiska.Modules.Reporting.Infrastructure;
 
-/// <summary>
-/// PDF generator backed by the native C-compatible PDF generator.
-/// </summary>
+ 
 public sealed class PdfReportGenerator : IPdfReportGenerator
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

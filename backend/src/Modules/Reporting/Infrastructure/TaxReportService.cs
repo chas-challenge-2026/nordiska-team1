@@ -10,10 +10,7 @@ using Nordiska.Modules.Reporting.Contracts.Requests;
 using Nordiska.Modules.Reporting.Domain;
 
 namespace Nordiska.Modules.Reporting.Infrastructure;
-
-/// <summary>
-/// Service coordinating tax report data extraction, job status tracking, and PDF document generation.
-/// </summary>
+ 
 public sealed class TaxReportService : ITaxReportService
 {
     private readonly ISavingsAccountService _savingsAccountService;
