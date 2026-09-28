@@ -78,5 +78,20 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
   - Replaced empty `onClick={() => {}}` on the "Skatteunderlag" button with `handleDownloadTaxReport()`.
   - Added loading indicator (`"Laddar ner..."`) and inline error feedback if the report generation fails.
 
+---
+
+## 5. Account Statement & Multi-Document Archive (.NET Backend)
+
+### What I changed and why:
+- **File:** `backend/src/Modules/Reporting/Infrastructure/IPdfReportGenerator.cs` & `PdfReportGenerator.cs`
+  - Added `GenerateStatementPdfAsync()` to format account transaction ledgers into `AccountStatementPayload` and render `kontoutdrag_{accountNumber}.pdf`.
+  - Added `GenerateCustomerArchiveAsync()` to request a multi-document batch containing all tax reports and account statements, and bundle the resulting PDFs into a `.zip` file using `System.IO.Compression.ZipArchive`.
+- **File:** `backend/src/Modules/Reporting/Application/ITaxReportService.cs` & `TaxReportService.cs`
+  - Added `GenerateDirectStatementAsync()` and `GenerateCustomerArchiveAsync()` validating customer ownership before assembling domain ledger data.
+- **File:** `backend/src/Nordiska.FrontendApi/Endpoints/Reporting/ReportsController.cs`
+  - Added `GET /api/reports/statement?accountId={id}` returning single statement PDF.
+  - Added `GET /api/reports/download-all` returning all documents bundled in a `.zip` archive.
+
+
 
 

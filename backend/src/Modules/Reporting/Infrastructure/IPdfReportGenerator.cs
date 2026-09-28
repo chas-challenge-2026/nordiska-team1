@@ -27,15 +27,37 @@ public record TaxReportData(
 );
 
 /// <summary>
-/// Interface for generating tax report PDF binaries (supports C# v1 implementation and C++ native v2 engine).
+/// Domain model containing all data necessary to render a signed account statement PDF.
+/// </summary>
+public record StatementReportData(
+    long AccountId,
+    string AccountNumber,
+    string AccountName,
+    long CustomerId,
+    string CustomerName,
+    decimal OpeningBalance,
+    decimal ClosingBalance,
+    IReadOnlyList<TransactionResponse> Transactions,
+    DateTime GeneratedAt
+);
+
+/// <summary>
+/// Interface for generating report PDF binaries and archives (supports C++ native v2 engine).
 /// </summary>
 public interface IPdfReportGenerator
 {
     /// <summary>
     /// Generates a valid, cryptographically signed PDF document from structured tax report data.
     /// </summary>
-    /// <param name="data">The tax report structured data.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Raw PDF byte array with embedded signature/hash metadata.</returns>
     Task<byte[]> GenerateTaxReportPdfAsync(TaxReportData data, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates a valid, cryptographically signed PDF account statement from structured statement data.
+    /// </summary>
+    Task<byte[]> GenerateStatementPdfAsync(StatementReportData data, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates a ZIP archive containing all account statements and tax reports for a customer.
+    /// </summary>
+    Task<byte[]> GenerateCustomerArchiveAsync(IReadOnlyList<TaxReportData> taxReports, IReadOnlyList<StatementReportData> statements, CancellationToken cancellationToken = default);
 }

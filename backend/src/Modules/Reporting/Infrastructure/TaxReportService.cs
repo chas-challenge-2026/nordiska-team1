@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Contracts.Responses;
+using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
 
@@ -154,20 +157,78 @@ public sealed class TaxReportService : ITaxReportService
         return (pdfBytes, fileName);
     }
 
-    private async Task<TaxReportData> BuildReportDataAsync(long customerId, long accountId, int year, CancellationToken cancellationToken)
+    public async Task<(byte[] FileBytes, string FileName)> GenerateDirectStatementAsync(long customerId, long accountId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
             ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
 
-        var customer = await _customerService.GetByIdAsync(customerId, cancellationToken)
+        if (!isAdmin && account.CustomerId != customerId)
+        {
+            throw new AuthenticationException("Customer is not authorized for this account.");
+        }
+
+        var customer = await _customerService.GetByIdAsync(account.CustomerId, cancellationToken)
             ?? throw new NotFoundException($"Customer with ID {customerId} was not found.");
 
         var transactions = (await _transactionService.QueryAsync(accountId, cancellationToken)).ToList();
+        var statementData = BuildStatementData(customer, account, transactions);
+        var pdfBytes = await _pdfGenerator.GenerateStatementPdfAsync(statementData, cancellationToken);
+        var fileName = $"kontoutdrag_{account.AccountNumber}.pdf";
 
+        return (pdfBytes, fileName);
+    }
+
+    public async Task<(byte[] FileBytes, string FileName)> GenerateCustomerArchiveAsync(long customerId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        var customer = await _customerService.GetByIdAsync(customerId, cancellationToken)
+            ?? throw new NotFoundException($"Customer with ID {customerId} was not found.");
+
+        var accounts = (await _savingsAccountService.GetByCustomerIdAsync(customerId, cancellationToken)).ToList();
+        if (accounts.Count == 0)
+        {
+            throw new InvalidOperationException("No accounts found for customer.");
+        }
+
+        var currentYear = DateTime.UtcNow.Year;
+        var taxReports = new List<TaxReportData>();
+        var statements = new List<StatementReportData>();
+
+        foreach (var account in accounts)
+        {
+            var transactions = (await _transactionService.QueryAsync(account.Id, cancellationToken)).ToList();
+            taxReports.Add(BuildReportDataInternal(customer, account, currentYear, transactions));
+            statements.Add(BuildStatementData(customer, account, transactions));
+        }
+
+        var zipBytes = await _pdfGenerator.GenerateCustomerArchiveAsync(taxReports, statements, cancellationToken);
+        var fileName = $"nordiska_dokument_{customerId}.zip";
+
+        return (zipBytes, fileName);
+    }
+
+    private static StatementReportData BuildStatementData(Customer customer, SavingsAccountResponse account, List<TransactionResponse> transactions)
+    {
+        var closingBalance = account.Balance;
+        var openingBalance = transactions.Count > 0 ? transactions.Sum(t => t.Amount) : closingBalance;
+
+        return new StatementReportData(
+            AccountId: account.Id,
+            AccountNumber: account.AccountNumber,
+            AccountName: account.AccountName ?? "Sparkonto",
+            CustomerId: customer.Id,
+            CustomerName: customer.Name,
+            OpeningBalance: openingBalance,
+            ClosingBalance: closingBalance,
+            Transactions: transactions,
+            GeneratedAt: DateTime.UtcNow
+        );
+    }
+
+    private static TaxReportData BuildReportDataInternal(Customer customer, SavingsAccountResponse account, int year, List<TransactionResponse> transactions)
+    {
         var yearStartDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var yearEndDate = new DateTime(year, 12, 31, 23, 59, 59, DateTimeKind.Utc);
 
-        // Ledger amounts are already signed (withdrawals and outgoing transfers are negative)
         var openingBalance = transactions
             .Where(t => t.CreatedAt < yearStartDate)
             .Sum(t => t.Amount);
@@ -176,7 +237,6 @@ public sealed class TaxReportService : ITaxReportService
             .Where(t => t.CreatedAt <= yearEndDate)
             .Sum(t => t.Amount);
 
-        // Estimate annual interest earned
         var interestEarned = Math.Round(closingBalance * account.InterestRate, 2);
         var taxWithheld = Math.Round(interestEarned * 0.30m, 2);
 
@@ -197,6 +257,19 @@ public sealed class TaxReportService : ITaxReportService
             GeneratedAt: DateTime.UtcNow
         );
     }
+
+    private async Task<TaxReportData> BuildReportDataAsync(long customerId, long accountId, int year, CancellationToken cancellationToken)
+    {
+        var account = await _savingsAccountService.GetByIdAsync(accountId, cancellationToken)
+            ?? throw new NotFoundException($"Account with ID {accountId} was not found.");
+
+        var customer = await _customerService.GetByIdAsync(customerId, cancellationToken)
+            ?? throw new NotFoundException($"Customer with ID {customerId} was not found.");
+
+        var transactions = (await _transactionService.QueryAsync(accountId, cancellationToken)).ToList();
+        return BuildReportDataInternal(customer, account, year, transactions);
+    }
+
 
     private sealed class StoredReportJob
     {

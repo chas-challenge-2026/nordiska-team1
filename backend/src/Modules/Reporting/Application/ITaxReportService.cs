@@ -49,4 +49,15 @@ public interface ITaxReportService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Tuple of PDF byte array and suggested filename.</returns>
     Task<(byte[] FileBytes, string FileName)> GenerateDirectReportAsync(long customerId, long accountId, int year, bool isAdmin, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Directly generates an account statement PDF for immediate synchronous download.
+    /// </summary>
+    Task<(byte[] FileBytes, string FileName)> GenerateDirectStatementAsync(long customerId, long accountId, bool isAdmin, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates a ZIP archive containing all account statements and tax reports for a customer.
+    /// </summary>
+    Task<(byte[] FileBytes, string FileName)> GenerateCustomerArchiveAsync(long customerId, bool isAdmin, CancellationToken cancellationToken = default);
 }
+

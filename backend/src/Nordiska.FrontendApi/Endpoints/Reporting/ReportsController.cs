@@ -161,4 +161,60 @@ public sealed class ReportsController : ControllerBase
             return BadRequest(new ProblemDetails { Status = StatusCodes.Status400BadRequest, Title = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Directly generates and downloads an account statement PDF synchronously.
+    /// </summary>
+    [HttpGet("statement")]
+    [AuditAction("REPORT_STATEMENT_DIRECT")]
+    [Produces("application/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDirectStatement(
+        [FromQuery] long accountId,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = User.GetRequiredCustomerId();
+
+        try
+        {
+            var result = await _reportService.GenerateDirectStatementAsync(currentUserId, accountId, User.IsAdmin(), cancellationToken);
+            return File(result.FileBytes, "application/pdf", result.FileName);
+        }
+        catch (AuthenticationException)
+        {
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Account not found." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails { Status = StatusCodes.Status400BadRequest, Title = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Generates and downloads a ZIP archive containing all account statements and tax reports for the authenticated customer.
+    /// </summary>
+    [HttpGet("download-all")]
+    [AuditAction("REPORT_DOWNLOAD_ALL")]
+    [Produces("application/zip")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DownloadAll(CancellationToken cancellationToken)
+    {
+        var currentUserId = User.GetRequiredCustomerId();
+
+        try
+        {
+            var result = await _reportService.GenerateCustomerArchiveAsync(currentUserId, User.IsAdmin(), cancellationToken);
+            return File(result.FileBytes, "application/zip", result.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails { Status = StatusCodes.Status400BadRequest, Title = ex.Message });
+        }
+    }
 }
+
