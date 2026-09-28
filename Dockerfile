@@ -64,14 +64,16 @@ RUN dotnet publish ./backend/src/Nordiska.FrontendApi/Nordiska.FrontendApi.cspro
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# Install runtime libraries for Cairo & Haru PDF rendering
+# Install runtime libraries for Cairo & Haru PDF rendering + simdjson
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2=1.16.0-7 \
     libhpdf-2.3.0=2.3.0+dfsg-1+b1 \
+    libsimdjson14=3.0.1-1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend-builder /app/publish .
 COPY --from=frontend-builder /app/frontend/dist ./wwwroot
+COPY --from=native-builder /usr/local/lib64/libstdc++.so.6* /usr/local/lib/
 COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_pdf_generator_c_api.so /usr/local/lib/
 RUN ldconfig
 

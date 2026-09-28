@@ -108,6 +108,17 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 - **File:** `frontend/src/components/PageNavigation.tsx`
   - Added "Dokument" tab link in the desktop navigation bar.
 
+---
+
+## 7. Dynamic Linker & Shared Library Fix (`Dockerfile`)
+
+### What I changed and why:
+- **File:** `Dockerfile` (Stage 4 `final`)
+  - Added `libsimdjson14=3.0.1-1` to the runtime `apt-get install`.
+  - Added `COPY --from=native-builder /usr/local/lib64/libstdc++.so.6* /usr/local/lib/` before running `ldconfig`.
+  - Why: The 500 error was caused by a `System.DllNotFoundException` at the P/Invoke boundary because `libnordiska_pdf_generator_c_api.so` could not resolve `libsimdjson.so.14` and required `GLIBCXX_3.4.31` (from GCC 13's `libstdc++6`), which wasn't in the default Debian 12 base image. With these additions, all native dependencies are resolved, verified via `ldd`, and live PDF/ZIP generation returns 200 OK.
+
+
 
 
 
