@@ -14,6 +14,7 @@ export default function PageNavigation() {
             <PageLink title={t("page-navigation.accounts")} route="/accounts" />
             <PageLink title={t("page-navigation.transactions")} route="/transactions" />
             <PageLink title={t("page-navigation.transfers")} route="/transfer" />
+            <PageLink title="Dokument" route="/documents" />
         </nav>
 
         {/* ----- MOBIL ----- */}

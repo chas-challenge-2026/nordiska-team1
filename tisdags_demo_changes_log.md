@@ -92,6 +92,23 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
   - Added `GET /api/reports/statement?accountId={id}` returning single statement PDF.
   - Added `GET /api/reports/download-all` returning all documents bundled in a `.zip` archive.
 
+---
+
+## 6. Dedicated Documents Page & Navigation (`/documents`)
+
+### What I changed and why:
+- **File:** `frontend/src/services/reportsService.ts`
+  - Added `downloadAccountStatement(accountId, accountNumber)` and `downloadAllDocuments()` to download statement PDFs and customer ZIP archives.
+- **File:** `frontend/src/pages/DocumentsPage.tsx`
+  - Created a dedicated, self-contained Documents page with zero modals.
+  - Section 1: Dropdown for account selection + Dropdown for report type (Skatteunderlag vs Kontoutdrag) + "Ladda ner rapport" button.
+  - Section 2: "Ladda ner alla dokument (ZIP)" button for the full customer portfolio archive.
+- **File:** `frontend/src/routes/AppRoutes.tsx`
+  - Added `/documents` route under `DesktopLayout`.
+- **File:** `frontend/src/components/PageNavigation.tsx`
+  - Added "Dokument" tab link in the desktop navigation bar.
+
+
 
 
 

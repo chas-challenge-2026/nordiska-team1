@@ -16,6 +16,7 @@ import TransferPage from "../pages/TransferPage";
 import TransactionsPage from "../pages/TransactionsPage";
 import SettingsPage from "../pages/SettingsPage";
 import AccountsPage from "../pages/AccountsPage";
+import DocumentsPage from "../pages/DocumentsPage";
 
 export default function AppRoutes() {
     return (
@@ -43,6 +44,7 @@ export default function AppRoutes() {
                         element={<TransactionsPage />}
                     />
                     <Route path="/accounts" element={<AccountsPage />} />
+                    <Route path="/documents" element={<DocumentsPage />} />
                 </Route>
             </Route>
         </Routes>
