@@ -6,6 +6,8 @@ export type AccountPickerItem = {
     meta: string;
     balance?: string;
     selected: boolean;
+    /** När satt är raden utgråad och går inte att välja; texten visas under kontot. */
+    disabledReason?: string;
 };
 
 export type AccountPickerGroup = {
@@ -78,7 +80,8 @@ export default function AccountPickerModal({
                                 key={item.id}
                                 type="button"
                                 onClick={() => onSelect(item.id)}
-                                className="flex w-full cursor-pointer items-start gap-3.5 border-0 border-b border-[#EEF1F4] bg-none px-1 py-3.5 text-left hover:bg-[#F7F9FB]"
+                                disabled={!!item.disabledReason}
+                                className="flex w-full cursor-pointer items-start gap-3.5 border-0 border-b border-[#EEF1F4] bg-none px-1 py-3.5 text-left hover:bg-[#F7F9FB] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                             >
                                 <span
                                     className={`mt-0.5 flex h-4.5 w-4.5 flex-none items-center justify-center rounded-full border-2 ${
@@ -109,6 +112,11 @@ export default function AccountPickerModal({
                                     <span className="mt-0.5 block text-[13px] text-secondary">
                                         {item.meta}
                                     </span>
+                                    {item.disabledReason && (
+                                        <span className="mt-0.5 block text-[13px] italic text-secondary">
+                                            {item.disabledReason}
+                                        </span>
+                                    )}
                                 </span>
                             </button>
                         ))}
