@@ -170,3 +170,14 @@ The following 4 issues are proposed for the teams to bring the reporting and doc
   2. Map into `TransactionDto` and `StatementTransactionPayload.Reference`.
   3. Render reference in the statement PDF transaction table.
 
+---
+
+## 10. Fix Statement Running Balances (`Saldo`) & Opening Balance Calculation
+
+### What I changed and why:
+- **File:** `backend/src/Modules/Reporting/Infrastructure/TaxReportService.cs`
+  - Fixed `openingBalance` formula from `transactions.Sum(t => t.Amount)` to `closingBalance - transactions.Sum(t => t.Amount)`.
+  - **Why:** The opening balance before a statement period must equal the closing balance minus the net sum of transactions during the period. Previously it set opening balance to the sum of transactions, causing `Ingående saldo` and `Utgående saldo` to both show `68 099,66 SEK`. Now `Ingående saldo` correctly shows `0,00 SEK`.
+- **File:** `backend/src/Modules/Reporting/Infrastructure/PdfReportGenerator.cs`
+  - Calculated chronological running balances starting from `OpeningBalance` and populated `BalanceAfterDisplay` for each transaction row.
+  - **Why:** The `Saldo` column in the statement PDF was previously blank because `BalanceAfterDisplay: ""` was empty. It now displays the running account balance after every transaction.

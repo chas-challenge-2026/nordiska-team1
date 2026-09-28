@@ -209,7 +209,7 @@ public sealed class TaxReportService : ITaxReportService
     private static StatementReportData BuildStatementData(Customer customer, SavingsAccountResponse account, List<TransactionResponse> transactions)
     {
         var closingBalance = account.Balance;
-        var openingBalance = transactions.Count > 0 ? transactions.Sum(t => t.Amount) : closingBalance;
+        var openingBalance = closingBalance - transactions.Sum(t => t.Amount);
 
         return new StatementReportData(
             AccountId: account.Id,

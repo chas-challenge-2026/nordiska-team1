@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Reporting.PdfGeneration;
 
 namespace Nordiska.Modules.Reporting.Infrastructure;
@@ -151,17 +152,30 @@ public sealed class PdfReportGenerator : IPdfReportGenerator
 
     private static AccountStatementPayload BuildStatementPayload(StatementReportData data)
     {
-        var transactions = data.Transactions
-            .OrderByDescending(t => t.CreatedAt)
+        var chronological = data.Transactions
+            .OrderBy(t => t.CreatedAt)
+            .ToList();
+
+        var runningBalance = data.OpeningBalance;
+        var txWithBalances = new List<(TransactionResponse Tx, decimal BalanceAfter)>();
+
+        foreach (var t in chronological)
+        {
+            runningBalance += t.Amount;
+            txWithBalances.Add((t, runningBalance));
+        }
+
+        var transactions = txWithBalances
+            .OrderByDescending(x => x.Tx.CreatedAt)
             .Take(50)
-            .Select(t => new StatementTransactionPayload(
-                Date: t.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                Type: t.Type,
-                Description: t.Label ?? (t.Amount < 0 ? "Uttag" : "Insättning"),
+            .Select(x => new StatementTransactionPayload(
+                Date: x.Tx.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Type: x.Tx.Type,
+                Description: x.Tx.Label ?? (x.Tx.Amount < 0 ? "Uttag" : "Insättning"),
                 Currency: "SEK",
-                AmountMinor: (long)Math.Round(t.Amount * 100),
-                AmountDisplay: $"{(t.Amount > 0 ? "+" : "")}{t.Amount.ToString("N2", SwedishCulture)} SEK",
-                BalanceAfterDisplay: ""
+                AmountMinor: (long)Math.Round(x.Tx.Amount * 100),
+                AmountDisplay: $"{(x.Tx.Amount > 0 ? "+" : "")}{x.Tx.Amount.ToString("N2", SwedishCulture)} SEK",
+                BalanceAfterDisplay: $"{x.BalanceAfter.ToString("N2", SwedishCulture)} SEK"
             ))
             .ToList();
 
