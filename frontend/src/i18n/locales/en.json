@@ -76,7 +76,21 @@
         "loading-transactions": "Loading transactions...",
         "transactions-error": "There was an issue loading transactions",
         "showing-count_one": "Showing {{shown}} of {{count}} transaction",
-        "showing-count_other": "Showing {{shown}} of {{count}} transactions"
+        "showing-count_other": "Showing {{shown}} of {{count}} transactions",
+        "filter-aria_one": "Filter, {{count}} active",
+        "filter-aria_other": "Filter, {{count}} active",
+        "accounts-aria_one": "Accounts, {{count}} selected",
+        "accounts-aria_other": "Accounts, {{count}} selected",
+        "active-count_one": "{{count}} active",
+        "active-count_other": "{{count}} active",
+        "selected-of": "{{selected}} of {{total}} selected",
+        "show-count_one": "Show {{count}} transaction",
+        "show-count_other": "Show {{count}} transactions",
+        "deselect-all": "Deselect all",
+        "search-account": "Search account number",
+        "no-account-match": "No accounts match your search.",
+        "select-account": "Select at least one account to see transactions.",
+        "no-transactions": "No transactions found."
     },
     "accounts-route": {
         "yearly-interest": "Yearly interest amount",
