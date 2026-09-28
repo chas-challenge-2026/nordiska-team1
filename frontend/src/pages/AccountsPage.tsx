@@ -6,7 +6,7 @@ import CreateAccountModal from "../components/CreateAccountModal";
 import { useTranslation } from "react-i18next";
 
 export default function AccountsPage() {
-    const { data: accounts, isLoading, isError } = useGetAccounts();
+    const { data: accounts, isLoading, isError } = useGetAccounts("active");
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const {t} = useTranslation();
 
@@ -60,7 +60,7 @@ export default function AccountsPage() {
                     </>
                 )}
             </div>
-            {isCreateAccountOpen && <CreateAccountModal onClose={() => setIsCreateAccountOpen(false)} />}
+            <CreateAccountModal isModalOpen={isCreateAccountOpen} onClose={() => setIsCreateAccountOpen(false)} />
         </div>
     );
 }

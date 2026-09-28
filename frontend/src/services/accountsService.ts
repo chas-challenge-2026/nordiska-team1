@@ -1,6 +1,8 @@
 import axiosInstance from "./axiosInstance";
 
-export type AccountTypes = "Savings" | "Standard" | "Sparkonto Flex" | "Fasträntekonto Fix" | "Premium";
+export type AccountTypes = "saving" | "standard" | "flex" | "fix" | "premium";
+
+export type accountStatuses = "active" | "closed";
 
 export interface Account {
     id: number;
@@ -12,12 +14,12 @@ export interface Account {
     createdAt: string;
     accountName: string;
     updatedAt: string;
-    status: string;
+    status: accountStatuses;
     type: AccountTypes;
 }
 
-export async function getAllAccounts(): Promise<Account[]> {
-    const res = await axiosInstance.get("/accounts");
+export async function getAllAccounts(status?: accountStatuses): Promise<Account[]> {
+    const res = await axiosInstance.get("/accounts", { params: status ? { status } : undefined });
     return res.data;
 }
 
@@ -26,14 +28,12 @@ export async function createAccount(
     accountName: string | null,
     accountType: AccountTypes,
     initialDeposit?: number,
-    interestRate?: number
 ): Promise<Account> {
     const res = await axiosInstance.post("/accounts", {
         customerId,
         accountName,
         accountType,
         initialDeposit,
-        interestRate
     });
     return res.data;
 }
@@ -44,6 +44,11 @@ export async function getAccount(id: number): Promise<Account> {
 }
 
 export async function closeAccount(id: number): Promise<Account> {
-    const res = await axiosInstance.post(`/accounts/${id}/close`);
+    const res = await axiosInstance.post(`/accounts/${id}/close`, id);
     return res.data;
+}
+
+export async function getAccountTypes() {
+    const res = await axiosInstance.get("/account-types");
+    return res.data
 }
