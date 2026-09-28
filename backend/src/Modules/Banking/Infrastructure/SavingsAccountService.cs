@@ -19,15 +19,18 @@ public class SavingsAccountService : ISavingsAccountService
     private readonly ILogger<SavingsAccountService> _logger;
     private readonly ISavingsAccountRepository _repo;
     private readonly IAccountTypeConfigRepository? _accountTypeConfigRepo;
+    private readonly ITransactionRepository? _txRepo;
 
     public SavingsAccountService(
         ISavingsAccountRepository repo, 
         ILogger<SavingsAccountService> logger,
-        IAccountTypeConfigRepository? accountTypeConfigRepo = null)
+        IAccountTypeConfigRepository? accountTypeConfigRepo = null,
+        ITransactionRepository? txRepo = null)
     {
         _repo = repo;
         _logger = logger;
         _accountTypeConfigRepo = accountTypeConfigRepo;
+        _txRepo = txRepo;
     }
 
     public async Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -95,9 +98,24 @@ public class SavingsAccountService : ISavingsAccountService
 
         var entity = normalizedRequest.ToDomain();
         entity.InterestRate = rate;
-        await _repo.CreateAsync(entity, cancellationToken);
-        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}) for customer {CustomerId}", 
-            entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, entity.CustomerId);
+        var createdId = await _repo.CreateAsync(entity, cancellationToken);
+        entity.Id = createdId;
+
+        if (request.InitialDeposit > 0 && _txRepo != null)
+        {
+            var initialEntry = new LedgerEntry
+            {
+                AccountId = entity.Id,
+                Type = "deposit",
+                Amount = request.InitialDeposit,
+                Label = "Initial insättning",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _txRepo.CreateAsync(initialEntry, cancellationToken);
+        }
+
+        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}, initialDeposit={InitialDeposit}) for customer {CustomerId}", 
+            entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, request.InitialDeposit, entity.CustomerId);
         return entity.ToResponse();
     }
 

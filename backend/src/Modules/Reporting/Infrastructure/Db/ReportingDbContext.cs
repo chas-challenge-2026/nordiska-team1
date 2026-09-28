@@ -8,6 +8,7 @@ public sealed class ReportingDbContext(
     : DbContext(options)
 {
     public DbSet<TaxReport> TaxReports => Set<TaxReport>();
+    public DbSet<TaxReportJob> TaxReportJobs => Set<TaxReportJob>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

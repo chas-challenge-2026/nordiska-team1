@@ -403,6 +403,25 @@ public class DbInitializer
             }
             await db.SaveChangesAsync();
         }
+
+        // 3. Ensure all accounts with positive balance have matching initial ledger entries (ADR 0001 Ledger Pattern sync)
+        var allAccounts = await db.SavingsAccounts.ToListAsync();
+        foreach (var acc in allAccounts)
+        {
+            var hasEntries = await db.LedgerEntries.AnyAsync(l => l.AccountId == acc.Id && !l.IsPlanned);
+            if (!hasEntries && acc.Balance > 0)
+            {
+                db.LedgerEntries.Add(new LedgerEntry
+                {
+                    AccountId = acc.Id,
+                    Type = "deposit",
+                    Amount = acc.Balance,
+                    Label = "Startsaldo / Initial insättning",
+                    CreatedAt = acc.CreatedAt
+                });
+            }
+        }
+        await db.SaveChangesAsync();
     }
 
     private static async Task SeedNotificationsAsync(BankingDbContext db)
