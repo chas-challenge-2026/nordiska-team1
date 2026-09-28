@@ -3,26 +3,31 @@
 
 # Stage 1: Build Native C++ PDF Generator & C API
 FROM gcc:13-bookworm AS native-builder
-WORKDIR /src/native/pdf_generator
+WORKDIR /src
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
+    git \
     pkg-config \
     libcairo2-dev \
     libhpdf-dev \
     nlohmann-json3-dev \
+    libssl-dev \
+    zlib1g-dev \
+    libsimdjson-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Provide CMake config bridge for Debian's system libhpdf
 RUN mkdir -p /usr/local/lib/cmake/unofficial-libharu && \
     printf 'add_library(unofficial::libharu::hpdf UNKNOWN IMPORTED)\nfind_library(HPDF_LIB NAMES hpdf libhpdf REQUIRED)\nset_target_properties(unofficial::libharu::hpdf PROPERTIES IMPORTED_LOCATION "${HPDF_LIB}" INTERFACE_INCLUDE_DIRECTORIES "/usr/include")\n' > /usr/local/lib/cmake/unofficial-libharu/unofficial-libharu-config.cmake
 
-COPY native/pdf_generator/ ./
+COPY native/ native/
+WORKDIR /src/native/pdf_generator
 
 RUN cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=OFF \
-    && cmake --build build --config Release --target nordiska_document_c_api
+    && cmake --build build --config Release --target nordiska_pdf_generator_c_api
 
 # Stage 2: Build React frontend
 FROM node:20-alpine AS frontend-builder
@@ -67,8 +72,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=backend-builder /app/publish .
 COPY --from=frontend-builder /app/frontend/dist ./wwwroot
-COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_document_c_api.so /usr/local/lib/
-RUN ldconfig
+COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_pdf_generator_c_api.so /usr/local/lib/
+RUN ln -s /usr/local/lib/libnordiska_pdf_generator_c_api.so /usr/local/lib/libnordiska_document_c_api.so && ldconfig
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
