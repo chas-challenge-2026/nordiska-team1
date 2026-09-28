@@ -9,7 +9,7 @@ import { useGetAccounts } from "../../hooks/useAccounts";
 export default function AccountsCard() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { data: accounts, isPending, isError } = useGetAccounts();
+    const { data: accounts, isPending, isError } = useGetAccounts("active");
 
     return (
         <OverviewCard>

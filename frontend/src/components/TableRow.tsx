@@ -79,7 +79,7 @@ export default function TableRow(props: RowProps) {
             });
             return (
                 <TwoLineRow
-                    detail={<>{props.accountType} <span className="font-semibold">{props.accountNumber}</span></>}
+                    detail={<>{t(`accounts-route.account-type-${props.accountType}`)} <span className="font-semibold">{props.accountNumber}</span></>}
                     detailRight={<>{t("generic.interest")} <strong>{interest}</strong></>}
                     name={props.accountName}
                     amount={formatCurrency(props.accountBalance)}
