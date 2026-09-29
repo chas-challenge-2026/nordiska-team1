@@ -14,15 +14,10 @@
         "all": "All",
         "yes": "Yes",
         "no": "No",
-        "previous": "Previous",
-        "next": "Next",
-        "page": "Page",
-
         "account": "Account",
         "savings-account": "Savings account",
         "interest": "Interest",
         "filter": "Filter",
-
         "showing": "Showing",
         "of": "of",
         "transactions": "transactions",
