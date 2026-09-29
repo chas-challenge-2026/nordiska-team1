@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 type LanguageButtonProps = {
-    onLanguageChange: () => void;
+    onLanguageChange?: () => void;
 }
 
 export default function LanguageButton({onLanguageChange}: LanguageButtonProps) {
@@ -12,7 +12,7 @@ export default function LanguageButton({onLanguageChange}: LanguageButtonProps) 
             i18n.language === "sv" ? "en" : "sv"
         );
 
-        onLanguageChange();
+        onLanguageChange?.();
     };
 
     return (
