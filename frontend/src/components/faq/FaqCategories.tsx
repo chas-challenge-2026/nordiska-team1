@@ -13,6 +13,8 @@ const FaqCategories = ({
     error,
     onSelect,
 }: FaqCategoriesProps) => {
+    const {t} = useTranslation();
+
     if (error) {
         return (
             <section className="flex flex-wrap gap-2 justify-center mt-4 max-w-5xl mx-auto">
@@ -22,9 +24,7 @@ const FaqCategories = ({
             </section>
         );
     }
-
-    const {t} = useTranslation();
-
+    
     return (
         <section className="flex flex-wrap gap-2 justify-center mt-4 max-w-5xl mx-auto">
             <button
