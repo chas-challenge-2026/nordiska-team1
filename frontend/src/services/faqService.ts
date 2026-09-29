@@ -45,6 +45,5 @@ export async function getFaqCategories(
 export async function logHelpCount(id:number, action: HelpAction): Promise<number> {
     const res = await axiosInstance.patch(`faqs/${id}/${action}`);
 
-    console.log(res.data.helpfulCount)
     return res.status
 } 
