@@ -158,3 +158,18 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
   ```bash
   cd infra && docker compose up -d --build app
   ```
+
+---
+
+## 11. Merged `origin/develop` & Conflict Resolution
+
+### What I changed and why:
+- **Merge conflict in `backend/src/Modules/Reporting/Infrastructure/PdfReportGenerator.cs`:**
+  - `origin/develop` had an outdated stub calling `nordiska_document_generate_json`.
+  - Kept our working implementation using `PdfGenerationService`, `CustomerBatchEnvelope`, and localized Swedish formatting for both `annual_tax_report` and `account_statement`, plus ZIP batch generation.
+- **Merge conflict in `backend/src/Modules/Reporting/Infrastructure/TaxReportService.cs`:**
+  - Integrated develop's new background report job architecture (`ITaxReportJobRepository`, `IReportFileStorage`, and `IReportDataBuilder`).
+  - Preserved our direct document generation methods (`GenerateDirectStatementAsync`, `GenerateCustomerArchiveAsync`) and accurate balance calculation logic (`openingBalance = closingBalance - sum(transactions)`).
+- **Navigation in `frontend/src/components/PageNavigation.tsx`:**
+  - Retained both desktop and mobile "Dokument" navigation links alongside develop's navigation updates.
+
