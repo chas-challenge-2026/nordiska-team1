@@ -5,7 +5,12 @@ import { useTranslation } from "react-i18next";
 
 type RelatedView = "updateInfo" | "changeLanguage" | "";
 
-const FaqSidebar = () => {
+type FaqSidebarProps = {
+    onLanguageChange: () => void;
+};
+
+
+const FaqSidebar = ({onLanguageChange}: FaqSidebarProps) => {
     const [showRelated, setShowRelated] =
         useState<RelatedView>("");
     const {t} = useTranslation();
@@ -69,7 +74,7 @@ const FaqSidebar = () => {
                         </p>
 
                         <div className="flex items-center invert">
-                            <LanguageButton />
+                            <LanguageButton onLanguageChange={onLanguageChange} />
                         </div>
                     </div>
                 )}

@@ -58,6 +58,10 @@ const FaqPage = () => {
     } = useFaqCategories(i18n.language);
 
     // Handlers
+    const handleLanguageChange = () => {
+        setCategory("");
+    };
+
     const handleCategoryChange = (
         newCategory: string
     ) => {
@@ -156,7 +160,7 @@ const FaqPage = () => {
 
                 </section>
 
-                <FaqSidebar />
+                <FaqSidebar onLanguageChange={handleLanguageChange} />
             </div>
         </main>
     );
