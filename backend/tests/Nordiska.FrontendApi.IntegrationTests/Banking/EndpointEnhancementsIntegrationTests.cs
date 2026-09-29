@@ -111,4 +111,125 @@ public class EndpointEnhancementsIntegrationTests : IClassFixture<CustomAuthWebA
         customer!.PhoneNumber.Should().Be("070-1234567");
         customer.UpdatedAt.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task Accounts_CreateWithInitialDeposit_CreatesLedgerDepositAndMatchesBalance()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        // 1. Create a new account with InitialDeposit = 800 SEK
+        var createReq = new OpenSavingsAccountRequest(
+            CustomerId: 1,
+            AccountNumber: "NOR-887766",
+            AccountType: "standard",
+            InitialDeposit: 800m,
+            InterestRate: 0.025m,
+            AccountName: "Mina sparade pengar");
+
+        var createResp = await client.PostAsJsonAsync("/api/accounts", createReq);
+        createResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await createResp.Content.ReadFromJsonAsync<SavingsAccountResponse>();
+        created.Should().NotBeNull();
+        created!.Balance.Should().Be(800m);
+
+        // 2. Query balance endpoint to verify ledger calculation
+        var balanceResp = await client.GetAsync($"/api/transactions/balance/{created.Id}");
+        balanceResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var verifiedBalance = await balanceResp.Content.ReadFromJsonAsync<decimal>();
+        verifiedBalance.Should().Be(800m);
+    }
+
+    [Fact]
+    public async Task Transfer_BetweenOwnAccounts_Succeeds_AndUpdatesBalances()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        // 1. Get user accounts (Anna has account 1 and 2 in test fixture)
+        var accResp = await client.GetAsync("/api/accounts");
+        var accounts = await accResp.Content.ReadFromJsonAsync<List<SavingsAccountResponse>>();
+        accounts.Should().NotBeNull();
+        accounts!.Count.Should().BeGreaterThanOrEqualTo(2);
+
+        var sourceAcc = accounts[0];
+        var targetAcc = accounts[1];
+
+        // Ensure source has funds
+        var sourceBalResp = await client.GetAsync($"/api/transactions/balance/{sourceAcc.Id}");
+        var sourceBalance = await sourceBalResp.Content.ReadFromJsonAsync<decimal>();
+
+        if (sourceBalance < 100m)
+        {
+            // Deposit funds first if needed
+            await client.PostAsJsonAsync("/api/transactions", new TransactionRequest(sourceAcc.Id, "deposit", 500m, "Top up"));
+        }
+
+        // 2. Execute transfer of 100 SEK
+        var transferReq = new TransferRequest(
+            SourceAccountId: sourceAcc.Id,
+            TargetAccountId: targetAcc.Id,
+            Amount: 100m,
+            Label: "Överföring till sparkonto");
+
+        var transferResp = await client.PostAsJsonAsync("/api/transactions/transfer", transferReq);
+        var transferContent = await transferResp.Content.ReadAsStringAsync();
+        transferResp.StatusCode.Should().Be(HttpStatusCode.OK, because: transferContent);
+
+        var txResult = await transferResp.Content.ReadFromJsonAsync<TransactionResponse>();
+        txResult.Should().NotBeNull();
+        txResult!.Amount.Should().Be(-100m);
+        txResult.AccountId.Should().Be(sourceAcc.Id);
+        txResult.TargetAccountId.Should().Be(targetAcc.Id);
+    }
+
+    [Fact]
+    public async Task Transfer_InsufficientFunds_Returns_409Conflict()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var accResp = await client.GetAsync("/api/accounts");
+        var accounts = await accResp.Content.ReadFromJsonAsync<List<SavingsAccountResponse>>();
+        accounts.Should().NotBeNull();
+        accounts!.Count.Should().BeGreaterThanOrEqualTo(2);
+
+        // Attempt to transfer an impossibly large amount
+        var transferReq = new TransferRequest(
+            SourceAccountId: accounts[0].Id,
+            TargetAccountId: accounts[1].Id,
+            Amount: 99999999m,
+            Label: "Huge transfer");
+
+        var transferResp = await client.PostAsJsonAsync("/api/transactions/transfer", transferReq);
+        transferResp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Transfer_ZeroAmountOrSameAccount_Returns_400BadRequest()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var accResp = await client.GetAsync("/api/accounts");
+        var accounts = await accResp.Content.ReadFromJsonAsync<List<SavingsAccountResponse>>();
+        accounts.Should().NotBeNull();
+        var accId = accounts!.First().Id;
+
+        // Same source and target
+        var sameAccReq = new TransferRequest(
+            SourceAccountId: accId,
+            TargetAccountId: accId,
+            Amount: 50m,
+            Label: "Same account transfer");
+
+        var sameAccResp = await client.PostAsJsonAsync("/api/transactions/transfer", sameAccReq);
+        sameAccResp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Zero amount
+        var zeroAmountReq = new TransferRequest(
+            SourceAccountId: accounts[0].Id,
+            TargetAccountId: accounts[1].Id,
+            Amount: 0m,
+            Label: "Zero transfer");
+
+        var zeroResp = await client.PostAsJsonAsync("/api/transactions/transfer", zeroAmountReq);
+        zeroResp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }

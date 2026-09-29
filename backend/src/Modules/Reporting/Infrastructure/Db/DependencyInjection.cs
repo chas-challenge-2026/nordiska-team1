@@ -14,7 +14,10 @@ public static class DependencyInjection
     {
         services.AddSingleton<PdfGenerationService>();
         services.AddScoped<IPdfReportGenerator, PdfReportGenerator>();
+        services.AddScoped<IReportDataBuilder, ReportDataBuilder>();
+        services.AddSingleton<IReportFileStorage, LocalReportFileStorage>();
         services.AddScoped<ITaxReportService, TaxReportService>();
+        services.AddScoped<ITaxReportJobRepository, TaxReportJobRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
 
         return services.AddModulePostgresDbContext<ReportingDbContext>(
