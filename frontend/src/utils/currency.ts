@@ -1,6 +1,6 @@
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("sv-SE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value) + " kr";
+const PLAIN = new Intl.NumberFormat(undefined, { style: "currency", currency: "SEK" });
+const SIGNED = new Intl.NumberFormat(undefined, { style: "currency", currency: "SEK", signDisplay: "exceptZero" });
+
+export function formatCurrency(value: number, { signed = false } = {}): string {
+    return (signed ? SIGNED : PLAIN).format(value);
 }

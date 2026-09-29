@@ -55,7 +55,6 @@ export default function PlannedTransfersPanel({
                     {upcomingTransfers.map((planned) => (
                         <TableRow
                             key={planned.localId}
-                            id={planned.localId}
                             rowType="planned"
                             plannedDate={planned.date}
                             plannedName={planned.name}
