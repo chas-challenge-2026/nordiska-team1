@@ -12,6 +12,11 @@
         "date": "Datum",
         "reset": "Återställ",
         "all": "Alla",
+        "yes": "Ja",
+        "no": "Nej",
+        "previous": "Föregående",
+        "next": "Nästa",
+        "page": "Sida",
 
         "account": "Konto",
         "savings-account": "Sparkonto",
@@ -33,7 +38,9 @@
         "page-nav": "Huvudnavigation",
         "mobile-menu-close": "Stäng meny",
         "mobile-menu-open": "Öppna meny",
-        "mobile-nav": "Mobilnavigation"
+        "mobile-nav": "Mobilnavigation",
+        "previous-page": "Föregående sida",
+        "next-page": "Nästa sida"
     },
     "welcome-route": {
         "title": "Kundportalen",
@@ -309,5 +316,57 @@
         "minutes": "minuter",
         "and": "och",
         "seconds": "sekunder"
+    },
+    "faq": {
+        "faq-header": {
+            "title": "Hur kan vi hjälpa dig idag?",
+            "paragraph": "Sök eller hitta vanliga frågor efter kategori"
+        },
+        "faq-search": {
+            "placeholder-category": "Sök i kategori",
+            "placeholder-no-category": "Sök i alla kategorier",
+            "aria-label": "Rensa sökning"
+        },
+        "faq-filter-info": {
+            "no-filter": "Filtrera vanliga frågor efter kategori eller sök efter din fråga i sökfältet.",
+            "category-filter": "Visar resultat i kategori:",
+            "search-filter": "Visar resultat som matchar:",
+            "in-category": "i kategori:"
+        },
+        "faq-list": {
+            "loading": "Laddar vanliga frågor",
+            "error": "Kunde inte hämta vanliga frågor.",
+            "no-results": "Inga resultat matchade din sökning."
+        },
+        "faq-feedback": {
+            "question": "Hjälpte det här svaret dig?",
+            "feedback": "Tack för ditt svar!",
+            "no-results": "Inga resultat matchade din sökning.",
+            "aria-label": {
+                "div": "Bedöm svaret",
+                "btn-yes": "Ja, svaret hjälpte mig",
+                "btn-no": "Nej, svaret hjälpte inte mig"
+
+            }
+        },
+        "faq-sidebar": {
+            "related-title": "Relaterat",
+            "close-btn-aria-label": "Stäng relaterad information",
+            "question": {
+                "change-language": "How do I change language?",
+                "update-info": "Hur uppdaterar jag mina kontaktuppgifter?"
+            },
+            "answer": {
+                "change-language": "Navigate to the menu in the top right corner and choose your language at the bottom of the open menu. Or simply change language directly below:",
+                "update-info": "Navigera till menyn i övre högra hörnet och välj \"Inställningar\", eller navigera direkt via länken nedan.",
+                "update-info-action": "Uppdatera kontaktuppgifter"
+
+            },
+            "no-answer-title": "Hittar du inte svaret?",
+            "contact-us": "Kontakta oss"
+        }
+    },
+    "faq-page": {
+        "categories-error": "Kunde inte hämta kategorier"
     }
 }

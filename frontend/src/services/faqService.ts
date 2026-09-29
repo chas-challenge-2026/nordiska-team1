@@ -1,25 +1,50 @@
 import axiosInstance from "./axiosInstance";
+import type { FaqResponse } from "../types/types";
 
-
-export type Faq = {
-    id: number;
-    question: string | null;
-    answer: string | null;
-    category: string | null;
-    helpfulCount: number;
-    keywords: string[] | null;
-};
-
-type  FaqSearchParams = {
-    searchTerm?: string;
+export type GetFaqParams = {
+    language: string;
+    page: number;
+    pageSize: number;
+    search?: string;
     category?: string;
     keyword?: string;
-}
+};
 
-export async function searchFaqs(params?: FaqSearchParams) {
-    const res = await axiosInstance.get<Faq[]>("faqs/search", {
-        params,
-    })
+type HelpAction = "increase" | "decrease";
+
+export async function getFaqs(
+    params: GetFaqParams
+): Promise<FaqResponse> {
+    const res = await axiosInstance.get<FaqResponse>(
+        `faqs/${params.language}`,
+        {
+            params: {
+                page: params.page,
+                pageSize: params.pageSize,
+                ...(params.search && { search: params.search }),
+                ...(params.category && { category: params.category }),
+                ...(params.keyword && { keyword: params.keyword }),
+            },
+        }
+    );
 
     return res.data;
 }
+
+export async function getFaqCategories(
+    language: string
+): Promise<string[]> {
+    const res = await axiosInstance.get<string[]>(
+        `faqs/${language}/categories`
+    );
+
+    return res.data;
+}
+
+
+export async function logHelpCount(id:number, action: HelpAction): Promise<number> {
+    const res = await axiosInstance.patch(`faqs/${id}/${action}`);
+
+    console.log(res.data.helpfulCount)
+    return res.status
+} 

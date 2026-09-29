@@ -1,215 +1,165 @@
-import { useState, useEffect} from "react";
-import Collapsible from "../components/Collapsible";
-import { searchFaqs, type Faq } from "../services/faqService";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
+import { logHelpCount } from "../services/faqService";
+import { useFaqs } from "../hooks/useFaqs";
+import { useFaqCategories } from "../hooks/useFaqCategories";
 
-// BEHÖVER 
+import FaqHeader from "../components/faq/FaqHeader";
+import FaqFilterInfo from "../components/faq/FaqFilterInfo";
+import FaqList from "../components/faq/FaqList";
+import FaqPagination from "../components/faq/FaqPagination";
+import FaqSidebar from "../components/faq/FaqSidebar";
 
-// public record SearchFaqRequest(
-//     [param: StringLength(500)]
-//     string? SearchTerm = null,
-//     [param: StringLength(200)]
-//     string? Category = null,
-//     [param: StringLength(200)]
-//     string? Keyword = null
- 
-// );
+type FeedbackAction = "increase" | "decrease";
 
-// i "FaqDtos.cs" för att fungera
+const FaqPage = () => {
+    const { i18n,t } = useTranslation();
 
+    // Search & filter state
+    const [page, setPage] = useState(1);
+    const [searchInput, setSearchInput] = useState("");
+    const [search, setSearch] = useState("");
+    const [category, setCategory] = useState("");
 
-export default function FaqPage(){
+    // FAQ state
+    const [openFaqId, setOpenFaqId] =
+        useState<number | null>(null);
 
+    const [selectedFeedback, setSelectedFeedback] =
+        useState<Record<number, FeedbackAction>>({});
 
-    const CATEGORIES = ["Ränta", "Insättning", "Uttag", "Rapporter", "Villkor", "Konto"]
-
-    const [selectedCategory, setSelectedCategory] = useState("");
-    const [searchField, setSearchField] = useState("");
-
-
-    const [faqs, setFaqs] = useState<Faq[]>([]);
-    const [openFaqId, setOpenFaqId] = useState<number | null>(null);
-    const [error, setError] = useState("");
-
-
+    // Search debounce
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(searchInput.trim());
+            setPage(1);
+        }, 400);
 
-        async function getFaqs() {
-            try {
-                const data = await searchFaqs({
-                    category: selectedCategory || undefined,
-                });
+        return () => clearTimeout(timer);
+    }, [searchInput]);
 
-                setFaqs(data);
-            } catch (error) {
-                console.log(error);
-                setError("Misslyckades vid hämtning av data");
-            }
+    // FAQ data
+    const {
+        data,
+        isLoading,
+        isError,
+    } = useFaqs(
+        i18n.language,
+        page,
+        search,
+        category
+    );
+
+    // Categories
+    const {
+        data: categories = [],
+        isError: categoriesError,
+    } = useFaqCategories(i18n.language);
+
+    // Handlers
+    const handleCategoryChange = (
+        newCategory: string
+    ) => {
+        setCategory(newCategory);
+        setPage(1);
+        setOpenFaqId(null);
+    };
+
+    const handleHelpCount = async (
+        id: number,
+        action: FeedbackAction
+    ) => {
+        try {
+            await logHelpCount(id, action);
+
+            setSelectedFeedback((current) => ({
+                ...current,
+                [id]: action,
+            }));
+        } catch (error) {
+            console.error(
+                "Kunde inte uppdatera helpcount",
+                error
+            );
         }
+    };
 
-        getFaqs();
-    }, [searchField, selectedCategory]);
+    const handleOpenChange = (
+        id: number,
+        open: boolean
+    ) => {
+        setOpenFaqId(open ? id : null);
+    };
 
- 
+    const faqs = data?.items ?? [];
+
     return (
-        <>
-        
-        <main className="relative min-h-[calc(100vh-75px)] text-dark-navy ">
-            
-            <div className="bg-dark-navy pt-10 pb-5">
+        <main className="relative min-h-[calc(100vh-75px)] flex flex-col bg-light-gray text-dark-navy">
 
-                <h2 className="text-white text-4xl font-montserrat-alternates text-center font-semibold">Hur kan vi hjälpa dig idag?</h2>
-                    <p className="text-white font-montserrat-alternates text-sm text-center mt-2">
-                        Sök eller hitta vanliga frågor efter kategori
-                    </p>
+            <FaqHeader
+                searchInput={searchInput}
+                category={category}
+                categories={categories}
+                categoriesError={
+                    categoriesError
+                        ? t("faq-page.categories-error")
+                        : undefined
+                }
+                onSearchChange={setSearchInput}
+                onCategoryChange={handleCategoryChange}
+            />
 
-                <section className="w-[50%] mx-auto">
+            <div className="flex-1 w-full flex flex-col lg:flex-row gap-5 p-4 sm:p-5">
 
+                <section className="w-full lg:flex-[2] bg-white shadow-md p-4 sm:p-5">
 
-                    <div className="relative w-full mx-auto my-2">
+                    <FaqFilterInfo
+                        category={category}
+                        searchInput={searchInput}
+                    />
 
-                        {/* 
-                        INGEN SÖKFUNKTION PÅ DETTA ÄN. BARA STATE 
-                        Ändrade med hjälp av AI i "FaqRepository.cs" -> rad 85->110 för att den ska söka på individuella ord i strängen och inte hela sammansatta strängen ordagrant.*/}
+                    <FaqList
+                        faqs={faqs}
+                        isLoading={isLoading}
+                        isError={isError}
+                        openFaqId={openFaqId}
+                        selectedFeedback={selectedFeedback}
+                        onOpenChange={handleOpenChange}
+                        onFeedback={handleHelpCount}
+                    />
 
-                        <input
-                            type="text"
-                            placeholder="Sök"
-                            value={searchField}
-                            onChange={(e) => setSearchField(e.target.value)}
-                            className="w-full bg-white rounded-2xl py-2 pl-3 pr-9"
+                    {data && (
+                        <FaqPagination
+                            page={data.page}
+                            totalPages={data.totalPages}
+                            hasPreviousPage={
+                                data.hasPreviousPage
+                            }
+                            hasNextPage={
+                                data.hasNextPage
+                            }
+                            onPrevious={() =>
+                                setPage(
+                                    (currentPage) =>
+                                        currentPage - 1
+                                )
+                            }
+                            onNext={() =>
+                                setPage(
+                                    (currentPage) =>
+                                        currentPage + 1
+                                )
+                            }
                         />
-
-                        {searchField && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchField("")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-primary-blue text-2xl hover:text-dark-navy"
-                                aria-label="Rensa sökning"
-                            >
-                                ×
-                            </button>
-                        )}
-                    </div>
-                </section>
-                
-
-                <section className="flex gap-2 justify-center mt-4">
-
-                    {CATEGORIES.map((category) => (
-                    <button
-                        key={category}
-                        type="button"
-                        onClick={() => {
-                            setSelectedCategory(category);
-                            setOpenFaqId(null);
-                        }}
-                        className={`cursor-pointer rounded-3xl border-2 px-3 py-1 text-sm hover:text-dark-navy hover:bg-nordiska-orange
-                            ${selectedCategory === category
-                                    ? "bg-nordiska-orange"
-                                    : "border-nordiska-orange"
-                            }
-                            ${selectedCategory === category
-                                    ? "text-dark-navy border-nordiska-orange"
-                                    : "text-white"
-                            }
-                            
-                            `}
-                    >
-                        {category}
-                    </button>
-                ))}
-
-                <button
-                        type="button"
-                        onClick={() => {
-                            setSelectedCategory("");
-                        }}
-                        className="cursor-pointer uppercase px-3 py-1 text-sm text-white ml-6"
-                    >
-                        Rensa
-                    </button>
-
-
-                </section>
-                
-            </div>
-
-            <div className="bg-light-gray flex p-5 gap-10 h-full">
-
-                
-
-                <div className="p-4 pb-6 flex-2 bg-white shadow-md">
-
-
-                    <div className="border-b border-nordiska-orange text-sm pb-3 mb-2">
-                        {selectedCategory ? (
-                            <p >
-                                Visar resultat i kategori:{" "}
-                                <span className="font-semibold">
-                                    {selectedCategory}
-                                </span>
-                            </p>
-                        ) : (
-                            <p>
-                                Filtrera vanliga frågor efter kategori eller sök efter din fråga i sökfältet
-                            </p>
-                        )}
-                    </div>
-                    
-
-                    {error ? (
-                        <p className="text-error mt-8 font-semibold mb-2">
-                            {error}
-                        </p>
-                    ) : (
-                        faqs.map((faq) => (
-                            <Collapsible
-                                key={faq.id}
-                                title={faq.question ?? ""}
-                                isOpen={openFaqId === faq.id}
-                                onOpenChange={(open) =>
-                                    setOpenFaqId(open ? faq.id : null)
-                                }
-                            >
-                                {() => (
-                                    <p>{faq.answer}</p>
-                                )}
-                            </Collapsible>
-                        ))
                     )}
 
+                </section>
 
-
-                </div>
-                <div className="flex-1">
-                    <article className="bg-dark-navy shadow-md p-3 mb-5">
-                        <h3 className="text-white">Hittar du inte svaret?</h3>
-
-                    </article>
-                    <article className="bg-white shadow-md p-3">
-                        <h3>Relaterat</h3>
-
-                        {/* 
-
-                        Här tänkte jag typ:
-
-                        Hur uppdaterar jag mina kontaktuppgifter?
-                        -> Länk till kontoinställningar
-
-                        Hur ändrar jag språk?
-                        -> Länk till ändra språk?  
-
-                        */}
-
-                    </article>
-                </div>
-
+                <FaqSidebar />
             </div>
-
-            
         </main>
-        
-        </>
-    )
-}
+    );
+};
+
+export default FaqPage;
