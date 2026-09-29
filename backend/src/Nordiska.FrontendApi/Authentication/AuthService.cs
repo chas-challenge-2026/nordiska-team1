@@ -207,6 +207,7 @@ public class AuthService : IAuthService
             PersonalNum = cleanPersonalNum,
             Email = cleanEmail,
             PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+            PasswordHash = string.Empty,
             CreatedAt = DateTime.UtcNow
         };
 
