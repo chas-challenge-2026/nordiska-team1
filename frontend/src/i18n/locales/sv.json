@@ -28,7 +28,10 @@
         "balance": "Saldo",
         "tax-report": "Skatteunderlag",
         "log-out": "Logga ut",
-        "stay": "Stanna kvar"
+        "stay": "Stanna kvar",
+        "next": "Nästa",
+        "previous": "Föregående",
+        "page": "Sida"
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -79,7 +82,21 @@
         "loading-transactions": "Laddar transaktioner...",
         "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner",
         "showing-count_one": "Visar {{shown}} av {{count}} transaktion",
-        "showing-count_other": "Visar {{shown}} av {{count}} transaktioner"
+        "showing-count_other": "Visar {{shown}} av {{count}} transaktioner",
+        "filter-aria_one": "Filter, {{count}} aktivt",
+        "filter-aria_other": "Filter, {{count}} aktiva",
+        "accounts-aria_one": "Konton, {{count}} valt",
+        "accounts-aria_other": "Konton, {{count}} valda",
+        "active-count_one": "{{count}} aktivt",
+        "active-count_other": "{{count}} aktiva",
+        "selected-of": "{{selected}} av {{total}} valda",
+        "show-count_one": "Visa {{count}} transaktion",
+        "show-count_other": "Visa {{count}} transaktioner",
+        "deselect-all": "Avmarkera alla",
+        "search-account": "Sök kontonummer",
+        "no-account-match": "Inga konton matchar sökningen.",
+        "select-account": "Välj minst ett konto för att se transaktioner.",
+        "no-transactions": "Inga transaktioner hittades."
     },
     "accounts-route": {
         "yearly-interest": "Beräknad årsränta",

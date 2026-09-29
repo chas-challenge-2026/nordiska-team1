@@ -3,16 +3,16 @@ import PageNavigation from "../components/PageNavigation";
 // import PageFooter from "../components/PageFooter";
 
 export default function DesktopLayout() {
-  return (
-    <div className="flex min-h-dvh flex-col">
-      <PageNavigation />
+    return (
+        <div className="flex flex-1 flex-col">
+            <PageNavigation />
 
-      {/* ANIMATION PÅ DETTA */}
-      <main className="flex flex-1 w-full pb-[60px] md:pb-10">
-        <Outlet />
-      </main>
+            {/* ANIMATION PÅ DETTA */}
+            <main className="flex flex-1 min-h-0 w-screen mb-[60px] md:mb-10">
+                <Outlet />
+            </main>
 
-      {/* <PageFooter /> */}
-    </div>
-  );
+            {/* <PageFooter /> */}
+        </div>
+    );
 }
