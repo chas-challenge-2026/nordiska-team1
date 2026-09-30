@@ -45,7 +45,7 @@ native/pdf_generator/
 ├── cli/                          # Standalone CLI binary (pdf_generator)
 ├── src/benchmark/                # Multi-threaded performance harness
 ├── tests/                        # CTest automated test suites
-├── tools/                        # Code formatters & synthetic data generator
+├── tools/                        # Code formatters, synthetic data generator & OpenSSL setup
 └── docs/                         # Golden customer batch specification
 ```
 
@@ -118,7 +118,17 @@ GeneratedPdfs / C ABI Delivery Callback
 - C++23 capable compiler (GCC 13+ or Clang 17+)
 - CMake 3.25+
 - Ninja build system
-- Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
+- OpenSSL >= 3.2.0 (Required for CMS SignedData digest signing with `CMS_final_digest`)
+  - *Ubuntu / Debian LTS Notice*: Most LTS distributions ship OpenSSL 3.0.x by default. On Ubuntu 22.04/24.04 or Debian 12 developer workstations, run the provided local setup script to build and install OpenSSL 3.3.2 into `~/.local/openssl-3.3/` (isolated, non-root, no system changes):
+    ```bash
+    ./tools/setup-openssl-3.3.sh
+    ```
+    CMake automatically auto-detects this path when configuring.
+- Third-party libraries:
+  - ZLIB (system package: `zlib1g-dev`)
+  - Cairo 2D graphics (system package: `libcairo2-dev`)
+  - JSON parsers: `simdjson` and `nlohmann-json` (system packages or auto-fetched via CMake `FetchContent`)
+  - PDF backend: `libharu` (system package `libhpdf-dev` or auto-fetched via CMake `FetchContent`)
 
 ### Build Presets (`CMakePresets.json`)
 
@@ -329,5 +339,5 @@ gdb -p <PID>
 ## 9. PDF Signature Preparation and Signing
 
 See [PDF signing integration](docs/pdf_signing_integration.md) for capacity units,
-the C signer dependency, error/ownership contracts, and current stub limitations.
+the C signer dependency, error/ownership contracts, and test/verification workflows.
 
