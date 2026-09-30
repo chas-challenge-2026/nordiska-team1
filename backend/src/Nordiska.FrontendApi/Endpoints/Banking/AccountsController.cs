@@ -6,16 +6,12 @@ using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
-using Asp.Versioning;
 namespace Nordiska.FrontendApi.Endpoints.Banking;
 
 /// <summary>
 /// API endpoints for managing customer bank accounts and account information.
 /// </summary>
 [ApiController]
-[ApiVersion("2.0")]
-[Route("api/v{version:apiVersion}/accounts")]
-[Route("api/v{version:apiVersion}/savingsaccounts")]
 [Route("api/accounts")]
 [Route("api/savingsaccounts")]
 [Tags("Accounts")]

@@ -10,7 +10,6 @@ using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
-using Asp.Versioning;
 
 namespace Nordiska.FrontendApi.Endpoints.Banking;
 
@@ -18,8 +17,6 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 /// API endpoints for managing customer profiles.
 /// </summary>
 [ApiController]
-[ApiVersion("2.0")]
-[Route("api/v{version:apiVersion}/customers")]
 [Route("api/customers")]
 [Authorize]
 public sealed class CustomersController : ControllerBase
