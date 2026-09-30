@@ -2,14 +2,18 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useUserStore } from "../store/userStore";
 import { useLogout } from "./useLogout";
 import { useTranslation } from "react-i18next";
+import { refreshSession } from "../services/authService";
 
 const INACTIVITY_TIME = 3 * 60 * 1000; // 3 min
 const WARNING_TIME = 2 * 60 * 1000; // 2 min
+const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minuter
 
 
 const WARNING_SECONDS = WARNING_TIME / 1000;
 
-export function useInactivityTimer() {
+export function useSessionActivity() {
+
+    // INACTIVITY states
     const {t} = useTranslation();
     const user = useUserStore((state) => state.user);
     const clearUser = useUserStore((state) => state.logout);
@@ -24,10 +28,29 @@ export function useInactivityTimer() {
     const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-
     const tabTitleRef = useRef(document.title);
     const tabTitleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // REFRESH states
+    const lastRefreshRef = useRef(0);
+
+    // ---------- CHECK REFRESH ----------
+    // kollar om aktivitet finns under var 10e min. Svar nej -> inactivity tar över
+    // just nu lyssnar denna på all aktivitet på hemsidan och stoppas av första if:en
+    // möjligt att spara aktivitet i en ref och bara kolla denna typ 1ggr/min för att minimera anrop? Ska fundera på detta.
+    const checkRefreshSession = useCallback(async () => {
+        const now = Date.now();
+
+        if (now - lastRefreshRef.current < REFRESH_INTERVAL) {return;}
+
+        try {
+            await refreshSession();
+
+            lastRefreshRef.current = now;
+        } catch (error) {
+            console.error("Could not refresh session", error);
+        }
+    }, []);
 
     // ---------- TAB-TITLE ALERTS ----------
     // Start
@@ -112,9 +135,12 @@ export function useInactivityTimer() {
     useEffect(() => {
         if (!user) return;
 
+        lastRefreshRef.current = Date.now();
+
         const handleActivity = () => {
             if (showWarningRef.current) return;
 
+            checkRefreshSession();
             resetTimer();
         };
 
@@ -130,7 +156,7 @@ export function useInactivityTimer() {
             });
         };
 
-    }, [user, resetTimer, startTimer, clearTimers]);
+    }, [user, resetTimer, startTimer, clearTimers, checkRefreshSession]);
 
     // ---------- ANVÄNDAR RESPONS ----------
     // Stanna kvar
