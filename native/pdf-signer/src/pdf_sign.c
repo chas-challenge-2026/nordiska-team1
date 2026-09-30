@@ -5,6 +5,20 @@
 #include <string.h>
 #include <openssl/cms.h>
 #include <stdio.h>
+#include <unistd.h>
+
+#if OPENSSL_VERSION_NUMBER < 0x30200000L
+/* Compatibility fallback for builds linking against OpenSSL < 3.2 */
+static int CMS_final_digest(CMS_ContentInfo *cms, const unsigned char *md,
+                            unsigned int mdlen, BIO *dcont, unsigned int flags) {
+  (void)cms;
+  (void)md;
+  (void)mdlen;
+  (void)dcont;
+  (void)flags;
+  return 0;
+}
+#endif
 
 /*---------------------------INTERNAL-----------------------------*/
 struct pdf_signer
@@ -137,6 +151,64 @@ pdf_sign_status_t pdf_signer_create(pdf_signer_t** out) {
   pdf_signer_t* signer = calloc(1, sizeof(*signer));
   if (!signer) {
     return PDF_SIGN_INTERNAL_ERROR;
+  }
+
+  const char* key_path = getenv("PDF_SIGNER_KEY_PATH");
+  const char* cert_path = getenv("PDF_SIGNER_CERT_PATH");
+
+  if (!key_path) {
+    if (access("/app/certs/signing_key.pem", R_OK) == 0) {
+      key_path = "/app/certs/signing_key.pem";
+      if (!cert_path && access("/app/certs/signing_cert.pem", R_OK) == 0) {
+        cert_path = "/app/certs/signing_cert.pem";
+      }
+    } else if (access("tests/data/private_key.pem", R_OK) == 0) {
+      key_path = "tests/data/private_key.pem";
+      if (!cert_path && access("tests/data/signing_cert.pem", R_OK) == 0) {
+        cert_path = "tests/data/signing_cert.pem";
+      }
+    }
+  }
+
+  if (key_path != NULL) {
+    if (!cert_path) {
+      cert_path = "tests/data/signing_cert.pem";
+    }
+
+    key_loader_config_t loader_config = {
+        .pkcs11_enabled = false,
+    };
+
+    signer->key_loader = key_loader_create(&loader_config);
+    if (!signer->key_loader) {
+      pdf_signer_destroy(signer);
+      return PDF_SIGN_CRYPTO_ERROR;
+    }
+
+    key_spec_t key_spec = {
+        .source      = KEY_SOURCE_FILE,
+        .u.file.path = key_path,
+    };
+
+    key_status_t key_status = key_load(signer->key_loader, &key_spec, NULL, &signer->key);
+    if (key_status != KEY_STATUS_OK) {
+      pdf_signer_destroy(signer);
+      return PDF_SIGN_CRYPTO_ERROR;
+    }
+
+    cert_status_t cert_status = cert_load_file(cert_path, &signer->cert);
+    if (cert_status != CERT_STATUS_OK) {
+      pdf_signer_destroy(signer);
+      return PDF_SIGN_CERTIFICATE_ERROR;
+    }
+
+    if (X509_check_private_key(signer->cert.certificate, signer->key.pkey) != 1) {
+      pdf_signer_destroy(signer);
+      return PDF_SIGN_CERTIFICATE_ERROR;
+    }
+
+    *out = signer;
+    return PDF_SIGN_OK;
   }
 
   key_loader_config_t loader_config = {
