@@ -5,6 +5,7 @@
 #include "nordiska/rendering/utf8_to_cp1252.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -517,5 +518,117 @@ int main() {
         std::string haru_pdf_str(haru_pdf_res->begin(), haru_pdf_res->end());
         require(haru_pdf_str.find("-645,50 SEK") != std::string::npos, "Libharu PDF output must contain '-645,50 SEK'");
         require(haru_pdf_str.find("???") == std::string::npos, "Libharu PDF output must not contain ???");
+    }
+
+    // 15. Step NOR-216: Bank Organization Number & Clearing Info in PDF Header
+    {
+        nordiska::AccountStatement stmt;
+        stmt.account_number = "SE1234567890";
+        stmt.title = "Kontoutdrag";
+        auto layout_res = nordiska::LayoutBuilder::build_statement(stmt);
+        require(layout_res.has_value(), "Statement layout build must succeed");
+
+        const auto& page = layout_res->pages[0];
+        auto has_text = [&](std::string_view expected) {
+            return std::any_of(page.texts.begin(), page.texts.end(), [&](const auto& t) { return t.text == expected; });
+        };
+        require(has_text("Nordiska Sparbanken AB"), "Header must include bank name");
+        require(has_text("Org.nr 556123-4567"), "Header must include org number");
+        require(has_text("Säte: Stockholm"), "Header must include seat");
+        require(has_text("Clearing: 9020"), "Header must include clearing");
+
+        // Tax report also contains bank metadata
+        nordiska::AnnualTaxReport tax;
+        tax.account_number = "SE1234567890";
+        tax.tax_year = "2025";
+        auto tax_res = nordiska::LayoutBuilder::build_tax_report(tax);
+        require(tax_res.has_value(), "Tax report layout build must succeed");
+        const auto& tax_page = tax_res->pages[0];
+        auto has_tax_text = [&](std::string_view expected) {
+            return std::any_of(tax_page.texts.begin(), tax_page.texts.end(),
+                               [&](const auto& t) { return t.text == expected; });
+        };
+        require(has_tax_text("Nordiska Sparbanken AB"), "Tax report header must include bank name");
+        require(has_tax_text("Org.nr 556123-4567"), "Tax report header must include org number");
+        require(has_tax_text("Säte: Stockholm"), "Tax report header must include seat");
+        require(has_tax_text("Clearing: 9020"), "Tax report header must include clearing");
+    }
+
+    // 16. Step NOR-215: Multi-Page Statement Pagination (Headers & Page Numbers)
+    {
+        nordiska::AccountStatement multi_page_stmt;
+        multi_page_stmt.account_number = "SE1234567890";
+        multi_page_stmt.title = "Kontoutdrag";
+        // Each page holds (720 - 162)/18 = 31 transactions on page 1.
+        // 70 transactions will span across 3 pages.
+        for (int i = 0; i < 70; ++i) {
+            multi_page_stmt.transactions.push_back(nordiska::StatementTransaction{
+                .date = "2026-01-01",
+                .type = "Kortköp",
+                .description = "Transaktion #" + std::to_string(i + 1),
+                .amount_display = "-100,00 SEK",
+                .balance_after_display = "10 000,00 SEK",
+            });
+        }
+        auto layout_res = nordiska::LayoutBuilder::build_statement(multi_page_stmt);
+        require(layout_res.has_value(), "Multi-page statement layout build must succeed");
+        require(layout_res->pages.size() >= 2, "70 transactions must produce at least 2 pages");
+
+        const auto total_pages = layout_res->pages.size();
+        for (std::size_t i = 0; i < total_pages; ++i) {
+            const auto& page = layout_res->pages[i];
+            const std::string expected_footer = "Sida " + std::to_string(i + 1) + " av " + std::to_string(total_pages);
+            bool found_footer = false;
+            for (const auto& t : page.texts) {
+                if (t.text == expected_footer && t.y == 750.0F) {
+                    found_footer = true;
+                    break;
+                }
+            }
+            require(found_footer, ("Page " + std::to_string(i + 1) + " must have footer: " + expected_footer).c_str());
+        }
+
+        // Verify subsequent pages have table headers at y = 54.0F and first transaction at y = 78.0F
+        for (std::size_t p = 1; p < total_pages; ++p) {
+            const auto& page = layout_res->pages[p];
+            bool found_datum = false;
+            bool found_typ = false;
+            bool found_beskrivning = false;
+            bool found_belopp = false;
+            bool found_saldo = false;
+            for (const auto& t : page.texts) {
+                if (t.y == 54.0F) {
+                    if (t.text == "Datum") {
+                        found_datum = true;
+                    }
+                    if (t.text == "Typ") {
+                        found_typ = true;
+                    }
+                    if (t.text == "Beskrivning") {
+                        found_beskrivning = true;
+                    }
+                    if (t.text == "Belopp") {
+                        found_belopp = true;
+                    }
+                    if (t.text == "Saldo") {
+                        found_saldo = true;
+                    }
+                }
+            }
+            require(
+                found_datum && found_typ && found_beskrivning && found_belopp && found_saldo,
+                ("Subsequent page " + std::to_string(p + 1) + " must have table header columns at y=54.0F").c_str());
+
+            // First transaction row on subsequent pages must be at y = 78.0F
+            bool found_tx_at_78 = false;
+            for (const auto& t : page.texts) {
+                if (t.y == 78.0F) {
+                    found_tx_at_78 = true;
+                    break;
+                }
+            }
+            require(found_tx_at_78,
+                    ("Subsequent page " + std::to_string(p + 1) + " must have first transaction at y=78.0F").c_str());
+        }
     }
 }

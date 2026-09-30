@@ -142,8 +142,7 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
         bool enable_signing = false;
         if (sign_env != nullptr) {
             enable_signing = (std::strcmp(sign_env, "1") == 0 || strcasecmp(sign_env, "true") == 0);
-        } else if (std::getenv("PDF_SIGNER_KEY_PATH") != nullptr ||
-                   ::access("/app/certs/signing_key.pem", R_OK) == 0) {
+        } else if (std::getenv("PDF_SIGNER_KEY_PATH") != nullptr || ::access("/app/certs/signing_key.pem", R_OK) == 0) {
             enable_signing = true;
         }
 
