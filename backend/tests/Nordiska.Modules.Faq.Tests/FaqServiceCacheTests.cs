@@ -92,7 +92,7 @@ public class FaqServiceCacheTests
             if (index < 0) return Task.FromResult<FaqEntryResponse?>(null);
 
             var curr = _store[index];
-            var newCount = Math.Max(0, curr.HelpfulCount + delta);
+            var newCount = curr.HelpfulCount + delta;
             var updated = curr with { HelpfulCount = newCount, UpdatedAt = DateTime.UtcNow };
             _store[index] = updated;
             return Task.FromResult<FaqEntryResponse?>(updated);
@@ -202,7 +202,7 @@ public class FaqServiceCacheTests
     }
 
     [Fact]
-    public async Task AdjustHelpful_IncreasesAndDecreases_WithNonNegativeGuard()
+    public async Task AdjustHelpful_IncreasesAndDecreases_AllowsNegativeCount()
     {
         var repo = new FakeFaqRepo(new[] { Entry(1) });
         var service = CreateService(repo);
@@ -215,10 +215,10 @@ public class FaqServiceCacheTests
         Assert.NotNull(dec);
         Assert.Equal(0, dec.HelpfulCount);
 
-        // Decrease again below 0 should clamp to 0
+        // Decrease again below 0 allows negative count
         var dec2 = await service.AdjustHelpfulAsync(1, -1);
         Assert.NotNull(dec2);
-        Assert.Equal(0, dec2.HelpfulCount);
+        Assert.Equal(-1, dec2.HelpfulCount);
     }
 
     [Fact]
@@ -261,7 +261,7 @@ public class FaqServiceCacheTests
     }
 
     [Fact]
-    public void DomainModel_ReviseEntry_And_HelpfulnessGuards()
+    public void DomainModel_ReviseEntry_And_AllowsNegativeHelpfulCount()
     {
         var faq = FaqEntry.Create("Vad är ränta?", "Ränta är avkastning.", "Ränta", "ränta, pengar", "sv");
         Assert.Equal("sv", faq.Language);
@@ -273,9 +273,9 @@ public class FaqServiceCacheTests
         faq.UnmarkHelpful();
         Assert.Equal(0, faq.HelpfulCount);
 
-        // Guard against negative
+        // Can decrease to negative
         faq.UnmarkHelpful();
-        Assert.Equal(0, faq.HelpfulCount);
+        Assert.Equal(-1, faq.HelpfulCount);
 
         faq.ReviseEntry("What is interest?", "Interest is yield.", "Interest", "interest, yield", "en");
         Assert.Equal("en", faq.Language);

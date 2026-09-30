@@ -79,7 +79,7 @@ public sealed class FaqEntry
 
     public void UnmarkHelpful()
     {
-        HelpfulCount = Math.Max(0, HelpfulCount - 1);
+        HelpfulCount = checked(HelpfulCount - 1);
         UpdatedAt = DateTime.UtcNow;
     }
 
