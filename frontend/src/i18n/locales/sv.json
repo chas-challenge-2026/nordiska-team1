@@ -49,7 +49,7 @@
     },
     "inactivity-route": {
         "title": "Du är utloggad",
-        "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
+        "paragraph": "På grund av inaktivitet har du av säkerhetsskäl blivit utloggad.",
         "button": "Logga in igen"
     },
     "loggedout-route": {

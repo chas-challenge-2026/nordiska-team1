@@ -48,7 +48,7 @@
         "register-button": "Become a customer"
     },
     "inactivity-route": {
-        "title": "You have been logged out",
+        "title": "You're logged out",
         "paragraph": "Due to inactivity, you have been logged out for security reasons.",
         "button": "Log in again"
     },

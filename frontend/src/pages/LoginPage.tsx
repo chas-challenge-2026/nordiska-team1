@@ -75,14 +75,14 @@ export default function LoginPage() {
     return (
     <main className="min-h-screen w-full bg-login-bg">
         {/* ----- DESKTOP ----- */}
-        <div className="hidden min-h-screen grid-cols-2 items-center md:grid">
+        <div className="hidden min-h-screen w-[90vw] mx-auto grid-cols-2 items-center md:grid">
             <section className="flex flex-col items-end pr-12">
                 <div className="text-right text-white">
                     <h1 className="text-7xl font-bold font-montserrat-alternates">
                         {t("login-route.title")}.
                     </h1>
 
-                        <p className="text-xl w-[500px] font-montserrat mt-5">
+                        <p className="text-xl font-montserrat mt-5">
                             {t("login-route.paragraph")}
                         </p>
                     </div>

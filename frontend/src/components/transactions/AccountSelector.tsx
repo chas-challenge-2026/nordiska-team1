@@ -39,7 +39,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
     };
 
     return (
-        <div className={isSheet ? 'bg-white px-4 pb-4' : 'bg-white p-4 w-64'}>
+        <div className={isSheet ? 'bg-white px-4 pb-4 rounded-xl shadow-md border border-secondary ' : 'bg-white p-4 w-64 rounded-xl shadow-md border border-secondary'}>
             {!isSheet && (
                 <>
                     <h3 className="font-semibold text-sm mb-1 border-b-1 border-nordiska-orange">{t("generic.account")}</h3>
@@ -63,7 +63,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                             />
                         )}
                         <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                            <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer"/>
                             {t("transactions-route.all-accounts")}
                         </label>
                     </div>
@@ -78,7 +78,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                                             type="checkbox"
                                             checked={selectedIds.includes(acc.id)}
                                             onChange={() => toggleOne(acc.id)}
-                                            className="mt-0.5"
+                                            className="mt-0.5 cursor-pointer"
                                         />
                                         <span className="flex flex-col">
                                             <span>{acc.accountNumber}</span>
@@ -98,7 +98,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                     <p className="text-xs text-secondary mt-4 mb-2">
                         {t("transactions-route.tax-info")}
                     </p>
-                    <button type="button" className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue bg-primary-blue text-white font-semibold">
+                    <button type="button" className="w-full border cursor-pointer border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue bg-primary-blue text-white font-semibold">
                         {t("transactions-route.tax")}
                     </button>
                 </>
