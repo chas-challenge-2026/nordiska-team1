@@ -14,7 +14,6 @@ export default function LoginPage() {
                         {t("login-route.title")}.
                     </h1>
 
-<<<<<<< HEAD
                     <p className="text-xl w-[500px] font-montserrat mt-5">
                         {t("login-route.paragraph")}
                     </p>
@@ -23,55 +22,6 @@ export default function LoginPage() {
             <section className="border-l-2 border-nordiska-orange pl-12">
                 <div className="w-[360px] bg-white rounded-tr-[20px] rounded-br-[20px] p-6">
                     <LoginCard />
-=======
-                        <p className="text-xl font-montserrat mt-5">
-                            {t("login-route.paragraph")}
-                        </p>
-                    </div>
-                </section>
-                <section className="border-l-2 border-nordiska-orange pl-12">
-                    <div className="w-[320px] bg-white rounded-tr-[20px] rounded-br-[20px] py-2 px-3">
-                        <form onSubmit={(e) => handleSubmit(e)}>
-                            <InputField name="email" type="email" label="email" placeholder="email" value={email} onChange={setEmail}/>
-                            <InputField name="password" type="password" label="password" placeholder="password" value={password} onChange={setPassword}/>
-                            <button type="submit" disabled={loginPending} className="cursor-pointer">{loginPending ? "Loggas in..." : "Logga in"}</button>
-                        </form>
-                        {loginIsError && <p className="text-red-500">{loginError.message}</p>}
-                        {registerLink}
-
-                        <section className="mt-4 border-t pt-3">
-                            <p className="font-semibold text-sm mb-2 text-[#1c3844]">Logga in med BankID</p>
-                            {bankIdData ? (
-                                <BankIdQrCode
-                                    qrStartToken={bankIdData.qrStartToken}
-                                    qrStartSecret={bankIdData.qrStartSecret}
-                                    autoStartToken={bankIdData.autoStartToken}
-                                    onCancel={handleBankIdCancel}
-                                />
-                            ) : (
-                                <form onSubmit={handleBankIdInit} className="flex flex-col gap-2">
-                                    <InputField
-                                        name="personalnum"
-                                        type="text"
-                                        label="Personnummer (12 siffror)"
-                                        placeholder="198202116050"
-                                        value={personalNum}
-                                        onChange={setPersonalNum}
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={bankIdInitPending}
-                                        className="rounded bg-[#1c3844] py-2 text-sm font-semibold text-white transition hover:bg-[#235971] cursor-pointer"
-                                    >
-                                        {bankIdInitPending ? "Startar BankID..." : "Starta BankID"}
-                                    </button>
-                                    {bankIdInitIsError && (
-                                        <p className="text-xs text-red-500 mt-1">{bankIdInitError.message}</p>
-                                    )}
-                                </form>
-                            )}
-                        </section>
->>>>>>> origin/develop
                 </div>
             </section>
         </div>
