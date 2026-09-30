@@ -12,19 +12,22 @@
         "date": "Date",
         "reset": "Reset",
         "all": "All",
-
+        "yes": "Yes",
+        "no": "No",
         "account": "Account",
         "savings-account": "Savings account",
         "interest": "Interest",
         "filter": "Filter",
-
         "showing": "Showing",
         "of": "of",
         "transactions": "transactions",
         "balance": "Balance",
         "tax-report": "Tax report",
         "log-out": "Log out",
-        "stay": "Stay"
+        "stay": "Stay",
+        "next": "Next",
+        "previous": "Previous",
+        "page": "Page"
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
@@ -34,7 +37,9 @@
         "page-nav": "Main navigation",
         "mobile-menu-close": "Close menu",
         "mobile-menu-open": "Open menu",
-        "mobile-nav": "Mobile navigation"
+        "mobile-nav": "Mobile navigation",
+        "previous-page": "Previous page",
+        "next-page": "Next page"
     },
     "welcome-route": {
         "title": "Customer Portal",
@@ -73,7 +78,21 @@
         "loading-transactions": "Loading transactions...",
         "transactions-error": "There was an issue loading transactions",
         "showing-count_one": "Showing {{shown}} of {{count}} transaction",
-        "showing-count_other": "Showing {{shown}} of {{count}} transactions"
+        "showing-count_other": "Showing {{shown}} of {{count}} transactions",
+        "filter-aria_one": "Filter, {{count}} active",
+        "filter-aria_other": "Filter, {{count}} active",
+        "accounts-aria_one": "Accounts, {{count}} selected",
+        "accounts-aria_other": "Accounts, {{count}} selected",
+        "active-count_one": "{{count}} active",
+        "active-count_other": "{{count}} active",
+        "selected-of": "{{selected}} of {{total}} selected",
+        "show-count_one": "Show {{count}} transaction",
+        "show-count_other": "Show {{count}} transactions",
+        "deselect-all": "Deselect all",
+        "search-account": "Search account number",
+        "no-account-match": "No accounts match your search.",
+        "select-account": "Select at least one account to see transactions.",
+        "no-transactions": "No transactions found."
     },
     "accounts-route": {
         "yearly-interest": "Yearly interest amount",
@@ -314,5 +333,55 @@
         "minutes": "minutes",
         "and": "and",
         "seconds": "seconds"
+    },
+    "faq": {
+        "faq-header": {
+            "title": "How can we help you today?",
+            "paragraph": "Search or find frequently asked questions by category"
+        },
+        "faq-search": {
+            "placeholder-category": "Search in category",
+            "placeholder-no-category": "Search all categories",
+            "aria-label": "Clear search"
+        },
+        "faq-filter-info": {
+            "no-filter": "Filter frequently asked questions by category or search for your question in the search field.",
+            "category-filter": "Showing results in category:",
+            "search-filter": "Showing results matching:",
+            "in-category": "in category:"
+        },
+        "faq-list": {
+            "loading": "Loading frequently asked questions",
+            "error": "Could not retrieve frequently asked questions.",
+            "no-results": "No results matched your search."
+        },
+        "faq-feedback": {
+            "question": "Did this answer help you?",
+            "feedback": "Thank you for your feedback!",
+            "no-results": "No results matched your search.",
+            "aria-label": {
+                "div": "Rate the answer",
+                "btn-yes": "Yes, this answer helped me",
+                "btn-no": "No, this answer did not help me"
+            }
+        },
+        "faq-sidebar": {
+            "related-title": "Related",
+            "close-btn-aria-label": "Close related information",
+            "question": {
+                "change-language": "Hur ändrar jag språk?",
+                "update-info": "How do I update my contact information?"
+            },
+            "answer": {
+                "change-language": "Navigera till menyn i övre högra hörnet. Språkinställningar hittar du längst ner i menyn, eller ändra språk direkt via knappen nedan.",
+                "update-info": "Navigate to the menu in the top right corner and select \"Settings\", or navigate directly using the link below.",
+                "update-info-action": "Update contact information"
+            },
+            "no-answer-title": "Can't find the answer?",
+            "contact-us": "Contact us"
+        }
+    },
+    "faq-page": {
+        "categories-error": "Could not retrieve categories"
     }
 }

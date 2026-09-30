@@ -12,7 +12,8 @@
         "date": "Datum",
         "reset": "Återställ",
         "all": "Alla",
-
+        "yes": "Ja",
+        "no": "Nej",
         "account": "Konto",
         "savings-account": "Sparkonto",
         "interest": "Ränta",
@@ -23,7 +24,10 @@
         "balance": "Saldo",
         "tax-report": "Skatteunderlag",
         "log-out": "Logga ut",
-        "stay": "Stanna kvar"
+        "stay": "Stanna kvar",
+        "next": "Nästa",
+        "previous": "Föregående",
+        "page": "Sida"
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -33,7 +37,9 @@
         "page-nav": "Huvudnavigation",
         "mobile-menu-close": "Stäng meny",
         "mobile-menu-open": "Öppna meny",
-        "mobile-nav": "Mobilnavigation"
+        "mobile-nav": "Mobilnavigation",
+        "previous-page": "Föregående sida",
+        "next-page": "Nästa sida"
     },
     "welcome-route": {
         "title": "Kundportalen",
@@ -72,7 +78,21 @@
         "loading-transactions": "Laddar transaktioner...",
         "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner",
         "showing-count_one": "Visar {{shown}} av {{count}} transaktion",
-        "showing-count_other": "Visar {{shown}} av {{count}} transaktioner"
+        "showing-count_other": "Visar {{shown}} av {{count}} transaktioner",
+        "filter-aria_one": "Filter, {{count}} aktivt",
+        "filter-aria_other": "Filter, {{count}} aktiva",
+        "accounts-aria_one": "Konton, {{count}} valt",
+        "accounts-aria_other": "Konton, {{count}} valda",
+        "active-count_one": "{{count}} aktivt",
+        "active-count_other": "{{count}} aktiva",
+        "selected-of": "{{selected}} av {{total}} valda",
+        "show-count_one": "Visa {{count}} transaktion",
+        "show-count_other": "Visa {{count}} transaktioner",
+        "deselect-all": "Avmarkera alla",
+        "search-account": "Sök kontonummer",
+        "no-account-match": "Inga konton matchar sökningen.",
+        "select-account": "Välj minst ett konto för att se transaktioner.",
+        "no-transactions": "Inga transaktioner hittades."
     },
     "accounts-route": {
         "yearly-interest": "Beräknad årsränta",
@@ -309,5 +329,57 @@
         "minutes": "minuter",
         "and": "och",
         "seconds": "sekunder"
+    },
+    "faq": {
+        "faq-header": {
+            "title": "Hur kan vi hjälpa dig idag?",
+            "paragraph": "Sök eller hitta vanliga frågor efter kategori"
+        },
+        "faq-search": {
+            "placeholder-category": "Sök i kategori",
+            "placeholder-no-category": "Sök i alla kategorier",
+            "aria-label": "Rensa sökning"
+        },
+        "faq-filter-info": {
+            "no-filter": "Filtrera vanliga frågor efter kategori eller sök efter din fråga i sökfältet.",
+            "category-filter": "Visar resultat i kategori:",
+            "search-filter": "Visar resultat som matchar:",
+            "in-category": "i kategori:"
+        },
+        "faq-list": {
+            "loading": "Laddar vanliga frågor",
+            "error": "Kunde inte hämta vanliga frågor.",
+            "no-results": "Inga resultat matchade din sökning."
+        },
+        "faq-feedback": {
+            "question": "Hjälpte det här svaret dig?",
+            "feedback": "Tack för ditt svar!",
+            "no-results": "Inga resultat matchade din sökning.",
+            "aria-label": {
+                "div": "Bedöm svaret",
+                "btn-yes": "Ja, svaret hjälpte mig",
+                "btn-no": "Nej, svaret hjälpte inte mig"
+
+            }
+        },
+        "faq-sidebar": {
+            "related-title": "Relaterat",
+            "close-btn-aria-label": "Stäng relaterad information",
+            "question": {
+                "change-language": "How do I change language?",
+                "update-info": "Hur uppdaterar jag mina kontaktuppgifter?"
+            },
+            "answer": {
+                "change-language": "Navigate to the menu in the top right corner and choose your language at the bottom of the open menu. Or simply change language directly below:",
+                "update-info": "Navigera till menyn i övre högra hörnet och välj \"Inställningar\", eller navigera direkt via länken nedan.",
+                "update-info-action": "Uppdatera kontaktuppgifter"
+
+            },
+            "no-answer-title": "Hittar du inte svaret?",
+            "contact-us": "Kontakta oss"
+        }
+    },
+    "faq-page": {
+        "categories-error": "Kunde inte hämta kategorier"
     }
 }

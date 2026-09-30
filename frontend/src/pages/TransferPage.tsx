@@ -43,7 +43,8 @@ export default function TransferPage() {
     const { t } = useTranslation();
 
     const { data: accountsData } = useGetAccounts();
-    const { data: transactionsData } = useTransactions();
+    // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
+    const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
     const transferFundsMutation = useTransferFunds();
     const createPlannedMutation = useCreatePlannedTransaction();
     const cancelPlannedMutation = useCancelPlannedTransaction();
@@ -75,15 +76,13 @@ export default function TransferPage() {
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
     const [customs, setCustoms] = useState<Payee[]>([]);
-    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<
-        PlannedTransfer[]
-    >([]);
+    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<PlannedTransfer[]>([]);
 
     const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
 
     const backendPlannedTransfers: PlannedTransfer[] = useMemo(
         () =>
-            (transactionsData ?? [])
+            (transactionsData?.items ?? [])
                 .filter((tx) => tx.isPlanned)
                 .map((tx) => ({
                     localId: `backend-${tx.id}`,
@@ -129,15 +128,15 @@ export default function TransferPage() {
 
     const doneSummary = toAccount
         ? t(
-              recurring
-                  ? "page-transfer.done.summary-recurring"
-                  : "page-transfer.done.summary",
-              {
-                  amount: formatSek(amountValue),
-                  name: toAccount.name,
-                  date,
-              },
-          )
+            recurring
+                ? "page-transfer.done.summary-recurring"
+                : "page-transfer.done.summary",
+            {
+                amount: formatSek(amountValue),
+                name: toAccount.name,
+                date,
+            },
+        )
         : "";
 
     const upcomingTransfers = plannedTransfers.filter(
@@ -307,7 +306,8 @@ export default function TransferPage() {
         createPlannedMutation.mutate(
             {
                 accountId,
-                type: (transfer.type as "Deposit" | "Withdraw") ?? "Withdraw",
+                // Transaction type is lowercase; create endpoint expects "Deposit" | "Withdraw"
+                type: transfer.type === "deposit" ? "Deposit" : "Withdraw",
                 amount: transfer.sum,
                 plannedDate: toPlannedDateIso(newDate),
                 label: transfer.label,
@@ -332,8 +332,8 @@ export default function TransferPage() {
     const editPlannedError = createPlannedMutation.isError
         ? "save"
         : cancelPlannedMutation.isError
-          ? "cleanup"
-          : null;
+            ? "cleanup"
+            : null;
 
     const handleDeletePlannedTransfer = (
         transfer: PlannedTransfer,

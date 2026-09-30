@@ -12,9 +12,9 @@ const MAX_ROWS = 4;
 export default function RecentTransactionsCard() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { data: transactions, isPending, isError } = useTransactions();
+    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 20, AccountIds: [] });
 
-    const recent = (transactions ?? [])
+    const recent = (transactions?.items ?? [])
         .filter((tx) => !tx.isPlanned)
         .sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt))
         .slice(0, MAX_ROWS);
@@ -37,7 +37,7 @@ export default function RecentTransactionsCard() {
                             transactionTime={formatTime(tx.createdAt)}
                             transactionRecipient={
                                 tx.label ||
-                                t(tx.type === "Deposit" ? "transactions-route.type-deposit" : "transactions-route.type-withdraw")
+                                t(tx.type === "deposit" ? "transactions-route.type-deposit" : "transactions-route.type-withdraw")
                             }
                             transactionAmount={tx.amount}
                         />

@@ -73,7 +73,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                 > 
 
                     {/* ----- LOGO ----- */}
-                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer} -mb-1`}>
+                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer -mb-1`}>
                         nordiska<span className={dotColor}>.</span>
                     </a>
 
@@ -114,7 +114,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
             {/* ----- LOGO ----- */}
             <section>
-                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer}`}>
+                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer`}>
                     nordiska<span className={dotColor}>.</span>
                 </a>
             </section>

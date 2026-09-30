@@ -16,7 +16,7 @@ import TransferPage from "../pages/TransferPage";
 import TransactionsPage from "../pages/TransactionsPage";
 import SettingsPage from "../pages/SettingsPage";
 import AccountsPage from "../pages/AccountsPage";
-import DocumentsPage from "../pages/DocumentsPage";
+import FaqPage from "../pages/FaqPage";
 
 export default function AppRoutes() {
     return (
@@ -35,6 +35,7 @@ export default function AppRoutes() {
             {/* PROTECTED ROUTES HÄR */}
             <Route element={<ProtectedRoute />}>
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/help" element={<FaqPage />} />
 
                 <Route path="/" element={<DesktopLayout />}>
                     <Route index element={<OverviewPage />} />
