@@ -1,28 +1,12 @@
 # Nordiska Native PDF Generator
 
-High-performance, standalone native C++23 module for batch-generating customer banking documents (account statements, annual summaries, and tax reports).
-
+C++23 module for generating customer PDF reports (account statements, annual summaries, and tax reports).
 Designed for direct FFI / P-Invoke integration from .NET services and standalone native CLI execution on Linux.
 
 ---
 
-## 1. Key Performance Highlights
 
-Benchmarked on 16 threads processing 50,000 customers (170,500 documents, 2,236,000 ledger transactions) with zero disk I/O:
-
-| Metric | Dedicated Native Engine | Libharu Engine | Cairo Engine |
-|---|---|---|---|
-| **Peak Throughput (docs/sec)** | **44,401 docs/s** | 31,185 docs/s | 711 docs/s |
-| **Document Rate (customers/sec)**| **13,021 cust/s** | 9,145 cust/s | 208 cust/s |
-| **PDF Render CPU Latency** | **0.206 ms / doc** | 0.364 ms / doc | 22.45 ms / doc |
-| **Output Document Size** | **1.67 KB** (compressed) | 3.62 KB (compressed) | 22.10 KB |
-| **Total Batch Time (50k customers)**| **3.84 s** | 5.47 s | 239.8 s |
-
----
-
-## 2. Architecture & Subsystems
-
-The generator strictly adheres to [`AGENTS.md`](AGENTS.md): modular architecture, explicit lifetimes, strong typing, and no C++ types crossing boundary interfaces.
+## Architecture & Subsystems
 
 ```text
 native/pdf_generator/
@@ -50,7 +34,6 @@ native/pdf_generator/
 ```
 
 ### The Generation Pipeline
-
 ```
 Raw JSON Buffer (UTF-8)
          │
@@ -85,7 +68,7 @@ GeneratedPdfs / C ABI Delivery Callback
 
 ---
 
-## 3. Pluggable Engines & Ingestors
+## Pluggable Engines & Ingestors
 
 ### PDF Rendering Engines (`--renderer <engine>`)
 
@@ -111,13 +94,14 @@ GeneratedPdfs / C ABI Delivery Callback
 
 ---
 
-## 4. Build Instructions
+## Build Instructions
 
 ### Prerequisites
 - Linux x86_64
 - C++23 capable compiler (GCC 13+ or Clang 17+)
 - CMake 3.25+
 - Ninja build system
+- Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
 - OpenSSL >= 3.2.0 (Required for CMS SignedData digest signing with `CMS_final_digest`)
   - *Ubuntu / Debian LTS Notice*: Most LTS distributions ship OpenSSL 3.0.x by default. On Ubuntu 22.04/24.04 or Debian 12 developer workstations, run the provided local setup script to build and install OpenSSL 3.3.2 into `~/.local/openssl-3.3/` (isolated, non-root, no system changes):
     ```bash
@@ -175,7 +159,7 @@ Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/rele
 
 ---
 
-## 5. Integration Contracts
+## Integration Contracts
 
 ### C ABI Public Interface (`pdf_generator_c_api.h`)
 
@@ -213,7 +197,7 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 
 ---
 
-## 6. CLI Usage
+## CLI Usage
 
 ```bash
 ./build/debug/pdf_generator [OPTIONS] [INPUT_JSON]
@@ -262,82 +246,3 @@ ctest --preset release
 ctest --test-dir build/debug --output-on-failure
 ctest --test-dir build/release --output-on-failure
 ```
-
----
-
-## 8. Interactive Debugging with GDB & LLDB
-
-Binaries compiled under the `debug` preset include full DWARF debug symbols and frame pointers without aggressive compiler optimizations.
-
-### Debugging the Standalone CLI
-
-#### GDB
-```bash
-# Launch CLI under GDB with arguments
-gdb --args build/debug/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native -v
-
-# Common GDB commands:
-(gdb) break main                                          # Break at program entry point
-(gdb) break nordiska::application::PdfGenerator::generate # Break at core orchestrator
-(gdb) break nordiska::layout::LayoutBuilder::build        # Break at layout calculation
-(gdb) run                                                 # Start execution (r)
-(gdb) next                                                # Step over (n)
-(gdb) step                                                # Step into (s)
-(gdb) print job.customer_name                             # Inspect variables (p)
-(gdb) info locals                                         # Print all local variables
-(gdb) backtrace                                           # Print stack trace upon crash (bt)
-(gdb) continue                                            # Resume execution (c)
-```
-
-#### LLDB
-```bash
-# Launch CLI under LLDB with arguments
-lldb -- build/debug/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native -v
-
-# Common LLDB commands:
-(lldb) breakpoint set --name main
-(lldb) breakpoint set --name nordiska::application::PdfGenerator::generate
-(lldb) run               # Start execution (r)
-(lldb) thread step-over  # Step over (n)
-(lldb) thread step-in    # Step into (s)
-(lldb) frame variable    # Inspect local variables (fr v)
-(lldb) thread backtrace  # Print call stack (bt)
-(lldb) thread continue   # Resume execution (c)
-```
-
-### Debugging Unit Test Failures
-
-To isolate and step through a specific test suite or failure:
-```bash
-# GDB
-gdb --args build/debug/nordiska_pdf_signing_tests
-(gdb) run
-(gdb) backtrace
-
-# LLDB
-lldb -- build/debug/nordiska_pdf_signing_tests
-(lldb) run
-(lldb) thread backtrace
-```
-
-### Debugging C API Shared Library Interop
-
-When debugging host integration (.NET P/Invoke or test harnesses) against `libnordiska_pdf_generator_c_api.so`:
-```bash
-# Run C API unit test suite directly under GDB
-gdb --args build/debug/nordiska_pdf_generator_c_api_tests
-
-# Or attach GDB to an existing host process loading the library
-gdb -p <PID>
-(gdb) sharedlibrary libnordiska_pdf_generator_c_api.so
-(gdb) break nordiska_pdf_v1_generate_customer_batch
-(gdb) continue
-```
-
----
-
-## 9. PDF Signature Preparation and Signing
-
-See [PDF signing integration](docs/pdf_signing_integration.md) for capacity units,
-the C signer dependency, error/ownership contracts, and test/verification workflows.
-
