@@ -24,8 +24,8 @@ For each document:
 
 The C result is disposed on success, error, and exceptions; the signer handle is
 destroyed with its C++ owner. A failure aborts the whole customer batch. The C++
-`GeneratorErrorKind` distinguishes preparation, hashing, invalid output and
-capacity failures; adapter errors are translated at the generator boundary.
+`GeneratorErrorPayload` variant preserves concrete subsystem errors (`SigningError`,
+`IngestError`, `LayoutError`, `RenderError`, etc.) without information loss.
 The existing C ABI reports `NORDISKA_PDF_SIGNING_FAILED` with a diagnostic.
 
 `PdfDocument.signing_digest` is the hash of the signed byte ranges.

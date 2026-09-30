@@ -364,7 +364,7 @@ int main(int argc, char* argv[]) {
                 const nordiska::PdfGenerator generator(direct_config);
                 auto res = generator.generate(sample.bytes);
                 if (!res) {
-                    std::cerr << "Warmup error: " << res.error().message << "\n";
+                    std::cerr << "Warmup error: " << res.error().message() << "\n";
                     return EXIT_FAILURE;
                 }
             }
@@ -434,7 +434,7 @@ int main(int argc, char* argv[]) {
                         if (!result) {
                             std::lock_guard<std::mutex> lock(error_mutex);
                             if (!abort_requested.load(std::memory_order_relaxed)) {
-                                first_error_msg = result.error().message;
+                                first_error_msg = result.error().message();
                                 abort_requested.store(true, std::memory_order_relaxed);
                             }
                             break;

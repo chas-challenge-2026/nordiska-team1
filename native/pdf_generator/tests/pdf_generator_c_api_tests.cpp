@@ -344,8 +344,9 @@ int main() {
                                                   valid_batch_json.size()};
         auto fail_res = fail_gen.generate(valid_span);
         require(!fail_res.has_value(), "signing failure on doc 2 must fail the entire batch");
-        require(fail_res.error().kind == nordiska::GeneratorErrorKind::SigningError, "error kind must be SigningError");
-        require(fail_res.error().message.find("Failed to sign document 'account1_tax'") != std::string::npos,
+        require(std::holds_alternative<nordiska::SigningError>(fail_res.error().details),
+                "error details must be SigningError");
+        require(fail_res.error().message().find("Failed to sign document 'account1_tax'") != std::string::npos,
                 "error message must identify failed document");
     }
 
@@ -630,5 +631,48 @@ int main() {
             require(found_tx_at_78,
                     ("Subsequent page " + std::to_string(p + 1) + " must have first transaction at y=78.0F").c_str());
         }
+    }
+
+    // 17. Step NOR-207: std::variant-based error handling in PdfGenerator
+    {
+        // 17.1 Invalid argument error
+        nordiska::GeneratorConfig invalid_arg_cfg{
+            .signature_contents_capacity = 3, // odd length is invalid
+        };
+        nordiska::PdfGenerator invalid_gen(invalid_arg_cfg);
+        const std::string dummy_json = "{}";
+        const std::span<const uint8_t> dummy_span{reinterpret_cast<const uint8_t*>(dummy_json.data()),
+                                                  dummy_json.size()};
+        auto arg_res = invalid_gen.generate(dummy_span);
+        require(!arg_res.has_value(), "invalid argument configuration must fail");
+        require(std::holds_alternative<nordiska::InvalidArgumentError>(arg_res.error().details),
+                "error details must hold InvalidArgumentError");
+        require(!arg_res.error().message().empty(), "error message must not be empty");
+
+        // 17.2 Ingest error preserves path and kind
+        nordiska::GeneratorConfig valid_cfg;
+        nordiska::PdfGenerator gen(valid_cfg);
+        const std::string malformed_json = R"({"customer_id": "not_an_int"})";
+        const std::span<const uint8_t> malformed_span{reinterpret_cast<const uint8_t*>(malformed_json.data()),
+                                                      malformed_json.size()};
+        auto ingest_fail = gen.generate(malformed_span);
+        require(!ingest_fail.has_value(), "malformed json must fail ingestion");
+        require(std::holds_alternative<nordiska::IngestError>(ingest_fail.error().details),
+                "error details must hold IngestError");
+        const auto* ingest_err = std::get_if<nordiska::IngestError>(&ingest_fail.error().details);
+        require(ingest_err != nullptr, "get_if must succeed for IngestError");
+        require(ingest_err->path == "customer_id", "IngestError path must be preserved without loss");
+
+        // 17.3 Pattern matching / visitor pattern
+        bool visited_ingest = false;
+        std::visit(
+            [&](const auto& err_payload) {
+                using T = std::decay_t<decltype(err_payload)>;
+                if constexpr (std::is_same_v<T, nordiska::IngestError>) {
+                    visited_ingest = true;
+                }
+            },
+            ingest_fail.error().details);
+        require(visited_ingest, "std::visit over GeneratorErrorPayload must match IngestError branch");
     }
 }

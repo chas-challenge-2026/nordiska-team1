@@ -304,31 +304,35 @@ int main(int argc, char* argv[]) {
         const auto generate_end = std::chrono::steady_clock::now();
 
         if (!result) {
+            const std::string err_msg = result.error().message();
             if (options.json_summary) {
                 nlohmann::json summary = {
                     {"status", "error"},
-                    {"error_message", result.error().message},
+                    {"error_message", err_msg},
                 };
                 std::cout << summary.dump(2) << "\n";
             }
-            std::cerr << "Generation failed: " << result.error().message << "\n";
+            std::cerr << "Generation failed: " << err_msg << "\n";
 
-            switch (result.error().kind) {
-            case nordiska::GeneratorErrorKind::InvalidInput:
-                return ExitCode::IngestError;
-            case nordiska::GeneratorErrorKind::InvalidArgument:
-                return ExitCode::CliUsage;
-            case nordiska::GeneratorErrorKind::SignaturePreparationFailed:
-            case nordiska::GeneratorErrorKind::HashingFailed:
-            case nordiska::GeneratorErrorKind::InvalidSignatureOutput:
-            case nordiska::GeneratorErrorKind::SignatureTooLarge:
-            case nordiska::GeneratorErrorKind::SigningError:
-                return ExitCode::SigningError;
-            case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
-            case nordiska::GeneratorErrorKind::InternalError:
-            default:
-                return ExitCode::RenderError;
-            }
+            return std::visit(
+                [](const auto& payload) -> int {
+                    using T = std::decay_t<decltype(payload)>;
+                    if constexpr (std::is_same_v<T, nordiska::InvalidArgumentError>) {
+                        return ExitCode::CliUsage;
+                    } else if constexpr (std::is_same_v<T, nordiska::ResourceLimitError>) {
+                        return ExitCode::RenderError;
+                    } else if constexpr (std::is_same_v<T, nordiska::IngestError>) {
+                        return ExitCode::IngestError;
+                    } else if constexpr (std::is_same_v<T, nordiska::LayoutError>) {
+                        return (payload.kind == nordiska::LayoutErrorKind::InternalError) ? ExitCode::RenderError
+                                                                                          : ExitCode::IngestError;
+                    } else if constexpr (std::is_same_v<T, nordiska::RenderError>) {
+                        return ExitCode::RenderError;
+                    } else if constexpr (std::is_same_v<T, nordiska::SigningError>) {
+                        return ExitCode::SigningError;
+                    }
+                },
+                result.error().details);
         }
 
         const auto& generated = *result;

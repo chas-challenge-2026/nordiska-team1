@@ -76,24 +76,31 @@ std::expected<void, int> validate_boundary_arguments(const uint8_t* json_utf8, s
 }
 
 int map_generator_error(const nordiska::GeneratorError& err) noexcept {
-    set_last_error(err.message);
-    switch (err.kind) {
-    case nordiska::GeneratorErrorKind::InvalidArgument:
-        return NORDISKA_PDF_INVALID_ARGUMENT;
-    case nordiska::GeneratorErrorKind::InvalidInput:
-        return NORDISKA_PDF_INVALID_INPUT;
-    case nordiska::GeneratorErrorKind::ResourceLimitExceeded:
-        return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
-    case nordiska::GeneratorErrorKind::SignaturePreparationFailed:
-    case nordiska::GeneratorErrorKind::HashingFailed:
-    case nordiska::GeneratorErrorKind::InvalidSignatureOutput:
-    case nordiska::GeneratorErrorKind::SignatureTooLarge:
-    case nordiska::GeneratorErrorKind::SigningError:
-        return NORDISKA_PDF_SIGNING_FAILED;
-    case nordiska::GeneratorErrorKind::InternalError:
-    default:
-        return NORDISKA_PDF_INTERNAL_ERROR;
+    try {
+        set_last_error(err.message());
+    } catch (...) {
+        set_last_error_static("Unknown error occurred");
     }
+    return std::visit(
+        [](const auto& payload) noexcept -> int {
+            using T = std::decay_t<decltype(payload)>;
+            if constexpr (std::is_same_v<T, nordiska::InvalidArgumentError>) {
+                return NORDISKA_PDF_INVALID_ARGUMENT;
+            } else if constexpr (std::is_same_v<T, nordiska::ResourceLimitError>) {
+                return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
+            } else if constexpr (std::is_same_v<T, nordiska::IngestError>) {
+                return payload.kind == nordiska::IngestErrorKind::InternalError ? NORDISKA_PDF_INTERNAL_ERROR
+                                                                                : NORDISKA_PDF_INVALID_INPUT;
+            } else if constexpr (std::is_same_v<T, nordiska::LayoutError>) {
+                return payload.kind == nordiska::LayoutErrorKind::InternalError ? NORDISKA_PDF_INTERNAL_ERROR
+                                                                                : NORDISKA_PDF_INVALID_INPUT;
+            } else if constexpr (std::is_same_v<T, nordiska::RenderError>) {
+                return NORDISKA_PDF_INTERNAL_ERROR;
+            } else if constexpr (std::is_same_v<T, nordiska::SigningError>) {
+                return NORDISKA_PDF_SIGNING_FAILED;
+            }
+        },
+        err.details);
 }
 
 int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_delivery_callback callback,

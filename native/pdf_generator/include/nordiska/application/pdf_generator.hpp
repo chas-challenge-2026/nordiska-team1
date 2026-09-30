@@ -13,6 +13,9 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace nordiska {
 
@@ -47,22 +50,32 @@ struct PipelineTiming {
     }
 };
 
-enum class GeneratorErrorKind {
-    InvalidArgument,
-    InvalidInput,
-    ResourceLimitExceeded,
-    SigningError,
-    InternalError,
-    SignaturePreparationFailed,
-    HashingFailed,
-    InvalidSignatureOutput,
-    SignatureTooLarge,
+// Explicit error types for generator-level failures (NOR-207)
+struct InvalidArgumentError {
+    std::string message;
 };
 
-// Wrap in struct so std::expected can return both
-struct GeneratorError {
-    GeneratorErrorKind kind{GeneratorErrorKind::InternalError};
+struct ResourceLimitError {
     std::string message;
+};
+
+// Sum type representing all possible pipeline errors
+using GeneratorErrorPayload =
+    std::variant<InvalidArgumentError, ResourceLimitError, IngestError, LayoutError, RenderError, SigningError>;
+
+struct GeneratorError {
+    GeneratorErrorPayload details;
+    std::string document_id{};
+
+    template <typename T>
+        requires(!std::is_same_v<std::decay_t<T>, GeneratorError> && std::is_constructible_v<GeneratorErrorPayload, T>)
+    explicit GeneratorError(T&& error_payload, std::string doc_id = {})
+        : details(std::forward<T>(error_payload)), document_id(std::move(doc_id)) {}
+
+    GeneratorError(GeneratorErrorPayload payload, std::string doc_id)
+        : details(std::move(payload)), document_id(std::move(doc_id)) {}
+
+    [[nodiscard]] std::string message() const;
 };
 
 class PdfGenerator {
@@ -80,11 +93,6 @@ class PdfGenerator {
     bool enable_signing_{false};
     size_t signature_contents_capacity_;
     std::optional<SigningError> signer_initialization_error_;
-
-    [[nodiscard]] static GeneratorError map_layout_error(const LayoutError& error, std::string_view document_id);
-    [[nodiscard]] static GeneratorError map_signing_error(const SigningError& error);
-    [[nodiscard]] std::unexpected<GeneratorError> map_signing_failure(const SigningError& error,
-                                                                      std::string_view document_id) const;
 };
 
 } // namespace nordiska

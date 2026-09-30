@@ -248,7 +248,7 @@ void test_c_adapter() {
                     "external signing call must fit its wrapper");
             require(timing.sign_seconds >= timing.hash_seconds + timing.signer_call_seconds,
                     "nested timings must fit within the end-to-end signing phase");
-            require(result.has_value(), result ? "" : result.error().message.c_str());
+            require(result.has_value(), result ? "" : result.error().message().c_str());
             require(result->documents.size() == 2, "wrong batch size");
             for (size_t i = 0; i < 2; ++i) {
                 const auto& document = result->documents[i];
@@ -270,10 +270,14 @@ void test_c_adapter() {
         const int calls = sign_calls;
         nordiska::PdfGenerator generator(config);
         auto result = generator.generate(payload);
-        const auto expected_kind = mode == Reply::TooLarge  ? nordiska::GeneratorErrorKind::SignatureTooLarge
-                                   : mode == Reply::Failure ? nordiska::GeneratorErrorKind::SigningError
-                                                            : nordiska::GeneratorErrorKind::InvalidSignatureOutput;
-        require(!result && result.error().kind == expected_kind, "signer failures must map to generator error kinds");
+        const auto expected_kind = mode == Reply::TooLarge  ? nordiska::SigningErrorKind::SignatureTooLarge
+                                   : mode == Reply::Failure ? nordiska::SigningErrorKind::SignatureGenerationFailed
+                                                            : nordiska::SigningErrorKind::InvalidSignatureOutput;
+        require(!result, "signer failures must fail generation");
+        require(std::holds_alternative<nordiska::SigningError>(result.error().details),
+                "error details must be SigningError");
+        require(std::get<nordiska::SigningError>(result.error().details).kind == expected_kind,
+                "signer failures must map to expected SigningErrorKind");
         require(disposals == before + 1 && sign_calls == calls + 1, "failure cleanup or early abort incorrect");
     }
     reply = Reply::Normal;
