@@ -26,14 +26,15 @@ public sealed class TaxReportService : ITaxReportService
         IPdfReportGenerator pdfGenerator,
         ITaxReportJobRepository? jobRepository = null,
         IReportFileStorage? fileStorage = null,
-        IReportDataBuilder? reportDataBuilder = null)
+        IReportDataBuilder? reportDataBuilder = null,
+        IInterestRateService? interestRateService = null)
     {
         _savingsAccountService = savingsAccountService;
         _pdfGenerator = pdfGenerator;
         _jobRepository = jobRepository;
         _fileStorage = fileStorage;
         _reportDataBuilder = reportDataBuilder
-            ?? new ReportDataBuilder(savingsAccountService, customerService, transactionService);
+            ?? new ReportDataBuilder(savingsAccountService, customerService, transactionService, interestRateService);
     }
 
     public async Task<TaxReportJobResponse> CreateJobAsync(long customerId, long accountId, int year, CancellationToken cancellationToken = default)

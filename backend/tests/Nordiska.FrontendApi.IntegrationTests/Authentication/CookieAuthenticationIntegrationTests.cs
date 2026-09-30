@@ -423,6 +423,23 @@ public class TestAccountTypeConfigRepository : IAccountTypeConfigRepository
         }
         return Task.CompletedTask;
     }
+
+    private static readonly List<AccountTypeRateHistory> _rateHistories = new();
+
+    public Task<IEnumerable<AccountTypeRateHistory>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default)
+    {
+        var list = _rateHistories
+            .Where(r => string.Equals(r.AccountType, accountType, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(r => r.EffectiveFromUtc)
+            .ToList();
+        return Task.FromResult<IEnumerable<AccountTypeRateHistory>>(list);
+    }
+
+    public Task AddRateHistoryAsync(AccountTypeRateHistory history, CancellationToken cancellationToken = default)
+    {
+        _rateHistories.Add(history);
+        return Task.CompletedTask;
+    }
 }
 
 public class TestOperationalMessageRepository : IOperationalMessageRepository

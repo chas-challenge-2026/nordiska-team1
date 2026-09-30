@@ -28,7 +28,11 @@ public static class BankingMappers
         target.UpdatedAt = DateTime.UtcNow;
     }
 
-    public static SavingsAccountResponse ToResponse(this SavingsAccount acc, decimal? calculatedBalance = null)
+    public static SavingsAccountResponse ToResponse(
+        this SavingsAccount acc,
+        decimal? calculatedBalance = null,
+        decimal accruedInterestYtd = 0m,
+        decimal estimatedYearEndInterest = 0m)
         => new(
             acc.Id,
             acc.CustomerId,
@@ -39,7 +43,9 @@ public static class BankingMappers
             acc.CreatedAt,
             acc.AccountName,
             acc.UpdatedAt,
-            acc.Status
+            acc.Status,
+            accruedInterestYtd,
+            estimatedYearEndInterest
         );
 
     public static AccountTypeConfig ToDomain(this CreateAccountTypeConfigRequest req)

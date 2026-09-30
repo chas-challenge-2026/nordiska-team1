@@ -74,6 +74,17 @@ public sealed class AccountTypeConfigService : IAccountTypeConfigService, IInter
         };
 
         await _repo.CreateAsync(entity, cancellationToken);
+
+        var now = DateTime.UtcNow;
+        await _repo.AddRateHistoryAsync(new AccountTypeRateHistory
+        {
+            AccountType = normalizedType,
+            InterestRate = rate,
+            EffectiveFromUtc = now,
+            EffectiveToUtc = null,
+            CreatedAtUtc = now
+        }, cancellationToken);
+
         _cache.Remove(CacheKey);
         _logger.LogInformation("Created account type configuration '{AccountType}' with interest rate {Rate} (cache invalidated)", entity.AccountType, entity.InterestRate);
         return entity.ToResponse();
@@ -88,7 +99,27 @@ public sealed class AccountTypeConfigService : IAccountTypeConfigService, IInter
         if (request.InterestRate.HasValue)
         {
             var rate = request.InterestRate.Value > 1.0m ? request.InterestRate.Value / 100m : request.InterestRate.Value;
-            config.InterestRate = rate;
+            if (config.InterestRate != rate)
+            {
+                var now = DateTime.UtcNow;
+                var existingHistory = await _repo.GetRateHistoryAsync(accountType, cancellationToken);
+                var activeHistory = existingHistory.FirstOrDefault(h => h.EffectiveToUtc == null);
+                if (activeHistory != null)
+                {
+                    activeHistory.EffectiveToUtc = now;
+                }
+
+                await _repo.AddRateHistoryAsync(new AccountTypeRateHistory
+                {
+                    AccountType = config.AccountType,
+                    InterestRate = rate,
+                    EffectiveFromUtc = now,
+                    EffectiveToUtc = null,
+                    CreatedAtUtc = now
+                }, cancellationToken);
+
+                config.InterestRate = rate;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(request.Description))
@@ -100,5 +131,16 @@ public sealed class AccountTypeConfigService : IAccountTypeConfigService, IInter
         _cache.Remove(CacheKey);
         _logger.LogInformation("Updated account type configuration '{AccountType}' (InterestRate={Rate}) (cache invalidated)", config.AccountType, config.InterestRate);
         return config.ToResponse();
+    }
+
+    public async Task<IReadOnlyList<AccountTypeRateHistoryResponse>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default)
+    {
+        var history = await _repo.GetRateHistoryAsync(accountType, cancellationToken);
+        return history.Select(h => new AccountTypeRateHistoryResponse(
+            h.Id,
+            h.AccountType,
+            h.InterestRate,
+            h.EffectiveFromUtc,
+            h.EffectiveToUtc)).ToList();
     }
 }
