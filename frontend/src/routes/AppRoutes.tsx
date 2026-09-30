@@ -17,6 +17,7 @@ import TransactionsPage from "../pages/TransactionsPage";
 import SettingsPage from "../pages/SettingsPage";
 import AccountsPage from "../pages/AccountsPage";
 import FaqPage from "../pages/FaqPage";
+import DocumentsPage from "../pages/DocumentsPage";
 
 export default function AppRoutes() {
     return (

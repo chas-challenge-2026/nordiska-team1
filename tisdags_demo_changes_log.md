@@ -173,3 +173,26 @@ A fresh build of the Docker container fails during Stage 1 (`native-builder`) be
 - **Navigation in `frontend/src/components/PageNavigation.tsx`:**
   - Retained both desktop and mobile "Dokument" navigation links alongside develop's navigation updates.
 
+---
+
+## 12. End-to-End Cryptographic PDF Signing Enabled
+
+### What was changed and why:
+1. **Integrated `origin/native-pdf-signer` with OpenSSL 3.3.2 in Docker:**
+   - The signer module uses `CMS_final_digest(...)`, which was introduced in OpenSSL 3.2.0.
+   - Added a multi-stage `openssl-builder` layer in `Dockerfile` compiling OpenSSL 3.3.2 once (fully cached by Docker) so the C library and .NET runtime have access to the modern CMS precomputed digest signing API.
+   - Added a build fallback in `native/pdf-signer/src/pdf_sign.c` for OpenSSL < 3.2 to ensure host development tools (`ctest`, benchmarks) still compile cleanly everywhere.
+2. **Hybrid Key & Certificate Loading (`pdf_signer_create`):**
+   - Extended `pdf_signer_create` in `native/pdf-signer/src/pdf_sign.c` to support file-based keys (`KEY_SOURCE_FILE`) via `PDF_SIGNER_KEY_PATH` and `PDF_SIGNER_CERT_PATH` (or default `/app/certs/`), while retaining full fallback to PKCS#11 SoftHSM tokens.
+   - Configured Dockerfile to automatically generate a dedicated 2048-bit RSA key and self-signed X.509 certificate for `C=SE, O=Nordiska Sparbanken, CN=Nordiska PDF Signer`.
+3. **OpenSSL Legacy Provider Compatibility:**
+   - ActiveLogin's BankID simulator uses legacy PKCS#12 test certificates encrypted with RC2/3DES. Configured OpenSSL providers (`default` and `legacy`) in `/etc/ssl/openssl.cnf` to ensure BankID and modern CMS signing operate seamlessly together.
+4. **Dynamic C API Signing Flag:**
+   - In `native/pdf_generator/src/c_api/pdf_generator_c_api.cpp`, enabled signing dynamically: active whenever keys are present (`PDF_SIGNER_KEY_PATH` / `/app/certs/signing_key.pem`) or explicitly overridden via `NORDISKA_PDF_ENABLE_SIGNING=true`.
+
+### Verification:
+- Generated account statement PDF via `/api/reports/statement?accountId=1`.
+- Extracted and verified the embedded `/Contents` dictionary:
+  - **Previous status:** 8,192 zero characters (`0000...0000`).
+  - **Current status:** Valid ASN.1 DER CMS `pkcs7-signedData` structure containing `sha256WithRSAEncryption` signed by `C=SE, O=Nordiska Sparbanken, CN=Nordiska PDF Signer`.
+
