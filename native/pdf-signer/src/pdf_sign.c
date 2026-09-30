@@ -7,18 +7,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#if OPENSSL_VERSION_NUMBER < 0x30200000L
-/* Compatibility fallback for builds linking against OpenSSL < 3.2 */
-static int CMS_final_digest(CMS_ContentInfo *cms, const unsigned char *md,
-                            unsigned int mdlen, BIO *dcont, unsigned int flags) {
-  (void)cms;
-  (void)md;
-  (void)mdlen;
-  (void)dcont;
-  (void)flags;
-  return 0;
-}
-#endif
+
 
 /*---------------------------INTERNAL-----------------------------*/
 struct pdf_signer
