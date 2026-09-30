@@ -5,10 +5,22 @@
 This directory is a standalone native PDF-generation component. Treat it as
 its own project, with its own CMake build, tests and dependencies.
 
-The component is intended to be called by another application as a C cmpatible library on windows or linux.
+The component is intended to be called by another application as a C-compatible library on Linux.
 The reusable application core must remain independent of the caller and must
 not depend on .NET, web services, deployment tooling, Docker, or background-job
 infrastructure.
+
+## Module ownership — hard boundary
+
+Agents working on this component are **only permitted to modify files inside
+`native/pdf_generator/`**. No other sibling module under `native/` may be
+created, modified, or deleted.
+
+In particular, `native/pdf-signer/` is owned by a separate developer and team.
+Our only allowed interaction with that module is **calling the C function(s) it
+publicly exposes**. We must not add, edit, or remove any file in that directory,
+copy its source into ours, or make any change that alters its build or
+behaviour. If the integration point is unclear, stop and ask the user.
 
 ## Working rules
 
