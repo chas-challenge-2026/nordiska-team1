@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkcs11-provider \
     opensc \
     ca-certificates \
+    libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN module="$(find /usr/lib -name libsofthsm2.so -print -quit)" \
