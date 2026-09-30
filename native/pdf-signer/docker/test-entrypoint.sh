@@ -154,6 +154,9 @@ pkcs11-tool \
   --pin "$PIN" \
   --list-objects
 
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
 
 echo "Running tests..."
 
