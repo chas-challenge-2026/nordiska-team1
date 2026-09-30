@@ -296,9 +296,15 @@ public sealed class AuthServiceTests : IDisposable
     {
         // Arrange
         const string email = "user@nordiska.se";
-        await AddCustomerAsync(email, "Erik Svensson", email, "hashed-password");
+        var customer = await AddCustomerAsync(email, "Erik Svensson", email, "hashed-password");
+        _userManagerMock
+            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync(customer);
         _userManagerMock
             .Setup(x => x.CheckPasswordAsync(It.IsAny<Customer>(), "wrong-password"))
+            .ReturnsAsync(false);
+        _userManagerMock
+            .Setup(x => x.IsLockedOutAsync(customer))
             .ReturnsAsync(false);
 
         // Act
@@ -318,8 +324,14 @@ public sealed class AuthServiceTests : IDisposable
         const string email = "user@nordiska.se";
         var customer = await AddCustomerAsync(email, "Erik Svensson", email, "hashed-password");
         _userManagerMock
+            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync(customer);
+        _userManagerMock
             .Setup(x => x.CheckPasswordAsync(customer, "correct-password"))
             .ReturnsAsync(true);
+        _userManagerMock
+            .Setup(x => x.IsLockedOutAsync(customer))
+            .ReturnsAsync(false);
         _jwtProviderMock
             .Setup(x => x.Generate(customer))
             .ReturnsAsync("login-jwt");
@@ -340,7 +352,13 @@ public sealed class AuthServiceTests : IDisposable
     {
         // Arrange
         const string email = "demo@nordiska.se";
-        await AddCustomerAsync(email, "Demo Customer", email);
+        var customer = await AddCustomerAsync(email, "Demo Customer", email);
+        _userManagerMock
+            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync(customer);
+        _userManagerMock
+            .Setup(x => x.IsLockedOutAsync(customer))
+            .ReturnsAsync(false);
         _jwtProviderMock
             .Setup(x => x.Generate(It.IsAny<Customer>()))
             .ReturnsAsync("demo-jwt");

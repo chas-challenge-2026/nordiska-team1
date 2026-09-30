@@ -291,28 +291,6 @@ if (app.Environment.IsDevelopment())
     }).AllowAnonymous();
 }
 
-if(app.Environment.IsDevelopment())
-{
-  app.MapSwagger("/openapi/{documentName}.json");
-
-  app.MapScalarApiReference(options =>
-  {
-      options.WithTitle("Nordiska API");
-
-      options.Title = "Nordiska API";
-      options.DisableAgent();
-      options.DisableDefaultFonts();
-
-      options.WithDefaultHttpClient(
-          ScalarTarget.CSharp,
-          ScalarClient.HttpClient);
-
-  });
-}
-{
-    app.UseHsts();
-}
-
 // Seed Test Customer 
 if (app.Environment.IsDevelopment())
 {
