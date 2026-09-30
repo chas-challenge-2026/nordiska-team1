@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
+using Asp.Versioning;
 
 namespace Nordiska.FrontendApi.Endpoints.Reporting;
 
@@ -17,6 +18,8 @@ namespace Nordiska.FrontendApi.Endpoints.Reporting;
 /// Supports both asynchronous job-based generation and direct synchronous PDF downloads.
 /// </summary>
 [ApiController]
+[ApiVersion("2.0")]
+[Route("api/v{version:apiVersion}/reports")]
 [Route("api/reports")]
 [Authorize]
 public sealed class ReportsController : ControllerBase

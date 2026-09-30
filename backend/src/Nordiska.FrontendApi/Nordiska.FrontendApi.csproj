@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <PackageReference Include="ActiveLogin.Identity.Swedish" />
+    <PackageReference Include="Asp.Versioning.Http"/>
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer"/>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

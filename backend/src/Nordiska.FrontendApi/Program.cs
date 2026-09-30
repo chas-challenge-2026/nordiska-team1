@@ -21,6 +21,7 @@ using ActiveLogin.Authentication.BankId.Core;
 using Nordiska.Modules.Banking.Infrastructure;
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
+using Asp.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -148,6 +149,29 @@ builder.Services.AddProblemDetails(options =>
     };
 });
 
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(2, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+})
+.AddMvc()
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'V";
+    options.SubstituteApiVersionInUrl = true;
+});
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v2", new OpenApiInfo
+    {
+        Version = "v2",
+        Title = "Nordiska API v2",
+        Description = "API for Nordiska bank services (version 2.0)."
+    });
+});
+
 
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
@@ -250,6 +274,7 @@ if (app.Environment.IsDevelopment())
         options.WithDefaultHttpClient(
             ScalarTarget.CSharp,
             ScalarClient.HttpClient);
+
     });
     app.MapGet("/health/database", async (
         BankingDbContext db,
@@ -264,6 +289,28 @@ if (app.Environment.IsDevelopment())
                 new { status = "unavailable" },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
     });
+}
+
+if(app.Environment.IsDevelopment())
+{
+  app.MapSwagger("/openapi/{documentName}.json");
+
+  app.MapScalarApiReference(options =>
+  {
+      options.WithTitle("Nordiska API");
+
+      options.Title = "Nordiska API";
+      options.DisableAgent();
+      options.DisableDefaultFonts();
+
+      options.WithDefaultHttpClient(
+          ScalarTarget.CSharp,
+          ScalarClient.HttpClient);
+
+  });
+}
+{
+    app.UseHsts();
 }
 
 // Seed Test Customer 

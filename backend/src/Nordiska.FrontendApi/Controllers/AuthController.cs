@@ -7,6 +7,7 @@ using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
 using Nordiska.Modules.Banking.Application;
+using Asp.Versioning;
 
 namespace Nordiska.FrontendApi.Controllers;
 
@@ -14,7 +15,9 @@ namespace Nordiska.FrontendApi.Controllers;
 /// Authentication and session management endpoints using BankID and JWT cookies.
 /// </summary>
 [ApiController]
+[ApiVersion("2.0")]
 [Route("api/auth")]
+[Route("api/v{version:apiVersion}/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -137,6 +140,7 @@ public class AuthController : ControllerBase
     /// <response code="401">Unauthorized if the user is not authenticated.</response>
     [HttpGet("me")]
     [HttpGet("/api/me")]
+    [HttpGet("/api/v{version:apiVersion}/me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

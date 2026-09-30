@@ -46,6 +46,15 @@
           "Microsoft.Extensions.Hosting": "8.0.1"
         }
       },
+      "Microsoft.EntityFrameworkCore.InMemory": {
+        "type": "Direct",
+        "requested": "[8.0.31, )",
+        "resolved": "8.0.31",
+        "contentHash": "2I/fD35g3NG5BKxhqvOEAlLnTnqOre2i2r8NlgFiP4OIGLpHO87Shl4UhzAfVEdIPbsaNeycHDbJjIt89Ob0Tw==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "8.0.31"
+        }
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.14.1, )",
@@ -101,6 +110,22 @@
           "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
         }
       },
+      "Asp.Versioning.Abstractions": {
+        "type": "Transitive",
+        "resolved": "8.1.0",
+        "contentHash": "mpeNZyMdvrHztJwR1sXIUQ+3iioEU97YMBnFA9WLbsPOYhGwDJnqJMmEd8ny7kcmS9OjTHoEuX/bSXXY3brIFA==",
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "8.0.0"
+        }
+      },
+      "Asp.Versioning.Mvc": {
+        "type": "Transitive",
+        "resolved": "8.1.1",
+        "contentHash": "mkJv6eAdlbHbqTdrUcfEYFoZuGL6HoR7O+Lfsvivixp7N5BNhfCFPPOwsBzdIiH1qzdJXyJf+C+DZ08j27PMPg==",
+        "dependencies": {
+          "Asp.Versioning.Http": "8.1.1"
+        }
+      },
       "Castle.Core": {
         "type": "Transitive",
         "resolved": "5.1.1",
@@ -142,24 +167,24 @@
       },
       "Microsoft.EntityFrameworkCore": {
         "type": "Transitive",
-        "resolved": "8.0.30",
-        "contentHash": "Y6GP16iuqAUkcXSgMqjgao9w0UHSz8x04LRDadsi++sn7yBI9C/sy61xNLzPKM+6DZEbyPRHGq3M58f6DhB25g==",
+        "resolved": "8.0.31",
+        "contentHash": "RlM+Py8bIwT1f1yKPq9LDPTK08ZVgC157oAQlIIYRhSTXj1bYpSqWHTvWXb8Wghyfqfsi1wo9hIviiEzTZjdpA==",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.30",
-          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.30",
+          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.31",
+          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.31",
           "Microsoft.Extensions.Caching.Memory": "8.0.1",
           "Microsoft.Extensions.Logging": "8.0.1"
         }
       },
       "Microsoft.EntityFrameworkCore.Abstractions": {
         "type": "Transitive",
-        "resolved": "8.0.30",
-        "contentHash": "JoVu3708PrMcA3BUeo1+gTcD4nRI8o3g3kwNXwgTPUDhe0dqN2CQmHmEPDD0uZlI1v2oq3F7tR46VycUHzP9ng=="
+        "resolved": "8.0.31",
+        "contentHash": "2dnfIgy8TaEY31mWbQ2xCYWz/YgP2/cGFKhBskmLhovmn5PLgrnfcVLLFaGOZ0WhC2W0VzG8ps60NXEzflZ1dw=="
       },
       "Microsoft.EntityFrameworkCore.Analyzers": {
         "type": "Transitive",
-        "resolved": "8.0.30",
-        "contentHash": "+ZVRBR3CzGu0AGWTbewOWTzV+UG//yDrA0gdvb9i1dTidSvwG9qRRggEI9fie0MPC0LAcS9Z8X5HRYWWxefutg=="
+        "resolved": "8.0.31",
+        "contentHash": "ahYdpBYc7x6eyjjXycwdwuJZjbkFFsG0KgTs34c21PpiwY24KI3B1KdzDSzWIX6RWSSfS++2agQeGx5KK9JMVg=="
       },
       "Microsoft.EntityFrameworkCore.Relational": {
         "type": "Transitive",
@@ -641,6 +666,8 @@
         "dependencies": {
           "ActiveLogin.Authentication.BankId.AspNetCore": "[11.1.3, )",
           "ActiveLogin.Identity.Swedish": "[3.2.0, )",
+          "Asp.Versioning.Http": "[8.1.1, )",
+          "Asp.Versioning.Mvc.ApiExplorer": "[8.1.1, )",
           "FluentValidation": "[11.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[8.0.30, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[8.0.30, )",
@@ -674,6 +701,24 @@
           "FluentValidation": "[11.6.0, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
           "Nordiska.Modules.Banking": "[1.0.0, )"
+        }
+      },
+      "Asp.Versioning.Http": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.1, )",
+        "resolved": "8.1.1",
+        "contentHash": "1D/Mzq1MSUSQe1eCY6GeEsu+tIlpzoWZxZkhlcw/uvtVoTrwO+BMl0fSj/XX8oZN1DutWTZqHDHgyDRq+IeSdQ==",
+        "dependencies": {
+          "Asp.Versioning.Abstractions": "8.1.0"
+        }
+      },
+      "Asp.Versioning.Mvc.ApiExplorer": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.1, )",
+        "resolved": "8.1.1",
+        "contentHash": "u8PrP6CjmurgIh0EDfg8Gc/GdpDHgkbv8OLKdxQcWb5W4sp0i9BcdbQlLvRcATjNIJUyr7ZmqXjmdsFfqnuy0g==",
+        "dependencies": {
+          "Asp.Versioning.Mvc": "8.1.1"
         }
       },
       "FluentValidation": {

@@ -13,6 +13,7 @@ using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
+using Asp.Versioning;
 
 namespace Nordiska.FrontendApi.Endpoints.Banking;
 
@@ -20,6 +21,8 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 /// API endpoints for querying and executing account transactions (deposits and withdrawals) using the ledger pattern.
 /// </summary>
 [ApiController]
+[ApiVersion("2.0")]
+[Route("api/v{version:apiVersion}/transactions")]
 [Route("api/transactions")]
 [Authorize]
 public class TransactionsController : ControllerBase

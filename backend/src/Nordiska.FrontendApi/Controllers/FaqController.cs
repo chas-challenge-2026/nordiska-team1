@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nordiska.Modules.Faq.Application;
 using Nordiska.Modules.Faq.Contracts.Requests;
 using Nordiska.Modules.Faq.Contracts.Responses;
+using Asp.Versioning;
 
 namespace Nordiska.FrontendApi.Controllers;
 
@@ -12,6 +13,8 @@ namespace Nordiska.FrontendApi.Controllers;
 /// API endpoints for managing and querying FAQ knowledge base entries.
 /// </summary>
 [ApiController]
+[ApiVersion("2.0")]
+[Route("api/v{version:apiVersion}/faqs")]
 [Route("api/faqs")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -14,7 +14,7 @@ using Nordiska.Modules.Banking.Infrastructure.Db;
 
 
 
-namespace Nordiska.Modules.Banking.Application;
+namespace Nordiska.FrontendApi.Authentication;
 
 public class AuthService : IAuthService
 {
