@@ -6,6 +6,7 @@
 #include <string.h>
 #include <openssl/ui.h>
 #include <openssl/err.h>
+#include "debug_log.h"
 
 /*-------------------Internal helpers------------------------*/
 static key_secret_result_t request_secret(const key_credentials_t* credentials,
@@ -14,6 +15,7 @@ static key_secret_result_t request_secret(const key_credentials_t* credentials,
 static int                 file_passphrase_cb(char* pass, size_t pass_size, size_t* pass_len,
                                               const OSSL_PARAM params[], void* arg);
 
+#define KEY_SECRET_MAX_LEN 1024
 /*----------------------------------------------------------*/
 
 struct key_loader
@@ -93,7 +95,9 @@ static void cleanup_key_load_resources(key_load_resources_t* resources) {
 static int file_passphrase_cb(char* pass, size_t pass_size, size_t* pass_len,
                               const OSSL_PARAM params[], void* arg) {
   (void)params;
-
+  if (!arg || !pass || !pass_len) {
+    return 0;
+  }
   struct file_passphrase_ctx* ctx = arg;
 
   unsigned char* secret     = NULL;
@@ -105,7 +109,7 @@ static int file_passphrase_cb(char* pass, size_t pass_size, size_t* pass_len,
 
   if (request_secret(ctx->credentials, KEY_SECRET_FILE_PASSPHRASE, ctx->spec, &secret,
                      &secret_len) != KEY_SECRET_OK) {
-    fprintf(stderr, "Failed to get secret\n");
+    debug_log("Failed to get secret");
     return 0;
   }
 
@@ -127,8 +131,6 @@ static int pkcs11_ui_reader(UI* ui, UI_STRING* uis) {
     return 0; // 0 is error for OpenSSL
   }
 
-  fprintf(stderr, "PKCS11 UI reader called: type=%d\n", (int)UI_get_string_type(uis));
-
   enum UI_string_types type = UI_get_string_type(uis);
 
 
@@ -139,7 +141,7 @@ static int pkcs11_ui_reader(UI* ui, UI_STRING* uis) {
 
   struct pkcs11_ui_ctx* ctx = UI_get0_user_data(ui);
   if (!ctx) {
-    fprintf(stderr, "Missing PKCS#11 UI context\n");
+    debug_log("Missing PKCS#11 UI context");
     return 0;
   }
 
@@ -148,12 +150,7 @@ static int pkcs11_ui_reader(UI* ui, UI_STRING* uis) {
 
   if (request_secret(ctx->credentials, KEY_SECRET_PKCS11_PIN, ctx->spec, &secret, &secret_len) !=
       KEY_SECRET_OK) {
-    fprintf(stderr, "Failed to get PKCS#11 PIN\n");
-    return 0;
-  }
-
-  if (secret_len > INT_MAX) {
-    release_secret(&secret);
+    debug_log("Failed to get PKCS#11 PIN");
     return 0;
   }
 
@@ -162,7 +159,7 @@ static int pkcs11_ui_reader(UI* ui, UI_STRING* uis) {
   release_secret(&secret);
 
   if (res < 0) {
-    fprintf(stderr, "Failed to set PKCS#11 PIN in OpenSSL UI\n");
+    debug_log("Failed to set PKCS#11 PIN in OpenSSL UI");
     return 0;
   }
 
@@ -174,7 +171,7 @@ static key_secret_result_t request_secret(const key_credentials_t* credentials,
                                           unsigned char** out_buf, size_t* out_len) {
 
   if (!out_len || !out_buf) {
-    fprintf(stderr, "out_len & out_buf cannot be NULL\n");
+    debug_log("out_len & out_buf cannot be NULL");
     return KEY_SECRET_ERROR;
   }
 
@@ -182,17 +179,17 @@ static key_secret_result_t request_secret(const key_credentials_t* credentials,
   *out_len = 0;
 
   if (!credentials || !credentials->callback) {
-    fprintf(stderr, "Credentials & credential callback required\n");
+    debug_log("Credentials & credential callback required");
     return KEY_SECRET_ERROR;
   }
 
   if (!spec) {
-    fprintf(stderr, "key_spec_t cannot be NULL\n");
+    debug_log("key_spec_t cannot be NULL");
     return KEY_SECRET_ERROR;
   }
   unsigned char* secret_buf = OPENSSL_zalloc(KEY_SECRET_MAX_LEN);
   if (!secret_buf) {
-    fprintf(stderr, "Failed to allocate memory for secret_buf\n");
+    debug_log("Failed to allocate memory for secret_buf");
     return KEY_SECRET_ERROR;
   }
 
@@ -202,7 +199,7 @@ static key_secret_result_t request_secret(const key_credentials_t* credentials,
                                                   &secret_len, credentials->userdata);
 
   if (res != KEY_SECRET_OK || secret_len > KEY_SECRET_MAX_LEN || secret_len == 0) {
-    fprintf(stderr, "credential callback failed\n");
+    debug_log("credential callback failed");
     release_secret(&secret_buf);
     return KEY_SECRET_ERROR;
   }
@@ -217,21 +214,21 @@ static key_status_t load_file_key(key_loader_t* loader, const key_spec_t* spec,
                                   const key_credentials_t* credentials, key_handle_t* out) {
 
   if (!loader || !spec || !out) {
-    fprintf(stderr, "invalid or missing argument\n");
+    debug_log("invalid or missing argument");
     return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   out->pkey = NULL;
 
   if (spec->source != KEY_SOURCE_FILE || !spec->u.file.path) {
-    fprintf(stderr, "Invalid or missing path\n");
+    debug_log("Invalid or missing path");
     return KEY_STATUS_INVALID_ARGUMENT;
   }
   key_load_resources_t resources = {0};
 
   resources.bio = BIO_new_file(spec->u.file.path, "rb");
   if (!resources.bio) {
-    fprintf(stderr, "Failed to open key-file\n");
+    debug_log("Failed to open key-file");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_LOAD_FAILED;
   }
@@ -240,7 +237,7 @@ static key_status_t load_file_key(key_loader_t* loader, const key_spec_t* spec,
       &resources.pkey, NULL, NULL, NULL, OSSL_KEYMGMT_SELECT_PRIVATE_KEY, loader->libctx, NULL);
 
   if (!resources.decoder) {
-    fprintf(stderr, "Failed to create decoder context\n");
+    debug_log("Failed to create decoder context");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
@@ -257,13 +254,13 @@ static key_status_t load_file_key(key_loader_t* loader, const key_spec_t* spec,
     }
   }
   if (OSSL_DECODER_from_bio(resources.decoder, resources.bio) != 1) {
-    fprintf(stderr, "Failed to decode context\n");
+    debug_log("Failed to decode context");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_LOAD_FAILED;
   }
 
   if (!resources.pkey) {
-    fprintf(stderr, "unable to retrieve pkey\n");
+    debug_log("unable to retrieve pkey");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
@@ -280,14 +277,14 @@ static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec
 
 
   if (!loader || !spec || !out) {
-    fprintf(stderr, "invalid or missing argument\n");
+    debug_log("invalid or missing argument");
     return KEY_STATUS_INVALID_ARGUMENT;
   }
 
   out->pkey = NULL;
 
   if (spec->source != KEY_SOURCE_PKCS11 || !spec->u.pkcs11.uri) {
-    fprintf(stderr, "Invalid or missing PKCS#11 URI\n");
+    debug_log("Invalid or missing PKCS#11 URI");
     return KEY_STATUS_INVALID_ARGUMENT;
   }
 
@@ -295,13 +292,13 @@ static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec
 
   resources.ui_method = UI_create_method("key-loader-pkcs11");
   if (!resources.ui_method) {
-    fprintf(stderr, "Failed to create ui method\n");
+    debug_log("Failed to create ui method");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
 
   if (UI_method_set_reader(resources.ui_method, pkcs11_ui_reader) != 0) {
-    fprintf(stderr, "Failed to set PKCS#11 UI reader\n");
+    debug_log("Failed to set PKCS#11 UI reader");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
@@ -315,13 +312,13 @@ static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec
                                        resources.ui_method, &ui_ctx, NULL, NULL, NULL);
 
   if (!resources.store) {
-    fprintf(stderr, "Failed to open OSSL_store\n");
+    debug_log("Failed to open OSSL_store");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_BACKEND_UNAVAILABLE;
   }
 
   if (!OSSL_STORE_expect(resources.store, OSSL_STORE_INFO_PKEY)) {
-    fprintf(stderr, "Failed to set expected store object type\n");
+    debug_log("Failed to set expected store object type");
     cleanup_key_load_resources(&resources);
     return KEY_STATUS_INTERNAL_ERROR;
   }
@@ -332,7 +329,7 @@ static key_status_t load_pkcs11_key(key_loader_t* loader, const key_spec_t* spec
 
     if (!resources.store_info) {
       if (OSSL_STORE_error(resources.store)) {
-        fprintf(stderr, "Failed to load object from store\n");
+        debug_log("Failed to load object from store");
         cleanup_key_load_resources(&resources);
         return KEY_STATUS_LOAD_FAILED;
       }
@@ -365,13 +362,13 @@ key_loader_t* key_loader_create(const key_loader_config_t* config) {
 
   key_loader_t* key_loader = calloc(1, sizeof(key_loader_t));
   if (!key_loader) {
-    fprintf(stderr, "Failed to allocate memory for key_loader\n");
+    debug_log("Failed to allocate memory for key_loader");
     return NULL;
   }
 
   OSSL_LIB_CTX* libctx = OSSL_LIB_CTX_new();
   if (!libctx) {
-    fprintf(stderr, "Failed to create libctx from openssl\n");
+    debug_log("Failed to create libctx from openssl");
     key_loader_destroy(key_loader);
     return NULL;
   }
@@ -381,7 +378,7 @@ key_loader_t* key_loader_create(const key_loader_config_t* config) {
   key_loader->default_provider = OSSL_PROVIDER_load(key_loader->libctx, "default");
 
   if (!key_loader->default_provider) {
-    fprintf(stderr, "Failed to load OSSL default provider\n");
+    debug_log("Failed to load OSSL default provider");
     key_loader_destroy(key_loader);
     return NULL;
   }
@@ -391,14 +388,14 @@ key_loader_t* key_loader_create(const key_loader_config_t* config) {
   }
 
   if (!config->pkcs11_module_path) {
-    fprintf(stderr, "pkcs11 module path required when pkcs11 is enabled\n");
+    debug_log("pkcs11 module path required when pkcs11 is enabled");
     key_loader_destroy(key_loader);
     return NULL;
   }
 
   char* module_path = OPENSSL_strdup(config->pkcs11_module_path);
   if (!module_path) {
-    fprintf(stderr, "Failed to duplicate modulepath using openssl_strdup\n");
+    debug_log("Failed to duplicate modulepath using openssl_strdup");
     key_loader_destroy(key_loader);
     return NULL;
   }
@@ -415,11 +412,17 @@ key_loader_t* key_loader_create(const key_loader_config_t* config) {
   const char* provider_name =
       config->pkcs11_provider_name != NULL ? config->pkcs11_provider_name : "pkcs11";
 
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
   key_loader->pkcs11_provider = OSSL_PROVIDER_load_ex(key_loader->libctx, provider_name, params);
+#else
+  (void)params;
+  key_loader->pkcs11_provider = OSSL_PROVIDER_load(key_loader->libctx, provider_name);
+#endif
+
   OPENSSL_free(module_path);
 
   if (!key_loader->pkcs11_provider) {
-    fprintf(stderr, "Failed to load provider\n");
+    debug_log("Failed to load provider");
     key_loader_destroy(key_loader);
     return NULL;
   }
