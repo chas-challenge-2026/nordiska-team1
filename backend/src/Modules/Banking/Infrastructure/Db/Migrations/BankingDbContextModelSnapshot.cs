@@ -207,6 +207,81 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.AccountTypeRateHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AccountType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EffectiveFromUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EffectiveToUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("InterestRate")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountType", "EffectiveFromUtc");
+
+                    b.ToTable("account_type_rate_histories", "banking");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1L,
+                            AccountType = "flex",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.035000m
+                        },
+                        new
+                        {
+                            Id = 2L,
+                            AccountType = "fix",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.041000m
+                        },
+                        new
+                        {
+                            Id = 3L,
+                            AccountType = "standard",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.025000m
+                        },
+                        new
+                        {
+                            Id = 4L,
+                            AccountType = "saving",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.035000m
+                        },
+                        new
+                        {
+                            Id = 5L,
+                            AccountType = "premium",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.040000m
+                        });
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.Customer", b =>
                 {
                     b.Property<long>("Id")
@@ -559,6 +634,17 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.AccountTypeRateHistory", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Banking.Domain.AccountTypeConfig", "AccountTypeConfig")
+                        .WithMany("RateHistories")
+                        .HasForeignKey("AccountType")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AccountTypeConfig");
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.LedgerEntry", b =>
                 {
                     b.HasOne("Nordiska.Modules.Banking.Domain.SavingsAccount", "Account")
@@ -591,6 +677,8 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.AccountTypeConfig", b =>
                 {
+                    b.Navigation("RateHistories");
+
                     b.Navigation("SavingsAccounts");
                 });
 

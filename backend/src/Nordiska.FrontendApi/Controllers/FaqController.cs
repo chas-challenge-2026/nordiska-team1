@@ -33,7 +33,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Paginated list of FAQ entries matching the criteria.</response>
     /// <response code="400">Validation failed for query parameters.</response>
-    [HttpGet("{lang:alpha}")]
+    [HttpGet("{lang:regex(^(sv|en)$)}")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(PagedResult<FaqEntryResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -64,7 +64,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     /// <param name="lang">The language code (e.g. 'sv', 'en').</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">List of distinct category names for the language.</response>
-    [HttpGet("{lang:alpha}/categories")]
+    [HttpGet("{lang:regex(^(sv|en)$)}/categories")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<string>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<string>>> GetCategories(
@@ -103,7 +103,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
 
     /// <summary>
-    /// Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+    /// Decreases the helpfulness count of an FAQ entry by 1 (supports negative count for downvotes).
     /// </summary>
     /// <param name="id">The unique identifier of the FAQ entry.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -320,4 +320,4 @@ public sealed class FaqController(FaqService service) : ControllerBase
         var result = await service.SearchAsync(request, cancellationToken);
         return Ok(result);
     }
-}
+}

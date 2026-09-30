@@ -1,12 +1,18 @@
 import { useTranslation } from "react-i18next";
 
-export default function LanguageButton() {
+type LanguageButtonProps = {
+    onLanguageChange?: () => void;
+}
+
+export default function LanguageButton({onLanguageChange}: LanguageButtonProps) {
     const { i18n } = useTranslation();
 
     const toggleLanguage = () => {
         i18n.changeLanguage(
             i18n.language === "sv" ? "en" : "sv"
         );
+
+        onLanguageChange?.();
     };
 
     return (

@@ -17,7 +17,7 @@ export default function App() {
     useSessionCheck();
 
     // TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut:
-    const {showWarning, remainingSeconds, stayLoggedIn, logoutNow} = useInactivityTimer();
+    const { showWarning, remainingSeconds, stayLoggedIn, logoutNow } = useInactivityTimer();
 
     if (isCheckingSession) return <div>loading...</div>
 
@@ -27,24 +27,25 @@ export default function App() {
         "/login",
         "/logout",
         "/logged-out",
+        "/register"
     ]
 
     const protectedHeader = !UNPROTECTED_HEADER.includes(location.pathname);
-    
+
     return (
-        <>
-            <PageHeader protectedHeader={protectedHeader}/>
+        <div className='flex min-h-dvh flex-col'>
+            <PageHeader protectedHeader={protectedHeader} />
             <ErrorBoundary key={location.pathname}>
-                <AppRoutes/>
+                <AppRoutes />
             </ErrorBoundary>
 
             {/* TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut: */}
             {showWarning && (
-                <InactivityWarning 
+                <InactivityWarning
                     remainingSeconds={remainingSeconds}
                     onStayLoggedIn={stayLoggedIn}
-                    onLogout={logoutNow}/>
+                    onLogout={logoutNow} />
             )}
-        </>
+        </div>
     )
 }

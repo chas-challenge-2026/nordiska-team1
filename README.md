@@ -84,6 +84,15 @@ erDiagram
         string description
     }
 
+    AccountTypeRateHistory {
+        bigint id PK
+        string account_type FK "saving, flex, fix, standard, premium"
+        decimal interest_rate "Gällande räntesats för perioden"
+        datetime effective_from_utc "Giltig från och med"
+        datetime effective_to_utc "Giltig till och med (null = aktiv)"
+        datetime created_at_utc "Skapad tidpunkt"
+    }
+
     SavingsAccount {
         bigint id PK
         bigint customer_id FK
@@ -150,6 +159,7 @@ erDiagram
 
     Customer ||--o{ SavingsAccount : "owns"
     AccountTypeConfig ||--o{ SavingsAccount : "defines_rate_for"
+    AccountTypeConfig ||--o{ AccountTypeRateHistory : "has_rate_history"
     SavingsAccount ||--o{ Transaction : "has ledger entries"
     SavingsAccount ||--o{ TaxReport : "has"
     Customer ||--o{ AuditEntry : "logs"

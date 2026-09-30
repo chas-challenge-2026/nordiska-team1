@@ -43,7 +43,8 @@ export default function TransferPage() {
     const { t } = useTranslation();
 
     const { data: accountsData } = useGetAccounts();
-    const { data: transactionsData } = useTransactions();
+    // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
+    const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
     const transferFundsMutation = useTransferFunds();
     const createPlannedMutation = useCreatePlannedTransaction();
     const cancelPlannedMutation = useCancelPlannedTransaction();
@@ -75,15 +76,13 @@ export default function TransferPage() {
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
     const [customs, setCustoms] = useState<Payee[]>([]);
-    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<
-        PlannedTransfer[]
-    >([]);
+    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<PlannedTransfer[]>([]);
 
     const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
 
     const backendPlannedTransfers: PlannedTransfer[] = useMemo(
         () =>
-            (transactionsData ?? [])
+            (transactionsData?.items ?? [])
                 .filter((tx) => tx.isPlanned)
                 .map((tx) => ({
                     localId: `backend-${tx.id}`,
@@ -129,15 +128,15 @@ export default function TransferPage() {
 
     const doneSummary = toAccount
         ? t(
-              recurring
-                  ? "page-transfer.done.summary-recurring"
-                  : "page-transfer.done.summary",
-              {
-                  amount: formatSek(amountValue),
-                  name: toAccount.name,
-                  date,
-              },
-          )
+            recurring
+                ? "page-transfer.done.summary-recurring"
+                : "page-transfer.done.summary",
+            {
+                amount: formatSek(amountValue),
+                name: toAccount.name,
+                date,
+            },
+        )
         : "";
 
     const upcomingTransfers = plannedTransfers.filter(
@@ -307,7 +306,8 @@ export default function TransferPage() {
         createPlannedMutation.mutate(
             {
                 accountId,
-                type: (transfer.type as "Deposit" | "Withdraw") ?? "Withdraw",
+                // Transaction type is lowercase; create endpoint expects "Deposit" | "Withdraw"
+                type: transfer.type === "deposit" ? "Deposit" : "Withdraw",
                 amount: transfer.sum,
                 plannedDate: toPlannedDateIso(newDate),
                 label: transfer.label,
@@ -332,8 +332,8 @@ export default function TransferPage() {
     const editPlannedError = createPlannedMutation.isError
         ? "save"
         : cancelPlannedMutation.isError
-          ? "cleanup"
-          : null;
+            ? "cleanup"
+            : null;
 
     const handleDeletePlannedTransfer = (
         transfer: PlannedTransfer,
@@ -454,9 +454,10 @@ export default function TransferPage() {
     };
 
     return (
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10">
-            <div className="mx-auto grid max-w-[1240px] grid-cols-1 rounded-[10px] border border-[#E5EAF0] bg-white shadow-card lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-                <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 bg-light-gray">
+            <div className="mx-auto grid max-w-[1240px] grid-cols-2  gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+
+                <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
                     {(step === "form" || step === "bankid") && (
                         <TransferForm
                             fromAccount={fromAccount}
@@ -496,6 +497,9 @@ export default function TransferPage() {
                     )}
                 </div>
 
+                <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
+
+
                 <PlannedTransfersPanel
                     upcomingTransfers={upcomingTransfers}
                     onEditTransfer={handleEditPlannedTransfer}
@@ -509,6 +513,8 @@ export default function TransferPage() {
                     deleteError={cancelPlannedMutation.isError}
                     onResetStatus={resetPlannedMutations}
                 />
+
+                </div>
             </div>
 
             <TransferModals

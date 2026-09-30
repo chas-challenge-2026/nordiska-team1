@@ -6,7 +6,6 @@ using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
-
 namespace Nordiska.FrontendApi.Endpoints.Banking;
 
 /// <summary>

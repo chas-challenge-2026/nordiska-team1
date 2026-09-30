@@ -19,6 +19,9 @@ type ModalProps = {
     maxHeightClassName?: string;
     closeOnOverlayClick?: boolean;
     closeOnEscape?: boolean;
+    header?: ReactNode;
+    footer?: ReactNode;
+    showCloseButton?: boolean;
 };
 
 const DRAG_CLOSE_THRESHOLD_PX = 200;
@@ -61,6 +64,9 @@ export default function Modal({
     maxHeightClassName = "max-h-[85vh] sm:max-h-[calc(100vh-5rem)]",
     closeOnOverlayClick = true,
     closeOnEscape = true,
+    header,
+    footer,
+    showCloseButton = true,
 }: ModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -163,15 +169,23 @@ export default function Modal({
                         >
                             <div className="h-1.5 w-10 rounded-full bg-gray-300" />
                         </div>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            aria-label="Close"
-                            className="absolute top-3 right-3 z-10 rounded-md p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none cursor-pointer"
-                        >
-                            ×
-                        </button>
-                        {children}
+                        {showCloseButton && (
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                aria-label="Close"
+                                className="absolute top-3 right-3 z-10 rounded-md p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none cursor-pointer"
+                            >
+                                ×
+                            </button>
+                        )}
+                        {header && <div className="shrink-0 px-4">{header}</div>}
+                        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+                        {footer && (
+                            <div className="shrink-0 flex items-center gap-3 border-t border-gray-200 px-4 py-3">
+                                {footer}
+                            </div>
+                        )}
                     </motion.div>
                 </motion.dialog>
             )}

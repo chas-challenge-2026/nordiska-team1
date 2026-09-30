@@ -5,3 +5,11 @@ public record AccountTypeConfigResponse(
     decimal InterestRate,
     string Description
 );
+
+public record AccountTypeRateHistoryResponse(
+    long Id,
+    string AccountType,
+    decimal InterestRate,
+    System.DateTime EffectiveFromUtc,
+    System.DateTime? EffectiveToUtc
+);

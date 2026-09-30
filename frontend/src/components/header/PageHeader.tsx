@@ -47,6 +47,8 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
     switch (location.pathname) {
         case "/login":
+        case "/register":
+
             dotColor = "text-white"
             headerBackground = "bg-[url('/images/winter_forrest.webp')] bg-cover bg-center"
             languageSelectBg = ""
@@ -73,7 +75,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                 > 
 
                     {/* ----- LOGO ----- */}
-                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer} -mb-1`}>
+                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer -mb-1`}>
                         nordiska<span className={dotColor}>.</span>
                     </a>
 
@@ -84,7 +86,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                             onClick={() => setLanguageOpen(!languageOpen)}
                             aria-expanded={languageOpen}
                             aria-haspopup="true"
-                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white font-normal"
+                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white text-shadow-lg/40 font-normal"
                         >
                             <img className="h-[14px] w-[19px] invert -mr-1.5" src="icons/lang-icon.svg" aria-hidden="true"/>
                             {i18n.language}
@@ -114,7 +116,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
             {/* ----- LOGO ----- */}
             <section>
-                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer}`}>
+                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer`}>
                     nordiska<span className={dotColor}>.</span>
                 </a>
             </section>

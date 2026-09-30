@@ -13,10 +13,10 @@ export default function AccountsPage() {
     const totalBalance = accounts?.reduce((sum, a) => sum + a.balance, 0) ?? 0;
 
     return (
-        <div className="mx-auto  px-4 py-6 sm:px-6 sm:py-10">
-            <div className=" p-4 sm:p-6">
+        <div className="mx-auto  px-4 py-6 sm:px-6 sm:py-10 bg-light-gray w-screen h-screen">
+            <div className=" p-4 sm:p-6 w-[70vw] mx-auto">
                 <div className="mb-6 flex flex-col gap-2 border-b-2 border-nordiska-orange pb-2 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between">
-                    <h1 className="text-lg font-semibold text-dark-navy">{t("accounts-route.my-accounts")}</h1>
+                    <h1 className="text-xl font-semibold text-dark-navy">{t("accounts-route.my-accounts")}</h1>
                     {accounts && accounts.length > 0 && (
                         <p className="text-sm text-secondary">
                         {t("accounts-route.total-balance")}{" "}
@@ -28,7 +28,7 @@ export default function AccountsPage() {
                     <button
                         type="button"
                         onClick={() => setIsCreateAccountOpen(true)}
-                        className="rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue"
+                        className="rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold cursor-pointer text-white transition-colors hover:bg-nordiska-blue"
                     >
                     {t("accounts-route.new-account")}
                     </button>
@@ -52,7 +52,7 @@ export default function AccountsPage() {
                             <button
                                 type="button"
                                 onClick={() => { }}
-                                className="w-full rounded-md bg-primary-blue py-3 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue"
+                                className="w-full rounded-md bg-primary-blue py-3 text-sm font-semibold text-white shadow-lg cursor-pointer transition-colors hover:bg-nordiska-blue"
                             >
                             {t("accounts-route.full-report")}
                             </button>

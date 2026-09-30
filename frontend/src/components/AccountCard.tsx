@@ -29,7 +29,7 @@ export default function AccountCard({ account }: AccountCardProps) {
     }
 
     return (
-        <article className="flex flex-col gap-4 rounded-lg border border-secondary/15 bg-white p-4 shadow-card sm:p-5">
+        <article className="flex flex-col gap-4 rounded-lg border border-secondary bg-white p-4 shadow-card sm:p-5">
             <div>
                 <p className="font-semibold text-dark-navy">{account.accountName}</p>
                 <p className="flex flex-wrap items-center gap-2 text-sm text-secondary">
@@ -67,7 +67,7 @@ export default function AccountCard({ account }: AccountCardProps) {
                 <button
                     type="button"
                     onClick={() => { }}
-                    className="whitespace-nowrap rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-blue-accent"
+                    className="whitespace-nowrap rounded-md cursor-pointer bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-blue-accent"
                 >
                     {t("generic.tax-report")}
                 </button>

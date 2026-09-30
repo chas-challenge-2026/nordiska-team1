@@ -43,4 +43,23 @@ public sealed class AccountTypeConfigRepository(BankingDbContext db) : IAccountT
         db.AccountTypeConfigs.Update(entity);
         await db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<AccountTypeRateHistory>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(accountType)) return [];
+        var normalized = accountType.Trim().ToLowerInvariant();
+        return await db.AccountTypeRateHistories
+            .AsNoTracking()
+            .Where(x => x.AccountType.ToLower() == normalized)
+            .OrderBy(x => x.EffectiveFromUtc)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task AddRateHistoryAsync(AccountTypeRateHistory history, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(history);
+        history.AccountType = history.AccountType.Trim().ToLowerInvariant();
+        db.AccountTypeRateHistories.Add(history);
+        await db.SaveChangesAsync(cancellationToken);
+    }
 }
