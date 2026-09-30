@@ -42,7 +42,7 @@ type Step = "form" | "bankid" | "done";
 export default function TransferPage() {
     const { t } = useTranslation();
 
-    const { data: accountsData } = useGetAccounts();
+    const { data: accountsData } = useGetAccounts("active");
     // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
     const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
     const transferFundsMutation = useTransferFunds();
