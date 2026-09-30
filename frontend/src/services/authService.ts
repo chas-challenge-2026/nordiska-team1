@@ -7,7 +7,7 @@ import type { User } from "../types/types";
 //     role: string;
 // }
 
-interface BankIdInitRes {
+export interface BankIdInitRes {
     orderRef: string;
     autoStartToken: string;
     qrStartToken: string;
@@ -16,7 +16,7 @@ interface BankIdInitRes {
 
 interface BankIdCollectUser {
     status: string;
-    hintcode: string;
+    hintCode: string | null;
     customer: null | {
         id: number;
         name: string;
@@ -24,8 +24,9 @@ interface BankIdCollectUser {
     }
 }
 
-export async function bankIdInitiate(personalNum:string):Promise<BankIdInitRes> {
-    const res = await axiosInstance.post("/auth/bankid/initiate", {personalNum: personalNum});
+/** Utan personnummer startas en vanlig BankID-order (QR-kod eller autostart på samma enhet). */
+export async function bankIdInitiate(personalNum?: string):Promise<BankIdInitRes> {
+    const res = await axiosInstance.post("/auth/bankid/initiate", {personalNum: personalNum ?? ""});
     return res.data;
 }
 
