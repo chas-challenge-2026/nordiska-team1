@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nordiska.FrontendApi.Authentication;
@@ -48,6 +49,8 @@ public sealed class AuthServiceTests : IDisposable
 
         _bankIdApiClientMock = new Mock<IBankIdAppApiClient>();
         _jwtProviderMock = new Mock<IJwtProvider>();
+        var environmentMock = new Mock<IHostEnvironment>();
+        environmentMock.SetupGet(x => x.EnvironmentName).Returns(Environments.Development);
 
         _sut = new AuthService(
             _db,
@@ -58,7 +61,8 @@ public sealed class AuthServiceTests : IDisposable
             {
                 SecretKey = "super-secret-key-for-testing-purposes",
                 TokenLifetimeInMinutes = 60
-            }));
+            }),
+            environmentMock.Object);
     }
 
     public void Dispose()
