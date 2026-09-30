@@ -3,6 +3,8 @@
 #include "cert_load.h"
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/cms.h>
+#include <stdio.h>
 
 /*---------------------------INTERNAL-----------------------------*/
 struct pdf_signer
@@ -39,6 +41,88 @@ static key_secret_result_t signer_secret_callback(key_secret_kind_t kind, const 
 
   return KEY_SECRET_OK;
 }
+
+static CMS_ContentInfo* create_cms(pdf_signer_t* signer, const pdf_sign_request_t* req) {
+  if (!signer || !req) {
+    return NULL;
+  }
+
+  CMS_ContentInfo* cms = CMS_sign(NULL, NULL, NULL, NULL, CMS_PARTIAL | CMS_DETACHED | CMS_BINARY);
+  if (!cms) {
+    return NULL;
+  }
+
+  CMS_SignerInfo* signer_info = CMS_add1_signer(cms, signer->cert.certificate, signer->key.pkey,
+                                                EVP_sha256(), CMS_NOSMIMECAP | CMS_CADES);
+  if (!signer_info) {
+    CMS_ContentInfo_free(cms);
+    return NULL;
+  }
+
+  if (CMS_final_digest(cms, req->digest, req->digest_len, NULL, CMS_DETACHED | CMS_BINARY) != 1) {
+    CMS_ContentInfo_free(cms);
+    return NULL;
+  }
+
+  return cms;
+}
+
+static unsigned char* cms_to_der(CMS_ContentInfo* cms, size_t* out_len) {
+  if (!cms || !out_len) {
+    return NULL;
+  }
+
+  int len = i2d_CMS_ContentInfo(cms, NULL);
+  if (len <= 0) {
+    return NULL;
+  }
+
+  unsigned char* der = malloc((size_t)len);
+  if (!der) {
+    return NULL;
+  }
+
+  unsigned char* p = der;
+  if (i2d_CMS_ContentInfo(cms, &p) != len) {
+    free(der);
+    return NULL;
+  }
+
+  *out_len = (size_t)len;
+  return der;
+}
+
+static char* der_to_hex(const unsigned char* der, size_t der_len, size_t* out_len) {
+  if (!der || !out_len) {
+    return NULL;
+  }
+
+  if (der_len > (SIZE_MAX - 1) / 2) {
+    return NULL;
+  }
+
+  size_t hex_len = der_len * 2;
+
+  char* hex = malloc(hex_len + 1);
+  if (!hex) {
+    return NULL;
+  }
+
+  static const char digits[] = "0123456789ABCDEF";
+
+  for (size_t i = 0; i < der_len; i++) {
+    // Convert the upper 4 bits of the byte to the first hex character.
+    hex[i * 2] = digits[(der[i] >> 4) & 0x0F];
+
+    // Convert the lower 4 bits of the byte to the second hex character.
+    hex[i * 2 + 1] = digits[der[i] & 0x0F];
+  }
+
+  hex[hex_len] = '\0';
+  *out_len     = hex_len;
+  return hex;
+}
+
 
 /*****************************************************************/
 
@@ -120,21 +204,34 @@ pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t
     return PDF_SIGN_INVALID_ARGUMENT;
   }
 
-  const size_t hex_len = 8192;
-
-  char* output = malloc(hex_len + 1);
-  if (!output) {
-    return PDF_SIGN_INTERNAL_ERROR;
+  CMS_ContentInfo* cms = create_cms(signer, req);
+  if (!cms) {
+    return PDF_SIGN_CMS_ERROR;
   }
 
-  for (size_t i = 0; i < hex_len; i++) {
-    output[i] = "0123456789ABCDEF"[i % 16];
+  size_t         der_len = 0;
+  unsigned char* der     = cms_to_der(cms, &der_len);
+  if (!der) {
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
   }
 
-  output[hex_len] = '\0';
+  printf("CMS DER length: %zu\n", der_len);
 
-  result->contents_hex     = output;
+
+  size_t hex_len = 0;
+  char*  hex     = der_to_hex(der, der_len, &hex_len);
+
+  free(der);
+  CMS_ContentInfo_free(cms);
+
+  if (!hex) {
+    return PDF_SIGN_OUTPUT_ERROR;
+  }
+
+  result->contents_hex     = hex;
   result->contents_hex_len = hex_len;
+
   return PDF_SIGN_OK;
 }
 
