@@ -12,12 +12,12 @@
         "date": "Date",
         "reset": "Reset",
         "all": "All",
-
+        "yes": "Yes",
+        "no": "No",
         "account": "Account",
         "savings-account": "Savings account",
         "interest": "Interest",
         "filter": "Filter",
-
         "showing": "Showing",
         "of": "of",
         "transactions": "transactions",
@@ -37,7 +37,9 @@
         "page-nav": "Main navigation",
         "mobile-menu-close": "Close menu",
         "mobile-menu-open": "Open menu",
-        "mobile-nav": "Mobile navigation"
+        "mobile-nav": "Mobile navigation",
+        "previous-page": "Previous page",
+        "next-page": "Next page"
     },
     "welcome-route": {
         "title": "Customer Portal",
@@ -331,5 +333,55 @@
         "minutes": "minutes",
         "and": "and",
         "seconds": "seconds"
+    },
+    "faq": {
+        "faq-header": {
+            "title": "How can we help you today?",
+            "paragraph": "Search or find frequently asked questions by category"
+        },
+        "faq-search": {
+            "placeholder-category": "Search in category",
+            "placeholder-no-category": "Search all categories",
+            "aria-label": "Clear search"
+        },
+        "faq-filter-info": {
+            "no-filter": "Filter frequently asked questions by category or search for your question in the search field.",
+            "category-filter": "Showing results in category:",
+            "search-filter": "Showing results matching:",
+            "in-category": "in category:"
+        },
+        "faq-list": {
+            "loading": "Loading frequently asked questions",
+            "error": "Could not retrieve frequently asked questions.",
+            "no-results": "No results matched your search."
+        },
+        "faq-feedback": {
+            "question": "Did this answer help you?",
+            "feedback": "Thank you for your feedback!",
+            "no-results": "No results matched your search.",
+            "aria-label": {
+                "div": "Rate the answer",
+                "btn-yes": "Yes, this answer helped me",
+                "btn-no": "No, this answer did not help me"
+            }
+        },
+        "faq-sidebar": {
+            "related-title": "Related",
+            "close-btn-aria-label": "Close related information",
+            "question": {
+                "change-language": "Hur ändrar jag språk?",
+                "update-info": "How do I update my contact information?"
+            },
+            "answer": {
+                "change-language": "Navigera till menyn i övre högra hörnet. Språkinställningar hittar du längst ner i menyn, eller ändra språk direkt via knappen nedan.",
+                "update-info": "Navigate to the menu in the top right corner and select \"Settings\", or navigate directly using the link below.",
+                "update-info-action": "Update contact information"
+            },
+            "no-answer-title": "Can't find the answer?",
+            "contact-us": "Contact us"
+        }
+    },
+    "faq-page": {
+        "categories-error": "Could not retrieve categories"
     }
 }
