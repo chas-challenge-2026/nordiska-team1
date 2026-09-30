@@ -18,6 +18,10 @@ import SettingsPage from "../pages/SettingsPage";
 import AccountsPage from "../pages/AccountsPage";
 import FaqPage from "../pages/FaqPage";
 
+//Admin
+import Admin from "../pages/admin/Admin";
+import FaqAdmin from "../pages/admin/Faq";
+
 export default function AppRoutes() {
     return (
         <Routes>
@@ -46,6 +50,12 @@ export default function AppRoutes() {
                     />
                     <Route path="/accounts" element={<AccountsPage />} />
                 </Route>
+            </Route>
+
+            {/* ADMIN ROUTES */}
+            <Route path="/admin">
+                <Route index element={<Admin />} />
+                <Route path="faq" element={<FaqAdmin />} />
             </Route>
         </Routes>
     );
