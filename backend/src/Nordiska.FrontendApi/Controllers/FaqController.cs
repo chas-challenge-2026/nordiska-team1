@@ -103,7 +103,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
 
     /// <summary>
-    /// Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+    /// Decreases the helpfulness count of an FAQ entry by 1 (supports negative count for downvotes).
     /// </summary>
     /// <param name="id">The unique identifier of the FAQ entry.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
