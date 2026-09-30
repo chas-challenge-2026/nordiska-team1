@@ -4,12 +4,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <expected>
 #include <new>
 #include <span>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 #include <vector>
 
 namespace {
@@ -135,10 +138,19 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
 
         const std::span<const uint8_t> payload_span{json_utf8, json_length};
 
+        const char* sign_env = std::getenv("NORDISKA_PDF_ENABLE_SIGNING");
+        bool enable_signing = false;
+        if (sign_env != nullptr) {
+            enable_signing = (std::strcmp(sign_env, "1") == 0 || strcasecmp(sign_env, "true") == 0);
+        } else if (std::getenv("PDF_SIGNER_KEY_PATH") != nullptr ||
+                   ::access("/app/certs/signing_key.pem", R_OK) == 0) {
+            enable_signing = true;
+        }
+
         const nordiska::GeneratorConfig config{
             .ingestor = nordiska::JsonIngestorKind::Simdjson,
             .engine = nordiska::PdfEngineKind::Libharu, // TODO native is faster (and smaller) but must be tested more
-            .enable_signing = false,
+            .enable_signing = enable_signing,
             .compression = true, // Cut output size by 60% for a 25% performance penalty, huge win
         };
 
