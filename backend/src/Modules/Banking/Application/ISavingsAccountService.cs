@@ -14,6 +14,12 @@ public interface ISavingsAccountService
     Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves all savings accounts owned by a customer.
+    /// </summary>
+    /// <param name="customerId">Customer id.</param>
+    Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retrieves a savings account by id.
     /// </summary>
     /// <param name="id">Account id.</param>

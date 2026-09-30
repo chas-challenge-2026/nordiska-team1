@@ -18,6 +18,13 @@ docker compose up
 | anna@example.com | password123 |
 | erik@example.com | password123 |
 
+> `password123` fungerar bara i Development och bara för seedade konton utan lösenord. Efter 5 felaktiga försök spärras kontot i 15 minuter (BankID-inloggning häver spärren).
+
+| BankID |
+|--------|
+| 197903142380 |
+| 198202116050 |
+
 ## Vad som fungerar i v1
 
 - Inloggning med e-post och lösenord

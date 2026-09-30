@@ -16,6 +16,11 @@ public sealed class FaqEntryConfiguration
         builder.Property(x => x.Id)
             .ValueGeneratedOnAdd();
 
+        builder.Property(x => x.Language)
+            .IsRequired()
+            .HasMaxLength(10)
+            .HasDefaultValue("sv");
+
         builder.Property(x => x.Question)
             .IsRequired()
             .HasMaxLength(500);
@@ -34,5 +39,11 @@ public sealed class FaqEntryConfiguration
 
         builder.Property(x => x.HelpfulCount)
             .HasDefaultValue(0);
+
+        builder.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        builder.Property(x => x.UpdatedAt)
+            .IsRequired(false);
     }
 }

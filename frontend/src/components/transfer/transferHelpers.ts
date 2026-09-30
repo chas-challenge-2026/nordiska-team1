@@ -25,6 +25,18 @@ export function todayIso() {
     return new Date().toISOString().slice(0, 10);
 }
 
+// Backend lagrar plannedDate som en Postgres timestamptz, vilket kräver ett
+// fullt UTC-datum (Kind=Utc) — ett bart "YYYY-MM-DD"-datum ger ett 500-fel.
+export function toPlannedDateIso(dateStr: string) {
+    return new Date(`${dateStr}T00:00:00Z`).toISOString();
+}
+
+export function addOneMonthIso(dateStr: string) {
+    const d = new Date(`${dateStr}T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    return d.toISOString().slice(0, 10);
+}
+
 export function matchesSearch(account: TransferAccount, query: string) {
     if (!query) return true;
     return `${account.name} ${account.meta}`.toLowerCase().includes(query);

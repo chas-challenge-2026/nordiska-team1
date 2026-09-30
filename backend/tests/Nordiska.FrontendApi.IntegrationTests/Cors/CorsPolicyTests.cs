@@ -50,20 +50,21 @@ public class CorsPolicyTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Preflight_DeleteMethod_IsNotAllowed_ByPolicy()
+    public async Task Preflight_DeleteMethod_IsAllowed_ByPolicy()
     {
         // Arrange
-        using var request = new HttpRequestMessage(HttpMethod.Options, "/weatherforecast");
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/transactions/planned/45");
         request.Headers.Add("Origin", "http://localhost:5173");
         request.Headers.Add("Access-Control-Request-Method", "DELETE");
+        request.Headers.Add("Access-Control-Request-Headers", "authorization,content-type");
 
         // Act
         using var response = await _client.SendAsync(request);
 
-        // Assert: DELETE should not be in allowed methods header
-        if (response.Headers.TryGetValues("Access-Control-Allow-Methods", out var allowedMethods))
-        {
-            string.Join(",", allowedMethods).Should().NotContain("DELETE");
-        }
+        // Assert: DELETE should be in allowed methods header
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
+        response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain("http://localhost:5173");
+        response.Headers.TryGetValues("Access-Control-Allow-Methods", out var allowedMethods).Should().BeTrue();
+        string.Join(",", allowedMethods!).Should().Contain("DELETE");
     }
 }

@@ -11,6 +11,9 @@ using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Faq.Application;
 using System.IO;
 using System.Reflection;
+using FluentValidation;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Validators;
 using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -21,11 +24,11 @@ using ActiveLogin.Authentication.BankId.Core;
 using Nordiska.Modules.Banking.Infrastructure;
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
-using Asp.Versioning;
+using Nordiska.FrontendApi.BackgroundWorkers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns (NOR-78)
+// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
 builder.Host.UseDefaultServiceProvider((context, options) =>
 {
     options.ValidateScopes = true;
@@ -65,23 +68,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("faq:manage", policy =>
-    {
-        policy.AddAuthenticationSchemes(
-            JwtBearerDefaults.AuthenticationScheme);
-
-        policy.RequireAuthenticatedUser();
-
-        policy.RequireClaim(
-            "permission",
-            "faq:manage");
-    });
-});
+// Authorization policies incl. fallback policy that requires login (NOR-138)
+builder.Services.AddApiAuthorization();
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IValidator<RegisterCustomerRequestDto>, RegisterCustomerRequestDtoValidator>();
 
 // Register controller services
 builder.Services.AddControllers();
@@ -122,6 +114,9 @@ builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
+
+// Background worker for scheduled & recurring transactions
+builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
  
 builder.Services
     .AddIdentityCore<Customer>(options =>
@@ -136,43 +131,14 @@ builder.Services
         
         // Email must be unique
         options.User.RequireUniqueEmail = true;
+
+        // Lock password login after too many failed attempts (NOR-70)
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue<int?>("Lockout:MaxFailedAccessAttempts") ?? 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int?>("Lockout:LockoutMinutes") ?? 15);
     })
     .AddRoles<IdentityRole<long>>()
     .AddEntityFrameworkStores<BankingDbContext>();
-builder.Services.AddProblemDetails(options =>
-{
-    options.CustomizeProblemDetails = context =>
-    {
-        context.ProblemDetails.Extensions["traceId"] =
-            System.Diagnostics.Activity.Current?.Id
-            ?? context.HttpContext.TraceIdentifier;
-    };
-});
-
-builder.Services.AddApiVersioning(options =>
-{
-    options.DefaultApiVersion = new ApiVersion(2, 0);
-    options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ReportApiVersions = true;
-})
-.AddMvc()
-.AddApiExplorer(options =>
-{
-    options.GroupNameFormat = "'v'V";
-    options.SubstituteApiVersionInUrl = true;
-});
-
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v2", new OpenApiInfo
-    {
-        Version = "v2",
-        Title = "Nordiska API v2",
-        Description = "API for Nordiska bank services (version 2.0)."
-    });
-});
-
-
 // Get environment from app settings 
 var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
 // Service for bank id  
@@ -182,7 +148,20 @@ if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
 }
 else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddBankId(bankId => bankId.UseTestEnvironment());
+    var certPath = Path.Combine(AppContext.BaseDirectory, "Certificates", "FPTestcert5_20240610.p12");
+    if (!File.Exists(certPath))
+    {
+        certPath = Path.Combine(builder.Environment.ContentRootPath, "Certificates", "FPTestcert5_20240610.p12");
+    }
+
+    builder.Services.AddBankId(bankId =>
+    {
+        bankId.UseTestEnvironment();
+        if (File.Exists(certPath))
+        {
+            bankId.UseClientCertificate(() => new System.Security.Cryptography.X509Certificates.X509Certificate2(certPath, "qwerty123"));
+        }
+    });
 }
 builder.Services
     .AddAuthentication()
@@ -210,7 +189,7 @@ builder.Services.AddCors(options =>
             };
 
         policy.WithOrigins(allowedOrigins)
-              .WithMethods("GET", "POST", "PUT", "PATCH", "OPTIONS")
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
               .WithHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With")
               .WithExposedHeaders("Content-Disposition")
               .AllowCredentials();
@@ -218,27 +197,45 @@ builder.Services.AddCors(options =>
 });
 // Custom-made! ProblemDetails and ExceptionHandler DI registered via extension (moved into ServiceCollectionExtensions.cs)
 builder.Services.AddErrorHandling();
+// Rate limiting for login and money-moving endpoints (NOR-70), limits are read from "RateLimiting" in appsettings
+builder.Services.AddRateLimitingPolicies(builder.Configuration);
 
 var app = builder.Build();
 
 // Automatic database migrations on startup (Banking, FAQ, Reporting)
-try
+using (var migrationScope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
+    var services = migrationScope.ServiceProvider;
 
-    var bankingDb = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
-    await bankingDb.Database.MigrateAsync();
+    try
+    {
+        var bankingDb = services.GetRequiredService<BankingDbContext>();
+        await bankingDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic Banking database migration could not be completed: {Message}", ex.Message);
+    }
 
-    var faqDb = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
-    await faqDb.Database.MigrateAsync();
+    try
+    {
+        var faqDb = services.GetRequiredService<FaqDbContext>();
+        await faqDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic FAQ database migration could not be completed: {Message}", ex.Message);
+    }
 
-    var reportingDb = scope.ServiceProvider.GetRequiredService<ReportingDbContext>();
-    await reportingDb.Database.MigrateAsync();
-}
-catch (Exception ex)
-{
-    // If the database is unreachable (e.g. during unit tests), log a warning
-    app.Logger.LogWarning(ex, "Automatic database migration could not be completed at startup: {Message}", ex.Message);
+    try
+    {
+        var reportingDb = services.GetRequiredService<ReportingDbContext>();
+        await reportingDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Automatic Reporting database migration could not be completed: {Message}", ex.Message);
+    }
 }
 
 //look out for the order of middleware, it matters.
@@ -256,11 +253,15 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+// Must run after authentication so the transactions policy can partition on the customer id
+app.UseRateLimiter();
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapSwagger("/openapi/{documentName}.json");
+    // Dev tooling is only mapped in Development, so it can stay open for local testing
+    app.MapSwagger("/openapi/{documentName}.json")
+        .AllowAnonymous();
 
     app.MapScalarApiReference(options =>
     {
@@ -274,8 +275,7 @@ if (app.Environment.IsDevelopment())
         options.WithDefaultHttpClient(
             ScalarTarget.CSharp,
             ScalarClient.HttpClient);
-
-    });
+    }).AllowAnonymous();
     app.MapGet("/health/database", async (
         BankingDbContext db,
         CancellationToken cancellationToken) =>
@@ -288,7 +288,7 @@ if (app.Environment.IsDevelopment())
             : Results.Json(
                 new { status = "unavailable" },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
-    });
+    }).AllowAnonymous();
 }
 
 if(app.Environment.IsDevelopment())
@@ -327,7 +327,9 @@ if (app.Environment.IsDevelopment())
 }
 
 // Fallback to React index.html for non-API client-side routes (SPA routing)
-app.MapFallbackToFile("index.html");
+// AllowAnonymous so the fallback policy doesn't block the frontend before the user has logged in
+app.MapFallbackToFile("index.html")
+    .AllowAnonymous();
 
 app.Run();
 

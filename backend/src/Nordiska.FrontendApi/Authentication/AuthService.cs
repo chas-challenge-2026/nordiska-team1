@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Api.Models;
+using ActiveLogin.Identity.Swedish;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Jwt;
@@ -20,42 +22,67 @@ public class AuthService : IAuthService
 {
     private static readonly ConcurrentDictionary<string, string> _simulatedOrderPersonalNumbers = new();
 
+    // Only accepted in Development and only for customers without a password (seeded demo users)
+    private const string DevelopmentPassword = "password123";
+
     private readonly IBankIdAppApiClient _bankIdAppApiClient;
     private readonly IJwtProvider _jwtProvider;
     private readonly JwtOptions _jwtOptions;
     private readonly UserManager<Customer> _userManager;
     private readonly BankingDbContext _db;
+    private readonly IHostEnvironment _environment;
 
     public AuthService(
         BankingDbContext db,
         UserManager <Customer> userManager,
         IBankIdAppApiClient bankIdAppApiClient,
         IJwtProvider jwtProvider,
-        IOptions<JwtOptions> jwtOptions)
+        IOptions<JwtOptions> jwtOptions,
+        IHostEnvironment environment)
     {
         _bankIdAppApiClient = bankIdAppApiClient;
         _jwtProvider = jwtProvider;
         _jwtOptions = jwtOptions.Value;
         _userManager = userManager;
         _db = db;
+        _environment = environment;
     }
 
     public async Task<AuthenticationResultDto> InitiateBankIdAsync(BankIdInitiateRequest request, string clientIp)
     {
         try
         {
-            var requirement = !string.IsNullOrWhiteSpace(request?.PersonalNum)
-                ? new Requirement(personalNumber: request.PersonalNum)
+            string? cleanPersonalNum = null;
+            if (!string.IsNullOrWhiteSpace(request?.PersonalNum))
+            {
+                if (PersonalIdentityNumber.TryParse(request.PersonalNum, out var pin))
+                {
+                    cleanPersonalNum = pin.To12DigitString();
+                }
+                else
+                {
+                    cleanPersonalNum = request.PersonalNum.Replace("-", "").Trim();
+                }
+            }
+
+            var requirement = !string.IsNullOrWhiteSpace(cleanPersonalNum)
+                ? new Requirement(personalNumber: cleanPersonalNum)
                 : null;
 
+            var effectiveIp = clientIp?.Replace("::ffff:", "").Trim();
+            if (string.IsNullOrWhiteSpace(effectiveIp) || effectiveIp == "::1" || effectiveIp == "localhost")
+            {
+                effectiveIp = "127.0.0.1";
+            }
+
             var response = await _bankIdAppApiClient.AuthAsync(new AuthRequest(
-                endUserIp: clientIp,
+                endUserIp: effectiveIp,
                 requirement: requirement
             ));
 
-            if (!string.IsNullOrWhiteSpace(request?.PersonalNum))
+            if (!string.IsNullOrWhiteSpace(cleanPersonalNum))
             {
-                _simulatedOrderPersonalNumbers[response.OrderRef] = request.PersonalNum.Replace("-", "").Trim();
+                _simulatedOrderPersonalNumbers[response.OrderRef] = cleanPersonalNum;
             }
 
             var initiateData = new BankIdInitiateResponseDto(
@@ -69,7 +96,11 @@ public class AuthService : IAuthService
         }
         catch (BankIdApiException ex)
         {
-            return new AuthenticationResultDto(false, $"Could not start BankID API: {ex.Message}");
+            return new AuthenticationResultDto(false, $"BankID API error: {ex.ErrorCode} - {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return new AuthenticationResultDto(false, $"Could not start BankID: {ex.Message}");
         }
     }
 
@@ -114,6 +145,11 @@ public class AuthService : IAuthService
                 return new AuthenticationResultDto(false, $"Could not find customer with personal number: '{cleanPersonalNumber}'.");
             }
 
+            // BankID is strong authentication, so it lifts a password lockout (NOR-70).
+            // Otherwise an attacker could keep a customer locked out by guessing every 15 minutes.
+            await _userManager.ResetAccessFailedCountAsync(customer);
+            await _userManager.SetLockoutEndDateAsync(customer, null);
+
             var token = await _jwtProvider.Generate(customer);
             response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
 
@@ -133,19 +169,45 @@ public class AuthService : IAuthService
 
     public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
     {
-        var existingCustomer = await _userManager.FindByEmailAsync(request.Email);
-        if (existingCustomer != null)
+        var cleanEmail = request.Email?.Trim() ?? string.Empty;
+        var existingCustomerByEmail = await _userManager.FindByEmailAsync(cleanEmail);
+        if (existingCustomerByEmail != null)
         {
-            return new AuthenticationResultDto(false, "En användare med denna e-post finns redan.");
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med denna e-post finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "EMAIL_TAKEN");
+        }
+
+        string cleanPersonalNum;
+        if (PersonalIdentityNumber.TryParse(request.PersonalNum, out var pin))
+        {
+            cleanPersonalNum = pin.To12DigitString();
+        }
+        else
+        {
+            cleanPersonalNum = request.PersonalNum?.Replace("-", "").Trim() ?? string.Empty;
+        }
+
+        var existingCustomerByPersonalNum = await _db.Customers.AnyAsync(c => c.PersonalNum == cleanPersonalNum);
+        if (existingCustomerByPersonalNum)
+        {
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med detta personnummer finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "PERSONAL_NUM_TAKEN");
         }
 
         var newCustomer = new Customer
         {
-            UserName = request.Email,
-            Name = request.Name,
-            PersonalNum = request.PersonalNum,
-            Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
+            UserName = cleanEmail,
+            Name = request.Name?.Trim() ?? string.Empty,
+            PersonalNum = cleanPersonalNum,
+            Email = cleanEmail,
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+            PasswordHash = string.Empty,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -159,7 +221,14 @@ public class AuthService : IAuthService
 
         var token = await _jwtProvider.Generate(newCustomer);
         response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-        return new AuthenticationResultDto(true, null, Token: token);
+
+        var customerDto = new CustomerResponseDto(newCustomer.Id, newCustomer.Email ?? string.Empty, newCustomer.Name, token);
+
+        return new AuthenticationResultDto(
+            IsSuccess: true,
+            ErrorMessage: null,
+            Token: token,
+            Customer: customerDto);
     }
 
     public async Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response)
@@ -169,30 +238,71 @@ public class AuthService : IAuthService
             return new AuthenticationResultDto(false, "E-post och lösenord krävs.");
         }
 
-        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var customer = await _db.Customers.FirstOrDefaultAsync(c => 
-            (c.Email != null && c.Email.ToLower() == normalizedEmail) ||
-            (c.UserName != null && c.UserName.ToLower() == normalizedEmail));
+        // UserManager looks up on the normalized columns, so this is already case-insensitive
+        var login = request.Email.Trim();
+        var customer = await _userManager.FindByEmailAsync(login) ?? await _userManager.FindByNameAsync(login);
 
         if (customer == null)
         {
-            return new AuthenticationResultDto(false, "Felaktig e-post eller lösenord.");
+            return InvalidCredentials();
         }
 
-        var isPasswordValid = false;
-        if (!string.IsNullOrEmpty(customer.PasswordHash))
+        if (await _userManager.IsLockedOutAsync(customer))
         {
-            isPasswordValid = await _userManager.CheckPasswordAsync(customer, request.Password) 
-                              || request.Password == "password123";
-        }
-        else
-        {
-            isPasswordValid = request.Password == "password123";
+            return LockedOut(customer);
         }
 
-        if (!isPasswordValid)
+        if (!await IsPasswordValidAsync(customer, request.Password))
         {
-            return new AuthenticationResultDto(false, "Felaktig e-post eller lösenord.");
+            // Counts the failure and locks the account when MaxFailedAccessAttempts is reached
+            await _userManager.AccessFailedAsync(customer);
+
+            return await _userManager.IsLockedOutAsync(customer)
+                ? LockedOut(customer)
+                : InvalidCredentials();
+        }
+
+        await _userManager.ResetAccessFailedCountAsync(customer);
+
+        var token = await _jwtProvider.Generate(customer);
+        response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
+
+        var customerDto = new CustomerResponseDto(customer.Id, customer.Email ?? string.Empty, customer.Name, token);
+        var completeData = new BankIdCollectResponseDto("COMPLETE", null, customerDto);
+
+        return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
+    }
+
+    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response)
+    {
+        if (string.IsNullOrWhiteSpace(customerIdOrEmail))
+        {
+            return new AuthenticationResultDto(false, "Ogiltig session.");
+        }
+
+        Customer? customer = null;
+        if (long.TryParse(customerIdOrEmail, out var customerId))
+        {
+            customer = await _userManager.FindByIdAsync(customerIdOrEmail) 
+                       ?? await _db.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+        }
+
+        if (customer == null)
+        {
+            var normalized = customerIdOrEmail.Trim();
+            customer = await _userManager.FindByEmailAsync(normalized)
+                       ?? await _userManager.FindByNameAsync(normalized)
+                       ?? await _db.Customers.FirstOrDefaultAsync(c => c.Email == normalized);
+        }
+
+        if (customer == null)
+        {
+            return new AuthenticationResultDto(false, "Användaren hittades inte.");
+        }
+
+        if (await _userManager.IsLockedOutAsync(customer))
+        {
+            return LockedOut(customer);
         }
 
         var token = await _jwtProvider.Generate(customer);
@@ -203,4 +313,21 @@ public class AuthService : IAuthService
 
         return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
     }
+
+    private async Task<bool> IsPasswordValidAsync(Customer customer, string password)
+    {
+        if (!string.IsNullOrEmpty(customer.PasswordHash))
+        {
+            return await _userManager.CheckPasswordAsync(customer, password);
+        }
+
+        // Seeded demo customers have no password, so keep the dev password for local development only
+        return _environment.IsDevelopment() && password == DevelopmentPassword;
+    }
+
+    private static AuthenticationResultDto InvalidCredentials()
+        => new(false, "Felaktig e-post eller lösenord.", FailureReason: AuthFailureReason.InvalidCredentials);
+
+    private static AuthenticationResultDto LockedOut(Customer customer)
+        => new(false, "Kontot är tillfälligt spärrat.", FailureReason: AuthFailureReason.LockedOut, LockoutEnd: customer.LockoutEnd);
 }

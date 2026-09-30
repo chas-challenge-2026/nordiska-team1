@@ -12,6 +12,13 @@ public sealed class SavingsAccountRepository(BankingDbContext db) : ISavingsAcco
         return await db.SavingsAccounts.AsNoTracking().ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<SavingsAccount>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+    {
+        return await db.SavingsAccounts.AsNoTracking()
+            .Where(a => a.CustomerId == customerId)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => db.SavingsAccounts.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 

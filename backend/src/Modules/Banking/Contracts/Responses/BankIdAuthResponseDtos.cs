@@ -16,7 +16,8 @@ public record BankIdCollectResponseDto(
 public record CustomerResponseDto(
     long Id,
     string Email,
-    string Name
+    string Name,
+    string? Token = null
 );
 
 public record AuthenticationResultDto(
@@ -25,5 +26,17 @@ public record AuthenticationResultDto(
     string? Token = null,
     BankIdInitiateResponseDto? InitiateData = null,
     BankIdCollectResponseDto? CollectData = null,
-    IEnumerable<string>? Errors = null
+    IEnumerable<string>? Errors = null,
+    AuthFailureReason? FailureReason = null,
+    DateTimeOffset? LockoutEnd = null,
+    string? ConflictCode = null,
+    CustomerResponseDto? Customer = null
 );
+
+// Lets the controller pick the right status code (401 vs 423 vs 409) without parsing the error message
+public enum AuthFailureReason
+{
+    InvalidCredentials,
+    LockedOut,
+    Conflict
+}

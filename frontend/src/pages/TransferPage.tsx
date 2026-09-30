@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
@@ -14,28 +14,57 @@ import {
     todayIso,
     matchesSearch,
     shouldSimulateFailure,
+    toPlannedDateIso,
+    addOneMonthIso,
     SIMULATED_TRANSFER_DELAY_MS,
 } from "../components/transfer/transferHelpers";
 import {
-    OWN_ACCOUNTS,
     BG_PG_PAYEES,
     BANK_PAYEES,
     FAVORITE_ACCOUNT_IDS,
-    PLANNED_TRANSFERS,
 } from "../constants/transferAccounts";
 import type {
+    OwnAccount,
     Payee,
     PlannedTransfer,
     TransferAccount,
 } from "../constants/transferAccounts";
+import { useGetAccounts } from "../hooks/useAccounts";
+import {
+    useTransactions,
+    useTransferFunds,
+    useCreatePlannedTransaction,
+    useCancelPlannedTransaction,
+} from "../hooks/useTransactions";
 
 type Step = "form" | "bankid" | "done";
 
 export default function TransferPage() {
     const { t } = useTranslation();
 
+    const { data: accountsData } = useGetAccounts();
+    // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
+    const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
+    const transferFundsMutation = useTransferFunds();
+    const createPlannedMutation = useCreatePlannedTransaction();
+    const cancelPlannedMutation = useCancelPlannedTransaction();
+
+    const ownAccounts: OwnAccount[] = useMemo(
+        () =>
+            (accountsData ?? []).map((a) => ({
+                id: String(a.id),
+                own: true as const,
+                type: a.accountType,
+                number: a.accountNumber,
+                name: a.accountType,
+                meta: a.accountNumber,
+                balance: a.balance,
+            })),
+        [accountsData],
+    );
+
     const [name, setName] = useState("");
-    const [fromId, setFromId] = useState(OWN_ACCOUNTS[0].id);
+    const [selectedFromId, setFromId] = useState<string | null>(null);
     const [toId, setToId] = useState<string | null>(null);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
@@ -47,16 +76,46 @@ export default function TransferPage() {
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
     const [customs, setCustoms] = useState<Payee[]>([]);
-    const [plannedTransfers, setPlannedTransfers] =
-        useState<PlannedTransfer[]>(PLANNED_TRANSFERS);
+    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<PlannedTransfer[]>([]);
+
+    const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
+
+    const backendPlannedTransfers: PlannedTransfer[] = useMemo(
+        () =>
+            (transactionsData?.items ?? [])
+                .filter((tx) => tx.isPlanned)
+                .map((tx) => ({
+                    localId: `backend-${tx.id}`,
+                    source: "backend" as const,
+                    backendId: tx.id,
+                    date: (tx.plannedDate ?? tx.createdAt).slice(0, 10),
+                    name: tx.label?.trim() || t("page-transfer.default-name"),
+                    note:
+                        tx.repeating === "month"
+                            ? t("page-transfer.repeating.month")
+                            : (tx.repeating ?? ""),
+                    sum: tx.amount,
+                    accountId: tx.accountId,
+                    targetAccountId: tx.targetAccountId,
+                    type: tx.type,
+                    label: tx.label,
+                    repeating: tx.repeating,
+                })),
+        [transactionsData, t],
+    );
+
+    const plannedTransfers = [
+        ...backendPlannedTransfers,
+        ...localPlannedTransfers,
+    ];
 
     const allAccounts: TransferAccount[] = [
-        ...OWN_ACCOUNTS,
+        ...ownAccounts,
         ...BG_PG_PAYEES,
         ...BANK_PAYEES,
         ...customs,
     ];
-    const fromAccount = OWN_ACCOUNTS.find((a) => a.id === fromId) ?? null;
+    const fromAccount = ownAccounts.find((a) => a.id === fromId) ?? null;
     const toAccount = allAccounts.find((a) => a.id === toId) ?? null;
 
     const amountValue = parseAmount(amount);
@@ -69,15 +128,15 @@ export default function TransferPage() {
 
     const doneSummary = toAccount
         ? t(
-              recurring
-                  ? "page-transfer.done.summary-recurring"
-                  : "page-transfer.done.summary",
-              {
-                  amount: formatSek(amountValue),
-                  name: toAccount.name,
-                  date,
-              },
-          )
+            recurring
+                ? "page-transfer.done.summary-recurring"
+                : "page-transfer.done.summary",
+            {
+                amount: formatSek(amountValue),
+                name: toAccount.name,
+                date,
+            },
+        )
         : "";
 
     const upcomingTransfers = plannedTransfers.filter(
@@ -86,8 +145,15 @@ export default function TransferPage() {
 
     const query = search.trim().toLowerCase();
     const selectedId = modal === "from" ? fromId : toId;
+    // Kontot som är valt på andra sidan går inte att välja (samma från och till).
+    const otherSideId = modal === "from" ? toId : fromId;
+    const otherSideReason =
+        modal === "from"
+            ? t("page-transfer.modal.selected-as-to")
+            : t("page-transfer.modal.selected-as-from");
 
     const buildGroups = (): AccountPickerGroup[] => {
+        // Saldo visas bara för egna konton, aldrig för externa mottagare.
         const wrap = (accounts: TransferAccount[]) =>
             accounts
                 .filter((a) => matchesSearch(a, query))
@@ -95,18 +161,10 @@ export default function TransferPage() {
                     id: a.id,
                     name: a.name,
                     meta: a.meta,
+                    balance: a.own ? `${formatSek(a.balance)} sek` : undefined,
                     selected: a.id === selectedId,
-                }));
-
-        const wrapFrom = (accounts: typeof OWN_ACCOUNTS) =>
-            accounts
-                .filter((a) => matchesSearch(a, query))
-                .map((a) => ({
-                    id: a.id,
-                    name: a.name,
-                    meta: a.meta,
-                    balance: `${formatSek(a.balance)} sek`,
-                    selected: a.id === selectedId,
+                    disabledReason:
+                        a.id === otherSideId ? otherSideReason : undefined,
                 }));
 
         let groups: AccountPickerGroup[] = [];
@@ -115,7 +173,7 @@ export default function TransferPage() {
             groups = [
                 {
                     title: t("page-transfer.modal.group-own"),
-                    items: wrapFrom(OWN_ACCOUNTS),
+                    items: wrap(ownAccounts),
                 },
             ];
         } else if (modal === "to") {
@@ -137,7 +195,7 @@ export default function TransferPage() {
                 },
                 {
                     title: t("page-transfer.modal.group-own"),
-                    items: wrap(OWN_ACCOUNTS),
+                    items: wrap(ownAccounts),
                 },
                 {
                     title: t("page-transfer.modal.group-bg"),
@@ -199,32 +257,178 @@ export default function TransferPage() {
         handleCloseModal();
     };
 
-    const commitTransfer = () => {
+    // BG/PG- och bankmottagare saknar backend-stöd (se plan) — de överföringarna
+    // simuleras fortfarande lokalt och sparas bara i sidans egen state.
+    const commitLocalPlanned = () => {
         if (!toAccount) return;
         const note = recurring
             ? t("page-transfer.recurring-label")
-            : toAccount.own
-              ? t("page-transfer.planned.note-internal")
-              : t("page-transfer.planned.note-to", { name: toAccount.name });
+            : t("page-transfer.planned.note-to", { name: toAccount.name });
         const transferName = name.trim() || t("page-transfer.default-name");
-        setPlannedTransfers((prev) => [
-            { date, name: transferName, note, sum: amountValue },
+        setLocalPlannedTransfers((prev) => [
+            {
+                localId: `local-${crypto.randomUUID()}`,
+                source: "local",
+                date,
+                name: transferName,
+                note,
+                sum: amountValue,
+            },
             ...prev,
         ]);
     };
 
+    const handleEditPlannedTransfer = (
+        transfer: PlannedTransfer,
+        newDate: string,
+        onSaved: () => void,
+    ) => {
+        if (transfer.source === "local") {
+            setLocalPlannedTransfers((prev) =>
+                prev.map((p) =>
+                    p.localId === transfer.localId
+                        ? { ...p, date: newDate }
+                        : p,
+                ),
+            );
+            onSaved();
+            return;
+        }
+
+        const { backendId, accountId } = transfer;
+        if (backendId === undefined || accountId === undefined) {
+            return;
+        }
+
+        // Backend saknar uppdatering, så datumbyte = skapa ny + ta bort gammal.
+        // Skapa först: misslyckas något blir det i värsta fall en dubblett,
+        // aldrig en försvunnen överföring.
+        createPlannedMutation.mutate(
+            {
+                accountId,
+                // Transaction type is lowercase; create endpoint expects "Deposit" | "Withdraw"
+                type: transfer.type === "deposit" ? "Deposit" : "Withdraw",
+                amount: transfer.sum,
+                plannedDate: toPlannedDateIso(newDate),
+                label: transfer.label,
+                targetAccountId: transfer.targetAccountId,
+                repeating: transfer.repeating,
+            },
+            {
+                onSuccess: () =>
+                    cancelPlannedMutation.mutate(backendId, {
+                        onSuccess: onSaved,
+                    }),
+            },
+        );
+    };
+
+    const resetPlannedMutations = () => {
+        createPlannedMutation.reset();
+        cancelPlannedMutation.reset();
+    };
+
+    // "cleanup" = nya överföringen skapades men den gamla kunde inte tas bort.
+    const editPlannedError = createPlannedMutation.isError
+        ? "save"
+        : cancelPlannedMutation.isError
+            ? "cleanup"
+            : null;
+
+    const handleDeletePlannedTransfer = (
+        transfer: PlannedTransfer,
+        onDeleted: () => void,
+    ) => {
+        // Lokala överföringar tas bort direkt och går inte via mutationen,
+        // så de påverkar aldrig isPending/isError.
+        if (transfer.source === "local") {
+            setLocalPlannedTransfers((prev) =>
+                prev.filter((p) => p.localId !== transfer.localId),
+            );
+            onDeleted();
+            return;
+        }
+
+        if (transfer.backendId === undefined) return;
+        cancelPlannedMutation.mutate(transfer.backendId, {
+            onSuccess: onDeleted,
+        });
+    };
+
     const startTransfer = () => {
+        if (!fromAccount || !toAccount) return;
+
+        if (!toAccount.own) {
+            // BG/PG- och bankmottagare saknar backend-stöd — simulera lokalt som förut.
+            setStep("done");
+            setTransferPhase("processing");
+            const willFail = shouldSimulateFailure(name);
+            setTimeout(() => {
+                if (willFail) {
+                    setTransferPhase("failure");
+                } else {
+                    commitLocalPlanned();
+                    setTransferPhase("success");
+                }
+            }, SIMULATED_TRANSFER_DELAY_MS);
+            return;
+        }
+
+        const label = name.trim() || undefined;
+        const isToday = date === todayIso();
+
+        if (!isToday) {
+            // Framtida datum (återkommande eller ej): registrera bara en planerad
+            // post, exekvera inget nu och visa inget success/failure-steg.
+            createPlannedMutation
+                .mutateAsync({
+                    accountId: Number(fromAccount.id),
+                    type: "Withdraw",
+                    amount: amountValue,
+                    plannedDate: toPlannedDateIso(date),
+                    label,
+                    targetAccountId: Number(toAccount.id),
+                    repeating: recurring ? "month" : undefined,
+                })
+                .then(() => handleReset())
+                .catch(() => {
+                    setStep("done");
+                    setTransferPhase("failure");
+                });
+            return;
+        }
+
         setStep("done");
         setTransferPhase("processing");
-        const willFail = shouldSimulateFailure(name);
-        setTimeout(() => {
-            if (willFail) {
-                setTransferPhase("failure");
-            } else {
-                commitTransfer();
+
+        transferFundsMutation
+            .mutateAsync({
+                sourceAccountId: Number(fromAccount.id),
+                targetAccountId: Number(toAccount.id),
+                amount: amountValue,
+                label,
+            })
+            .then(() => {
                 setTransferPhase("success");
-            }
-        }, SIMULATED_TRANSFER_DELAY_MS);
+                if (recurring) {
+                    // Dagens överföring är redan gjord — lägg nästa månads
+                    // tillfälle i planerade överföringar.
+                    createPlannedMutation
+                        .mutateAsync({
+                            accountId: Number(fromAccount.id),
+                            type: "Withdraw",
+                            amount: amountValue,
+                            plannedDate: toPlannedDateIso(addOneMonthIso(date)),
+                            label,
+                            targetAccountId: Number(toAccount.id),
+                            repeating: "month",
+                        })
+                        .catch(() => {
+                            // Dagens överföring lyckades ändå — låt success-sidan stå kvar.
+                        });
+                }
+            })
+            .catch(() => setTransferPhase("failure"));
     };
 
     const handleSubmit = () => {
@@ -250,9 +454,9 @@ export default function TransferPage() {
     };
 
     return (
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
-            <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] rounded-[10px] border border-[#E5EAF0] bg-white shadow-card">
-                <div className="px-10 pt-8 pb-10">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10">
+            <div className="mx-auto grid max-w-[1240px] grid-cols-1 rounded-[10px] border border-[#E5EAF0] bg-white shadow-card lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+                <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10">
                     {(step === "form" || step === "bankid") && (
                         <TransferForm
                             fromAccount={fromAccount}
@@ -292,7 +496,19 @@ export default function TransferPage() {
                     )}
                 </div>
 
-                <PlannedTransfersPanel upcomingTransfers={upcomingTransfers} />
+                <PlannedTransfersPanel
+                    upcomingTransfers={upcomingTransfers}
+                    onEditTransfer={handleEditPlannedTransfer}
+                    onDeleteTransfer={handleDeletePlannedTransfer}
+                    isSaving={
+                        createPlannedMutation.isPending ||
+                        cancelPlannedMutation.isPending
+                    }
+                    editError={editPlannedError}
+                    isDeleting={cancelPlannedMutation.isPending}
+                    deleteError={cancelPlannedMutation.isError}
+                    onResetStatus={resetPlannedMutations}
+                />
             </div>
 
             <TransferModals

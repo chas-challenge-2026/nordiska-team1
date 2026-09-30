@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Nordiska.Modules.Banking.Domain;
@@ -54,7 +55,7 @@ public sealed class CustomerService : ICustomerService
     {
         var customer = await _userManager.FindByIdAsync(id.ToString());
         if (customer is null)
-            throw new KeyNotFoundException($"Customer with id {id} was not found.");
+            throw new NotFoundException($"Customer with id {id} was not found.");
 
         return customer;
     }
@@ -107,7 +108,7 @@ public sealed class CustomerService : ICustomerService
 
         if (activeAccounts.Any(a => a.Balance > 0))
         {
-            throw new InvalidOperationException("Cannot delete customer with positive account balance. Withdraw or transfer all funds before deleting account.");
+            throw new ConflictException("Cannot delete customer with positive account balance. Withdraw or transfer all funds before deleting account.");
         }
 
         if (activeAccounts.Count > 0)

@@ -21,6 +21,8 @@ body {
   --color-nordiska-orange: #EDA91B;
   --color-nordiska-orange-hover: #D9990F;
   --color-login-bg: #0F3644;
+  --color-error: #DC2626; /* (color-red-600) */
+  --color-success: #16A34A; /* (color-green-600) */
 
   --shadow-card: 0 1px 3px rgb(0 16 43 / 0.08);
   --shadow-modal: 0 24px 60px rgb(0 16 43 / 0.32);
@@ -43,6 +45,11 @@ body {
 @keyframes bounce-right {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(6px); }
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1);}
 }
 
 @keyframes rise {

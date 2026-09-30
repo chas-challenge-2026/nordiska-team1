@@ -6,10 +6,32 @@
     <UserSecretsId>dotnet-Nordiska.Reporting.Worker-b45cfeb9-b601-4420-acf7-12164ebf31ee</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Npgsql" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <None Update="sample-input-huge.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
     <ProjectReference Include="..\BuildingBlocks\Database\Nordiska.BuildingBlocks.Database.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <NativePdfBuildDirectory>$(MSBuildThisFileDirectory)..\..\..\native\pdf_generator\build</NativePdfBuildDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativePdfRuntimeFiles Include="$(NativePdfBuildDirectory)\*.dll" />
+  </ItemGroup>
+
+  <Target Name="CopyNativePdfRuntime" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Warning
+      Condition="'@(NativePdfRuntimeFiles)' == ''"
+      Text="Native PDF runtime not found. Build native/pdf_generator before running PDF generation." />
+    <Copy
+      Condition="'@(NativePdfRuntimeFiles)' != ''"
+      SourceFiles="@(NativePdfRuntimeFiles)"
+      DestinationFolder="$(TargetDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

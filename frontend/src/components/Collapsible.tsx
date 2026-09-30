@@ -41,7 +41,7 @@ export default function Collapsible({
           aria-expanded={isOpen}
           className="flex w-full items-center justify-between cursor-pointer"
         >
-          <span>{title}</span>
+          <span className="first-letter:uppercase">{title}</span>
           <span className="flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-primary-blue">
             {label}
             <svg

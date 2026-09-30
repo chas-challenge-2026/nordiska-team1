@@ -12,6 +12,8 @@ public interface ITransactionRepository
     Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default);
     Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
+    Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default);
     Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
 }

@@ -3,4 +3,24 @@ export interface User {
     email: string;
     role?: string;
     name?: string;
+    phone?: string;
 }
+
+export type Faq = {
+    id: number;
+    question: string | null;
+    answer: string | null;
+    category: string | null;
+    helpfulCount: number;
+    keywords: string[] | null;
+};
+
+export type FaqResponse = {
+    items: Faq[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+};

@@ -16,7 +16,7 @@ public record OpenSavingsAccountRequest(
     string AccountNumber = "",
     [Required] string AccountType = "saving",
     [Range(0, double.MaxValue)] decimal InitialDeposit = 0,
-    [Range(0, 1.0)] decimal InterestRate = 0.025m,
+    [Range(0, 100.0)] decimal? InterestRate = null,
     [StringLength(40)] string? AccountName = null
 );
 

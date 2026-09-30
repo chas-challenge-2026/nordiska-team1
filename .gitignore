@@ -15,6 +15,9 @@ secrets.json
 *.key
 *.pfx
 *.p12
+!backend/src/Nordiska.FrontendApi/Certificates/*.p12
+!backend/src/Nordiska.FrontendApi/Certificates/*.pem
+!backend/src/Nordiska.FrontendApi/Certificates/*.pfx*
 
 # 2. .NET & C# Build Output
 [Bb]in/
@@ -108,3 +111,6 @@ postgres_data/
 coverage/
 tmp/
 temp/
+
+# 7. Claude Code local settings
+.claude/

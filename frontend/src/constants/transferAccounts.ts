@@ -21,10 +21,18 @@ export type Payee = {
 export type TransferAccount = OwnAccount | Payee;
 
 export type PlannedTransfer = {
+    localId: string;
+    source: "backend" | "local";
+    backendId?: number;
     date: string;
     name: string;
     note: string;
     sum: number;
+    accountId?: number;
+    targetAccountId?: number;
+    type?: string;
+    label?: string;
+    repeating?: string;
 };
 
 export const OWN_ACCOUNTS: OwnAccount[] = [
@@ -46,16 +54,3 @@ export const BANK_PAYEES: Payee[] = [
 ];
 
 export const FAVORITE_ACCOUNT_IDS: string[] = ["a2", "b2", "c1"];
-
-function daysFromNow(days: number): string {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
-}
-
-export const PLANNED_TRANSFERS: PlannedTransfer[] = [
-    { date: daysFromNow(3), name: "Hyra", note: "Till Hyresvärden Fastighets AB", sum: 7400.0 },
-    { date: daysFromNow(7), name: "Pensionssparande", note: "Återkommande varje månad", sum: 150.0 },
-    { date: daysFromNow(14), name: "Spara till Yoghurtfonden", note: "Mellan egna konton", sum: 1500.0 },
-    { date: daysFromNow(21), name: "Olles yoghurt-fond", note: "Till Olle Persson", sum: 450.0 },
-];

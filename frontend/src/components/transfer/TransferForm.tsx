@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import InputField from "../InputField";
+import InputField from "../forms/InputField";
 import AccountTriggerButton from "./AccountTriggerButton";
 import { formatSek } from "./transferHelpers";
 import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
@@ -57,7 +57,7 @@ export default function TransferForm({
             </p>
 
             <div className="flex flex-col gap-5.5">
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <AccountTriggerButton
                         label={t("page-transfer.from-label")}
                         name={
@@ -91,6 +91,11 @@ export default function TransferForm({
                                 ? toAccount.meta
                                 : t("page-transfer.to-meta-placeholder")
                         }
+                        balance={
+                            toAccount?.own
+                                ? `${formatSek(toAccount.balance)} sek`
+                                : undefined
+                        }
                         onClick={onOpenToModal}
                     />
                 </div>
@@ -116,7 +121,7 @@ export default function TransferForm({
                     />
                 </div>
 
-                <div className="grid grid-cols-2 items-end gap-5">
+                <div className="grid grid-cols-1 items-end gap-5 sm:grid-cols-2">
                     <InputField
                         name="transferDate"
                         type="date"
@@ -161,7 +166,7 @@ export default function TransferForm({
                         type="button"
                         onClick={onSubmit}
                         disabled={!canSubmit}
-                        className={`cursor-pointer rounded-md border-0 bg-nordiska-blue px-7.5 py-3.5 text-[15px] font-bold text-white hover:bg-login-bg disabled:cursor-not-allowed ${
+                        className={`w-full cursor-pointer rounded-md border-0 bg-nordiska-blue px-7.5 py-3.5 text-[15px] font-bold text-white hover:bg-login-bg disabled:cursor-not-allowed sm:w-auto ${
                             canSubmit ? "opacity-100" : "opacity-[0.45]"
                         }`}
                     >
