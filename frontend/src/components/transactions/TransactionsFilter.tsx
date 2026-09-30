@@ -33,7 +33,7 @@ export default function TransactionFilter({ filters, onChange, onReset, variant 
     };
 
     return (
-        <search className="bg-white p-4">
+        <search className="bg-white p-4 rounded-xl shadow-md border border-secondary">
             {!isSheet && (
                 <h3 className="font-semibold text-sm mb-3 border-b-1 border-nordiska-orange">{t("generic.filter")}</h3>
             )}
@@ -90,7 +90,7 @@ export default function TransactionFilter({ filters, onChange, onReset, variant 
                                 value={opt.value}
                                 checked={filters.type === opt.value}
                                 onChange={() => update({ type: opt.value })}
-                                className={isSheet ? 'sr-only' : undefined}
+                                className={isSheet ? 'sr-only' : "cursor-pointer"}
                             />
                             {opt.label}
                         </label>
@@ -99,7 +99,7 @@ export default function TransactionFilter({ filters, onChange, onReset, variant 
             </fieldset>
 
             {!isSheet && onReset && (
-                <button type="button" onClick={onReset} className="w-full border border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue mt-4 bg-primary-blue text-white font-semibold">
+                <button type="button" onClick={onReset} className="w-full border cursor-pointer border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue mt-4 bg-primary-blue text-white font-semibold">
                     {t("generic.reset")}
                 </button>
             )}

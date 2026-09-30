@@ -132,7 +132,7 @@ export default function TransactionsPage() {
     };
 
     return (
-        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 p-6 font-montserrat max-md:h-[calc(100dvh-120px)]'>
+        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 p-6 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
             <div className='hidden md:block'>
                 <TransactionFilter filters={filters} onChange={handleFiltersChange} onReset={handleFiltersReset} />
             </div>

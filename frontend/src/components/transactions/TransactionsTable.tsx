@@ -43,8 +43,8 @@ export default function TransactionTable({ transactions, totalCount, totalPages,
     const groupedItems = useMemo(() => groupByDate(transactions), [transactions]);
 
     return (
-        <div className="p-4 flex-1 min-h-0 flex flex-col">
-            <h3 className="shrink-0 font-semibold text-sm mb-1 border-b-2 border-nordiska-orange">{t("transactions-route.transactions")}</h3>
+        <div className="p-4 flex-1 min-h-0 flex flex-col rounded-xl shadow-md border border-secondary bg-white">
+            <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px] border-b-3 border-b-nordiska-orange mb-2">{t("transactions-route.transactions")}</h2>
 
             {isLoading && <p className="text-sm text-secondary">{t("transactions-route.loading-transactions")}</p>}
             {isError && <p className="text-sm text-red-700">{t("transactions-route.transactions-error")}</p>}

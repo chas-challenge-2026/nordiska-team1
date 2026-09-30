@@ -27,6 +27,7 @@ export default function App() {
         "/login",
         "/logout",
         "/logged-out",
+        "/register"
     ]
 
     const protectedHeader = !UNPROTECTED_HEADER.includes(location.pathname);

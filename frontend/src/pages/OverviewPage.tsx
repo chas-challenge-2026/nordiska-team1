@@ -45,14 +45,14 @@ export default function OverviewPage() {
     }
 
     return (
-        <div className="min-h-screen w-full bg-white px-4 py-8 sm:px-8">
+        <div className="min-h-screen w-full bg-light-gray px-10 py-15 sm:px-15">
             <div className="mx-auto max-w-7xl">
                 <div className="mb-6 flex flex-wrap items-center justify-end gap-3 font-montserrat">
                     {isEditing && (
                         <button
                             type="button"
                             onClick={handleReset}
-                            className="cursor-pointer text-sm font-semibold uppercase text-primary-blue hover:text-nordiska-blue"
+                            className="cursor-pointer text-sm font-semibold uppercase mr-3 tracking-wider text-shadow-xs text-primary-blue hover:text-nordiska-blue"
                         >
                             {t("overview-route.edit-reset")}
                         </button>
@@ -61,9 +61,9 @@ export default function OverviewPage() {
                         type="button"
                         onClick={toggleEditing}
                         aria-pressed={isEditing}
-                        className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ${isEditing
-                                ? "bg-nordiska-orange text-dark-navy hover:bg-nordiska-orange-hover"
-                                : "border border-primary-blue text-primary-blue hover:bg-primary-blue hover:text-white"
+                        className={`cursor-pointer rounded-lg px-4 py-2 text-sm uppercase tracking-wider shadow-md font-semibold ${isEditing
+                                ? "bg-primary-blue text-white hover:bg-nordiska-blue"
+                                : "bg-white border border-primary-blue text-primary-blue hover:bg-primary-blue hover:text-white"
                             }`}
                     >
                         {isEditing ? t("overview-route.edit-done") : t("overview-route.edit-start")}

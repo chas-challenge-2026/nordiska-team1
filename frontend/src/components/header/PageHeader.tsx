@@ -47,6 +47,8 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
     switch (location.pathname) {
         case "/login":
+        case "/register":
+
             dotColor = "text-white"
             headerBackground = "bg-[url('/images/winter_forrest.webp')] bg-cover bg-center"
             languageSelectBg = ""
@@ -84,7 +86,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                             onClick={() => setLanguageOpen(!languageOpen)}
                             aria-expanded={languageOpen}
                             aria-haspopup="true"
-                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white font-normal"
+                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white text-shadow-lg/40 font-normal"
                         >
                             <img className="h-[14px] w-[19px] invert -mr-1.5" src="icons/lang-icon.svg" aria-hidden="true"/>
                             {i18n.language}
