@@ -1,0 +1,98 @@
+#pragma once
+
+#include "nordiska/domain/generated_pdfs.hpp"
+#include "nordiska/ingestion/json_ingestor.hpp"
+#include "nordiska/layout/layout_builder.hpp"
+#include "nordiska/rendering/pdf_engine.hpp"
+#include "nordiska/signing/pdf_signer.hpp"
+#include "nordiska/signing/signature_slot_appender.hpp"
+
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <optional>
+#include <span>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+
+namespace nordiska {
+
+struct GeneratorConfig {
+    JsonIngestorKind ingestor{JsonIngestorKind::Simdjson};
+    PdfEngineKind engine{PdfEngineKind::Libharu};
+    bool enable_signing{false};
+    bool compression{true};
+    std::shared_ptr<PdfSigner> custom_signer{nullptr};
+    // Hex characters, excluding delimiters. Passed per render/preparation call.
+    size_t signature_contents_capacity{kDefaultSignatureSlotSize};
+};
+
+// For "--instrumented" arg  in CLI/benchmark
+struct PipelineTiming {
+    double ingest_seconds{0.0};
+    double layout_seconds{0.0};
+    double render_seconds{0.0};
+    double sign_seconds{0.0};        // End-to-end signing phase, including preparation and insertion.
+    double hash_seconds{0.0};        // Subset: signing digest plus final artifact checksum.
+    double signer_call_seconds{0.0}; // Subset: only the external signing function call.
+
+    SignaturePreparationTiming preparation;
+    double prepare_seconds{};
+    double digest_seconds{};
+    double checksum_seconds{};
+    double signer_wrapper_seconds{};
+    double insert_seconds{};
+
+    [[nodiscard]] double total_seconds() const noexcept {
+        return ingest_seconds + layout_seconds + render_seconds + sign_seconds;
+    }
+};
+
+// Explicit error types for generator-level failures (NOR-207)
+struct InvalidArgumentError {
+    std::string message;
+};
+
+struct ResourceLimitError {
+    std::string message;
+};
+
+// Sum type representing all possible pipeline errors
+using GeneratorErrorPayload =
+    std::variant<InvalidArgumentError, ResourceLimitError, IngestError, LayoutError, RenderError, SigningError>;
+
+struct GeneratorError {
+    GeneratorErrorPayload details;
+    std::string document_id{};
+
+    template <typename T>
+        requires(!std::is_same_v<std::decay_t<T>, GeneratorError> && std::is_constructible_v<GeneratorErrorPayload, T>)
+    explicit GeneratorError(T&& error_payload, std::string doc_id = {})
+        : details(std::forward<T>(error_payload)), document_id(std::move(doc_id)) {}
+
+    GeneratorError(GeneratorErrorPayload payload, std::string doc_id)
+        : details(std::move(payload)), document_id(std::move(doc_id)) {}
+
+    [[nodiscard]] std::string message() const;
+};
+
+class PdfGenerator {
+  public:
+    explicit PdfGenerator(GeneratorConfig config);
+    ~PdfGenerator();
+
+    [[nodiscard]] std::expected<GeneratedPdfs, GeneratorError> generate(std::span<const uint8_t> json_utf8,
+                                                                        PipelineTiming* timing = nullptr) const;
+
+  private:
+    JsonIngestor ingestor_;
+    PdfEngine engine_;
+    std::shared_ptr<PdfSigner> signer_;
+    bool enable_signing_{false};
+    size_t signature_contents_capacity_;
+    std::optional<SigningError> signer_initialization_error_;
+};
+
+} // namespace nordiska
