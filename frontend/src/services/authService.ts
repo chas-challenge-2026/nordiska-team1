@@ -1,12 +1,6 @@
 import axiosInstance from "./axiosInstance";
 import type { User } from "../types/types";
 
-// interface User {
-//     id: string;
-//     email: string;
-//     role: string;
-// }
-
 export interface BankIdInitRes {
     orderRef: string;
     autoStartToken: string;
@@ -63,4 +57,9 @@ export async function checkSession(): Promise<User | null> {
     } catch {
         return null;
     }
+}
+
+export async function refreshSession(): Promise<void> {
+        await axiosInstance.post<User>("auth/refresh");
+        // returnerar inget för att cookien sätts direkt från backend och user sätts vid inloggning samt uppdatering av kontaktuppgifter, finns ingen mening med att denna ska returnera user - dessutom returnerar den bara token, id, name & email så det blir information loss på phone vid autorefresh?
 }
