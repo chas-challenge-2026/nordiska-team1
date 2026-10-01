@@ -40,19 +40,25 @@ HIDE_CURSOR = "\033[?25l"
 SHOW_CURSOR = "\033[?25h"
 
 
-def print_banner(mgr: DockerDatabaseManager) -> None:
+def get_banner_text(mgr: DockerDatabaseManager) -> str:
     active_db = mgr.get_active_database_env()
     db_color = GREEN if active_db == "nordiska_synthetic" else YELLOW
 
-    print(f"{BOLD}Nordiska Sparbanken — Synthetic Data Manager{RESET}")
-    print(f"Active database: {db_color}{BOLD}{active_db}{RESET}")
-
+    lines = [
+        f"{BOLD}Nordiska Sparbanken — Synthetic Data Manager{RESET}",
+        f"Active database: {db_color}{BOLD}{active_db}{RESET}",
+    ]
     stats = mgr.get_synthetic_stats()
     if stats.exists:
-        print(f"Synthetic database: {GREEN}{stats.customer_count:,} customers, {stats.account_count:,} accounts, {stats.ledger_count:,} transactions ({stats.size_pretty}){RESET}")
+        lines.append(f"Synthetic database: {GREEN}{stats.customer_count:,} customers, {stats.account_count:,} accounts, {stats.ledger_count:,} transactions ({stats.size_pretty}){RESET}")
     else:
-        print(f"Synthetic database: {DIM}Not created (deleted / uninitialized){RESET}")
-    print("─" * 60)
+        lines.append(f"Synthetic database: {DIM}Not created (deleted / uninitialized){RESET}")
+    lines.append("─" * 60)
+    return "\n".join(lines)
+
+
+def print_banner(mgr: DockerDatabaseManager) -> None:
+    print(get_banner_text(mgr))
 
 
 def display_status(mgr: DockerDatabaseManager) -> None:
@@ -84,12 +90,12 @@ def navigable_menu(
     prompt: str,
     options: List[str],
     default_idx: int = 0,
-    header_fn: Optional[Callable[[], None]] = None,
+    header_text: Optional[str] = None,
 ) -> int:
-    """Resize-proof arrow-key navigable menu with fallback to numbered input."""
+    """Smooth in-place arrow-key navigable menu with zero flicker and instant response."""
     if not sys.stdin.isatty():
-        if header_fn:
-            header_fn()
+        if header_text:
+            print(header_text)
         print(f"\n{BOLD}{prompt}{RESET}")
         for idx, opt in enumerate(options, 1):
             print(f"  {idx}) {opt}")
@@ -106,8 +112,8 @@ def navigable_menu(
         import tty
         import termios
     except ImportError:
-        if header_fn:
-            header_fn()
+        if header_text:
+            print(header_text)
         print(f"\n{BOLD}{prompt}{RESET}")
         for idx, opt in enumerate(options, 1):
             print(f"  {idx}) {opt}")
@@ -130,16 +136,27 @@ def navigable_menu(
     if hasattr(signal, "SIGWINCH"):
         old_winch_handler = signal.signal(signal.SIGWINCH, handle_sigwinch)
 
-    def redraw():
+    def render_full():
+        """Full clear and redraw: executed on initial display and on window resize."""
         sys.stdout.write(CLEAR_SCREEN)
-        if header_fn:
-            header_fn()
+        if header_text:
+            print(header_text)
         print(f"\n{BOLD}{prompt}{RESET} {DIM}(↑ / ↓ to navigate, Enter to select){RESET}")
         for idx, opt in enumerate(options):
             if idx == selected:
                 print(f"  {CYAN}{BOLD}❯ {opt}{RESET}")
             else:
                 print(f"    {DIM}{opt}{RESET}")
+        sys.stdout.flush()
+
+    def update_options():
+        """Instantaneous in-place options update without clearing screen or querying DB."""
+        sys.stdout.write(f"\033[{len(options)}A\r")
+        for idx, opt in enumerate(options):
+            if idx == selected:
+                sys.stdout.write(f"\033[2K  {CYAN}{BOLD}❯ {opt}{RESET}\r\n")
+            else:
+                sys.stdout.write(f"\033[2K    {DIM}{opt}{RESET}\r\n")
         sys.stdout.flush()
 
     try:
@@ -150,18 +167,17 @@ def navigable_menu(
         tty.cfmakecbreak(new_settings)
         new_settings[tty.OFLAG] |= (termios.OPOST | termios.ONLCR)
         termios.tcsetattr(fd, termios.TCSADRAIN, new_settings)
-        redraw()
+        render_full()
 
         while True:
             if resized:
                 resized = False
-                redraw()
+                render_full()
 
             try:
                 ch1 = sys.stdin.read(1)
             except (InterruptedError, OSError):
-                # Interrupted by window resize signal
-                redraw()
+                render_full()
                 continue
             except KeyboardInterrupt:
                 sys.stdout.write(SHOW_CURSOR)
@@ -182,22 +198,22 @@ def navigable_menu(
                 try:
                     ch2 = sys.stdin.read(1)
                 except (InterruptedError, OSError):
-                    redraw()
+                    render_full()
                     continue
 
                 if ch2 == "[":
                     try:
                         ch3 = sys.stdin.read(1)
                     except (InterruptedError, OSError):
-                        redraw()
+                        render_full()
                         continue
 
                     if ch3 == "A":  # Up
                         selected = (selected - 1) % len(options)
-                        redraw()
+                        update_options()
                     elif ch3 == "B":  # Down
                         selected = (selected + 1) % len(options)
-                        redraw()
+                        update_options()
     finally:
         sys.stdout.write(SHOW_CURSOR)
         sys.stdout.flush()
@@ -286,10 +302,8 @@ def switch_database_flow(mgr: DockerDatabaseManager, target_db: str) -> None:
 def run_tui(mgr: DockerDatabaseManager) -> None:
     hw_cores = os.cpu_count() or 4
 
-    def banner():
-        print_banner(mgr)
-
     while True:
+        banner_text = get_banner_text(mgr)
         active_db = mgr.get_active_database_env()
         switch_target = "nordiska_synthetic" if active_db == "nordiska_v2" else "nordiska_v2"
 
@@ -303,7 +317,7 @@ def run_tui(mgr: DockerDatabaseManager) -> None:
             "Exit",
         ]
 
-        action_idx = navigable_menu("Action:", main_options, default_idx=0, header_fn=banner)
+        action_idx = navigable_menu("Action:", main_options, default_idx=0, header_text=banner_text)
 
         if action_idx == 6:  # Exit
             print("Done.")
@@ -346,7 +360,7 @@ def run_tui(mgr: DockerDatabaseManager) -> None:
                 "50 customers (~3.4k transactions)",
                 "Custom number...",
             ]
-            c_idx = navigable_menu("Customers to generate:", customer_options, default_idx=0, header_fn=banner)
+            c_idx = navigable_menu("Customers to generate:", customer_options, default_idx=0, header_text=banner_text)
 
             if c_idx == 0:
                 cust_count = 10000
