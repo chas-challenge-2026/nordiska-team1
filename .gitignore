@@ -4,6 +4,7 @@
 .env
 .env.*
 !.env.example
+!.env.template
 *.local
 *.secret
 .dev/
@@ -114,3 +115,11 @@ temp/
 
 # 7. Claude Code local settings
 .claude/
+
+# Agent local settings
+.agents/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
