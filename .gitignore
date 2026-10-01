@@ -41,6 +41,8 @@ ubsan.log*
 /native/test_key_load
 /native/pdf-signer/test_key_load
 /native/pdf-signer/test_key_load_pkcs11
+/native/pdf-signer/test_cert_load
+/native/pdf-signer/test_pdf_sign
 
 # CMake / Meson build output
 **/CMakeFiles/
@@ -52,3 +54,5 @@ ubsan.log*
 **/meson-logs/
 **/meson-private/
 
+# Native signer test keys / secrets
+native/pdf-signer/tests/data/
