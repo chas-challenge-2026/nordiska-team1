@@ -20,7 +20,7 @@ export default function LanguageButton({onLanguageChange}: LanguageButtonProps) 
             type="button"
             title={i18n.language === "sv" ? "Switch to english" : "Växla till svenska"}
             onClick={toggleLanguage}
-            className="flex min-h-11 cursor-pointer items-center gap-2 px-4 text-sm font-light uppercase tracking-[0.18em] text-white"
+            className="flex min-h-11 cursor-pointer items-center gap-2 px-4 text-sm font-light uppercase tracking-[0.18em] text-white text-shadow-lg/80"
         >
             <img
                 className="h-[14px] w-[19px] invert"

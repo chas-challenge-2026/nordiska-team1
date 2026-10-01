@@ -58,7 +58,7 @@ export default function LandingPage({ inactive = false, loggedOut = false }: pag
                     {/* {!loggedOut && ( */}
                         <Link
                             to="/login"
-                            className="group flex min-h-14 w-full max-w-xl items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] shadow-xl/30 bg-nordiska-blue px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-login-bg focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl"
+                            className="group flex min-h-14 w-full max-w-xl items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] shadow-xl/30 bg-nordiska-blue px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-login-bg focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl text-shadow-lg/40"
                         >
                             <span>
                                 {inactive || loggedOut 
