@@ -11,6 +11,9 @@ using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Faq.Application;
 using System.IO;
 using System.Reflection;
+using FluentValidation;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Validators;
 using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -70,6 +73,7 @@ builder.Services.AddApiAuthorization();
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IValidator<RegisterCustomerRequestDto>, RegisterCustomerRequestDtoValidator>();
 
 // Register controller services
 builder.Services.AddControllers();

@@ -55,10 +55,10 @@ export default function SettingsPage() {
 
                 <button
                     type="button"
-                    onClick={ () => navigate("/")}
+                    onClick={ () => navigate(-1)}
                     className="absolute right-4 top-4 z-10 hidden min-h-11 items-center gap-2 rounded-sm px-2 font-montserrat text-sm font-semibold uppercase text-primary-blue cursor-pointer transition-colors hover:text-nordiska-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy md:flex"
                 >
-                    <span>{t("settings-route.close")}</span>
+                    <span>{t("generic.close")}</span>
 
                     <span
                         aria-hidden="true"

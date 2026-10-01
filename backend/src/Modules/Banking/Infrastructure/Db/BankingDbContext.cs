@@ -11,6 +11,7 @@ public sealed class BankingDbContext(
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<SavingsAccount> SavingsAccounts => Set<SavingsAccount>();
     public DbSet<AccountTypeConfig> AccountTypeConfigs => Set<AccountTypeConfig>();
+    public DbSet<AccountTypeRateHistory> AccountTypeRateHistories => Set<AccountTypeRateHistory>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<OperationalMessage> OperationalMessages => Set<OperationalMessage>();

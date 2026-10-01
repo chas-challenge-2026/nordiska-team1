@@ -19,27 +19,32 @@ public class SavingsAccountService : ISavingsAccountService
     private readonly ILogger<SavingsAccountService> _logger;
     private readonly ISavingsAccountRepository _repo;
     private readonly IAccountTypeConfigRepository? _accountTypeConfigRepo;
+    private readonly ITransactionRepository? _txRepo;
 
     public SavingsAccountService(
         ISavingsAccountRepository repo, 
         ILogger<SavingsAccountService> logger,
-        IAccountTypeConfigRepository? accountTypeConfigRepo = null)
+        IAccountTypeConfigRepository? accountTypeConfigRepo = null,
+        ITransactionRepository? txRepo = null)
     {
         _repo = repo;
         _logger = logger;
         _accountTypeConfigRepo = accountTypeConfigRepo;
+        _txRepo = txRepo;
     }
 
     public async Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var list = await _repo.GetAllAsync(cancellationToken);
-        return list.Select(a => a.ToResponse());
+        var tasks = list.Select(a => MapWithInterestAsync(a, cancellationToken));
+        return await Task.WhenAll(tasks);
     }
 
     public async Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
     {
         var list = await _repo.GetByCustomerIdAsync(customerId, cancellationToken);
-        return list.Select(a => a.ToResponse());
+        var tasks = list.Select(a => MapWithInterestAsync(a, cancellationToken));
+        return await Task.WhenAll(tasks);
     }
 
     public async Task<SavingsAccountResponse> GetByIdAsync(long id, CancellationToken cancellationToken = default)
@@ -47,7 +52,55 @@ public class SavingsAccountService : ISavingsAccountService
         var acc = await _repo.GetByIdAsync(id, cancellationToken);
         if (acc is null)
             throw new NotFoundException($"Savings account with ID {id} was not found.");
-        return acc.ToResponse();
+        return await MapWithInterestAsync(acc, cancellationToken);
+    }
+
+    private async Task<SavingsAccountResponse> MapWithInterestAsync(SavingsAccount acc, CancellationToken cancellationToken)
+    {
+        if (acc.Status != "active" || acc.Balance <= 0)
+        {
+            return acc.ToResponse();
+        }
+
+        try
+        {
+            var now = DateTime.UtcNow;
+            var year = now.Year;
+            var yearStartDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            IEnumerable<LedgerEntry> txs = [];
+            if (_txRepo != null)
+            {
+                txs = await _txRepo.QueryAsync(acc.Id, cancellationToken);
+            }
+
+            var txList = txs.Select(t => (t.Amount, t.CreatedAt)).ToList();
+            var openingBalance = txList
+                .Where(t => t.CreatedAt < yearStartDate)
+                .Sum(t => t.Amount);
+
+            IEnumerable<(decimal Rate, DateTime EffectiveFromUtc, DateTime? EffectiveToUtc)>? rateHistory = null;
+            if (_accountTypeConfigRepo != null && !string.IsNullOrWhiteSpace(acc.AccountType))
+            {
+                var history = await _accountTypeConfigRepo.GetRateHistoryAsync(acc.AccountType, cancellationToken);
+                rateHistory = history.Select(h => (h.InterestRate, h.EffectiveFromUtc, h.EffectiveToUtc));
+            }
+
+            var (accruedYtd, estimatedYearEnd) = AccountInterestCalculator.Calculate(
+                openingBalance,
+                txList,
+                year,
+                acc.InterestRate,
+                rateHistory,
+                now);
+
+            return acc.ToResponse(null, accruedYtd, estimatedYearEnd);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to compute accrued interest for account {AccountId}", acc.Id);
+            return acc.ToResponse();
+        }
     }
 
     public async Task<SavingsAccountResponse> CreateAsync(OpenSavingsAccountRequest request, CancellationToken cancellationToken = default)
@@ -95,9 +148,24 @@ public class SavingsAccountService : ISavingsAccountService
 
         var entity = normalizedRequest.ToDomain();
         entity.InterestRate = rate;
-        await _repo.CreateAsync(entity, cancellationToken);
-        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}) for customer {CustomerId}", 
-            entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, entity.CustomerId);
+        var createdId = await _repo.CreateAsync(entity, cancellationToken);
+        entity.Id = createdId;
+
+        if (request.InitialDeposit > 0 && _txRepo != null)
+        {
+            var initialEntry = new LedgerEntry
+            {
+                AccountId = entity.Id,
+                Type = "deposit",
+                Amount = request.InitialDeposit,
+                Label = "Initial insättning",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _txRepo.CreateAsync(initialEntry, cancellationToken);
+        }
+
+        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}, initialDeposit={InitialDeposit}) for customer {CustomerId}", 
+            entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, request.InitialDeposit, entity.CustomerId);
         return entity.ToResponse();
     }
 

@@ -262,7 +262,7 @@
             <response code="200">Current status of the authentication (e.g. PENDING or COMPLETE with customer profile).</response>
             <response code="401">Authentication failed or customer not found.</response>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Register(Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto)">
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Register(Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto,FluentValidation.IValidator{Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto},System.Threading.CancellationToken)">
             <summary>
             Registers a new customer and establishes an authenticated session.
             </summary>
@@ -270,8 +270,11 @@
             Creates a new customer identity record and immediately sets the HttpOnly authentication cookie.
             </remarks>
             <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
+            <param name="validator">Validator for customer registration request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Customer registered successfully and session established.</response>
-            <response code="400">Registration validation failed or email already registered.</response>
+            <response code="400">Registration validation failed (e.g. invalid personal number or email format).</response>
+            <response code="409">Conflict: email address or personal number is already registered.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Contracts.Requests.LoginRequest)">
             <summary>
@@ -355,7 +358,7 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.DecreaseHelpful(System.Int32,System.Threading.CancellationToken)">
             <summary>
-            Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+            Decreases the helpfulness count of an FAQ entry by 1 (supports negative count for downvotes).
             </summary>
             <param name="id">The unique identifier of the FAQ entry.</param>
             <param name="cancellationToken">Cancellation token.</param>
@@ -391,14 +394,14 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Create(Nordiska.Modules.Faq.Contracts.Requests.CreateFaqRequest,System.Threading.CancellationToken)">
             <summary>
-            Creates a new FAQ entry. Requires the faq:manage permission.
+            Creates a new FAQ entry. Requires the faq:manage policy (Admin role, e.g. login as admin@nordiska.se).
             </summary>
             <param name="request">The FAQ creation payload containing question, answer, category, keywords, and lang.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="201">FAQ entry created successfully.</response>
             <response code="400">Validation failed on the provided FAQ data.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+            <response code="403">Forbidden if the user lacks the Admin role / faq:manage policy.</response>
             <response code="413">Payload exceeds size limit.</response>
             <response code="415">Unsupported media type.</response>
         </member>

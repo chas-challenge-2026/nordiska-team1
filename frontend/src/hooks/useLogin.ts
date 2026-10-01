@@ -10,7 +10,7 @@ import { useEffect } from "react";
 // "Standard" är den enklaste av de kontotyper som är seedade i backend
 // (se AccountTypeConfig). Startinsättning skickas inte med - backend sätter 0 som standard.
 const DEFAULT_ACCOUNT_NAME = "Sparkonto";
-const DEFAULT_ACCOUNT_TYPE = "Standard";
+const DEFAULT_ACCOUNT_TYPE = "standard";
 
 
 export function useLogin() {
@@ -59,7 +59,7 @@ export function useRegister() {
 
 export function useBankIdInitate() {
     return useMutation({
-        mutationFn: (personalNum: string) => bankIdInitiate(personalNum),
+        mutationFn: (personalNum?: string) => bankIdInitiate(personalNum),
     });
 };
 
@@ -78,9 +78,9 @@ export function useBankIdCollect(orderRef: string) {
         refetchInterval: (query) => {
             const status = query.state.data?.status;
 
-            if (status === "COMPLETE") {
+            // COMPLETE och FAILED är slutstatus - då finns inget mer att hämta.
+            if (status === "COMPLETE" || status === "FAILED") {
                 return false;
-                // THROWA ERROR HÄR, MEN FÖRST ORDENTLIG STATUS TILLBAKA FRÅN BACKEND
             }
 
             if (query.state.error) {

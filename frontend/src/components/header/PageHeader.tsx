@@ -47,6 +47,8 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
     switch (location.pathname) {
         case "/login":
+        case "/register":
+
             dotColor = "text-white"
             headerBackground = "bg-[url('/images/winter_forrest.webp')] bg-cover bg-center"
             languageSelectBg = ""
@@ -73,7 +75,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                 > 
 
                     {/* ----- LOGO ----- */}
-                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer} -mb-1`}>
+                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer -mb-1`}>
                         nordiska<span className={dotColor}>.</span>
                     </a>
 
@@ -84,7 +86,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                             onClick={() => setLanguageOpen(!languageOpen)}
                             aria-expanded={languageOpen}
                             aria-haspopup="true"
-                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white font-normal"
+                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white text-shadow-lg/40 font-normal"
                         >
                             <img className="h-[14px] w-[19px] invert -mr-1.5" src="icons/lang-icon.svg" aria-hidden="true"/>
                             {i18n.language}
@@ -98,7 +100,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                                         i18n.changeLanguage(i18n.language === "sv" ? "en" : "sv");
                                         setLanguageOpen(false);
                                     }}
-                                    className="cursor-pointer ml-2 px-3 py-2 text-[14px] uppercase tracking-[0.18em] text-white"
+                                    className="cursor-pointer ml-2 px-3 py-2 text-[14px] uppercase tracking-[0.18em] text-white text-shadow-lg/40"
                                 >
                                     {i18n.language === "sv" ? "English" : "Svenska"}
                                 </button>
@@ -114,7 +116,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
             {/* ----- LOGO ----- */}
             <section>
-                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer}`}>
+                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer text-shadow-lg/50`}>
                     nordiska<span className={dotColor}>.</span>
                 </a>
             </section>
@@ -183,7 +185,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
                 <div className="flex flex-1 flex-col items-center">
 
                     {/* NAVLINKS */}
-                    <nav className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat text-xl font-semibold uppercase tracking-wider">
+                    <nav className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat text-xl font-semibold uppercase tracking-wider text-shadow-lg/80">
                         {menuItems.map((item) => (
                             <div key={item.route} onClick={closeMenu}>
                                 <PageLink route={item.route} title={item.title} header/>
@@ -193,7 +195,7 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
 
                     {/* USER & LOG OUT */}
                     <div className="flex flex-col items-center font-normal mb-30">
-                        <p className="mb-5 text-xs capitalize">
+                        <p className="mb-5 text-xs capitalize text-shadow-md/80">
                             {t("page-header.user")}
                             <span className="text-sm font-medium"> {username} </span>
                         </p>

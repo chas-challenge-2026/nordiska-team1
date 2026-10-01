@@ -33,16 +33,16 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
         "GET api/faqs/{id:int}",
         "GET api/faqs/search",
         "GET api/operational-messages",
-        "GET api/faqs/{lang:alpha}",
-        "GET api/faqs/{lang:alpha}/categories",
+        "GET api/faqs/{lang:regex(^(sv|en)$)}",
+        "GET api/faqs/{lang:regex(^(sv|en)$)}/categories",
         "POST api/faqs/{id:int}/increase",
         "PATCH api/faqs/{id:int}/increase",
         "POST api/faqs/{id:int}/decrease",
         "PATCH api/faqs/{id:int}/decrease",
         "GET api/faq/{id:int}",
         "GET api/faq/search",
-        "GET api/faq/{lang:alpha}",
-        "GET api/faq/{lang:alpha}/categories",
+        "GET api/faq/{lang:regex(^(sv|en)$)}",
+        "GET api/faq/{lang:regex(^(sv|en)$)}/categories",
         "POST api/faq/{id:int}/increase",
         "PATCH api/faq/{id:int}/increase",
         "POST api/faq/{id:int}/decrease",
@@ -102,7 +102,10 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
     [InlineData("POST", "/api/accounts/1/close")]
     [InlineData("GET", "/api/customers/1")]
     [InlineData("POST", "/api/customers")]
+    [InlineData("PUT", "/api/customers/1")]
     [InlineData("DELETE", "/api/customers/1")]
+    [InlineData("GET", "/api/audit")]
+    [InlineData("GET", "/api/audit/1/verify")]
     [InlineData("GET", "/api/transactions/1")]
     [InlineData("GET", "/api/transactions/balance/1")]
     [InlineData("POST", "/api/transactions/transfer")]

@@ -47,8 +47,8 @@ export default function TransferForm({
 
     return (
         <div>
-            <div className="flex items-end justify-between border-b-[3px] border-nordiska-orange pb-2.5">
-                <h2 className="m-0 text-[26px] font-semibold text-dark-navy">
+            <div className="flex items-end justify-between gap-4 border-b-3 border-b-nordiska-orange pb-2.5">
+                <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px]">
                     {t("page-transfer.heading")}
                 </h2>
             </div>
@@ -90,6 +90,11 @@ export default function TransferForm({
                             toAccount
                                 ? toAccount.meta
                                 : t("page-transfer.to-meta-placeholder")
+                        }
+                        balance={
+                            toAccount?.own
+                                ? `${formatSek(toAccount.balance)} sek`
+                                : undefined
                         }
                         onClick={onOpenToModal}
                     />

@@ -403,6 +403,25 @@ public class DbInitializer
             }
             await db.SaveChangesAsync();
         }
+
+        // 3. Ensure all accounts with positive balance have matching initial ledger entries (ADR 0001 Ledger Pattern sync)
+        var allAccounts = await db.SavingsAccounts.ToListAsync();
+        foreach (var acc in allAccounts)
+        {
+            var hasEntries = await db.LedgerEntries.AnyAsync(l => l.AccountId == acc.Id && !l.IsPlanned);
+            if (!hasEntries && acc.Balance > 0)
+            {
+                db.LedgerEntries.Add(new LedgerEntry
+                {
+                    AccountId = acc.Id,
+                    Type = "deposit",
+                    Amount = acc.Balance,
+                    Label = "Startsaldo / Initial insättning",
+                    CreatedAt = acc.CreatedAt
+                });
+            }
+        }
+        await db.SaveChangesAsync();
     }
 
     private static async Task SeedNotificationsAsync(BankingDbContext db)
@@ -470,6 +489,13 @@ public class DbInitializer
                     "sv"
                 ),
                 FaqEntry.Create(
+                    "Hur beräknas räntan på mitt sparkonto?",
+                    "Räntan beräknas per dag baserat på hur mycket pengar du har på kontot varje enskild dag. Om du sätter in eller tar ut pengar under året räknas räntan exakt för de dagar pengarna har funnits på kontot. Den totala upplupna räntan betalas ut till ditt konto vid årsskiftet den 31 december.",
+                    "Ränta",
+                    "ränta, ränteberäkning, beräkning, dagsränta, insättning, uttag, 31 december, årsskifte, avkastning",
+                    "sv"
+                ),
+                FaqEntry.Create(
                     "Hur gör jag en insättning?",
                     "Logga in och välj Insättning / Uttag i menyn. Ange belopp och bekräfta. Pengarna syns direkt på kontot.",
                     "Insättning",
@@ -530,6 +556,13 @@ public class DbInitializer
                     "Interest is calculated daily and paid on December 31st each year.",
                     "Interest",
                     "interest, rate, payment, percentage, yield",
+                    "en"
+                ),
+                FaqEntry.Create(
+                    "How is interest calculated on my savings account?",
+                    "Interest is calculated on a daily basis based on your account balance each day. If you deposit or withdraw funds during the year, interest is earned strictly for the exact days the money was in your account. The total accrued interest is paid out at year-end on December 31st.",
+                    "Interest",
+                    "interest, calculation, daily interest, deposit, withdrawal, december 31, year end, yield, rate",
                     "en"
                 ),
                 FaqEntry.Create(

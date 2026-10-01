@@ -1,13 +1,7 @@
 import axiosInstance from "./axiosInstance";
 import type { User } from "../types/types";
 
-// interface User {
-//     id: string;
-//     email: string;
-//     role: string;
-// }
-
-interface BankIdInitRes {
+export interface BankIdInitRes {
     orderRef: string;
     autoStartToken: string;
     qrStartToken: string;
@@ -16,7 +10,7 @@ interface BankIdInitRes {
 
 interface BankIdCollectUser {
     status: string;
-    hintcode: string;
+    hintCode: string | null;
     customer: null | {
         id: number;
         name: string;
@@ -24,8 +18,9 @@ interface BankIdCollectUser {
     }
 }
 
-export async function bankIdInitiate(personalNum:string):Promise<BankIdInitRes> {
-    const res = await axiosInstance.post("/auth/bankid/initiate", {personalNum: personalNum});
+/** Utan personnummer startas en vanlig BankID-order (QR-kod eller autostart på samma enhet). */
+export async function bankIdInitiate(personalNum?: string):Promise<BankIdInitRes> {
+    const res = await axiosInstance.post("/auth/bankid/initiate", {personalNum: personalNum ?? ""});
     return res.data;
 }
 
@@ -62,4 +57,9 @@ export async function checkSession(): Promise<User | null> {
     } catch {
         return null;
     }
+}
+
+export async function refreshSession(): Promise<void> {
+        await axiosInstance.post<User>("auth/refresh");
+        // returnerar inget för att cookien sätts direkt från backend och user sätts vid inloggning samt uppdatering av kontaktuppgifter, finns ingen mening med att denna ska returnera user - dessutom returnerar den bara token, id, name & email så det blir information loss på phone vid autorefresh?
 }
