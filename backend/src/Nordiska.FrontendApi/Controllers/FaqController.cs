@@ -191,14 +191,14 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new FAQ entry. Requires the faq:manage permission.
+    /// Creates a new FAQ entry. Requires the faq:manage policy (Admin role, e.g. login as admin@nordiska.se).
     /// </summary>
     /// <param name="request">The FAQ creation payload containing question, answer, category, keywords, and lang.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="201">FAQ entry created successfully.</response>
     /// <response code="400">Validation failed on the provided FAQ data.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+    /// <response code="403">Forbidden if the user lacks the Admin role / faq:manage policy.</response>
     /// <response code="413">Payload exceeds size limit.</response>
     /// <response code="415">Unsupported media type.</response>
     [HttpPost]
