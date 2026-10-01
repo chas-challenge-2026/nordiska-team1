@@ -11,6 +11,7 @@ public sealed class MessageThreadState
     public MessageThreadState(long threadId,long customerId,MessageFolder folder){ThreadId=threadId; CustomerId=customerId; Folder=folder;}
     public bool IsRead=>ReadAt is not null;
     public void MarkAsRead()=>ReadAt ??= DateTimeOffset.UtcNow;
+    public void MarkAsUnread()=>ReadAt = null;
     public void Archive(){Folder=MessageFolder.Archive; ArchivedAt=DateTimeOffset.UtcNow;}
     public void MoveToInbox(){Folder=MessageFolder.Inbox; ArchivedAt=null;}
 }
