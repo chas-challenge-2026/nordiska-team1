@@ -3,40 +3,40 @@
 BEGIN;
 
 REVOKE ALL
-    ON ALL TABLES IN SCHEMA banking, faq, reporting
+    ON ALL TABLES IN SCHEMA banking, faq, reporting, inbox
     FROM PUBLIC, nordiska_api;
 
 REVOKE ALL
-    ON ALL SEQUENCES IN SCHEMA banking, faq, reporting
+    ON ALL SEQUENCES IN SCHEMA banking, faq, reporting, inbox
     FROM PUBLIC, nordiska_api;
 
 ALTER DEFAULT PRIVILEGES
     FOR ROLE nordiska_migrator
-    IN SCHEMA banking, faq, reporting
+    IN SCHEMA banking, faq, reporting, inbox
     REVOKE ALL ON TABLES FROM nordiska_api;
 
 ALTER DEFAULT PRIVILEGES
     FOR ROLE nordiska_migrator
-    IN SCHEMA banking, faq, reporting
+    IN SCHEMA banking, faq, reporting, inbox
     GRANT SELECT, INSERT, UPDATE
     ON TABLES TO nordiska_api;
 
 ALTER DEFAULT PRIVILEGES
     FOR ROLE nordiska_migrator
-    IN SCHEMA banking, faq, reporting
+    IN SCHEMA banking, faq, reporting, inbox
     REVOKE ALL ON SEQUENCES FROM nordiska_api;
 
 ALTER DEFAULT PRIVILEGES
     FOR ROLE nordiska_migrator
-    IN SCHEMA banking, faq, reporting
+    IN SCHEMA banking, faq, reporting, inbox
     GRANT USAGE ON SEQUENCES TO nordiska_api;
 
 GRANT SELECT, INSERT, UPDATE
-    ON ALL TABLES IN SCHEMA banking, faq, reporting
+    ON ALL TABLES IN SCHEMA banking, faq, reporting, inbox
     TO nordiska_api;
 
 GRANT USAGE
-    ON ALL SEQUENCES IN SCHEMA banking, faq, reporting
+    ON ALL SEQUENCES IN SCHEMA banking, faq, reporting, inbox
     TO nordiska_api;
 
 GRANT DELETE
@@ -77,7 +77,7 @@ DO $$
 DECLARE
     schema_name text;
 BEGIN
-    FOREACH schema_name IN ARRAY ARRAY['banking', 'faq', 'reporting']
+    FOREACH schema_name IN ARRAY ARRAY['banking', 'faq', 'reporting', 'inbox']
     LOOP
         IF to_regclass(
             format('%I.%I', schema_name, '__EFMigrationsHistory')
