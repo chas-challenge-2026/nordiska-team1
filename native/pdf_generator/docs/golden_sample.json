@@ -1,0 +1,62 @@
+{
+  "$schema_version": "1.0",
+  "customer_id": 1001,
+  "customer_name": "Erik Johansson",
+  "created_at": "2026-03-01T12:00:00Z",
+  "documents": [
+    {
+      "document_id": "account_statement_1001",
+      "kind": "account_statement",
+      "version": "1.0",
+      "document": {
+        "title": "Kontoutdrag",
+        "account_number": "9020 123 4567",
+        "account_name": "Privatkonto",
+        "currency": "SEK",
+        "period": "2026-01-01 - 2026-01-31",
+        "opening_balance": "24 500,00 SEK",
+        "closing_balance": "47 250,50 SEK",
+        "transactions": [
+          {
+            "date": "2026-01-02",
+            "type": "Kortköp",
+            "description": "ICA Kvantum Stockholm",
+            "currency": "SEK",
+            "amount_display": "-849,50 SEK",
+            "balance_after_display": "23 650,50 SEK"
+          },
+          {
+            "date": "2026-01-15",
+            "type": "Insättning",
+            "description": "Lön ACME Nordic AB",
+            "currency": "SEK",
+            "amount_display": "+32 000,00 SEK",
+            "balance_after_display": "55 650,50 SEK"
+          },
+          {
+            "date": "2026-01-25",
+            "type": "Överföring",
+            "description": "Hyra Bostadsrätt",
+            "currency": "SEK",
+            "amount_display": "-8 400,00 SEK",
+            "balance_after_display": "47 250,50 SEK"
+          }
+        ]
+      }
+    },
+    {
+      "document_id": "annual_tax_report_1001",
+      "kind": "annual_tax_report",
+      "version": "1.0",
+      "document": {
+        "title": "Kontrolluppgift för ränteinkomst",
+        "tax_year": "2025",
+        "account_number": "9020 123 4567",
+        "account_name": "Sparkonto Högränta",
+        "total_interest_earned": "12 450,00 SEK",
+        "preliminary_tax_deducted": "3 735,00 SEK",
+        "reported_to_authority": "Skatteverket (KU20)"
+      }
+    }
+  ]
+}
