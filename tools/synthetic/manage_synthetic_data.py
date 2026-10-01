@@ -145,7 +145,11 @@ def navigable_menu(
     try:
         sys.stdout.write(HIDE_CURSOR)
         sys.stdout.flush()
-        tty.setraw(fd)
+        mode = termios.tcgetattr(fd)
+        new_settings = list(mode)
+        tty.cfmakecbreak(new_settings)
+        new_settings[tty.OFLAG] |= (termios.OPOST | termios.ONLCR)
+        termios.tcsetattr(fd, termios.TCSADRAIN, new_settings)
         redraw()
 
         while True:
@@ -159,6 +163,12 @@ def navigable_menu(
                 # Interrupted by window resize signal
                 redraw()
                 continue
+            except KeyboardInterrupt:
+                sys.stdout.write(SHOW_CURSOR)
+                sys.stdout.flush()
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                print("\nCancelled.")
+                sys.exit(0)
 
             if ch1 in ("\r", "\n"):
                 break
@@ -343,7 +353,7 @@ def run_tui(mgr: DockerDatabaseManager) -> None:
             elif c_idx == 1:
                 cust_count = 50000
             elif c_idx == 2:
-                cust_count = 10000
+                cust_count = 100000
             elif c_idx == 3:
                 cust_count = 1000000
             elif c_idx == 4:
