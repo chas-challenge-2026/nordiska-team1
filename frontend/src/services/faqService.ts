@@ -1,14 +1,6 @@
 import axiosInstance from "./axiosInstance";
-import type { FaqResponse } from "../types/types";
+import type { FaqResponse} from "../types/types";
 
-/*
-Services for
-    - getFaqs
-    - getFaqCategories
-    - logHelpCount
-*/
-
-// -----------------------
 // ------ GET FAQ:s ------
 // -----------------------
 export type GetFaqParams = {
@@ -35,11 +27,16 @@ export async function getFaqs(
             },
         }
     );
-
     return res.data;
 }
 
-// ----------------------------
+// ------ GET MATCHING FAQ PAIR ------
+// -----------------------------------
+export async function getFaqsByRelationId(relationId: string){
+    const res = await axiosInstance.get(`/faqs/relation/${relationId}`);
+    return res.data;
+}
+
 // ------ GET CATEGORIES ------
 // ----------------------------
 export async function getFaqCategories(
@@ -49,18 +46,15 @@ export async function getFaqCategories(
     return res.data;
 }
 
-// -----------------------------------------
 // ------ INCREASE/DECREASE HELPCOUNT ------
 // -----------------------------------------
 type HelpAction = "increase" | "decrease";
 
 export async function logHelpCount(id:number, action: HelpAction): Promise<number> {
     const res = await axiosInstance.patch(`faqs/${id}/${action}`);
-
     return res.status
 }
 
-// ------------------------
 // ------ CREATE FAQ ------
 // ------------------------
 export type CreateFaqRequest = {
@@ -69,11 +63,35 @@ export type CreateFaqRequest = {
     category: string;
     keywords: string;
     lang: "sv" | "en";
+    relationId: string;
 };
 
 export async function createFaq(faq: CreateFaqRequest) {
-    const res = await axiosInstance.post("/faqs", faq);
+    const res = await axiosInstance.post("/faq", faq);
     return res.data;
 }
 
+// ------ EDIT FAQ ------
+// ----------------------
+type EditFaqRequest = {
+    question: string;
+    answer: string;
+    category: string;
+    keywords: string;
+};
 
+export async function editFaq(
+    id: number,
+    lang: string,
+    faq: EditFaqRequest
+) {
+    const res = await axiosInstance.patch(`/faq/${lang}/${id}`, faq);
+    return res.data;
+}
+
+// ------ DELETE FAQ ------
+// ------------------------
+export async function deleteFaq(id: number) {
+    const res = await axiosInstance.delete(`/faq/${id}`);
+    return res.data;
+}
