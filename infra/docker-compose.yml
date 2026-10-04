@@ -37,6 +37,8 @@ services:
       - ConnectionStrings__BankingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
       - ConnectionStrings__FaqDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
       - ConnectionStrings__ReportingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
+      - ConnectionStrings__InboxDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
+      - ActiveLogin__BankId__Environment=Test
       - Jwt__SecretKey=SuperSecretKeyForNordiskaSparbankenDevelopmentJWTToken2026!
       - Jwt__Issuer=NordiskaSparbanken
       - Jwt__Audience=NordiskaSparbankenPortal
