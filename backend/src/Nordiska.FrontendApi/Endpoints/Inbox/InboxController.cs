@@ -24,6 +24,21 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     private readonly IInboxService _service = service;
 
     /// <summary>
+    /// Retrieves total count of unread message threads for customer inbox badge.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Unread count response.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpGet("unread-count")]
+    [ProducesResponseType(typeof(UnreadCountResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UnreadCountResponse>> GetUnreadCount(CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var result = await _service.GetUnreadCountAsync(customerId, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Retrieves paginated list of conversations / support threads for the authenticated customer.
     /// </summary>
     /// <param name="folder">Folder to view ('inbox', 'sent', 'archive'). Default is 'inbox'.</param>
@@ -206,6 +221,36 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     {
         var customerId = User.GetRequiredCustomerId();
         var success = await _service.ArchiveThreadAsync(customerId, id, cancellationToken);
+        if (!success)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Hittades inte",
+                Detail = $"Ärendet med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Restores an archived message thread back to the inbox folder for the customer.
+    /// </summary>
+    /// <param name="id">Unique identifier of the message thread.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Thread restored to inbox.</response>
+    /// <response code="404">Thread not found or customer has no access.</response>
+    [HttpPatch("threads/{id:long}/restore")]
+    [HttpPatch("threads/{id:long}/unarchive")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreThread(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var success = await _service.RestoreThreadAsync(customerId, id, cancellationToken);
         if (!success)
         {
             return NotFound(new ProblemDetails

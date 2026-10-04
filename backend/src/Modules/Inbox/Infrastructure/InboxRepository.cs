@@ -57,6 +57,13 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         return PagedResult<MessageThread>.Create(items, totalCount, page, pageSize);
     }
 
+    public async Task<int> GetUnreadCountAsync(long customerId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.MessageThreadStates
+            .AsNoTracking()
+            .CountAsync(s => s.CustomerId == customerId && s.Folder == MessageFolder.Inbox && s.ReadAt == null, cancellationToken);
+    }
+
     public async Task<MessageThread?> GetThreadByIdAsync(long threadId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.MessageThreads

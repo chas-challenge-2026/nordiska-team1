@@ -76,18 +76,17 @@ public sealed class InboxService(
             return null;
         }
 
+        if (!state.IsRead)
+        {
+            await _repository.MarkAsReadAsync(threadId, customerId, cancellationToken);
+            state.MarkAsRead();
+        }
+
         var messages = await _repository.GetMessagesByThreadIdAsync(threadId, cancellationToken);
         var lastMessage = messages.LastOrDefault();
         var canReply = thread.Status == MessageThreadStatus.Open && (lastMessage is null || lastMessage.ReplyAllowed);
 
-        var messageResponses = messages.Select(m => new MessageResponse(
-            Id: m.Id,
-            ThreadId: m.ThreadId,
-            SenderType: m.SenderType.ToString(),
-            SenderCustomerId: m.SenderCustomerId,
-            Body: m.Body,
-            ReplyAllowed: m.ReplyAllowed,
-            SentAt: m.SentAt)).ToList();
+        var messageResponses = messages.Select(MapToResponse).ToList();
 
         return new ThreadDetailResponse(
             Id: thread.Id,
@@ -122,14 +121,7 @@ public sealed class InboxService(
             cancellationToken);
 
         var messages = await _repository.GetMessagesByThreadIdAsync(thread.Id, cancellationToken);
-        var messageResponses = messages.Select(m => new MessageResponse(
-            Id: m.Id,
-            ThreadId: m.ThreadId,
-            SenderType: m.SenderType.ToString(),
-            SenderCustomerId: m.SenderCustomerId,
-            Body: m.Body,
-            ReplyAllowed: m.ReplyAllowed,
-            SentAt: m.SentAt)).ToList();
+        var messageResponses = messages.Select(MapToResponse).ToList();
 
         return new ThreadDetailResponse(
             Id: thread.Id,
@@ -185,14 +177,7 @@ public sealed class InboxService(
 
         await _repository.MarkAsReadAsync(threadId, customerId, cancellationToken);
 
-        return new MessageResponse(
-            Id: message.Id,
-            ThreadId: message.ThreadId,
-            SenderType: message.SenderType.ToString(),
-            SenderCustomerId: message.SenderCustomerId,
-            Body: message.Body,
-            ReplyAllowed: message.ReplyAllowed,
-            SentAt: message.SentAt);
+        return MapToResponse(message);
     }
 
     public async Task<bool> MarkAsReadAsync(
@@ -210,6 +195,14 @@ public sealed class InboxService(
         return true;
     }
 
+    public async Task<UnreadCountResponse> GetUnreadCountAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = await _repository.GetUnreadCountAsync(customerId, cancellationToken);
+        return new UnreadCountResponse(count);
+    }
+
     public async Task<bool> ArchiveThreadAsync(
         long customerId,
         long threadId,
@@ -222,6 +215,21 @@ public sealed class InboxService(
         }
 
         await _repository.ArchiveThreadAsync(threadId, customerId, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> RestoreThreadAsync(
+        long customerId,
+        long threadId,
+        CancellationToken cancellationToken = default)
+    {
+        var state = await _repository.GetThreadStateAsync(threadId, customerId, cancellationToken);
+        if (state is null)
+        {
+            return false;
+        }
+
+        await _repository.MoveToInboxAsync(threadId, customerId, cancellationToken);
         return true;
     }
 
@@ -264,10 +272,24 @@ public sealed class InboxService(
                 cancellationToken: cancellationToken);
         }
 
+        return MapToResponse(message);
+    }
+
+    private static MessageResponse MapToResponse(Message message)
+    {
+        var senderName = message.SenderType switch
+        {
+            MessageSenderType.System => "Nordiska Sparbanken",
+            MessageSenderType.Bank => "Nordiska Sparbanken",
+            MessageSenderType.Customer => "Kund",
+            _ => message.SenderType.ToString()
+        };
+
         return new MessageResponse(
             Id: message.Id,
             ThreadId: message.ThreadId,
             SenderType: message.SenderType.ToString(),
+            SenderName: senderName,
             SenderCustomerId: message.SenderCustomerId,
             Body: message.Body,
             ReplyAllowed: message.ReplyAllowed,

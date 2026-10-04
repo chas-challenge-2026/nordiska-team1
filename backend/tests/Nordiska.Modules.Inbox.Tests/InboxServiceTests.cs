@@ -241,4 +241,124 @@ public class InboxServiceTests
             threadId,
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task GetThreadDetails_WhenUnread_AutomaticallyMarksThreadAsRead()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+
+        var thread = new MessageThread(threadId, "Räntebesked");
+        var unreadState = new MessageThreadState(threadId, customerId, MessageFolder.Inbox);
+
+        var systemMsg = new Message(threadId, MessageSenderType.System, "Räntan har uppdaterats.", false);
+
+        _repoMock.Setup(r => r.GetThreadByIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread);
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unreadState);
+        _repoMock.Setup(r => r.GetMessagesByThreadIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([systemMsg]);
+
+        // Act
+        var result = await _service.GetThreadDetailsAsync(customerId, threadId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.IsRead);
+        _repoMock.Verify(r => r.MarkAsReadAsync(threadId, customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetThreadDetails_MapsSenderName_CorrectlyForSystemBankAndCustomer()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+
+        var thread = new MessageThread(threadId, "Kundärende");
+        var readState = new MessageThreadState(threadId, customerId, MessageFolder.Inbox);
+        readState.MarkAsRead();
+
+        var customerMsg = new Message(threadId, MessageSenderType.Customer, "Fråga", true, customerId);
+        var bankMsg = new Message(threadId, MessageSenderType.Bank, "Svar från banken", true, 999);
+        var systemMsg = new Message(threadId, MessageSenderType.System, "Automatiskt kvitto", false);
+
+        _repoMock.Setup(r => r.GetThreadByIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread);
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(readState);
+        _repoMock.Setup(r => r.GetMessagesByThreadIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([customerMsg, bankMsg, systemMsg]);
+
+        // Act
+        var result = await _service.GetThreadDetailsAsync(customerId, threadId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(3, result.Messages.Count);
+
+        Assert.Equal("Customer", result.Messages[0].SenderType);
+        Assert.Equal("Kund", result.Messages[0].SenderName);
+
+        Assert.Equal("Bank", result.Messages[1].SenderType);
+        Assert.Equal("Nordiska Sparbanken", result.Messages[1].SenderName);
+
+        Assert.Equal("System", result.Messages[2].SenderType);
+        Assert.Equal("Nordiska Sparbanken", result.Messages[2].SenderName);
+    }
+
+    [Fact]
+    public async Task GetUnreadCount_ReturnsCountFromRepository()
+    {
+        // Arrange
+        const long customerId = 100;
+        _repoMock.Setup(r => r.GetUnreadCountAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(4);
+
+        // Act
+        var result = await _service.GetUnreadCountAsync(customerId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(4, result.UnreadCount);
+    }
+
+    [Fact]
+    public async Task RestoreThread_WhenThreadExists_MovesToInbox()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+        var state = new MessageThreadState(threadId, customerId, MessageFolder.Archive);
+
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(state);
+
+        // Act
+        var success = await _service.RestoreThreadAsync(customerId, threadId);
+
+        // Assert
+        Assert.True(success);
+        _repoMock.Verify(r => r.MoveToInboxAsync(threadId, customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RestoreThread_WhenNotOwned_ReturnsFalse()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageThreadState?)null);
+
+        // Act
+        var success = await _service.RestoreThreadAsync(customerId, threadId);
+
+        // Assert
+        Assert.False(success);
+        _repoMock.Verify(r => r.MoveToInboxAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
