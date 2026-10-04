@@ -11,6 +11,7 @@ public sealed class FaqEntry
     public int HelpfulCount { get; private set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; private set; }
+    public Guid RelationId { get; private set; }
 
     private FaqEntry() { }
 
@@ -19,11 +20,13 @@ public sealed class FaqEntry
         string answer,
         string? category = null,
         string? keywords = null,
-        string? language = "sv")
+        string? language = "sv",
+        Guid? relationId = null)
     {
         var entry = new FaqEntry
         {
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            RelationId = relationId ?? Guid.NewGuid()
         };
         entry.SetLanguage(language);
         entry.ReviseEntry(question, answer, category, keywords);
