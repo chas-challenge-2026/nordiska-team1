@@ -14,14 +14,12 @@ const DEFAULT_ACCOUNT_TYPE = "standard";
 
 
 export function useLogin() {
-    const setUser = useUserStore((state) => state.setUser);
 
     return useMutation({
-        mutationFn: ({ email, password }: { email: string; password: string }) =>
-            login(email, password),
-        onSuccess: async () => {
+        mutationFn: async ({ email, password }: { email: string; password: string }) => {
+            await login(email, password)
             const user = await checkSession();
-            setUser(user);
+            return user;
         },
     });
 }
