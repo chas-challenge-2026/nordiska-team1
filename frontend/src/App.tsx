@@ -31,10 +31,11 @@ export default function App() {
     ]
 
     const protectedHeader = !UNPROTECTED_HEADER.includes(location.pathname);
+    const noShow = location.pathname.startsWith("/admin")
 
     return (
         <div className='flex min-h-dvh flex-col'>
-            <PageHeader protectedHeader={protectedHeader} />
+            <PageHeader protectedHeader={protectedHeader} noShow={noShow}/>
             <ErrorBoundary key={location.pathname}>
                 <AppRoutes />
             </ErrorBoundary>

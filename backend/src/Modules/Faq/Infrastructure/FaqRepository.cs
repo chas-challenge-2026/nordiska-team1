@@ -191,4 +191,18 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         await db.SaveChangesAsync(cancellationToken);
         return entry.ToResponse();
     }
+
+    public async Task<IReadOnlyCollection<FaqEntryResponse>> GetByRelationIdAsync(
+        Guid relationId,
+        CancellationToken cancellationToken = default)
+    {
+        var entries = await db.FaqEntries
+            .AsNoTracking()
+            .Where(e => e.RelationId == relationId)
+            .ToListAsync(cancellationToken);
+
+        return entries
+            .Select(e => e.ToResponse())
+            .ToList();
+    }
 }

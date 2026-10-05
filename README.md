@@ -131,11 +131,16 @@ erDiagram
 
     FaqEntry {
         int id PK
+        uuid relation_id "Koppling för språkpar sv och en"
+        string language "Språkkod sv eller en"
         string question "Fråga"
         string answer "Svar"
         string category "Kategori"
         int helpful_count "Antal gillningar"
         string keywords "Taggar och sökord"
+        int_array related_faq_ids "Relaterade artiklar"
+        datetime created_at "Skapad tidpunkt"
+        datetime updated_at "Senast uppdaterad"
     }
 
     Notification {
