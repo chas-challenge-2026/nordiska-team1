@@ -26,6 +26,7 @@ public interface IInboxRepository
         bool replyAllowed,
         CancellationToken cancellationToken = default);
     Task MarkAsReadAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
+    Task MarkAsUnreadAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
     Task ArchiveThreadAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
     Task MoveToInboxAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
     Task<CustomerNotification> AddNotificationAsync(

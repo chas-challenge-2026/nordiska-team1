@@ -231,6 +231,7 @@ public class InboxServiceTests
         Assert.Equal(staffId, result.SenderCustomerId);
 
         _repoMock.Verify(r => r.MoveToInboxAsync(threadId, customerId, It.IsAny<CancellationToken>()), Times.Once);
+        _repoMock.Verify(r => r.MarkAsUnreadAsync(threadId, customerId, It.IsAny<CancellationToken>()), Times.Once);
         _repoMock.Verify(r => r.AddNotificationAsync(
             customerId,
             "support_message",

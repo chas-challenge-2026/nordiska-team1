@@ -44,6 +44,17 @@
             which the global exception handler turns into 401.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetStaffId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the staff id from the token claims ("staff_id", "sub", or NameIdentifier), or null if missing or not a number.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredStaffId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the staff id from the token. Throws if the token has no valid staff id,
+            which the global exception handler turns into 401.
+            </summary>
+        </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.IsAdmin(System.Security.Claims.ClaimsPrincipal)">
             <summary>
             True if the logged in user has the Admin role.
