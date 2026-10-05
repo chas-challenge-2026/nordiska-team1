@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { login, register, bankIdInitiate, bankIdCollect } from "../services/authService";
+import { login, bankIdInitiate, bankIdCollect } from "../services/authService";
 import { checkSession } from "../services/sessionsService";
-import type { RegisterCustomerRequest } from "../services/authService";
+import { register, type RegisterCustomerRequest } from "../services/customerService";
 import { createAccount } from "../services/accountsService";
 import { accountKey } from "./useAccounts";
 import { useUserStore } from "../store/userStore";
