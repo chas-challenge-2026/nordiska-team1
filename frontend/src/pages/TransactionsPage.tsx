@@ -132,7 +132,7 @@ export default function TransactionsPage() {
     };
 
     return (
-        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 p-6 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
+        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 md:p-6 max-md:p-2 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
             <div className='hidden md:block'>
                 <TransactionFilter filters={filters} onChange={handleFiltersChange} onReset={handleFiltersReset} />
             </div>
@@ -144,7 +144,7 @@ export default function TransactionsPage() {
                     onChange={e => handleFiltersChange({ ...filters, search: e.target.value })}
                     placeholder={t("transactions-route.search")}
                     aria-label={t("transactions-route.search")}
-                    className='h-10 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm'
+                    className='bg-white h-10 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm'
                 />
                 <SheetTrigger
                     label={t("transactions-route.filter-aria", { count: activeFilterCount })}
