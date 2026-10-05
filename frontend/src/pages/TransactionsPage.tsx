@@ -163,6 +163,7 @@ export default function TransactionsPage() {
             </div>
 
             <TransactionTable
+                accounts={accounts ?? []}
                 transactions={transactions?.items ?? []}
                 totalCount={transactions?.totalCount ?? 0}
                 totalPages={transactions?.totalPages ?? 1}
