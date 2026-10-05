@@ -39,6 +39,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Inbox", "Inbox", "{2C21CB4E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nordiska.Modules.Inbox", "src\Modules\Inbox\Nordiska.Modules.Inbox.csproj", "{6E13A7B0-30C6-49B0-AB73-20718F3F6AB5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nordiska.Modules.Inbox.Tests", "tests\Nordiska.Modules.Inbox.Tests\Nordiska.Modules.Inbox.Tests.csproj", "{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -205,6 +207,18 @@ Global
 		{6E13A7B0-30C6-49B0-AB73-20718F3F6AB5}.Release|x64.Build.0 = Release|Any CPU
 		{6E13A7B0-30C6-49B0-AB73-20718F3F6AB5}.Release|x86.ActiveCfg = Release|Any CPU
 		{6E13A7B0-30C6-49B0-AB73-20718F3F6AB5}.Release|x86.Build.0 = Release|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Debug|x64.Build.0 = Debug|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Debug|x86.Build.0 = Debug|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Release|x64.ActiveCfg = Release|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Release|x64.Build.0 = Release|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Release|x86.ActiveCfg = Release|Any CPU
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -226,5 +240,6 @@ Global
 		{D139BB65-7CC1-422D-A43C-949D68552B00} = {60220E35-F52E-4FFB-BDB3-BB3EDE1ABB08}
 		{2C21CB4E-8F0E-FBA7-05A8-996EFDBEE28D} = {2BB78818-2B15-4C95-97CF-AFF1C4889D3C}
 		{6E13A7B0-30C6-49B0-AB73-20718F3F6AB5} = {2C21CB4E-8F0E-FBA7-05A8-996EFDBEE28D}
+		{BEEAB1F1-A05E-4264-99F3-CE21BA763E15} = {60220E35-F52E-4FFB-BDB3-BB3EDE1ABB08}
 	EndGlobalSection
 EndGlobal
