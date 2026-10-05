@@ -37,6 +37,29 @@ export async function getFaqsByRelationId(relationId: string){
     return res.data;
 }
 
+// ------ GET RELEVANT FAQS ------
+// -------------------------------
+export async function getRelevantFaqs(language: string, searchTerms: string) {
+    const terms = searchTerms.split(/\s+/).filter(Boolean);
+    const results = await Promise.all(
+        terms.map((term) =>
+            axiosInstance.get<FaqResponse>(
+                `faqs/${language}`,
+                {
+                    params: {
+                        page: 1,
+                        pageSize: 5,
+                        search: term,
+                    },
+                }
+            )
+        )
+    );
+    const faqs = results.flatMap((res) => res.data.items);
+    // Ta bort dubbletter
+    return Array.from( new Map(faqs.map((faq) => [faq.id, faq])).values()).slice(0, 5);
+}
+
 // ------ GET CATEGORIES ------
 // ----------------------------
 export async function getFaqCategories(
