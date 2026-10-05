@@ -1,6 +1,7 @@
 import FaqSearch from "./FaqSearch";
 import FaqCategories from "./FaqCategories";
 import { useTranslation } from "react-i18next";
+import {motion} from "motion/react";
 
 type FaqHeaderProps = {
     searchInput: string;
@@ -11,18 +12,27 @@ type FaqHeaderProps = {
     onCategoryChange: (category: string) => void;
 };
 
-const FaqHeader = ({
+export default function FaqHeader({
     searchInput,
     category,
     categories,
     categoriesError,
     onSearchChange,
     onCategoryChange,
-}: FaqHeaderProps) => {
+}: FaqHeaderProps) {
 
     const {t} = useTranslation();
     return (
-        <header className="bg-dark-navy px-4 pt-8 pb-5 sm:pt-10 sm:pb-6">
+        <motion.header
+            key="faqHeader"
+            initial= {{y: "-100%"}}
+            animate= {{y:0}}
+            transition={{
+                    duration: 0.3,
+                    ease: "easeOut",
+                }}
+            className="bg-dark-navy pb-3 sm:pb-4 sticky top-[75px]"
+        >
             <h1 className="text-white text-2xl sm:text-4xl font-montserrat-alternates text-center font-semibold">
                 {t("faq.faq-header.title")}
             </h1>
@@ -43,8 +53,6 @@ const FaqHeader = ({
                 error={categoriesError}
                 onSelect={onCategoryChange}
             />
-        </header>
+        </motion.header>
     );
 };
-
-export default FaqHeader;
