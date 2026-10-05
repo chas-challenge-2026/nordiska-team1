@@ -10,7 +10,7 @@ import PageNotFound from "../pages/PageNotFound";
 import ServerError from "../pages/ServerError";
 
 // Customer
-import DesktopLayout from "../layouts/DesktopLayout";
+import DesktopLayout from "../layouts/BaseLayout";
 import OverviewPage from "../pages/OverviewPage";
 import TransferPage from "../pages/TransferPage";
 import TransactionsPage from "../pages/TransactionsPage";
