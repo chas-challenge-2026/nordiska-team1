@@ -362,4 +362,119 @@ public class InboxServiceTests
         Assert.False(success);
         _repoMock.Verify(r => r.MoveToInboxAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task GetDocuments_ReturnsMappedDocuments()
+    {
+        // Arrange
+        const long customerId = 100;
+        var doc = new Nordiska.Modules.Documents.Domain.Document(
+            "TaxReport",
+            "Skatteunderlag 2025",
+            "skatteunderlag_2025.pdf",
+            "application/pdf",
+            "docs/100/tax_2025.pdf",
+            1024,
+            "dummy-sha256",
+            "System");
+        var custDoc = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc.Id, customerId);
+        var pagedResult = PagedResult<(Nordiska.Modules.Documents.Domain.CustomerDocument CustomerDoc, Nordiska.Modules.Documents.Domain.Document Doc)>.Create(
+            [(custDoc, doc)],
+            1,
+            1,
+            20);
+
+        _repoMock.Setup(r => r.GetCustomerDocumentsAsync(customerId, null, null, 1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var results = await _service.GetDocumentsAsync(customerId, new DocumentQueryParameters());
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.Single(results.Items);
+        var item = results.Items.First();
+        Assert.Equal("TaxReport", item.DocumentType);
+        Assert.Equal("Skatteunderlag 2025", item.Title);
+        Assert.Equal("skatteunderlag_2025.pdf", item.FileName);
+        Assert.False(item.HasBeenOpened);
+    }
+
+    [Fact]
+    public async Task DownloadDocument_WhenDocumentExists_ReturnsDownloadResultAndMarksOpened()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long docId = 42;
+        var doc = new Nordiska.Modules.Documents.Domain.Document(
+            "AnnualStatement",
+            "Årsbesked 2025",
+            "arsbesked_2025.pdf",
+            "application/pdf",
+            "docs/100/arsbesked_2025.pdf",
+            1024,
+            "",
+            "System");
+        var custDoc = new Nordiska.Modules.Documents.Domain.CustomerDocument(docId, customerId);
+
+        _repoMock.Setup(r => r.GetCustomerDocumentByIdAsync(customerId, docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((custDoc, doc));
+
+        // Act
+        var result = await _service.DownloadDocumentAsync(customerId, docId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("arsbesked_2025.pdf", result.FileName);
+        Assert.Equal("application/pdf", result.MimeType);
+        Assert.NotEmpty(result.Content);
+        Assert.NotEmpty(result.Sha256);
+        Assert.True(result.IsChecksumValid);
+        _repoMock.Verify(r => r.MarkDocumentOpenedAsync(custDoc.Id, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DownloadDocument_WhenChecksumMismatches_ReturnsIsChecksumValidFalse()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long docId = 43;
+        var doc = new Nordiska.Modules.Documents.Domain.Document(
+            "AnnualStatement",
+            "Årsbesked 2025",
+            "arsbesked_2025.pdf",
+            "application/pdf",
+            "docs/100/arsbesked_2025.pdf",
+            1024,
+            "tampered-hash",
+            "System");
+        var custDoc = new Nordiska.Modules.Documents.Domain.CustomerDocument(docId, customerId);
+
+        _repoMock.Setup(r => r.GetCustomerDocumentByIdAsync(customerId, docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((custDoc, doc));
+
+        // Act
+        var result = await _service.DownloadDocumentAsync(customerId, docId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.IsChecksumValid);
+    }
+
+    [Fact]
+    public async Task DownloadDocument_WhenDocumentNotFound_ReturnsNull()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long docId = 999;
+
+        _repoMock.Setup(r => r.GetCustomerDocumentByIdAsync(customerId, docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(((Nordiska.Modules.Documents.Domain.CustomerDocument?)null, (Nordiska.Modules.Documents.Domain.Document?)null));
+
+        // Act
+        var result = await _service.DownloadDocumentAsync(customerId, docId);
+
+        // Assert
+        Assert.Null(result);
+    }
 }
