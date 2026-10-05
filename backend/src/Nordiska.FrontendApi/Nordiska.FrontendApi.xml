@@ -44,6 +44,17 @@
             which the global exception handler turns into 401.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetStaffId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the staff id from the token claims ("staff_id", "sub", or NameIdentifier), or null if missing or not a number.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredStaffId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the staff id from the token. Throws if the token has no valid staff id,
+            which the global exception handler turns into 401.
+            </summary>
+        </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.IsAdmin(System.Security.Claims.ClaimsPrincipal)">
             <summary>
             True if the logged in user has the Admin role.
@@ -803,6 +814,14 @@
             API endpoints for customer inbox, support tickets, and direct messaging threads.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetUnreadCount(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves total count of unread message threads for customer inbox badge.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Unread count response.</response>
+            <response code="401">Unauthorized.</response>
+        </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetThreads(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
             <summary>
             Retrieves paginated list of conversations / support threads for the authenticated customer.
@@ -861,6 +880,15 @@
             <response code="204">Thread archived.</response>
             <response code="404">Thread not found or customer has no access.</response>
         </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.RestoreThread(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Restores an archived message thread back to the inbox folder for the customer.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Thread restored to inbox.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.StaffReply(System.Int64,Nordiska.Modules.Inbox.Contracts.Requests.StaffReplyRequest,System.Threading.CancellationToken)">
             <summary>
             Allows bank staff/admin to post a reply to a customer support thread, logging sender_staff_id and notifying customer.
@@ -872,6 +900,26 @@
             <response code="400">Validation error.</response>
             <response code="403">Forbidden if not bank staff/admin.</response>
             <response code="404">Thread not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetDocuments(Nordiska.Modules.Inbox.Contracts.Requests.DocumentQueryParameters,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a paginated list of archived documents for the authenticated customer.
+            Supports filtering by year and document type (e.g. TaxReport, AnnualStatement, Agreement).
+            </summary>
+            <param name="parameters">Filter and pagination options.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of archived documents.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.DownloadDocument(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Downloads an archived document securely by its ID, verifying checksum integrity and logging first open timestamp for legal compliance.
+            </summary>
+            <param name="id">Unique identifier of the document.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">The PDF file stream.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+            <response code="404">Document not found.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.AuditController">
             <summary>

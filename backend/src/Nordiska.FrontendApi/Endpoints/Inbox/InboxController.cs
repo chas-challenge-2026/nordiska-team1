@@ -285,7 +285,7 @@ public sealed class InboxController(IInboxService service) : ControllerBase
         [FromBody] StaffReplyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var staffId = User.GetCustomerId() ?? 0;
+        var staffId = User.GetRequiredStaffId();
         try
         {
             var message = await _service.AddStaffReplyAsync(staffId, id, request, cancellationToken);
@@ -310,5 +310,59 @@ public sealed class InboxController(IInboxService service) : ControllerBase
                 Status = StatusCodes.Status400BadRequest
             });
         }
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of archived documents for the authenticated customer.
+    /// Supports filtering by year and document type (e.g. TaxReport, AnnualStatement, Agreement).
+    /// </summary>
+    /// <param name="parameters">Filter and pagination options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">List of archived documents.</response>
+    /// <response code="401">Unauthorized if not authenticated.</response>
+    [HttpGet("documents")]
+    [ProducesResponseType(typeof(PagedResult<DocumentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PagedResult<DocumentResponse>>> GetDocuments(
+        [FromQuery] DocumentQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var documents = await _service.GetDocumentsAsync(customerId, parameters, cancellationToken);
+        return Ok(documents);
+    }
+
+    /// <summary>
+    /// Downloads an archived document securely by its ID, verifying checksum integrity and logging first open timestamp for legal compliance.
+    /// </summary>
+    /// <param name="id">Unique identifier of the document.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">The PDF file stream.</response>
+    /// <response code="401">Unauthorized if not authenticated.</response>
+    /// <response code="404">Document not found.</response>
+    [HttpGet("documents/{id:long}/download")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadDocument(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var result = await _service.DownloadDocumentAsync(customerId, id, cancellationToken);
+        if (result is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Dokument hittades inte",
+                Detail = $"Dokumentet med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        Response.Headers.Append("X-Document-Checksum-Sha256", result.Sha256);
+        Response.Headers.Append("X-Document-Checksum-Valid", result.IsChecksumValid.ToString().ToLowerInvariant());
+
+        return File(result.Content, result.MimeType, result.FileName);
     }
 }
