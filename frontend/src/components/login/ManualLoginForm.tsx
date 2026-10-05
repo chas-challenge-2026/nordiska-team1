@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import InputField from "../forms/InputField";
-import { isValidPersonalNum, normalizePersonalNum } from "../../utils/personalNumber";
 
 type ManualLoginFormProps = {
-    /** Anropas med ett normaliserat personnummer (12 siffror). */
-    onBankIdSubmit: (personalNum: string) => void;
-    bankIdPending: boolean;
-    bankIdError?: string;
     onEmailSubmit: (email: string, password: string) => void;
     emailPending: boolean;
     emailError?: string;
@@ -22,29 +17,15 @@ const primaryButton =
  * lösenord. Formuläret äger bara sina fält - anropen görs av föräldern.
  */
 export default function ManualLoginForm({
-    onBankIdSubmit,
-    bankIdPending,
-    bankIdError,
     onEmailSubmit,
     emailPending,
     emailError,
     onBack,
 }: ManualLoginFormProps) {
     const { t } = useTranslation();
-    const [personalNum, setPersonalNum] = useState("");
-    const [personalNumError, setPersonalNumError] = useState<string>();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    function handleBankIdSubmit(e: React.SubmitEvent) {
-        e.preventDefault();
-        if (!isValidPersonalNum(personalNum)) {
-            setPersonalNumError(t("register-route.personal-num-error"));
-            return;
-        }
-        setPersonalNumError(undefined);
-        onBankIdSubmit(normalizePersonalNum(personalNum));
-    }
 
     function handleEmailSubmit(e: React.SubmitEvent) {
         e.preventDefault();
@@ -53,25 +34,10 @@ export default function ManualLoginForm({
 
     return (
         <div className="flex flex-col gap-5 px-1 py-3">
-            <form onSubmit={handleBankIdSubmit} className="flex flex-col gap-3" noValidate>
-                <InputField
-                    name="personalnum"
-                    type="text"
-                    label={t("register-route.personal-num")}
-                    placeholder={t("register-route.personal-num-placeholder")}
-                    value={personalNum}
-                    onChange={setPersonalNum}
-                    error={personalNumError}
-                />
-                <button type="submit" disabled={bankIdPending} className={primaryButton}>
-                    {bankIdPending ? t("login-route.bankid-submitting") : t("login-route.bankid-submit")}
-                </button>
-                {bankIdError && <p className="text-sm text-error">{bankIdError}</p>}
-            </form>
 
             <div className="flex items-center gap-3 text-xs text-secondary uppercase">
                 <span className="h-px flex-1 bg-[#E5EAF0]" />
-                {t("login-route.or-email")}
+                {t("login-route.email")}
                 <span className="h-px flex-1 bg-[#E5EAF0]" />
             </div>
 
