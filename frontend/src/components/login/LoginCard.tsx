@@ -32,7 +32,7 @@ export default function LoginCard() {
     const [personalNum, setPersonalNum] = useState<string>();
     const [emailError, setEmailError] = useState<string>();
 
-    const { mutate: initiate, isPending: _initPending, error: initError, reset: resetInit } = useBankIdInitate();
+    const { mutate: initiate, error: initError, reset: resetInit } = useBankIdInitate();
     const collect = useBankIdCollect(orderRef);
     const status = collect.data?.status;
     const hintCode = collect.data?.hintCode?.toLowerCase();
