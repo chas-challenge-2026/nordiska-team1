@@ -46,6 +46,7 @@ public class FaqServiceCacheTests
                 entry.Category,
                 0,
                 entry.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                entry.RelationId,
                 entry.Language,
                 entry.CreatedAt,
                 entry.UpdatedAt));
@@ -116,10 +117,16 @@ public class FaqServiceCacheTests
             _store[index] = updated;
             return Task.FromResult<FaqEntryResponse?>(updated);
         }
+
+        public Task<IReadOnlyCollection<FaqEntryResponse>> GetByRelationIdAsync(Guid relationId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyCollection<FaqEntryResponse> result = _store.Where(e => e.RelationId == relationId).ToList();
+            return Task.FromResult(result);
+        }
     }
 
     private static FaqEntryResponse Entry(int id, string lang = "sv", string category = "General") =>
-        new(id, $"Question {id}?", $"Answer {id}", category, 0, new[] { "tag1" }, lang, DateTime.UtcNow);
+        new(id, $"Question {id}?", $"Answer {id}", category, 0, new[] { "tag1" }, Guid.NewGuid(), lang, DateTime.UtcNow);
 
     private static FaqService CreateService(FakeFaqRepo repo)
         => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator());

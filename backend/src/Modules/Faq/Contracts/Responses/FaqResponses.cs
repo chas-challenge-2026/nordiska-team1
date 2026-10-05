@@ -7,6 +7,7 @@ public record FaqEntryResponse(
     string Category,
     int HelpfulCount,
     IReadOnlyList<string> Keywords,
+    Guid RelationId,
     string Lang = "sv",
     DateTime? CreatedAt = null,
     DateTime? UpdatedAt = null)
