@@ -27,7 +27,8 @@
         "stay": "Stay",
         "next": "Next",
         "previous": "Previous",
-        "page": "Page"
+        "page": "Page",
+        "loading": "Loading..."
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
@@ -391,22 +392,34 @@
             }
         },
         "faq-sidebar": {
-            "related-title": "Related",
             "close-btn-aria-label": "Close related information",
             "question": {
                 "change-language": "Hur ändrar jag språk?",
-                "update-info": "How do I update my contact information?"
+                "update-info": "How do I update my contact information?",
+                "terms": "What terms and conditions apply at Nordiska?",
+                "gdpr": "How does Nordiska handle GDPR?"
             },
             "answer": {
                 "change-language": "Navigera till menyn i övre högra hörnet. Språkinställningar hittar du längst ner i menyn, eller ändra språk direkt via knappen nedan.",
+                "change-language-action": "Växla till svenska",
                 "update-info": "Navigate to the menu in the top right corner and select \"Settings\", or navigate directly using the link below.",
-                "update-info-action": "Update contact information"
+                "update-info-action": "Update contact information",
+                "terms": "At Nordiska, terms and conditions apply to accounts, interest rates, withdrawals, and more.",
+                "gdpr": "We comply with GDPR and process your personal data in accordance with applicable data protection regulations."
             },
             "no-answer-title": "Can't find the answer?",
-            "contact-us": "Contact us"
+            "contact-us": "We're here to help. \n Contact customer service if you can’t find the answer to your question.",
+            "phone-specs": "Weekdays 08-20, weekends 10-17",
+            "mail-specs": "We usually respond within 48h"
         }
     },
     "faq-page": {
         "categories-error": "Could not retrieve categories"
+    },
+    "help-card": {
+        "related": "Related",
+        "information": "More information",
+        "load-error": "Could not load related questions."
+
     }
 }

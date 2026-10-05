@@ -27,7 +27,8 @@
         "stay": "Stanna kvar",
         "next": "Nästa",
         "previous": "Föregående",
-        "page": "Sida"
+        "page": "Sida",
+        "loading": "Laddar..."
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -388,23 +389,34 @@
             }
         },
         "faq-sidebar": {
-            "related-title": "Relaterat",
             "close-btn-aria-label": "Stäng relaterad information",
             "question": {
                 "change-language": "How do I change language?",
-                "update-info": "Hur uppdaterar jag mina kontaktuppgifter?"
+                "update-info": "Hur uppdaterar jag mina kontaktuppgifter?",
+                "terms": "Vilka villkor gäller hos Nordiska?",
+                "gdpr": "Hur jobbar ni med GDPR?"
             },
             "answer": {
                 "change-language": "Navigate to the menu in the top right corner and choose your language at the bottom of the open menu. Or simply change language directly below:",
+                "change-language-action": "Switch to english",
                 "update-info": "Navigera till menyn i övre högra hörnet och välj \"Inställningar\", eller navigera direkt via länken nedan.",
-                "update-info-action": "Uppdatera kontaktuppgifter"
+                "update-info-action": "Uppdatera kontaktuppgifter",
+                "terms": "Hos Nordiska gäller villkor för bland annat konton, räntor och uttag.",
+                "gdpr": "Vi följer GDPR och behandlar dina personuppgifter enligt gällande dataskyddsregler."
 
             },
             "no-answer-title": "Hittar du inte svaret?",
-            "contact-us": "Kontakta oss"
+            "contact-us": "Vi finns här för att hjälpa dig. \n Kontakta kundservice om du inte hittar svaret på din fråga.",
+            "phone-specs": "Vardagar 08-20, helger 10-17",
+            "mail-specs": "Svar normalt inom 48h"
         }
     },
     "faq-page": {
         "categories-error": "Kunde inte hämta kategorier"
+    },
+    "help-card": {
+        "related": "Relaterat",
+        "information": "Mer information",
+        "load-error": "Kunde inte ladda relaterade frågor."
     }
 }

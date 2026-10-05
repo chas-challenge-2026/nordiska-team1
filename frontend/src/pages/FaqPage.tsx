@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-
 import { logHelpCount } from "../services/faqService";
 import { useFaqs } from "../hooks/useFaqs";
 import { useFaqCategories } from "../hooks/useFaqCategories";
-
 import FaqHeader from "../components/faq/FaqHeader";
 import FaqFilterInfo from "../components/faq/FaqFilterInfo";
 import FaqList from "../components/faq/FaqList";
-import PagePagination from "../components/PagePagination";
 import FaqSidebar from "../components/faq/FaqSidebar";
+import PagePagination from "../components/PagePagination";
 
 type FeedbackAction = "increase" | "decrease";
 
-const FaqPage = () => {
+export default function FaqPage() {
     const { i18n,t } = useTranslation();
 
     // Search & filter state
@@ -40,31 +38,15 @@ const FaqPage = () => {
     }, [searchInput]);
 
     // FAQ data
-    const {
-        data,
-        isLoading,
-        isError,
-    } = useFaqs(
-        i18n.language,
-        page,
-        search,
-        category
-    );
+    const {data, isLoading, isError,} = useFaqs(i18n.language, page, search, category);
 
     // Categories
-    const {
-        data: categories = [],
-        isError: categoriesError,
-    } = useFaqCategories(i18n.language);
+    const {data: categories = [], isError: categoriesError,} = useFaqCategories(i18n.language);
 
     // Handlers
-    const handleLanguageChange = () => {
-        setCategory("");
-    };
+    const handleLanguageChange = () => {setCategory("");};
 
-    const handleCategoryChange = (
-        newCategory: string
-    ) => {
+    const handleCategoryChange = (newCategory: string) => {
         setCategory(newCategory);
         setPage(1);
         setOpenFaqId(null);
@@ -82,10 +64,7 @@ const FaqPage = () => {
                 [id]: action,
             }));
         } catch (error) {
-            console.error(
-                "Kunde inte uppdatera helpcount",
-                error
-            );
+            console.error("Kunde inte uppdatera helpcount",error);
         }
     };
 
@@ -97,10 +76,10 @@ const FaqPage = () => {
     };
 
     const faqs = data?.items ?? [];
+    const effectiveOpenFaqId = faqs.length === 1 ? faqs[0].id : openFaqId;
 
     return (
         <main className="relative min-h-[calc(100vh-75px)] flex flex-col bg-light-gray text-dark-navy">
-
             <FaqHeader
                 searchInput={searchInput}
                 category={category}
@@ -114,42 +93,41 @@ const FaqPage = () => {
                 onCategoryChange={handleCategoryChange}
             />
 
-            <div className="flex-1 w-full flex flex-col lg:flex-row gap-5 p-4 sm:p-5">
-
-                <section className="w-full lg:flex-[2] bg-white shadow-md p-4 sm:p-5">
-
+            {/* <div className="flex-1 w-[80vw] max-h-[70vh] flex flex-col lg:flex-row p-4 sm:p-5 mx-auto"> */}
+            <div className="flex-1 w-[80vw] max-h-[70vh] flex flex-col lg:flex-row p-4 sm:p-5 mx-auto">
+                {/* <section className="flex-2 bg-white shadow-md p-4 sm:p-5"> */}
+                <section className="flex-2 bg-white shadow-md p-4 sm:p-5 flex flex-col min-h-0">
                     <FaqFilterInfo
                         category={category}
                         searchInput={searchInput}
                     />
-
+                    <div className="flex-1 min-h-0 overflow-y-auto">
                     <FaqList
                         faqs={faqs}
                         isLoading={isLoading}
                         isError={isError}
-                        openFaqId={openFaqId}
+                        openFaqId={effectiveOpenFaqId}
                         selectedFeedback={selectedFeedback}
                         onOpenChange={handleOpenChange}
                         onFeedback={handleHelpCount}
                     />
-
-                    {data && (                        
-                        <PagePagination 
-                            page={data.page}
-                            totalPages={data.totalPages}
-                            hasPreviousPage={data.hasPreviousPage}
-                            hasNextPage={data.hasNextPage}
-                            onPrevious={() => setPage((currentPage) => currentPage - 1)}
-                            onNext={() => setPage((currentPage) => currentPage + 1)}
-                            onPageChange={(newPage) => setPage(newPage)}
-                        />
+                    </div>
+                    {data && (
+                        <div className="mt-5 shrink-0">
+                            <PagePagination 
+                                page={data.page}
+                                totalPages={data.totalPages}
+                                hasPreviousPage={data.hasPreviousPage}
+                                hasNextPage={data.hasNextPage}
+                                onPrevious={() => setPage((currentPage) => currentPage - 1)}
+                                onNext={() => setPage((currentPage) => currentPage + 1)}
+                                onPageChange={(newPage) => setPage(newPage)}
+                            />
+                        </div>
                     )}
                 </section>
-
                 <FaqSidebar onLanguageChange={handleLanguageChange} />
             </div>
         </main>
     );
 };
-
-export default FaqPage;
