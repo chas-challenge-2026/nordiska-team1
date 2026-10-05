@@ -81,7 +81,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                                             className="mt-0.5 cursor-pointer"
                                         />
                                         <span className="flex flex-col">
-                                            <span>{acc.accountNumber}</span>
+                                            <span>{acc.accountName} | {acc.accountNumber}</span>
                                             <span className="text-secondary">
                                                 {acc.balance.toLocaleString('sv-SE', { minimumFractionDigits: 2 })} sek
                                             </span>
