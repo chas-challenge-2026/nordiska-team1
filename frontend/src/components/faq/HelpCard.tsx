@@ -96,9 +96,9 @@ export default function HelpCard({ heading, items, searchTerms,}: HelpCardProps)
     return (
         <div className="h-full flex flex-col">
             {searchTerms && isLoading ? (
-                <p>Loading...</p>
+                <p>{t("generic.loading")}</p>
             ) : searchTerms && isError ? (
-                <p>Could not load related questions.</p>
+                <p>{t("help-card.load-error")}</p>
             ) : (
                 <>
                     {/* HEADING */}

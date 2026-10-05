@@ -27,7 +27,8 @@
         "stay": "Stanna kvar",
         "next": "Nästa",
         "previous": "Föregående",
-        "page": "Sida"
+        "page": "Sida",
+        "loading": "Laddar..."
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -397,6 +398,7 @@
             },
             "answer": {
                 "change-language": "Navigate to the menu in the top right corner and choose your language at the bottom of the open menu. Or simply change language directly below:",
+                "change-language-action": "Switch to english",
                 "update-info": "Navigera till menyn i övre högra hörnet och välj \"Inställningar\", eller navigera direkt via länken nedan.",
                 "update-info-action": "Uppdatera kontaktuppgifter",
                 "terms": "Hos Nordiska gäller villkor för bland annat konton, räntor och uttag.",
@@ -414,6 +416,7 @@
     },
     "help-card": {
         "related": "Relaterat",
-        "information": "Mer information"
+        "information": "Mer information",
+        "load-error": "Kunde inte ladda relaterade frågor."
     }
 }

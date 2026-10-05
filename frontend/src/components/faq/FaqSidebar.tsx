@@ -22,7 +22,7 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
                         onClick={toggleLanguage}
                         className="text-primary-blue text-xs font-semibold cursor-pointer hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
     >
-                            {i18n.language === "sv" ? "Switch to english" : "Växla till svenska"}
+                            {t("faq.faq-sidebar.answer.change-language-action")}
                     </button>,
         },
         updateInfo: {

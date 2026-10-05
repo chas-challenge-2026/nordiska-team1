@@ -27,7 +27,8 @@
         "stay": "Stay",
         "next": "Next",
         "previous": "Previous",
-        "page": "Page"
+        "page": "Page",
+        "loading": "Loading..."
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
@@ -400,6 +401,7 @@
             },
             "answer": {
                 "change-language": "Navigera till menyn i övre högra hörnet. Språkinställningar hittar du längst ner i menyn, eller ändra språk direkt via knappen nedan.",
+                "change-language-action": "Växla till svenska",
                 "update-info": "Navigate to the menu in the top right corner and select \"Settings\", or navigate directly using the link below.",
                 "update-info-action": "Update contact information",
                 "terms": "At Nordiska, terms and conditions apply to accounts, interest rates, withdrawals, and more.",
@@ -416,6 +418,8 @@
     },
     "help-card": {
         "related": "Related",
-        "information": "More information"
+        "information": "More information",
+        "load-error": "Could not load related questions."
+
     }
 }
