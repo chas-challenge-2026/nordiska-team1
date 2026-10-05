@@ -59,20 +59,19 @@ test-signer-service: $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN)
 	@set -e; \
 	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(SIGNER_SERVICE_BIN) & \
 	service_pid=$$!; \
-	trap 'kill -TERM $$service_pid 2>/dev/null || true; wait $$service_pid 2>/dev/null || true' EXIT; \
 	i=0; \
 	while [ ! -S /tmp/pdf-signer.sock ]; do \
 		i=$$((i + 1)); \
 		if [ $$i -ge 50 ]; then \
 			echo "Signer service socket was not created"; \
+			kill -TERM $$service_pid 2>/dev/null || true; \
 			exit 1; \
 		fi; \
 		sleep 0.1; \
 	done; \
 	./$(SIGNER_CLIENT_BIN); \
 	kill -TERM $$service_pid; \
-	wait $$service_pid; \
-	trap - EXIT
+	wait $$service_pid
 
 test-docker:
 	docker build -f docker/Dockerfile.test -t pdf-signer-test .
