@@ -8,10 +8,11 @@ import {motion, AnimatePresence} from "motion/react";
 import { useUserStore } from "../../store/userStore";
 
 type pageHeaderProps = {
-    protectedHeader : boolean
+    protectedHeader : boolean,
+    noShow: boolean,
 }
 
-export default function PageHeader({protectedHeader}: pageHeaderProps) {
+export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
     // ----- USER UI -----
     const user = useUserStore((state) => state.user);
     const username = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "user";
@@ -60,7 +61,9 @@ export default function PageHeader({protectedHeader}: pageHeaderProps) {
     }
 
     return (
-    <>
+    noShow 
+    ? <></> 
+    : <>
         {!protectedHeader 
         ? ( // ----- NOT PROTECTED (LARGE) HEADER -----
             <motion.header
