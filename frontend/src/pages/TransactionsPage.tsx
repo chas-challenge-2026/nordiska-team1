@@ -95,6 +95,7 @@ export default function TransactionsPage() {
     const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
 
     const hasNextPage = transactions?.hasNextPage ?? false;
+    const hasPreviousPage = transactions?.hasPreviousPage ?? false;
 
     const totalCount = transactions?.totalCount ?? 0;
     const activeFilterCount = [filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length;
@@ -169,6 +170,7 @@ export default function TransactionsPage() {
                 emptyMessage={effectiveSelectedIds.length === 0 ? t("transactions-route.select-account") : t("transactions-route.no-transactions")}
                 page={page}
                 hasNextPage={hasNextPage}
+                hasPreviousPage={hasPreviousPage}
                 isPlaceholderData={isPlaceholderData}
                 onPageChange={setPage}
                 isLoading={transactionsLoading || accountsLoading}

@@ -8,7 +8,7 @@ import { useFaqCategories } from "../hooks/useFaqCategories";
 import FaqHeader from "../components/faq/FaqHeader";
 import FaqFilterInfo from "../components/faq/FaqFilterInfo";
 import FaqList from "../components/faq/FaqList";
-import FaqPagination from "../components/faq/FaqPagination";
+import PagePagination from "../components/PagePagination";
 import FaqSidebar from "../components/faq/FaqSidebar";
 
 type FeedbackAction = "increase" | "decrease";
@@ -133,31 +133,17 @@ const FaqPage = () => {
                         onFeedback={handleHelpCount}
                     />
 
-                    {data && (
-                        <FaqPagination
+                    {data && (                        
+                        <PagePagination 
                             page={data.page}
                             totalPages={data.totalPages}
-                            hasPreviousPage={
-                                data.hasPreviousPage
-                            }
-                            hasNextPage={
-                                data.hasNextPage
-                            }
-                            onPrevious={() =>
-                                setPage(
-                                    (currentPage) =>
-                                        currentPage - 1
-                                )
-                            }
-                            onNext={() =>
-                                setPage(
-                                    (currentPage) =>
-                                        currentPage + 1
-                                )
-                            }
+                            hasPreviousPage={data.hasPreviousPage}
+                            hasNextPage={data.hasNextPage}
+                            onPrevious={() => setPage((currentPage) => currentPage - 1)}
+                            onNext={() => setPage((currentPage) => currentPage + 1)}
+                            onPageChange={(newPage) => setPage(newPage)}
                         />
                     )}
-
                 </section>
 
                 <FaqSidebar onLanguageChange={handleLanguageChange} />
