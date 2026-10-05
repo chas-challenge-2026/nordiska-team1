@@ -13,9 +13,10 @@ PDF_SIGN_BIN = test_pdf_sign
 TSA_CLIENT_BIN = test_tsa_client
 SIGNER_SERVICE_BIN = pdf_signer_service
 SIGNER_CLIENT_BIN = test_signer_client
+TSA_SERVER_BIN = test_tsa_server
 
-.PHONY: all test test-key-load test-cert-load test-pdf-sign test-pkcs11 test-tsa-client test-docker test-signer-service clean 
-all: $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN) $(TSA_CLIENT_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN)
+.PHONY: all test test-key-load test-cert-load test-pdf-sign test-pkcs11 test-tsa-client test-docker test-signer-service test-tsa-server clean 
+all: $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN) $(TSA_CLIENT_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN) $(TSA_SERVER_BIN)
 
 $(KEY_LOAD_BIN): src/key_load.c src/debug_log.c tests/test_key_load.c
 	$(CC) $(CFLAGS) $(SAN_FLAGS) $^ -o $@ $(SAN_FLAGS) $(LDLIBS)
@@ -38,7 +39,10 @@ $(SIGNER_SERVICE_BIN): src/main.c src/signer_server.c src/pdf_sign.c src/key_loa
 $(SIGNER_CLIENT_BIN): tests/test_signer_client.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-test: test-key-load test-cert-load test-pdf-sign test-pkcs11 test-tsa-client test-signer-service
+$(TSA_SERVER_BIN): src/tsa_server.c src/key_load.c src/cert_load.c src/debug_log.c tests/test_tsa_server.c
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+
+test: test-key-load test-cert-load test-pdf-sign test-pkcs11 test-tsa-client test-signer-service test-tsa-server
 
 test-key-load: $(KEY_LOAD_BIN)
 	./$(KEY_LOAD_BIN)
@@ -81,5 +85,8 @@ test-docker-debug:
 	docker build -f docker/Dockerfile.test -t pdf-signer-test .
 	docker run --rm -e PDF_SIGNER_DEBUG=1 pdf-signer-test
 
+test-tsa-server: $(TSA_SERVER_BIN)
+	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(TSA_SERVER_BIN)
+
 clean:
-	rm -f $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN) $(TSA_CLIENT_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN) tests/data/output.pdf
+	rm -f $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN) $(TSA_CLIENT_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN) $(TSA_SERVER_BIN) tests/data/output.pdf
