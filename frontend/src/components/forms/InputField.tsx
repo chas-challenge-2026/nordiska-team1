@@ -37,7 +37,7 @@ export default function InputField({
                     {label} {required && <span className="text-red-600 font-light"> *</span>}
                 </label>
                 {error && (
-                    <span id={`${name}-error`} className="text-sm text-error">{error}</span>
+                    <span id={`${name}-error`} aria-live="polite" className="text-sm text-error">{error}</span>
                 )}
             </div>
 
