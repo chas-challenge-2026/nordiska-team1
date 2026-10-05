@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next';
 import type { Transaction } from '../../services/transactionsService';
 import { formatDate, formatTime, toDateKey } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
+import PagePagination from '../PagePagination';
 
 interface TransactionTableProps {
     transactions: Transaction[];
@@ -11,6 +12,7 @@ interface TransactionTableProps {
     totalPages: number;
     page: number;
     hasNextPage: boolean;
+    hasPreviousPage: boolean;
     isPlaceholderData: boolean;
     onPageChange: (page: number) => void;
     isLoading: boolean;
@@ -37,7 +39,7 @@ function groupByDate(transactions: Transaction[]): { dateKey: string; items: Tra
     return groups;
 }
 
-export default function TransactionTable({ transactions, totalCount, totalPages, page, hasNextPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
+export default function TransactionTable({ transactions, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
     const { t } = useTranslation();
     const listId = useId();
     const groupedItems = useMemo(() => groupByDate(transactions), [transactions]);
@@ -91,30 +93,16 @@ export default function TransactionTable({ transactions, totalCount, totalPages,
                     </div>
                 </>
             )}
-
-            <nav aria-label={t("generic.pagination")} className="shrink-0 mt-auto pt-3 flex items-center justify-between">
-                <button
-                    type="button"
-                    onClick={() => onPageChange(page - 1)}
-                    disabled={isLoading || page === 1}
-                    className="border border-gray-300 rounded-md text-sm px-4 py-2 bg-primary-blue text-white font-semibold hover:bg-nordiska-blue disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {t("generic.previous")}
-                </button>
-
-                <span className="text-xs text-secondary" aria-live="polite">
-                    {t("generic.page")} {page} / {totalPages}
-                </span>
-
-                <button
-                    type="button"
-                    onClick={() => onPageChange(page + 1)}
-                    disabled={isLoading || isPlaceholderData || !hasNextPage}
-                    className="border border-gray-300 rounded-md text-sm px-4 py-2 bg-primary-blue text-white font-semibold hover:bg-nordiska-blue disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {t("generic.next")}
-                </button>
-            </nav>
+            <PagePagination 
+                page={page}
+                totalPages={totalPages}
+                hasPreviousPage={hasPreviousPage}
+                hasNextPage={hasNextPage}
+                onPrevious={() => onPageChange(page - 1)}
+                onNext={() => onPageChange(page + 1)}
+                onPageChange={onPageChange}
+                isDisabled={isLoading}
+            />
         </div>
     );
 }
