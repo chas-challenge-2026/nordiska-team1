@@ -32,7 +32,7 @@ export default function LoginCard() {
     const [personalNum, setPersonalNum] = useState<string>();
     const [emailError, setEmailError] = useState<string>();
 
-    const { mutate: initiate, isPending: initPending, error: initError, reset: resetInit } = useBankIdInitate();
+    const { mutate: initiate, error: initError, reset: resetInit } = useBankIdInitate();
     const collect = useBankIdCollect(orderRef);
     const status = collect.data?.status;
     const hintCode = collect.data?.hintCode?.toLowerCase();
@@ -99,7 +99,6 @@ export default function LoginCard() {
     }
 
     const error = bankIdError();
-    const bankIdPending = initPending || (!!orderRef && !error && status !== "COMPLETE");
     // BankID-appen har öppnats och väntar på att användaren godkänner
     const waitingForApp = status === "PENDING" && (hintCode === "started" || hintCode === "usersign");
 
@@ -200,9 +199,6 @@ export default function LoginCard() {
     if (step === "manual") {
         return (
             <ManualLoginForm
-                onBankIdSubmit={(pnr) => startBankId("manual", pnr)}
-                bankIdPending={bankIdPending}
-                bankIdError={error}
                 onEmailSubmit={handleEmailLogin}
                 emailPending={loginPending}
                 emailError={emailError}

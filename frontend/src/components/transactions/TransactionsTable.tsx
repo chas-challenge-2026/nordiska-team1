@@ -2,11 +2,13 @@ import { useMemo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { Transaction } from '../../services/transactionsService';
+import type { Account } from '../../services/accountsService';
 import { formatDate, formatTime, toDateKey } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
 import PagePagination from '../PagePagination';
 
 interface TransactionTableProps {
+    accounts: Account[];
     transactions: Transaction[];
     totalCount: number;
     totalPages: number;
@@ -39,13 +41,15 @@ function groupByDate(transactions: Transaction[]): { dateKey: string; items: Tra
     return groups;
 }
 
-export default function TransactionTable({ transactions, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
+
+export default function TransactionTable({ accounts, transactions, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
     const { t } = useTranslation();
     const listId = useId();
     const groupedItems = useMemo(() => groupByDate(transactions), [transactions]);
+    const accountsById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts])
 
     return (
-        <div className="p-4 flex-1 min-h-0 flex flex-col rounded-xl shadow-md border border-secondary bg-white">
+        <div className="p-4 flex-1 min-h-0 flex flex-col md:rounded-xl md:mb-10 md:shadow-md md:border md:border-secondary md:bg-white">
             <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px] border-b-3 border-b-nordiska-orange mb-2">{t("transactions-route.transactions")}</h2>
 
             {isLoading && <p className="text-sm text-secondary">{t("transactions-route.loading-transactions")}</p>}
@@ -75,9 +79,14 @@ export default function TransactionTable({ transactions, totalCount, totalPages,
                                         <li key={transaction.id} className="py-3 flex justify-between items-start">
                                             <div>
                                                 <p className="text-sm font-medium">{transaction.label || transactionTypeLabel(transaction.type, t)}</p>
-                                                {transaction.label && (
-                                                    <p className="text-xs text-secondary">{transactionTypeLabel(transaction.type, t)}</p>
-                                                )}
+                                                {(() => {
+                                                    const account = accountsById.get(transaction.accountId);
+                                                    return account ? (
+                                                        <p className="text-xs text-secondary">
+                                                            {account.accountName} | {account.accountNumber}
+                                                        </p>
+                                                    ) : null;
+                                                })()}
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-xs text-secondary">{formatTime(transaction.createdAt)}</p>
