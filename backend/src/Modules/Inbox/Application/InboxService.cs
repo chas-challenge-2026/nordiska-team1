@@ -260,6 +260,7 @@ public sealed class InboxService(
         {
             // Reset read status and ensure moved to inbox
             await _repository.MoveToInboxAsync(threadId, state.CustomerId, cancellationToken);
+            await _repository.MarkAsUnreadAsync(threadId, state.CustomerId, cancellationToken);
 
             await _repository.AddNotificationAsync(
                 customerId: state.CustomerId,

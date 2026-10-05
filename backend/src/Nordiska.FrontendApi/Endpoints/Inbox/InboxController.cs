@@ -285,7 +285,7 @@ public sealed class InboxController(IInboxService service) : ControllerBase
         [FromBody] StaffReplyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var staffId = User.GetCustomerId() ?? 0;
+        var staffId = User.GetRequiredStaffId();
         try
         {
             var message = await _service.AddStaffReplyAsync(staffId, id, request, cancellationToken);

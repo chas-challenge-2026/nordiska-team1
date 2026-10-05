@@ -158,6 +158,18 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         }
     }
 
+    public async Task MarkAsUnreadAsync(long threadId, long customerId, CancellationToken cancellationToken = default)
+    {
+        var state = await _dbContext.MessageThreadStates
+            .FirstOrDefaultAsync(s => s.ThreadId == threadId && s.CustomerId == customerId, cancellationToken);
+
+        if (state is not null && state.IsRead)
+        {
+            state.MarkAsUnread();
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     public async Task ArchiveThreadAsync(long threadId, long customerId, CancellationToken cancellationToken = default)
     {
         var state = await _dbContext.MessageThreadStates
