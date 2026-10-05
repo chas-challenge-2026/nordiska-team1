@@ -1,4 +1,3 @@
-import './App.css'
 import AppRoutes from './routes/AppRoutes'
 import { useUserStore } from './store/userStore'
 import { useSessionCheck } from './hooks/useSessionCheck'
