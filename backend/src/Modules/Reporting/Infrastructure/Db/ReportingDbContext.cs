@@ -11,8 +11,17 @@ public sealed class ReportingDbContext(
 
     public DbSet<TaxReportJob> TaxReportJobs => Set<TaxReportJob>();
 
-    public DbSet<TaxReportDocument> TaxReportDocuments
-        => Set<TaxReportDocument>();
+    public DbSet<GeneratedDocument> GeneratedDocuments => Set<GeneratedDocument>();
+
+    public DbSet<TaxReportDocument> TaxReportDocuments => Set<TaxReportDocument>();
+
+    public DbSet<AccountStatement> AccountStatements => Set<AccountStatement>();
+
+    public DbSet<AccountStatementEntry> AccountStatementEntries => Set<AccountStatementEntry>();
+
+    public DbSet<AccountStatementJob> AccountStatementJobs => Set<AccountStatementJob>();
+
+    public DbSet<AccountStatementDocument> AccountStatementDocuments => Set<AccountStatementDocument>();
 
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 

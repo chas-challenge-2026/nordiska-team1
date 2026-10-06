@@ -39,6 +39,40 @@ GRANT USAGE
     ON ALL SEQUENCES IN SCHEMA banking, faq, reporting
     TO nordiska_api;
 
+REVOKE ALL
+    ON ALL TABLES IN SCHEMA reporting
+    FROM nordiska_reporting_worker;
+
+REVOKE ALL
+    ON ALL SEQUENCES IN SCHEMA reporting
+    FROM nordiska_reporting_worker;
+
+GRANT SELECT
+    ON TABLE reporting.tax_reports,
+             reporting.tax_report_jobs,
+             reporting.generated_documents,
+             reporting.tax_report_documents,
+             reporting.account_statements,
+             reporting.account_statement_entries,
+             reporting.account_statement_jobs,
+             reporting.account_statement_documents
+    TO nordiska_reporting_worker;
+
+GRANT UPDATE
+    ON TABLE reporting.tax_report_jobs,
+             reporting.account_statement_jobs
+    TO nordiska_reporting_worker;
+
+GRANT INSERT
+    ON TABLE reporting.generated_documents,
+             reporting.tax_report_documents,
+             reporting.account_statement_documents
+    TO nordiska_reporting_worker;
+
+GRANT USAGE
+    ON SEQUENCE reporting."generated_documents_Id_seq"
+    TO nordiska_reporting_worker;
+
 GRANT DELETE
     ON TABLE faq.faq_entries
     TO nordiska_api;

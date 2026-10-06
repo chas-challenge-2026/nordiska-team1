@@ -50,6 +50,7 @@ public class DbInitializer
             existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
             existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
             await db.SaveChangesAsync();
+
         }
 
         var erikPersonalNum = "197903142380";
@@ -312,6 +313,43 @@ public class DbInitializer
                     acc.Status = "active";
                 }
             }
+            await db.SaveChangesAsync();
+
+            var annaReportAccounts = await db.SavingsAccounts
+                .Where(a => a.CustomerId == anna.Id)
+                .ToListAsync();
+
+            var annaTaxReportTransactions = new[]
+            {
+                new { AccountNumber = "NOR-100001", Type = "interest", Amount = 1250.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100001", Type = "tax", Amount = -375.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "interest", Amount = 300.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "tax", Amount = -90.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) }
+            };
+
+            foreach (var transaction in annaTaxReportTransactions)
+            {
+                var account = annaReportAccounts.Single(a =>
+                    a.AccountNumber == transaction.AccountNumber);
+
+                var alreadyExists = await db.LedgerEntries.AnyAsync(entry =>
+                    entry.AccountId == account.Id &&
+                    entry.Type == transaction.Type &&
+                    entry.Label == transaction.Label);
+
+                if (!alreadyExists)
+                {
+                    db.LedgerEntries.Add(new LedgerEntry
+                    {
+                        AccountId = account.Id,
+                        Type = transaction.Type,
+                        Amount = transaction.Amount,
+                        Label = transaction.Label,
+                        CreatedAt = transaction.CreatedAt
+                    });
+                }
+            }
+
             await db.SaveChangesAsync();
         }
 

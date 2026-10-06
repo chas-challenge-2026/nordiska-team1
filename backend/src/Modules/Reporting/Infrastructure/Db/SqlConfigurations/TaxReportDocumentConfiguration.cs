@@ -31,6 +31,11 @@ public sealed class TaxReportDocumentConfiguration
             .HasForeignKey(x => x.TaxReportId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<GeneratedDocument>()
+            .WithMany()
+            .HasForeignKey(x => x.DocumentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(x => x.DocumentId);
     }
 }

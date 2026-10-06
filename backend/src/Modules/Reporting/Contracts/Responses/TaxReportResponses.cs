@@ -1,5 +1,17 @@
 namespace Nordiska.Modules.Reporting.Contracts.Responses;
 
+
+
+public sealed record AnnualTaxReportAcceptedResponse(
+    long TaxReportId,
+    long JobId,
+    string Status,
+    DateTimeOffset CreatedAt
+);
+
+
+/* todo TA BORT*/
+
 public sealed record TaxReportResponse(
     long Id,
     long CustomerId,
@@ -24,3 +36,4 @@ public sealed record TaxReportJobResponseAsync(
     long? DocumentId = null,
     string? Error = null
 );
+ 

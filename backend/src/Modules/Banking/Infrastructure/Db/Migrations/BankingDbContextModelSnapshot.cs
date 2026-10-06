@@ -345,6 +345,8 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
                     b.HasIndex("AccountId");
 
+                    b.HasIndex("AccountId", "CreatedAt");
+
                     b.ToTable("ledger_entries", "banking");
                 });
 

@@ -95,10 +95,11 @@ FROM runtime-base AS reporting-worker
 
 COPY --from=backend-builder /app/worker .
 
-RUN mkdir -p /output && chown -R $APP_UID:$APP_UID /output
+RUN mkdir -p /var/lib/nordiska/report-documents \
+    && chown -R $APP_UID:$APP_UID /var/lib/nordiska/report-documents
 
 ENV NORDISKA_PDF_ENABLE_SIGNING=0
-ENV PDF_OUTPUT_DIRECTORY=/output
+ENV ReportDocumentStorage__RootPath=/var/lib/nordiska/report-documents
 
 USER $APP_UID
 
@@ -110,9 +111,13 @@ FROM runtime-base AS final
 COPY --from=backend-builder /app/publish .
 COPY --from=frontend-builder /app/frontend/dist ./wwwroot
 
+RUN mkdir -p /var/lib/nordiska/report-documents \
+    && chown -R $APP_UID:$APP_UID /var/lib/nordiska/report-documents
+
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ReportDocumentStorage__RootPath=/var/lib/nordiska/report-documents
 
 # Run container as unprivileged non-root user
 USER $APP_UID

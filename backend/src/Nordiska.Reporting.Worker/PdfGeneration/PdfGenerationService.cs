@@ -210,7 +210,7 @@ internal static unsafe class NativeGenerateCallback
     }
 }
 
-public sealed class PdfGenerationService
+public sealed class PdfGenerationService : IPdfBatchGenerator
 {
     private static readonly UTF8Encoding Utf8 =
         new(false, true);

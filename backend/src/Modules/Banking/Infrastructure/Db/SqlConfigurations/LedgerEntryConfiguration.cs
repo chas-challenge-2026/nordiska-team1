@@ -33,5 +33,11 @@ public sealed class LedgerEntryConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.AccountId);
+
+        builder.HasIndex(x => new
+        {
+            x.AccountId,
+            x.CreatedAt
+        });
     }
 }

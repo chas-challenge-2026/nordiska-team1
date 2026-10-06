@@ -15,6 +15,7 @@ public sealed record TaxReportRequest(
 );
 
 /// <summary>
+/// todo TA BORT
 /// Compatibility response for the existing in-memory report-job endpoints.
 /// </summary>
 public sealed record TaxReportJobResponse(

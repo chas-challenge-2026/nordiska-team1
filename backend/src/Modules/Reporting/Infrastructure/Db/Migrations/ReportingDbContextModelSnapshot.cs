@@ -23,6 +23,192 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("AccountName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<long>("ClosingBalanceMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long>("OpeningBalanceMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<string>("SchemaVersion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset>("SnapshotAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId", "AccountId", "PeriodStart", "PeriodEnd");
+
+                    b.ToTable("account_statements", "reporting");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatementDocument", b =>
+                {
+                    b.Property<long>("AccountStatementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("DocumentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AccountStatementId", "DocumentId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.ToTable("account_statement_documents", "reporting");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatementEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AccountStatementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AmountMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("BalanceAfterMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("BookedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("SourceLedgerEntryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountStatementId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.HasIndex("AccountStatementId", "SourceLedgerEntryId")
+                        .IsUnique();
+
+                    b.ToTable("account_statement_entries", "reporting");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatementJob", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AccountStatementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTimeOffset>("AvailableAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountStatementId");
+
+                    b.HasIndex("Status", "AvailableAt");
+
+                    b.HasIndex("Status", "LeaseExpiresAt");
+
+                    b.ToTable("account_statement_jobs", "reporting");
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AuditEntry", b =>
                 {
                     b.Property<long>("Id")
@@ -61,6 +247,55 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                     b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("audit_entries", "reporting");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.GeneratedDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ByteLength")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Sha256Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Sha256Hash");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.ToTable("generated_documents", "reporting");
                 });
 
             modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.TaxReport", b =>
@@ -171,7 +406,32 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTimeOffset>("AvailableAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
@@ -186,13 +446,56 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
 
                     b.HasIndex("TaxReportId");
 
-                    b.HasIndex("Status", "CreatedAt");
+                    b.HasIndex("Status", "AvailableAt");
+
+                    b.HasIndex("Status", "LeaseExpiresAt");
 
                     b.ToTable("tax_report_jobs", "reporting");
                 });
 
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatementDocument", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Reporting.Domain.AccountStatement", null)
+                        .WithMany()
+                        .HasForeignKey("AccountStatementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Nordiska.Modules.Reporting.Domain.GeneratedDocument", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatementEntry", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Reporting.Domain.AccountStatement", "AccountStatement")
+                        .WithMany("Entries")
+                        .HasForeignKey("AccountStatementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AccountStatement");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatementJob", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Reporting.Domain.AccountStatement", null)
+                        .WithMany()
+                        .HasForeignKey("AccountStatementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.TaxReportDocument", b =>
                 {
+                    b.HasOne("Nordiska.Modules.Reporting.Domain.GeneratedDocument", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Nordiska.Modules.Reporting.Domain.TaxReport", null)
                         .WithMany()
                         .HasForeignKey("TaxReportId")
@@ -207,6 +510,11 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                         .HasForeignKey("TaxReportId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Reporting.Domain.AccountStatement", b =>
+                {
+                    b.Navigation("Entries");
                 });
 #pragma warning restore 612, 618
         }
