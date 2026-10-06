@@ -5,13 +5,15 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
+using Nordiska.FrontendApi.IntegrationTests.Authentication;
+
 namespace Nordiska.FrontendApi.IntegrationTests.Cors;
 
-public class CorsPolicyTests : IClassFixture<WebApplicationFactory<Program>>
+public class CorsPolicyTests : IClassFixture<CustomAuthWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public CorsPolicyTests(WebApplicationFactory<Program> factory)
+    public CorsPolicyTests(CustomAuthWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { User } from "../types/types";
 
-type LogoutReasons = "manual" | "inactivity";
+type LogoutReasons = "manual" | "inactivity" | "notAuthorized";
 
 interface UserState {
     user: User | null;
@@ -19,8 +19,9 @@ export const useUserStore = create<UserState>((set) => ({
     isCheckingSession: true,
     loggedOut: false,
     loggedOutDueToInactivity: false,
+    loggedOutDueToNotAuthorized: false,
     setUser: (user) => set(user ? { user, loggedOut: false, loggedOutDueToInactivity: false } : { user }),
     updateUser: (updates) => set((state) => ({ user: state.user ? { ...state.user, ...updates } : null,})),
     setCheckingSession: (value) => set({ isCheckingSession: value }),
-    logout: (reason) => set({ user: null, loggedOut: true, loggedOutDueToInactivity: reason === "inactivity" }),
+    logout: (reason) => set({ user: null, loggedOut: reason === "manual", loggedOutDueToInactivity: reason === "inactivity",}),
 }));

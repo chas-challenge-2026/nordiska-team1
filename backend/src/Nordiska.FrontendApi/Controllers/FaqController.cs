@@ -33,7 +33,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Paginated list of FAQ entries matching the criteria.</response>
     /// <response code="400">Validation failed for query parameters.</response>
-    [HttpGet("{lang:alpha}")]
+    [HttpGet("{lang:regex(^(sv|en)$)}")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(PagedResult<FaqEntryResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -64,7 +64,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     /// <param name="lang">The language code (e.g. 'sv', 'en').</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">List of distinct category names for the language.</response>
-    [HttpGet("{lang:alpha}/categories")]
+    [HttpGet("{lang:regex(^(sv|en)$)}/categories")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<string>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<string>>> GetCategories(
@@ -103,7 +103,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
 
     /// <summary>
-    /// Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+    /// Decreases the helpfulness count of an FAQ entry by 1 (supports negative count for downvotes).
     /// </summary>
     /// <param name="id">The unique identifier of the FAQ entry.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -191,14 +191,14 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new FAQ entry. Requires the faq:manage permission.
+    /// Creates a new FAQ entry. Requires the faq:manage policy (Admin role, e.g. login as admin@nordiska.se).
     /// </summary>
     /// <param name="request">The FAQ creation payload containing question, answer, category, keywords, and lang.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="201">FAQ entry created successfully.</response>
     /// <response code="400">Validation failed on the provided FAQ data.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-    /// <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+    /// <response code="403">Forbidden if the user lacks the Admin role / faq:manage policy.</response>
     /// <response code="413">Payload exceeds size limit.</response>
     /// <response code="415">Unsupported media type.</response>
     [HttpPost]
@@ -234,6 +234,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
             normalized.Category,
             normalized.Keywords,
             normalized.Lang ?? "sv",
+            normalized.RelationId,
             cancellationToken);
 
         return StatusCode(
@@ -272,6 +273,22 @@ public sealed class FaqController(FaqService service) : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("relation/{relationId:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<FaqEntryResponse>),
+        StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyCollection<FaqEntryResponse>>> GetByRelationId(
+        [FromRoute] Guid relationId,
+        CancellationToken cancellationToken)
+    {
+        var entries = await service.GetByRelationIdAsync(
+            relationId,
+            cancellationToken);
+
+        return Ok(entries);
     }
 
     /// <summary>
@@ -320,4 +337,4 @@ public sealed class FaqController(FaqService service) : ControllerBase
         var result = await service.SearchAsync(request, cancellationToken);
         return Ok(result);
     }
-}
+}

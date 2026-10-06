@@ -1,0 +1,7 @@
+#ifndef SIGNER_SERVER_H
+#define SIGNER_SERVER_H
+#include "pdf_sign.h"
+
+int signer_server_run(pdf_signer_t* signer);
+
+#endif

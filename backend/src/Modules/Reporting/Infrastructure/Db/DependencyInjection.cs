@@ -13,7 +13,10 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddScoped<IPdfReportGenerator, PdfReportGenerator>();
+        services.AddScoped<IReportDataBuilder, ReportDataBuilder>();
+        services.AddSingleton<IReportFileStorage, LocalReportFileStorage>();
         services.AddScoped<ITaxReportService, TaxReportService>();
+        services.AddScoped<ITaxReportJobRepository, TaxReportJobRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
 
         /* This query will calculate tax data for reports. Its better to let SQL calculate instead of our backend server.*/

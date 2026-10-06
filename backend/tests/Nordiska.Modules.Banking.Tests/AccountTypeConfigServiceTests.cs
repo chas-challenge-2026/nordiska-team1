@@ -19,6 +19,7 @@ public class AccountTypeConfigServiceTests
     private sealed class FakeAccountTypeConfigRepo : IAccountTypeConfigRepository
     {
         private readonly List<AccountTypeConfig> _store = new();
+        private readonly List<AccountTypeRateHistory> _historyStore = new();
 
         public int GetAllCalls { get; private set; }
 
@@ -49,6 +50,21 @@ public class AccountTypeConfigServiceTests
         {
             var idx = _store.FindIndex(x => string.Equals(x.AccountType, entity.AccountType, StringComparison.OrdinalIgnoreCase));
             if (idx >= 0) _store[idx] = entity;
+            return Task.CompletedTask;
+        }
+
+        public Task<IEnumerable<AccountTypeRateHistory>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default)
+        {
+            var list = _historyStore
+                .Where(x => string.Equals(x.AccountType, accountType, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.EffectiveFromUtc)
+                .ToList();
+            return Task.FromResult<IEnumerable<AccountTypeRateHistory>>(list);
+        }
+
+        public Task AddRateHistoryAsync(AccountTypeRateHistory history, CancellationToken cancellationToken = default)
+        {
+            _historyStore.Add(history);
             return Task.CompletedTask;
         }
     }

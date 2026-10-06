@@ -1,4 +1,5 @@
 using System.Threading;
+using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Domain;
@@ -176,5 +177,64 @@ public class SavingsAccountServiceTests
         var req = new OpenSavingsAccountRequest(1, "NOR-999999", "unsupported_crypto_type");
 
         await Assert.ThrowsAsync<NotFoundException>(() => service.CreateAsync(req));
+    }
+
+    private class FakeTxRepo : ITransactionRepository
+    {
+        public readonly List<LedgerEntry> Store = new();
+        private long _next = 1;
+
+        public Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
+            => Task.FromResult<IEnumerable<LedgerEntry>>(accountId.HasValue ? Store.Where(e => e.AccountId == accountId.Value).ToList() : Store.ToList());
+
+        public Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
+            => Task.FromResult(PagedResult<LedgerEntry>.Create(Store, Store.Count, 1, 10));
+
+        public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.FirstOrDefault(e => e.Id == id));
+
+        public Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc).ToList());
+
+        public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            entry.Id = _next++;
+            Store.Add(entry);
+            return Task.FromResult(entry.Id);
+        }
+
+        public Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            var idx = Store.FindIndex(l => l.Id == entry.Id);
+            if (idx >= 0)
+            {
+                Store[idx] = entry;
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.RemoveAll(e => e.Id == id) > 0);
+    }
+
+    [Fact]
+    public async Task Create_WithInitialDeposit_CreatesLedgerDepositEntry()
+    {
+        var savingsRepo = new FakeSavingsRepo();
+        var txRepo = new FakeTxRepo();
+        var service = new SavingsAccountService(savingsRepo, new TestLogger<SavingsAccountService>(), null, txRepo);
+
+        var req = new OpenSavingsAccountRequest(1, "NOR-123456", "standard", 750m, 0.025m);
+
+        var created = await service.CreateAsync(req);
+
+        Assert.NotNull(created);
+        Assert.Equal(750m, created.Balance);
+        Assert.Single(txRepo.Store);
+        var entry = txRepo.Store.First();
+        Assert.Equal(created.Id, entry.AccountId);
+        Assert.Equal("deposit", entry.Type);
+        Assert.Equal(750m, entry.Amount);
     }
 }

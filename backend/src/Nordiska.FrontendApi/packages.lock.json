@@ -718,6 +718,13 @@
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
         }
       },
+      "nordiska.modules.inbox": {
+        "type": "Project",
+        "dependencies": {
+          "FluentValidation": "[11.6.0, )",
+          "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
+        }
+      },
       "nordiska.modules.reporting": {
         "type": "Project",
         "dependencies": {

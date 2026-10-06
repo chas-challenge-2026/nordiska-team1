@@ -25,7 +25,7 @@ export default function LogoutButton({ title, mobile = false }: LogoutButtonProp
             }}
             className={
                 !mobile
-                    ? "flex items-start uppercase relative h-full whitespace-nowrap no-underline font-montserrat cursor-pointer transition-all duration-200 ease-in-out font-regular"
+                    ? "flex items-start uppercase relative h-full whitespace-nowrap no-underline font-montserrat cursor-pointer transition-all duration-200 ease-in-out font-regular text-shadow-lg/80"
                     : "text-xl font-normal uppercase tracking-wider text-white mt-30"
             }
         >

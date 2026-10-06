@@ -1,272 +1,425 @@
 {
-"generic": {
-    "save": "Save",
-    "cancel": "Cancel",
-    "edit": "Edit",
-    "handle": "Manage",
-    "show-all": "Show all",
-    "add": "Add",
-    "close": "Close",
-    "to": "To",
-    "from": "From",
-    "date": "Date",
-    "reset": "Reset",
-    "all": "All",
+    "generic": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "handle": "Manage",
+        "show-all": "Show all",
+        "add": "Add",
+        "close": "Close",
+        "to": "To",
+        "from": "From",
+        "date": "Date",
+        "reset": "Reset",
+        "all": "All",
+        "yes": "Yes",
+        "no": "No",
+        "account": "Account",
+        "savings-account": "Savings account",
+        "interest": "Interest",
+        "filter": "Filter",
+        "showing": "Showing",
+        "of": "of",
+        "transactions": "transactions",
+        "balance": "Balance",
+        "tax-report": "Tax report",
+        "log-out": "Log out",
+        "stay": "Stay",
+        "next": "Next",
+        "previous": "Previous",
+        "page": "Page",
+        "loading": "Loading..."
+    },
+    "errors": {
+        "loading": "Something went wrong while loading the data.",
+        "no-user": "Could not find user."
+    },
+    "aria-label": {
+        "page-nav": "Main navigation",
+        "mobile-menu-close": "Close menu",
+        "mobile-menu-open": "Open menu",
+        "mobile-nav": "Mobile navigation",
+        "previous-page": "Previous page",
+        "next-page": "Next page"
+    },
+    "welcome-route": {
+        "title": "Customer Portal",
+        "paragraph": "For a complete overview of your accounts and savings.",
+        "button": "Log in",
+        "register-button": "Become a customer"
+    },
+    "inactivity-route": {
+        "title": "You're logged out",
+        "paragraph": "Due to inactivity, you have been logged out for security reasons.",
+        "button": "Log in again"
+    },
+    "loggedout-route": {
+        "doc-title": "You're logged out",
+        "title": "You have logged out.",
+        "paragraph": "You can safely close this page now."
+    },
+    "transactions-route": {
+        "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
+        "all-accounts": "All accounts",
+        "tax-info": "Download tax information for the accounts selected above.",
+        "tax": "Download",
+        "search": "Search transactions",
+        "from": "From date",
+        "to": "To date",
+        "deposites": "Deposites only",
+        "withdraws": "Withdraws only",
+        "type-deposit": "Deposit",
+        "type-withdraw": "Withdrawal",
+        "transactions": "Latest transactions",
+        "all-transactions": "Show more transactions",
+        "less-transactions": "Show fewer transactions",
+        "filter-options": "Select deposites or withdrawls",
+        "loading-accounts": "Loading accounts...",
+        "accounts-error": "There was an issue loading accounts",
+        "loading-transactions": "Loading transactions...",
+        "transactions-error": "There was an issue loading transactions",
+        "showing-count_one": "Showing {{shown}} of {{count}} transaction",
+        "showing-count_other": "Showing {{shown}} of {{count}} transactions",
+        "filter-aria_one": "Filter, {{count}} active",
+        "filter-aria_other": "Filter, {{count}} active",
+        "accounts-aria_one": "Accounts, {{count}} selected",
+        "accounts-aria_other": "Accounts, {{count}} selected",
+        "active-count_one": "{{count}} active",
+        "active-count_other": "{{count}} active",
+        "selected-of": "{{selected}} of {{total}} selected",
+        "show-count_one": "Show {{count}} transaction",
+        "show-count_other": "Show {{count}} transactions",
+        "deselect-all": "Deselect all",
+        "search-account": "Search account number",
+        "no-account-match": "No accounts match your search.",
+        "select-account": "Select at least one account to see transactions.",
+        "no-transactions": "No transactions found."
+    },
+    "accounts-route": {
+        "yearly-interest": "Yearly interest amount",
+        "yearly-interest-info": "Yearly interest is based on the current account balance",
+        "my-accounts": "My accounts",
+        "total-balance": "Total balance",
+        "new-account": "New account",
+        "full-report": "Tax report for all accounts",
+        "loading-accounts": "Loading accounts...",
+        "accounts-error": "There was an issue loading accounts",
+        "no-accounts": "No accounts found.",
+        "account-name": "Account name",
+        "account-name-placeholder": "E.g. Vacation fund",
+        "account-type": "Account type",
+        "account-type-required": "Account type required",
+        "select-account-type": "Select account type",
+        "account-type-saving": "Savings account",
+        "account-type-standard": "Standard account",
+        "account-type-flex": "Flex account",
+        "account-type-fix": "Fixed-rate account",
+        "account-type-premium": "Premium account",
+        "initial-deposit": "Initial deposit",
+        "interest-rate": "Interest rate",
+        "invalid-amount": "Invalid amount",
+        "invalid-interest-rate": "Invalid interest rate",
+        "create-account-error": "Could not create account. Try again.",
+        "close-account": "Close account",
+        "close-account-warning": "Close account \"{{accountNumber}}\"? This cannot be undone.",
+        "close-confirmation": "Close account confirmation",
+        "close-error": "Failed to close account. Try again.",
+        "closing": "Closing...",
+        "loading-account-types": "Loading types...",
+        "error-account-types": "Could not load account types"
+    },
+    "overview-route": {
+        "savings-title": "Savings goals",
+        "savings-total": "Total saved",
+        "savings-next-goal": "Next goal:",
+        "savings-eta": "Reached in {{time}}",
+        "savings-progress-label": "{{percent}}% of next goal reached",
 
-    "account": "Account",
-    "savings-account": "Savings account",
-    "interest": "Interest",
-    "filter": "Filter",
+        "loading-planned": "Loading planned transfers...",
+        "planned-error": "There was an issue loading planned transfers",
+        "no-planned": "No upcoming transfers.",
+        "planned-unnamed": "Unnamed transfer",
 
-    "showing": "Showing",
-    "of": "of",
-    "transactions": "transactions",
-    "balance": "Balance",
-    "tax-report": "Tax report",
-    "log-out": "Log out",
-    "stay": "Stay"
-},
-"errors": {
-    "loading": "Something went wrong while loading the data.",
-    "no-user": "Could not find user."
-},
-"aria-label": {
-    "page-nav": "Main navigation",
-    "mobile-menu-close": "Close menu",
-    "mobile-menu-open": "Open menu",
-    "mobile-nav": "Mobile navigation"
-},
-"welcome-route": {
-    "title": "Customer Portal",
-    "paragraph": "For a complete overview of your accounts and savings.",
-    "button": "Log in",
-    "register-button": "Become a customer"
-},
-"inactivity-route": {
-    "title": "You have been logged out",
-    "paragraph": "Due to inactivity, you have been logged out for security reasons.",
-    "button": "Log in again"
-},
-"loggedout-route": {
-    "doc-title": "You're logged out",
-    "title": "You have logged out.",
-    "paragraph": "You can safely close this page now."
-},
-  "transactions-route": {
-      "account-select": "Select the accounts you wish to see transaction history for. Deselect the ones you do not wish to see",
-      "all-accounts": "All accounts",
-      "tax-info": "Download tax information for the accounts selected above.",
-      "tax": "Download",
-      "search": "Search transactions",
-      "from": "From date",
-      "to": "To date",
-      "deposites": "Deposites only",
-      "withdraws": "Withdraws only",
-      "type-deposit": "Deposit",
-      "type-withdraw": "Withdrawal",
-      "transactions": "Latest transactions",
-      "all-transactions": "Show more transactions",
-      "less-transactions": "Show fewer transactions",
-      "filter-options": "Select deposites or withdrawls",
-      "loading-accounts": "Loading accounts...",
-      "accounts-error": "There was an issue loading accounts",
-      "loading-transactions": "Loading transactions...",
-      "transactions-error": "There was an issue loading transactions"
-  },
-"accounts-route": {
-    "yearly-interest": "Yearly interest amount",
-    "yearly-interest-info": "Yearly interest is based on the current account balance",
-    "my-accounts": "My accounts",
-    "total-balance": "Total balance",
-    "new-account": "New account",
-    "full-report": "Tax report for all accounts",
-    "loading-accounts": "Loading accounts...",
-    "accounts-error": "There was an issue loading accounts",
-    "no-accounts": "No accounts found.",
-    "account-name": "Account name",
-    "account-name-placeholder": "E.g. Vacation fund",
-    "account-type": "Account type",
-    "account-type-required": "Account type required",
-    "select-account-type": "Select account type",
-    "account-type-saving": "Savings account",
-    "account-type-standard": "Standard account",
-    "account-type-flex": "Flex account",
-    "account-type-fixed": "Fixed-rate account",
-    "account-type-premium": "Premium account",
-    "initial-deposit": "Initial deposit",
-    "interest-rate": "Interest rate",
-    "invalid-amount": "Invalid amount",
-    "invalid-interest-rate": "Invalid interest rate",
-    "create-account-error": "Could not create account. Try again."
-},
-  "register-route": {
-    "title": "Become a customer",
-    "paragraph": "Fill in your details and we will create your customer account at Nordiska.",
-    "name": "name",
-    "personal-num": "personal number",
-    "personal-num-placeholder": "YYYYMMDDXXXX",
-    "submit": "Become a customer",
-    "submitting": "Creating account...",
-    "name-error": "Enter your name",
-    "email-error": "Enter a valid email address",
-    "personal-num-error": "Enter a valid personal number (12 digits)",
-    "error-conflict": "An account cannot be created with those details. Already a customer? Try logging in.",
-    "error-rate-limit": "Too many attempts. Please wait a moment and try again.",
-    "error-generic": "Something went wrong. Please try again later.",
-    "already-customer": "Already a customer?",
-    "login-link": "Log in",
-    "not-customer": "Not a customer yet?",
-    "link": "Become a customer"
-},
-"login-route": {
-    "title": "Log in",
-    "paragraph": "Please identify yourself with BankID to continue to the customer portal."
-},
-"404-route": {
-    "title": "Page not found.",
-    "paragraph": "The page you are looking for could not be found.",
-    "button": "Back to home"
-},
-"500-route": {
-    "title": "Something went wrong.",
-    "paragraph": "An internal server error occurred. Please try again shortly.",
-    "button": "Back to home"
-},
-"page-header": {
-    "help-center": "Help Center",
-    "settings": "Settings",
-    "logout": "Log out",
-    "my-nordiska": "My nordiska",
-    "menu": "Menu",
-    "home": "Home",
-    "user": "User: "
-},
-"page-navigation": {
-    "overview": "Overview",
-    "accounts": "Bank accounts",
-    "transactions": "Transactions",
-    "transfers": "Transfers"
-},
-"table": {
-    "my-accounts": "My accounts",
-    "planned-transactions": "Planned transfers",
-    "latest-transactions": "Latest transactions"
-},
-"forms": {
-    "email": "email",
-    "phone": "phone number",
-    "placeholder": "Enter ",
-    "confirm": "Confirm ",
-    "confirm-placeholder": "Repeat ",
-    "confirm-error": "The fields don't match",
-    "phone-error": "Enter a valid format: 07xxxxxxxx",
-    "on-success": "Settings saved, user updated.",
-    "on-error": "Something went wrong, the user could not be updated."
-},
-"page-footer": {
-    "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
-    "allRightsReserved": "All rights reserved",
-    "privacyPolicy": "Privacy policy",
-    "accessibility": "Accessibility",
-    "cookies": "Cookies",
-    "cookieSettings": "Cookie settings"
-},
-"page-transfer": {
-    "heading": "New transfer",
-    "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
-    "name-label": "Personal note",
-    "name-label-recurring": "Name the transfer",
-    "name-placeholder": "E.g. Rent September",
-    "default-name": "Transfer",
-    "from-label": "From",
-    "to-label": "To",
-    "select": "Select",
-    "select-account-placeholder": "Select account",
-    "select-recipient-placeholder": "Select recipient",
-    "from-meta-placeholder": "Among your own accounts",
-    "to-meta-placeholder": "Own accounts, BG/PG or bank account",
-    "amount-label": "Amount",
-    "amount-placeholder": "0.00",
-    "amount-suffix": "sek",
-    "amount-error": "Amount exceeds the balance on {{account}}",
-    "date-label": "Transfer date",
-    "recurring-label": "Recurring every month",
-    "cta-submit-internal": "Confirm transfer",
-    "cta-submit-external": "Confirm with BankID",
-    "cta-hint-incomplete": "Fill in accounts and amount.",
+        "no-transactions": "No transactions yet.",
 
-    "add-account": {
-        "heading": "Add new account",
-        "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
-        "type-label": "Account type",
-        "type-placeholder": "Bank account, Bankgiro or Plusgiro",
-        "clearing-label": "Clearing number",
-        "clearing-placeholder": "4 digits",
-        "number-label": "Account number",
-        "number-placeholder": "Without dashes",
-        "name-label": "Recipient name",
-        "name-placeholder": "E.g. Olle Persson",
-        "default-type": "Bank account",
-        "default-name": "New account"
+        "edit-start": "Edit layout",
+        "edit-done": "Done",
+        "edit-reset": "Reset order",
+        "edit-reset-done": "Card order reset.",
+        "edit-instructions": "Drag a card by its handle, or focus the handle and use the arrow keys to move it.",
+        "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
+        "edit-handle-label": "Move {{card}}",
+
+        "card-accounts": "My accounts",
+        "card-savings": "Savings goals",
+        "card-planned": "Planned transfers",
+        "card-transactions": "Latest transactions"
     },
-    "modal": {
-        "from-title": "Choose Account",
-        "to-title": "Choose recipient",
-        "search-placeholder": "Search by name",
-        "group-own": "My accounts",
-        "group-favorites": "Favorites",
-        "group-bg": "BG/PG",
-        "group-bank": "Bank account",
-        "empty": "No accounts match your search.",
-        "add-new": "+ Add new account"
+    "register-route": {
+        "title": "Become a customer",
+        "paragraph": "Fill in your details and we will create your customer account at Nordiska.",
+        "name": "name",
+        "personal-num": "personal number",
+        "personal-num-placeholder": "YYYYMMDDXXXX",
+        "submit": "Become a customer",
+        "submitting": "Creating account...",
+        "name-error": "Enter your name",
+        "email-error": "Enter a valid email address",
+        "personal-num-error": "Enter a valid personal number (12 digits)",
+        "error-conflict": "An account cannot be created with those details. Already a customer? Try logging in.",
+        "error-rate-limit": "Too many attempts. Please wait a moment and try again.",
+        "error-generic": "Something went wrong. Please try again later.",
+        "already-customer": "Already a customer?",
+        "login-link": "Log in",
+        "not-customer": "Not a customer yet?",
+        "link": "Become a customer"
     },
-    "bankid": {
-        "heading": "Approve the transfer",
-        "help-text": "The recipient is an external account. Sign with BankID to complete it.",
-        "amount": "Amount",
-        "approve": "Approve with BankID"
+    "login-route": {
+        "title": "Log in",
+        "paragraph": "Please identify yourself with BankID to continue to the customer portal.",
+        "bankid-intro": "Identify yourself with BankID to log in to your savings account",
+        "bankid-other-device": "BankID on other device",
+        "bankid-this-device": "BankID on this device",
+        "manual-link": "Log in with email and password",
+        "bankid-submit": "Log in",
+        "bankid-submitting": "Logging in...",
+        "or-email": "or with email",
+        "email": "email",
+        "email-placeholder": "name@example.com",
+        "password": "password",
+        "submit": "Log in",
+        "submitting": "Logging in...",
+        "back": "Back",
+        "qr-help": "Open the BankID app and scan the QR code",
+        "not-found": "We could not find a customer with that personal number.",
+        "invalid-credentials": "Wrong email or password.",
+        "locked": "The account is temporarily locked. Please try again later.",
+        "qr-loading": "Loading QR code...",
+        "starting-app": "Starting the BankID app...",
+        "open-app-again": "Open BankID again",
+        "retry": "Try again",
+        "waiting-for-app": "Approve the login in the BankID app",
+        "start-failed": "BankID was not started in time. Please try again.",
+        "user-cancel": "The login was cancelled.",
+        "failed": "Something went wrong with BankID. Please try again."
     },
-    "done": {
-        "processing": "Processing the transfer...",
-        "heading": "The transfer is complete",
-        "summary": "{{amount}} sek to {{name}} · {{date}}",
-        "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
-        "new-transfer": "New transfer",
-        "failure-heading": "Transfer failed",
-        "back-to-transfers": "Back to transfers"
+    "404-route": {
+        "title": "Page not found.",
+        "paragraph": "The page you are looking for could not be found.",
+        "button": "Back to home"
     },
-    "planned": {
-        "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
-        "note-to": "To {{name}}",
-        "note-internal": "Between your own accounts",
-        "actions-label": "More options",
-        "actions-heading": "Planned transfer",
-        "action-edit": "Edit",
-        "action-delete": "Delete",
-        "edit-heading": "Change date",
-        "edit-date-label": "New date",
-        "delete-heading": "Delete planned transfer",
-        "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
-        "delete-confirm": "Yes, delete"
+    "500-route": {
+        "title": "Something went wrong.",
+        "paragraph": "An internal server error occurred. Please try again shortly.",
+        "button": "Back to home"
+    },
+    "page-header": {
+        "help-center": "Help Center",
+        "settings": "Settings",
+        "logout": "Log out",
+        "my-nordiska": "My nordiska",
+        "menu": "Menu",
+        "home": "Home",
+        "user": "User: "
+    },
+    "page-navigation": {
+        "overview": "Overview",
+        "accounts": "Bank accounts",
+        "transactions": "Transactions",
+        "transfers": "Transfers"
+    },
+    "table": {
+        "my-accounts": "My accounts",
+        "planned-transactions": "Planned transfers",
+        "latest-transactions": "Latest transactions"
+    },
+    "forms": {
+        "email": "email",
+        "phone": "phone number",
+        "placeholder": "Enter ",
+        "confirm": "Confirm ",
+        "confirm-placeholder": "Repeat ",
+        "confirm-error": "The fields don't match",
+        "phone-error": "Enter a valid format: 07xxxxxxxx",
+        "on-success": "Settings saved, user updated.",
+        "on-error": "Something went wrong, the user could not be updated."
+    },
+    "page-footer": {
+        "company": "Bankaktiebolaget Nordiska (publ), 556760-6032",
+        "allRightsReserved": "All rights reserved",
+        "privacyPolicy": "Privacy policy",
+        "accessibility": "Accessibility",
+        "cookies": "Cookies",
+        "cookieSettings": "Cookie settings"
+    },
+    "page-transfer": {
+        "heading": "New transfer",
+        "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
+        "name-label": "Personal note",
+        "name-label-recurring": "Name the transfer",
+        "name-placeholder": "E.g. Rent September",
+        "default-name": "Transfer",
+        "from-label": "From",
+        "to-label": "To",
+        "select": "Select",
+        "select-account-placeholder": "Select account",
+        "select-recipient-placeholder": "Select recipient",
+        "from-meta-placeholder": "Among your own accounts",
+        "to-meta-placeholder": "Own accounts, BG/PG or bank account",
+        "amount-label": "Amount",
+        "amount-placeholder": "0.00",
+        "amount-suffix": "sek",
+        "amount-error": "Amount exceeds the balance on {{account}}",
+        "date-label": "Transfer date",
+        "recurring-label": "Recurring every month",
+        "repeating": {
+            "month": "Monthly"
+        },
+        "cta-submit-internal": "Confirm transfer",
+        "cta-submit-external": "Confirm with BankID",
+        "cta-hint-incomplete": "Fill in accounts and amount.",
+
+        "add-account": {
+            "heading": "Add new account",
+            "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
+            "type-label": "Account type",
+            "type-placeholder": "Bank account, Bankgiro or Plusgiro",
+            "clearing-label": "Clearing number",
+            "clearing-placeholder": "4 digits",
+            "number-label": "Account number",
+            "number-placeholder": "Without dashes",
+            "name-label": "Recipient name",
+            "name-placeholder": "E.g. Olle Persson",
+            "default-type": "Bank account",
+            "default-name": "New account"
+        },
+        "modal": {
+            "from-title": "Choose Account",
+            "to-title": "Choose recipient",
+            "search-placeholder": "Search by name",
+            "group-own": "My accounts",
+            "group-favorites": "Favorites",
+            "group-bg": "BG/PG",
+            "group-bank": "Bank account",
+            "empty": "No accounts match your search.",
+            "add-new": "+ Add new account",
+            "selected-as-from": "Selected as sender account",
+            "selected-as-to": "Selected as recipient account"
+        },
+        "bankid": {
+            "heading": "Approve the transfer",
+            "help-text": "The recipient is an external account. Sign with BankID to complete it.",
+            "amount": "Amount",
+            "approve": "Approve with BankID"
+        },
+        "done": {
+            "processing": "Processing the transfer...",
+            "heading": "The transfer is complete",
+            "summary": "{{amount}} sek to {{name}} · {{date}}",
+            "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
+            "new-transfer": "New transfer",
+            "failure-heading": "Transfer failed",
+            "back-to-transfers": "Back to transfers"
+        },
+        "planned": {
+            "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
+            "note-to": "To {{name}}",
+            "note-internal": "Between your own accounts",
+            "actions-label": "More options",
+            "actions-heading": "Planned transfer",
+            "action-edit": "Edit",
+            "action-delete": "Delete",
+            "edit-heading": "Change date",
+            "edit-date-label": "New date",
+            "edit-save-loading": "Saving...",
+            "edit-error": "Could not change the date. Please try again.",
+            "edit-cleanup-error": "The transfer with the new date was created, but the old one could not be removed. Please delete the old one manually from the list.",
+            "delete-heading": "Delete planned transfer",
+            "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
+            "delete-confirm": "Yes, delete",
+            "delete-confirm-loading": "Deleting...",
+            "delete-error": "Could not delete the transfer. Please try again."
+        }
+    },
+    "get-pdf-button": {
+        "text": "Show PDF"
+    },
+    "settings-route": {
+        "page-title": "Settings",
+        "safe-title": "Your information is safe with us",
+        "safe-paragraph": "Your email address and phone number are only used to contact you regarding your cases with us. We do not share your contact information with third parties.",
+        "help-title": "Can't find what you're looking for?",
+        "help-link": "Visit our Help Center",
+        "close": "Close settings"
+    },
+    "inactivity-warning": {
+        "doc-title": "Still here?",
+        "title": "You will be logged out soon",
+        "paragraph": "You have been inactive for a while. For security reasons, you will be logged out in:",
+        "minutes": "minutes",
+        "and": "and",
+        "seconds": "seconds"
+    },
+    "faq": {
+        "faq-header": {
+            "title": "How can we help you today?",
+            "paragraph": "Search or find frequently asked questions by category"
+        },
+        "faq-search": {
+            "placeholder-category": "Search in category",
+            "placeholder-no-category": "Search all categories",
+            "aria-label": "Clear search"
+        },
+        "faq-filter-info": {
+            "no-filter": "Filter frequently asked questions by category or search for your question in the search field.",
+            "category-filter": "Showing results in category:",
+            "search-filter": "Showing results matching:",
+            "in-category": "in category:"
+        },
+        "faq-list": {
+            "loading": "Loading frequently asked questions",
+            "error": "Could not retrieve frequently asked questions.",
+            "no-results": "No results matched your search."
+        },
+        "faq-feedback": {
+            "question": "Did this answer help you?",
+            "feedback": "Thank you for your feedback!",
+            "no-results": "No results matched your search.",
+            "aria-label": {
+                "div": "Rate the answer",
+                "btn-yes": "Yes, this answer helped me",
+                "btn-no": "No, this answer did not help me"
+            }
+        },
+        "faq-sidebar": {
+            "close-btn-aria-label": "Close related information",
+            "question": {
+                "change-language": "Hur ändrar jag språk?",
+                "update-info": "How do I update my contact information?",
+                "terms": "What terms and conditions apply at Nordiska?",
+                "gdpr": "How does Nordiska handle GDPR?"
+            },
+            "answer": {
+                "change-language": "Navigera till menyn i övre högra hörnet. Språkinställningar hittar du längst ner i menyn, eller ändra språk direkt via knappen nedan.",
+                "change-language-action": "Växla till svenska",
+                "update-info": "Navigate to the menu in the top right corner and select \"Settings\", or navigate directly using the link below.",
+                "update-info-action": "Update contact information",
+                "terms": "At Nordiska, terms and conditions apply to accounts, interest rates, withdrawals, and more.",
+                "gdpr": "We comply with GDPR and process your personal data in accordance with applicable data protection regulations."
+            },
+            "no-answer-title": "Can't find the answer?",
+            "contact-us": "We're here to help. \n Contact customer service if you can’t find the answer to your question.",
+            "phone-specs": "Weekdays 08-20, weekends 10-17",
+            "mail-specs": "We usually respond within 48h"
+        }
+    },
+    "faq-page": {
+        "categories-error": "Could not retrieve categories"
+    },
+    "help-card": {
+        "related": "Related",
+        "information": "More information",
+        "load-error": "Could not load related questions."
+
     }
-},
-"get-pdf-button": {
-    "text": "Show PDF"
-},
-"settings-route": {
-    "page-title": "Settings",
-    "safe-title": "Your information is safe with us",
-    "safe-paragraph": "Your email address and phone number are only used to contact you regarding your cases with us. We do not share your contact information with third parties.",
-    "help-title": "Can't find what you're looking for?",
-    "help-link": "Visit our Help Center",
-    "close": "Close settings"
-},
-"inactivity-warning": {
-    "doc-title": "Still here?",
-    "title": "You will be logged out soon",
-    "paragraph": "You have been inactive for a while. For security reasons, you will be logged out in:",
-    "minutes": "minutes",
-    "and": "and",
-    "seconds": "seconds"
-}
 }

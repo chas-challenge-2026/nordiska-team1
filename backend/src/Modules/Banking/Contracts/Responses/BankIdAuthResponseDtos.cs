@@ -28,12 +28,15 @@ public record AuthenticationResultDto(
     BankIdCollectResponseDto? CollectData = null,
     IEnumerable<string>? Errors = null,
     AuthFailureReason? FailureReason = null,
-    DateTimeOffset? LockoutEnd = null
+    DateTimeOffset? LockoutEnd = null,
+    string? ConflictCode = null,
+    CustomerResponseDto? Customer = null
 );
 
-// Lets the controller pick the right status code (401 vs 423) without parsing the error message
+// Lets the controller pick the right status code (401 vs 423 vs 409) without parsing the error message
 public enum AuthFailureReason
 {
     InvalidCredentials,
-    LockedOut
+    LockedOut,
+    Conflict
 }
