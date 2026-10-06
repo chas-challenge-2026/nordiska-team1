@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
  * Props:
  * - items: Object containing items with a title, answer, and optional action.
  * - searchTerms: Optional search terms used to fetch relevant FAQs.
+ * - numOfHits: Default 5. Determine how many faq matches are returned.
+ * - removeHeading: Pass to remove the heading.
  * - heading: Optional heading for the card.
  *            Default values:
  *            - searchTerms provided: "Relaterat" / "Related"
@@ -72,14 +74,16 @@ type InfoItem = {
 
 type HelpCardProps = {
     heading?: string;
+    removeHeading?: boolean;
     items?: Record<string, InfoItem>;
     searchTerms?: string;
+    numOfHits?: number;
 };
 
-export default function HelpCard({ heading, items, searchTerms,}: HelpCardProps) {
+export default function HelpCard({ heading, removeHeading = false, items, searchTerms, numOfHits = 5}: HelpCardProps) {
     const {t, i18n} = useTranslation();
     const [selectedItem, setSelectedItem] = useState("");
-    const { data: faqs = [], isLoading, isError,} = useRelevantFaqs(i18n.language,searchTerms ?? "");
+    const { data: faqs = [], isLoading, isError,} = useRelevantFaqs(i18n.language, searchTerms ?? "", numOfHits);
 
     const faqItems: Record<string, InfoItem> = Object.fromEntries(
         faqs.map((faq) => [
@@ -102,11 +106,13 @@ export default function HelpCard({ heading, items, searchTerms,}: HelpCardProps)
             ) : (
                 <>
                     {/* HEADING */}
-                    <div className="border-b border-nordiska-orange pb-1 mb-3">
-                        <h2 className="font-semibold text-lg text-nordiska-blue">
-                            {heading ? heading : searchTerms ? t("help-card.related") :  t("help-card.information")}
-                        </h2>
-                    </div>
+                    { !removeHeading && 
+                        <div className="border-b border-nordiska-orange pb-1 mb-3">
+                            <h2 className="font-semibold text-lg text-nordiska-blue">
+                                {heading ? heading : searchTerms ? t("help-card.related") :  t("help-card.information")}
+                            </h2>
+                        </div>
+                    }
 
                     {selectedItem && displayItems[selectedItem] ? (
                         <>
