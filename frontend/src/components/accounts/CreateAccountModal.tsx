@@ -1,15 +1,16 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import Modal from "./modals/Modal";
-import InputField from "./forms/InputField";
-import { CollapsibleFormBtns } from "./forms/CollapsibleFormButtons";
-import { useCreateAccount, useAccountTypes } from "../hooks/useAccounts";
-import type { AccountTypes } from "../services/accountsService";
-import { useUserStore } from "../store/userStore";
+import Modal from "../modals/Modal";
+import InputField from "../forms/InputField";
+import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
+import { useCreateAccount, useAccountTypes } from "../../hooks/useAccounts";
+import type { AccountTypes, Account } from "../../services/accountsService";
+import { useUserStore } from "../../store/userStore";
 
 type CreateAccountModalProps = {
     onClose: () => void;
     isModalOpen: boolean;
+    onAccountCreated: (account: Account) => void;
 };
 
 interface AccountTypeOption {
@@ -24,7 +25,7 @@ interface AccountTypeResponse {
     description: string;
 }
 
-export default function CreateAccountModal({ onClose, isModalOpen = false }: CreateAccountModalProps) {
+export default function CreateAccountModal({ onClose, isModalOpen = false, onAccountCreated }: CreateAccountModalProps) {
     const { t } = useTranslation();
     const createAccount = useCreateAccount();
     const { user } = useUserStore();
@@ -84,7 +85,13 @@ export default function CreateAccountModal({ onClose, isModalOpen = false }: Cre
                 accountType,
                 initialDeposit: parsedDeposit,
             },
-            { onSuccess: onClose }
+            { onSuccess: (newAccount) => {
+
+                    console.log("Nytt konto:", newAccount);
+    console.log("Account name:", newAccount.accountName);
+                onAccountCreated(newAccount);
+                }, 
+            }
         );
     }
 

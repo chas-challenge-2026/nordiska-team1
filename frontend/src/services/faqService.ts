@@ -39,7 +39,7 @@ export async function getFaqsByRelationId(relationId: string){
 
 // ------ GET RELEVANT FAQS ------
 // -------------------------------
-export async function getRelevantFaqs(language: string, searchTerms: string) {
+export async function getRelevantFaqs(language: string, searchTerms: string, numOfHits: number,) {
     const terms = searchTerms.split(/\s+/).filter(Boolean);
     const results = await Promise.all(
         terms.map((term) =>
@@ -48,7 +48,7 @@ export async function getRelevantFaqs(language: string, searchTerms: string) {
                 {
                     params: {
                         page: 1,
-                        pageSize: 5,
+                        pageSize: {numOfHits},
                         search: term,
                     },
                 }
@@ -57,7 +57,7 @@ export async function getRelevantFaqs(language: string, searchTerms: string) {
     );
     const faqs = results.flatMap((res) => res.data.items);
     // Ta bort dubbletter
-    return Array.from( new Map(faqs.map((faq) => [faq.id, faq])).values()).slice(0, 5);
+    return Array.from( new Map(faqs.map((faq) => [faq.id, faq])).values()).slice(0, numOfHits);
 }
 
 // ------ GET CATEGORIES ------

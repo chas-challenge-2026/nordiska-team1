@@ -28,7 +28,9 @@
         "next": "Next",
         "previous": "Previous",
         "page": "Page",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "help-center": "Helpcenter",
+        "related-articles": "Related articles"
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
@@ -96,12 +98,17 @@
         "no-transactions": "No transactions found."
     },
     "accounts-route": {
+        "help-card-search": "reports account terms",
         "yearly-interest": "Yearly interest amount",
         "yearly-interest-info": "Yearly interest is based on the current account balance",
         "my-accounts": "My accounts",
+        "pick-account": "Select account",
+        "pick-one-account": "Select an account",
         "total-balance": "Total balance",
+        "show-accountinfo": "Show account information",
         "new-account": "New account",
-        "full-report": "Tax report for all accounts",
+        "full-report": "Tax statement",
+        "account-report": "Account statement",
         "loading-accounts": "Loading accounts...",
         "accounts-error": "There was an issue loading accounts",
         "no-accounts": "No accounts found.",
@@ -121,12 +128,23 @@
         "invalid-interest-rate": "Invalid interest rate",
         "create-account-error": "Could not create account. Try again.",
         "close-account": "Close account",
+        "close-account-info": "You are about to permanently close the account.",
         "close-account-warning": "Close account \"{{accountNumber}}\"? This cannot be undone.",
-        "close-confirmation": "Close account confirmation",
+        "close-confirmation": "The account cannot be reopened after it has been closed.",
         "close-error": "Failed to close account. Try again.",
         "closing": "Closing...",
         "loading-account-types": "Loading types...",
-        "error-account-types": "Could not load account types"
+        "error-account-types": "Could not retrieve account types",
+        "create-savingsgoal": "Set a savings goal",
+        "favorite": "Add to favorites",
+        "payback": "Earned and estimated annual interest",
+        "accured-interest": "Earned interest",
+        "accured-interest-info": "Earned interest is calculated from January 1 each year.",
+        "aria-label": {
+            "new-account": "Create new account",
+            "generate-full-report": "Generate tax statement",
+            "account-action-buttons": "Manage account actions"
+        }
     },
     "overview-route": {
         "savings-title": "Savings goals",
