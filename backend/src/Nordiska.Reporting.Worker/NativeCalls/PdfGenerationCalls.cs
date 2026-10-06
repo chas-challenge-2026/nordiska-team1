@@ -17,23 +17,48 @@ internal enum NativeStatus
     SigningFailed = 7
 }
 
+
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct NativePdfDocumentView
+{
+    public byte* DocumentId;
+    public byte* Bytes;
+    public nuint Length;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct NativePdfBatchView
+{
+    public ulong CustomerId;
+    public NativePdfDocumentView* Documents;
+    public nuint DocumentCount;
+}
+
+
+
 internal static unsafe partial class NativeMethods
 {
-    internal const string LibraryName = "nordiska_document_c_api";
+    internal const string LibraryName = "nordiska_pdf_generator_c_api";
 
 
-    [LibraryImport(LibraryName, EntryPoint = "nordiska_document_generate_json")]
+    [LibraryImport(LibraryName,EntryPoint = "nordiska_pdf_v1_generate_customer_batch")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial NativeStatus Generate(
-        byte* jsonPointer, nuint jsonByteCount,
-        delegate* unmanaged[Cdecl]<byte*, nuint, nuint, nint, int> callback,
-        nint callbackCtx,
-        byte* errorMemoryBuffer,
-        nuint errorMemoryBufferByteLength
-    );
+    internal static partial NativeStatus GenerateCustomerBatch(
+        byte* jsonUtf8,
+        nuint jsonLength,
+        delegate* unmanaged[Cdecl]<NativePdfBatchView*, nint, int> callback,
+        nint userData);
 
-    [LibraryImport(LibraryName, EntryPoint = "nordiska_document_version")]
+    [LibraryImport(LibraryName,EntryPoint = "nordiska_pdf_v1_max_json_bytes")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial nint Version();
+    internal static partial nuint MaxJsonBytes();
+
+    [LibraryImport(LibraryName,EntryPoint = "nordiska_pdf_v1_get_last_error")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial byte* GetLastError();
+
+    [LibraryImport(LibraryName, EntryPoint = "nordiska_pdf_v1_status_name")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial byte* StatusName(int status);
 
 }
