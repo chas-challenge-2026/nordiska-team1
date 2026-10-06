@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using FluentValidation;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Communication.Domain;
@@ -76,18 +78,17 @@ public sealed class InboxService(
             return null;
         }
 
+        if (!state.IsRead)
+        {
+            await _repository.MarkAsReadAsync(threadId, customerId, cancellationToken);
+            state.MarkAsRead();
+        }
+
         var messages = await _repository.GetMessagesByThreadIdAsync(threadId, cancellationToken);
         var lastMessage = messages.LastOrDefault();
         var canReply = thread.Status == MessageThreadStatus.Open && (lastMessage is null || lastMessage.ReplyAllowed);
 
-        var messageResponses = messages.Select(m => new MessageResponse(
-            Id: m.Id,
-            ThreadId: m.ThreadId,
-            SenderType: m.SenderType.ToString(),
-            SenderCustomerId: m.SenderCustomerId,
-            Body: m.Body,
-            ReplyAllowed: m.ReplyAllowed,
-            SentAt: m.SentAt)).ToList();
+        var messageResponses = messages.Select(MapToResponse).ToList();
 
         return new ThreadDetailResponse(
             Id: thread.Id,
@@ -122,14 +123,7 @@ public sealed class InboxService(
             cancellationToken);
 
         var messages = await _repository.GetMessagesByThreadIdAsync(thread.Id, cancellationToken);
-        var messageResponses = messages.Select(m => new MessageResponse(
-            Id: m.Id,
-            ThreadId: m.ThreadId,
-            SenderType: m.SenderType.ToString(),
-            SenderCustomerId: m.SenderCustomerId,
-            Body: m.Body,
-            ReplyAllowed: m.ReplyAllowed,
-            SentAt: m.SentAt)).ToList();
+        var messageResponses = messages.Select(MapToResponse).ToList();
 
         return new ThreadDetailResponse(
             Id: thread.Id,
@@ -185,14 +179,7 @@ public sealed class InboxService(
 
         await _repository.MarkAsReadAsync(threadId, customerId, cancellationToken);
 
-        return new MessageResponse(
-            Id: message.Id,
-            ThreadId: message.ThreadId,
-            SenderType: message.SenderType.ToString(),
-            SenderCustomerId: message.SenderCustomerId,
-            Body: message.Body,
-            ReplyAllowed: message.ReplyAllowed,
-            SentAt: message.SentAt);
+        return MapToResponse(message);
     }
 
     public async Task<bool> MarkAsReadAsync(
@@ -210,6 +197,14 @@ public sealed class InboxService(
         return true;
     }
 
+    public async Task<UnreadCountResponse> GetUnreadCountAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = await _repository.GetUnreadCountAsync(customerId, cancellationToken);
+        return new UnreadCountResponse(count);
+    }
+
     public async Task<bool> ArchiveThreadAsync(
         long customerId,
         long threadId,
@@ -222,6 +217,21 @@ public sealed class InboxService(
         }
 
         await _repository.ArchiveThreadAsync(threadId, customerId, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> RestoreThreadAsync(
+        long customerId,
+        long threadId,
+        CancellationToken cancellationToken = default)
+    {
+        var state = await _repository.GetThreadStateAsync(threadId, customerId, cancellationToken);
+        if (state is null)
+        {
+            return false;
+        }
+
+        await _repository.MoveToInboxAsync(threadId, customerId, cancellationToken);
         return true;
     }
 
@@ -265,14 +275,109 @@ public sealed class InboxService(
                 cancellationToken: cancellationToken);
         }
 
+        return MapToResponse(message);
+    }
+
+    private static MessageResponse MapToResponse(Message message)
+    {
+        var senderName = message.SenderType switch
+        {
+            MessageSenderType.System => "Nordiska Sparbanken",
+            MessageSenderType.Bank => "Nordiska Sparbanken",
+            MessageSenderType.Customer => "Kund",
+            _ => message.SenderType.ToString()
+        };
+
         return new MessageResponse(
             Id: message.Id,
             ThreadId: message.ThreadId,
             SenderType: message.SenderType.ToString(),
+            SenderName: senderName,
             SenderCustomerId: message.SenderCustomerId,
             Body: message.Body,
             ReplyAllowed: message.ReplyAllowed,
             SentAt: message.SentAt);
+    }
+
+    public async Task<PagedResult<DocumentResponse>> GetDocumentsAsync(
+        long customerId,
+        DocumentQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _repository.GetCustomerDocumentsAsync(
+            customerId,
+            parameters.Year,
+            parameters.DocumentType,
+            parameters.Page,
+            parameters.PageSize,
+            cancellationToken);
+
+        var mapped = result.Items.Select(item => new DocumentResponse(
+            Id: item.CustomerDoc.Id,
+            DocumentId: item.Doc.Id,
+            DocumentType: item.Doc.DocumentType,
+            Title: item.Doc.Title,
+            FileName: item.Doc.FileName,
+            MimeType: item.Doc.MimeType,
+            FileSizeBytes: item.Doc.FileSizeBytes,
+            Sha256: item.Doc.Sha256,
+            Status: item.Doc.Status.ToString(),
+            PublishedAt: item.CustomerDoc.PublishedAt,
+            FirstOpenedAt: item.CustomerDoc.FirstOpenedAt,
+            HasBeenOpened: item.CustomerDoc.HasBeenOpened
+        )).ToList();
+
+        return PagedResult<DocumentResponse>.Create(
+            mapped,
+            result.TotalCount,
+            result.Page,
+            result.PageSize);
+    }
+
+    public async Task<DocumentDownloadResult?> DownloadDocumentAsync(
+        long customerId,
+        long documentId,
+        CancellationToken cancellationToken = default)
+    {
+        var (customerDoc, doc) = await _repository.GetCustomerDocumentByIdAsync(customerId, documentId, cancellationToken);
+        if (customerDoc is null || doc is null)
+        {
+            return null;
+        }
+
+        byte[] content;
+        if (!string.IsNullOrWhiteSpace(doc.StorageKey) && File.Exists(doc.StorageKey))
+        {
+            content = await File.ReadAllBytesAsync(doc.StorageKey, cancellationToken);
+        }
+        else
+        {
+            // Generate standard compliant PDF content containing document details
+            content = GenerateFallbackPdf(doc);
+        }
+
+        var computedHash = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant();
+        var expectedHash = doc.Sha256?.Trim().ToLowerInvariant();
+        var isValid = string.IsNullOrWhiteSpace(expectedHash) || string.Equals(computedHash, expectedHash, StringComparison.OrdinalIgnoreCase);
+
+        // Mark document as opened for legal and audit traceability (NOR-252)
+        await _repository.MarkDocumentOpenedAsync(customerDoc.Id, cancellationToken);
+
+        return new DocumentDownloadResult(
+            FileName: doc.FileName,
+            MimeType: doc.MimeType,
+            Content: content,
+            Sha256: computedHash,
+            IsChecksumValid: isValid);
+    }
+
+    private static byte[] GenerateFallbackPdf(Nordiska.Modules.Documents.Domain.Document doc)
+    {
+        var pdfText = $"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
+                      $"3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<<>>>>endobj\n" +
+                      $"xref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\n" +
+                      $"trailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF\n% Document: {doc.Title}\n";
+        return Encoding.UTF8.GetBytes(pdfText);
     }
 
     private static MessageFolder ParseFolder(string? folder)

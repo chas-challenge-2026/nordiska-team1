@@ -242,4 +242,239 @@ public class InboxServiceTests
             threadId,
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task GetThreadDetails_WhenUnread_AutomaticallyMarksThreadAsRead()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+
+        var thread = new MessageThread(threadId, "Räntebesked");
+        var unreadState = new MessageThreadState(threadId, customerId, MessageFolder.Inbox);
+
+        var systemMsg = new Message(threadId, MessageSenderType.System, "Räntan har uppdaterats.", false);
+
+        _repoMock.Setup(r => r.GetThreadByIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread);
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unreadState);
+        _repoMock.Setup(r => r.GetMessagesByThreadIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([systemMsg]);
+
+        // Act
+        var result = await _service.GetThreadDetailsAsync(customerId, threadId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.IsRead);
+        _repoMock.Verify(r => r.MarkAsReadAsync(threadId, customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetThreadDetails_MapsSenderName_CorrectlyForSystemBankAndCustomer()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+
+        var thread = new MessageThread(threadId, "Kundärende");
+        var readState = new MessageThreadState(threadId, customerId, MessageFolder.Inbox);
+        readState.MarkAsRead();
+
+        var customerMsg = new Message(threadId, MessageSenderType.Customer, "Fråga", true, customerId);
+        var bankMsg = new Message(threadId, MessageSenderType.Bank, "Svar från banken", true, 999);
+        var systemMsg = new Message(threadId, MessageSenderType.System, "Automatiskt kvitto", false);
+
+        _repoMock.Setup(r => r.GetThreadByIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread);
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(readState);
+        _repoMock.Setup(r => r.GetMessagesByThreadIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([customerMsg, bankMsg, systemMsg]);
+
+        // Act
+        var result = await _service.GetThreadDetailsAsync(customerId, threadId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(3, result.Messages.Count);
+
+        Assert.Equal("Customer", result.Messages[0].SenderType);
+        Assert.Equal("Kund", result.Messages[0].SenderName);
+
+        Assert.Equal("Bank", result.Messages[1].SenderType);
+        Assert.Equal("Nordiska Sparbanken", result.Messages[1].SenderName);
+
+        Assert.Equal("System", result.Messages[2].SenderType);
+        Assert.Equal("Nordiska Sparbanken", result.Messages[2].SenderName);
+    }
+
+    [Fact]
+    public async Task GetUnreadCount_ReturnsCountFromRepository()
+    {
+        // Arrange
+        const long customerId = 100;
+        _repoMock.Setup(r => r.GetUnreadCountAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(4);
+
+        // Act
+        var result = await _service.GetUnreadCountAsync(customerId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(4, result.UnreadCount);
+    }
+
+    [Fact]
+    public async Task RestoreThread_WhenThreadExists_MovesToInbox()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+        var state = new MessageThreadState(threadId, customerId, MessageFolder.Archive);
+
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(state);
+
+        // Act
+        var success = await _service.RestoreThreadAsync(customerId, threadId);
+
+        // Assert
+        Assert.True(success);
+        _repoMock.Verify(r => r.MoveToInboxAsync(threadId, customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RestoreThread_WhenNotOwned_ReturnsFalse()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageThreadState?)null);
+
+        // Act
+        var success = await _service.RestoreThreadAsync(customerId, threadId);
+
+        // Assert
+        Assert.False(success);
+        _repoMock.Verify(r => r.MoveToInboxAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetDocuments_ReturnsMappedDocuments()
+    {
+        // Arrange
+        const long customerId = 100;
+        var doc = new Nordiska.Modules.Documents.Domain.Document(
+            "TaxReport",
+            "Skatteunderlag 2025",
+            "skatteunderlag_2025.pdf",
+            "application/pdf",
+            "docs/100/tax_2025.pdf",
+            1024,
+            "dummy-sha256",
+            "System");
+        var custDoc = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc.Id, customerId);
+        var pagedResult = PagedResult<(Nordiska.Modules.Documents.Domain.CustomerDocument CustomerDoc, Nordiska.Modules.Documents.Domain.Document Doc)>.Create(
+            [(custDoc, doc)],
+            1,
+            1,
+            20);
+
+        _repoMock.Setup(r => r.GetCustomerDocumentsAsync(customerId, null, null, 1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var results = await _service.GetDocumentsAsync(customerId, new DocumentQueryParameters());
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.Single(results.Items);
+        var item = results.Items.First();
+        Assert.Equal("TaxReport", item.DocumentType);
+        Assert.Equal("Skatteunderlag 2025", item.Title);
+        Assert.Equal("skatteunderlag_2025.pdf", item.FileName);
+        Assert.False(item.HasBeenOpened);
+    }
+
+    [Fact]
+    public async Task DownloadDocument_WhenDocumentExists_ReturnsDownloadResultAndMarksOpened()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long docId = 42;
+        var doc = new Nordiska.Modules.Documents.Domain.Document(
+            "AnnualStatement",
+            "Årsbesked 2025",
+            "arsbesked_2025.pdf",
+            "application/pdf",
+            "docs/100/arsbesked_2025.pdf",
+            1024,
+            "",
+            "System");
+        var custDoc = new Nordiska.Modules.Documents.Domain.CustomerDocument(docId, customerId);
+
+        _repoMock.Setup(r => r.GetCustomerDocumentByIdAsync(customerId, docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((custDoc, doc));
+
+        // Act
+        var result = await _service.DownloadDocumentAsync(customerId, docId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("arsbesked_2025.pdf", result.FileName);
+        Assert.Equal("application/pdf", result.MimeType);
+        Assert.NotEmpty(result.Content);
+        Assert.NotEmpty(result.Sha256);
+        Assert.True(result.IsChecksumValid);
+        _repoMock.Verify(r => r.MarkDocumentOpenedAsync(custDoc.Id, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DownloadDocument_WhenChecksumMismatches_ReturnsIsChecksumValidFalse()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long docId = 43;
+        var doc = new Nordiska.Modules.Documents.Domain.Document(
+            "AnnualStatement",
+            "Årsbesked 2025",
+            "arsbesked_2025.pdf",
+            "application/pdf",
+            "docs/100/arsbesked_2025.pdf",
+            1024,
+            "tampered-hash",
+            "System");
+        var custDoc = new Nordiska.Modules.Documents.Domain.CustomerDocument(docId, customerId);
+
+        _repoMock.Setup(r => r.GetCustomerDocumentByIdAsync(customerId, docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((custDoc, doc));
+
+        // Act
+        var result = await _service.DownloadDocumentAsync(customerId, docId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.IsChecksumValid);
+    }
+
+    [Fact]
+    public async Task DownloadDocument_WhenDocumentNotFound_ReturnsNull()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long docId = 999;
+
+        _repoMock.Setup(r => r.GetCustomerDocumentByIdAsync(customerId, docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(((Nordiska.Modules.Documents.Domain.CustomerDocument?)null, (Nordiska.Modules.Documents.Domain.Document?)null));
+
+        // Act
+        var result = await _service.DownloadDocumentAsync(customerId, docId);
+
+        // Assert
+        Assert.Null(result);
+    }
 }

@@ -155,6 +155,12 @@ public class DbInitializer
             await SeedFaqAsync(scope.ServiceProvider);
         }
         catch { }
+
+        try
+        {
+            await SeedDocumentsAsync(scope.ServiceProvider);
+        }
+        catch { }
     }
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
@@ -494,6 +500,67 @@ public class DbInitializer
 
             db.OperationalMessages.AddRange(messages);
             await db.SaveChangesAsync();
+        }
+    }
+
+    private static async Task SeedDocumentsAsync(IServiceProvider serviceProvider)
+    {
+        var inboxDb = serviceProvider.GetService<Nordiska.Modules.Inbox.Infrastructure.Db.InboxDbContext>();
+        if (inboxDb == null || !await inboxDb.Database.CanConnectAsync())
+        {
+            return;
+        }
+
+        if (!await inboxDb.Documents.AnyAsync())
+        {
+            var bankingDb = serviceProvider.GetService<BankingDbContext>();
+            var customer = bankingDb != null 
+                ? await bankingDb.Customers.FirstOrDefaultAsync(c => c.Email == "anna@example.com" || c.PersonalNum == "198505051234")
+                : null;
+            var customerId = customer?.Id ?? 1L;
+
+            var doc1 = new Nordiska.Modules.Documents.Domain.Document(
+                documentType: "TaxReport",
+                title: "Skatteunderlag 2025",
+                fileName: "skatteunderlag-2025.pdf",
+                mimeType: "application/pdf",
+                storageKey: "documents/skatteunderlag-2025.pdf",
+                fileSizeBytes: 245760,
+                sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                sourceType: "ReportingModule"
+            );
+
+            var doc2 = new Nordiska.Modules.Documents.Domain.Document(
+                documentType: "AnnualStatement",
+                title: "Årsbesked 2025",
+                fileName: "arsbesked-2025.pdf",
+                mimeType: "application/pdf",
+                storageKey: "documents/arsbesked-2025.pdf",
+                fileSizeBytes: 184320,
+                sha256: "ca978112ca1bbdcafac231b39a23dc4da786081951026bc70a39e2ae3f5002a6",
+                sourceType: "ReportingModule"
+            );
+
+            var doc3 = new Nordiska.Modules.Documents.Domain.Document(
+                documentType: "Agreement",
+                title: "Allmänna kontovillkor 2026",
+                fileName: "allmanna-kontovillkor-2026.pdf",
+                mimeType: "application/pdf",
+                storageKey: "documents/allmanna-kontovillkor-2026.pdf",
+                fileSizeBytes: 312000,
+                sha256: "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03",
+                sourceType: "Legal"
+            );
+
+            inboxDb.Documents.AddRange(doc1, doc2, doc3);
+            await inboxDb.SaveChangesAsync();
+
+            var cd1 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc1.Id, customerId);
+            var cd2 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc2.Id, customerId);
+            var cd3 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc3.Id, customerId);
+
+            inboxDb.CustomerDocuments.AddRange(cd1, cd2, cd3);
+            await inboxDb.SaveChangesAsync();
         }
     }
 }

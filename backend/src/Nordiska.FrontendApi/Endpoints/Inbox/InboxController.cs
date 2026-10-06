@@ -24,6 +24,21 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     private readonly IInboxService _service = service;
 
     /// <summary>
+    /// Retrieves total count of unread message threads for customer inbox badge.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Unread count response.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpGet("unread-count")]
+    [ProducesResponseType(typeof(UnreadCountResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UnreadCountResponse>> GetUnreadCount(CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var result = await _service.GetUnreadCountAsync(customerId, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Retrieves paginated list of conversations / support threads for the authenticated customer.
     /// </summary>
     /// <param name="folder">Folder to view ('inbox', 'sent', 'archive'). Default is 'inbox'.</param>
@@ -220,6 +235,36 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     }
 
     /// <summary>
+    /// Restores an archived message thread back to the inbox folder for the customer.
+    /// </summary>
+    /// <param name="id">Unique identifier of the message thread.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Thread restored to inbox.</response>
+    /// <response code="404">Thread not found or customer has no access.</response>
+    [HttpPatch("threads/{id:long}/restore")]
+    [HttpPatch("threads/{id:long}/unarchive")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreThread(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var success = await _service.RestoreThreadAsync(customerId, id, cancellationToken);
+        if (!success)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Hittades inte",
+                Detail = $"Ärendet med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Allows bank staff/admin to post a reply to a customer support thread, logging sender_staff_id and notifying customer.
     /// </summary>
     /// <param name="id">Unique identifier of the message thread.</param>
@@ -265,5 +310,59 @@ public sealed class InboxController(IInboxService service) : ControllerBase
                 Status = StatusCodes.Status400BadRequest
             });
         }
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of archived documents for the authenticated customer.
+    /// Supports filtering by year and document type (e.g. TaxReport, AnnualStatement, Agreement).
+    /// </summary>
+    /// <param name="parameters">Filter and pagination options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">List of archived documents.</response>
+    /// <response code="401">Unauthorized if not authenticated.</response>
+    [HttpGet("documents")]
+    [ProducesResponseType(typeof(PagedResult<DocumentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PagedResult<DocumentResponse>>> GetDocuments(
+        [FromQuery] DocumentQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var documents = await _service.GetDocumentsAsync(customerId, parameters, cancellationToken);
+        return Ok(documents);
+    }
+
+    /// <summary>
+    /// Downloads an archived document securely by its ID, verifying checksum integrity and logging first open timestamp for legal compliance.
+    /// </summary>
+    /// <param name="id">Unique identifier of the document.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">The PDF file stream.</response>
+    /// <response code="401">Unauthorized if not authenticated.</response>
+    /// <response code="404">Document not found.</response>
+    [HttpGet("documents/{id:long}/download")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadDocument(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var result = await _service.DownloadDocumentAsync(customerId, id, cancellationToken);
+        if (result is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Dokument hittades inte",
+                Detail = $"Dokumentet med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        Response.Headers.Append("X-Document-Checksum-Sha256", result.Sha256);
+        Response.Headers.Append("X-Document-Checksum-Valid", result.IsChecksumValid.ToString().ToLowerInvariant());
+
+        return File(result.Content, result.MimeType, result.FileName);
     }
 }
