@@ -38,17 +38,24 @@ public sealed class FaqSearchLogRepository : IFaqSearchLogRepository
             query = query.Where(l => l.Language == lang);
         }
 
-        return await query
+        // EF can't order by properties of a record created through its constructor, so sort on an anonymous type first
+        var gaps = await query
             .GroupBy(l => new { l.NormalizedQuery, l.Language })
-            .Select(g => new FaqContentGapResponse(
+            .Select(g => new
+            {
                 g.Key.NormalizedQuery,
                 g.Key.Language,
-                g.Count(),
-                g.Max(l => l.SearchedAt)))
+                SearchCount = g.Count(),
+                LastSearchedAt = g.Max(l => l.SearchedAt)
+            })
             .OrderByDescending(g => g.SearchCount)
             .ThenByDescending(g => g.LastSearchedAt)
             .Take(limit)
             .ToListAsync(cancellationToken);
+
+        return gaps
+            .Select(g => new FaqContentGapResponse(g.NormalizedQuery, g.Language, g.SearchCount, g.LastSearchedAt))
+            .ToList();
     }
 
     public async Task<int> DeleteOlderThanAsync(DateTime cutoff, CancellationToken cancellationToken = default)
