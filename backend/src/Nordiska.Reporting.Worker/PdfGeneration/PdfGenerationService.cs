@@ -1,10 +1,11 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.IO;
+
 namespace Nordiska.Modules.Reporting.PdfGeneration;
 
 public sealed record GeneratedPdfBatch(
@@ -36,24 +37,22 @@ internal static unsafe class NativeBatchMarshaller
             NativePdfDocumentView nativeDoc =
                 batch.Documents[i];
 
+            ValidateDocument(nativeDoc);
+
             // Converts the UTF-8 document ID into a C# string.
             string documentId =
-                Marshal.PtrToStringUTF8(
-                    (nint)nativeDoc.DocumentId)!;
+                ReadDocumentId(nativeDoc);
 
-            /*
-             * Copies the bytes into a C# byte array.
-             * We do not want to rely on the C++ pointer because
-             * its memory is released when the callback returns.
-             */
             byte[] pdfBytes =
-                new ReadOnlySpan<byte>(
-                    nativeDoc.Bytes,
-                    (int)nativeDoc.Length)
-                .ToArray();
+                CopyPdfBytes(nativeDoc);
 
             // Stores the document ID and copied PDF bytes.
-            docs.Add(documentId, pdfBytes);
+            if (!docs.TryAdd(documentId, pdfBytes))
+            {
+                throw new InvalidDataException(
+                    $"Native batch contains duplicate document ID: " +
+                    $"{documentId}");
+            }
         }
 
         return new GeneratedPdfBatch(
@@ -61,8 +60,15 @@ internal static unsafe class NativeBatchMarshaller
             docs);
     }
 
-    internal static void ValidateBatch(NativePdfBatchView batch)
+    internal static void ValidateBatch(
+        NativePdfBatchView batch)
     {
+        if (batch.CustomerId == 0)
+        {
+            throw new InvalidDataException(
+                "Native batch contains an invalid customer ID.");
+        }
+
         if (batch.DocumentCount == 0)
         {
             throw new InvalidDataException(
@@ -81,6 +87,64 @@ internal static unsafe class NativeBatchMarshaller
                 "Native batch documents are null.");
         }
     }
+
+    internal static void ValidateDocument(
+        NativePdfDocumentView document)
+    {
+        if (document.DocumentId == null)
+        {
+            throw new InvalidDataException(
+                "Native document has no document ID.");
+        }
+
+        if (document.Length > (nuint)int.MaxValue)
+        {
+            throw new InvalidDataException(
+                "Native PDF is too large for a managed array.");
+        }
+
+        if (document.Length != 0 &&
+            document.Bytes == null)
+        {
+            throw new InvalidDataException(
+                "Native document has no PDF buffer.");
+        }
+    }
+
+    private static string ReadDocumentId(
+        NativePdfDocumentView document)
+    {
+        string? documentId =
+            Marshal.PtrToStringUTF8(
+                (nint)document.DocumentId);
+
+        if (string.IsNullOrEmpty(documentId))
+        {
+            throw new InvalidDataException(
+                "Native document ID is empty.");
+        }
+
+        return documentId;
+    }
+
+    private static byte[] CopyPdfBytes(
+        NativePdfDocumentView document)
+    {
+        if (document.Length == 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        /*
+         * Copies the bytes into a C# byte array.
+         * we do not want to rely on the C++ pointer because
+         * its memory is released when the callback returns.
+         */
+        return new ReadOnlySpan<byte>(
+            document.Bytes,
+            (int)document.Length)
+            .ToArray();
+    }
 }
 
 // holds the result returned by the native callback.
@@ -89,6 +153,8 @@ internal sealed class NativeCallbackState
     internal GeneratedPdfBatch? Result { get; set; }
 
     internal Exception? Failure { get; set; }
+
+    internal bool CallbackReceived { get; set; }
 }
 
 internal static unsafe class NativeGenerateCallback
@@ -104,8 +170,24 @@ internal static unsafe class NativeGenerateCallback
         {
             // gets the callback state from the GCHandle token.
             state =
-                (NativeCallbackState)
-                GCHandle.FromIntPtr(context).Target!;
+                GCHandle.FromIntPtr(context).Target
+                    as NativeCallbackState
+                ?? throw new InvalidOperationException(
+                    "Native callback context was unavailable.");
+
+            if (state.CallbackReceived)
+            {
+                throw new InvalidOperationException(
+                    "Native callback was invoked more than once.");
+            }
+
+            state.CallbackReceived = true;
+
+            if (batch == null)
+            {
+                throw new InvalidDataException(
+                    "Native callback returned a null batch.");
+            }
 
             // copies the returned native PDFs into managed memory.
             state.Result =
@@ -130,12 +212,15 @@ internal static unsafe class NativeGenerateCallback
 
 public sealed class PdfGenerationService
 {
-    private static readonly UTF8Encoding Utf8 = new(false, true);
+    private static readonly UTF8Encoding Utf8 =
+        new(false, true);
 
-    public unsafe GeneratedPdfBatch GeneratePdfBatch(string json)
+    public unsafe GeneratedPdfBatch GeneratePdfBatch(
+        string json)
     {
         // Calculates how many UTF-8 bytes the JSON requires.
-        int byteCount = Utf8.GetByteCount(json);
+        int byteCount =
+            ValidateInputAndGetByteCount(json);
 
         // Rents a reusable byte array for the JSON.
         byte[] jsonBuffer =
@@ -146,20 +231,23 @@ public sealed class PdfGenerationService
             // Writes the JSON into the rented byte array.
             int writtenBytes = Utf8.GetBytes(
                 json.AsSpan(),
-                jsonBuffer.AsSpan());
+                jsonBuffer.AsSpan(0, byteCount));
 
             // Holds the result returned by the native callback.
             var state = new NativeCallbackState();
 
             // Keeps the callback state alive while native code uses it.
-            GCHandle context = GCHandle.Alloc(state, GCHandleType.Normal);
+            GCHandle context =
+                GCHandle.Alloc(
+                    state,
+                    GCHandleType.Normal);
 
             try
             {
                 NativeStatus status;
 
                 /*
-                 * Prevents the garbage collector from moving the JSON
+                 * prevents the garbage collector from moving the JSON
                  * array while native code uses its pointer.
                  */
                 fixed (byte* jsonPointer = jsonBuffer)
@@ -179,15 +267,20 @@ public sealed class PdfGenerationService
                         : ReadNativeUtf8(
                             NativeMethods.GetLastError());
 
-                // Throws an exception that happened inside the callback.
+                // throws an exception that happened inside the callback.
                 if (state.Failure is not null)
                 {
+                    string message =
+                        nativeError.Length == 0
+                            ? "Native callback rejected the PDF batch."
+                            : nativeError;
+
                     throw new InvalidOperationException(
-                        "The native callback could not copy the PDFs.",
+                        $"Native PDF callback failed: {message}",
                         state.Failure);
                 }
 
-                // Throws when native PDF generation failed.
+                // throws when native PDF generation failed.
                 if (status != NativeStatus.Ok)
                 {
                     string statusName =
@@ -195,20 +288,37 @@ public sealed class PdfGenerationService
                             NativeMethods.StatusName(
                                 (int)status));
 
+                    if (statusName.Length == 0)
+                    {
+                        statusName = status.ToString();
+                    }
+
+                    string message =
+                        nativeError.Length == 0
+                            ? "No native diagnostic was provided."
+                            : nativeError;
+
                     throw new InvalidOperationException(
                         $"Native PDF generation failed with " +
                         $"{statusName} ({(int)status}): " +
-                        $"{nativeError}");
+                        $"{message}");
                 }
 
-                // Returns the PDFs copied by the callback.
+                if (!state.CallbackReceived)
+                {
+                    throw new InvalidOperationException(
+                        "Native PDF generation completed without " +
+                        "invoking the callback.");
+                }
+
+                // returns the PDFs copied by the callback.
                 return state.Result
                     ?? throw new InvalidOperationException(
                         "Native PDF generation returned no result.");
             }
             finally
             {
-                // Releases the handle that kept the callback state alive.
+                // releases the handle that kept the callback state alive.
                 if (context.IsAllocated)
                 {
                     context.Free();
@@ -217,11 +327,40 @@ public sealed class PdfGenerationService
         }
         finally
         {
-            // Clears the JSON data and returns the array to the pool.
+            // clears the JSON data and returns the array to the pool.
             ArrayPool<byte>.Shared.Return(
                 jsonBuffer,
                 clearArray: true);
         }
+    }
+
+    private static int ValidateInputAndGetByteCount(
+        string json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+
+        int byteCount =
+            Utf8.GetByteCount(json);
+
+        if (byteCount == 0)
+        {
+            throw new ArgumentException(
+                "JSON must not be empty.",
+                nameof(json));
+        }
+
+        nuint maximumJsonBytes =
+            NativeMethods.MaxJsonBytes();
+
+        if ((nuint)byteCount > maximumJsonBytes)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(json),
+                $"UTF-8 JSON exceeds the native limit of " +
+                $"{maximumJsonBytes} bytes.");
+        }
+
+        return byteCount;
     }
 
     // Converts a null-terminated native UTF-8 string into a C# string.
