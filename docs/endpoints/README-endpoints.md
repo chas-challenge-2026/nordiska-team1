@@ -483,30 +483,49 @@ Alla endpoints.
 
 ### POST /api/faqs
 
+> Kräver behörighet `Admin` / `faq:manage` (t.ex. inloggad som `admin@nordiska.se`).
+
 ```json
 {
   "method": "POST",
   "path": "/api/faqs",
-  "auth": false,
+  "auth": true,
   "input": {
     "body": {
       "type": "object",
       "fields": {
         "question": {
           "type": "string",
-          "nullable": true
+          "minLength": 5,
+          "maxLength": 500,
+          "required": true,
+          "description": "Frågetexten (5-500 tecken)"
         },
         "answer": {
           "type": "string",
-          "nullable": true
+          "minLength": 1,
+          "maxLength": 2000,
+          "required": true,
+          "description": "Svarstexten (1-2000 tecken)"
         },
         "category": {
           "type": "string",
-          "nullable": true
+          "maxLength": 200,
+          "nullable": true,
+          "description": "Kategori t.ex. Konto, Sparande, BankID"
         },
         "keywords": {
           "type": "string",
-          "nullable": true
+          "maxLength": 500,
+          "nullable": true,
+          "description": "Kommaseparerade sökord / taggar"
+        },
+        "lang": {
+          "type": "string",
+          "maxLength": 10,
+          "nullable": true,
+          "default": "sv",
+          "description": "Språkkod ('sv' eller 'en')"
         }
       }
     }
@@ -514,9 +533,14 @@ Alla endpoints.
   "output": {
     "201": {
       "body": {
-        "type": "FaqCreatedResponse"
+        "type": "FaqCreatedResponse",
+        "fields": {
+          "id": {
+            "type": "integer"
+          }
+        }
       },
-      "description": "FAQ created."
+      "description": "FAQ skapad."
     }
   },
   "errors": {

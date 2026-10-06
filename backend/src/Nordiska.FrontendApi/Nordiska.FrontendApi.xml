@@ -44,6 +44,17 @@
             which the global exception handler turns into 401.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetStaffId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the staff id from the token claims ("staff_id", "sub", or NameIdentifier), or null if missing or not a number.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredStaffId(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Returns the staff id from the token. Throws if the token has no valid staff id,
+            which the global exception handler turns into 401.
+            </summary>
+        </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.IsAdmin(System.Security.Claims.ClaimsPrincipal)">
             <summary>
             True if the logged in user has the Admin role.
@@ -215,11 +226,76 @@
             <summary>
             Query parameters for filtering, searching and paginating transaction records.
             </summary>
+            <param name="AccountId">Filter by a single account ID.</param>
+            <param name="AccountIds">Filter by multiple account IDs.</param>
+            <param name="Type">Filter by transaction type (e.g. 'deposit', 'withdrawal').</param>
+            <param name="IsPlanned">Optional filter on planned status: true for scheduled/planned transactions only, false for executed transactions only, or omit for all.</param>
+            <param name="FromDate">Start date filter (inclusive UTC).</param>
+            <param name="ToDate">End date filter (inclusive UTC).</param>
+            <param name="MinAmount">Minimum transaction amount filter.</param>
+            <param name="MaxAmount">Maximum transaction amount filter.</param>
+            <param name="SearchTerm">Search term matching description, type, or reference ID.</param>
+            <param name="SortBy">Sort column (e.g. 'createdAt' or 'amount'). Default: 'createdAt'.</param>
+            <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
+            <param name="Page">1-based page index. Default: 1.</param>
+            <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
         </member>
-        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.Boolean},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32)">
             <summary>
             Query parameters for filtering, searching and paginating transaction records.
             </summary>
+            <param name="AccountId">Filter by a single account ID.</param>
+            <param name="AccountIds">Filter by multiple account IDs.</param>
+            <param name="Type">Filter by transaction type (e.g. 'deposit', 'withdrawal').</param>
+            <param name="IsPlanned">Optional filter on planned status: true for scheduled/planned transactions only, false for executed transactions only, or omit for all.</param>
+            <param name="FromDate">Start date filter (inclusive UTC).</param>
+            <param name="ToDate">End date filter (inclusive UTC).</param>
+            <param name="MinAmount">Minimum transaction amount filter.</param>
+            <param name="MaxAmount">Maximum transaction amount filter.</param>
+            <param name="SearchTerm">Search term matching description, type, or reference ID.</param>
+            <param name="SortBy">Sort column (e.g. 'createdAt' or 'amount'). Default: 'createdAt'.</param>
+            <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
+            <param name="Page">1-based page index. Default: 1.</param>
+            <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.AccountId">
+            <summary>Filter by a single account ID.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.AccountIds">
+            <summary>Filter by multiple account IDs.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.Type">
+            <summary>Filter by transaction type (e.g. 'deposit', 'withdrawal').</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.IsPlanned">
+            <summary>Optional filter on planned status: true for scheduled/planned transactions only, false for executed transactions only, or omit for all.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.FromDate">
+            <summary>Start date filter (inclusive UTC).</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.ToDate">
+            <summary>End date filter (inclusive UTC).</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.MinAmount">
+            <summary>Minimum transaction amount filter.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.MaxAmount">
+            <summary>Maximum transaction amount filter.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.SearchTerm">
+            <summary>Search term matching description, type, or reference ID.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.SortBy">
+            <summary>Sort column (e.g. 'createdAt' or 'amount'). Default: 'createdAt'.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.SortOrder">
+            <summary>Sort direction ('asc' or 'desc'). Default: 'desc'.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.Page">
+            <summary>1-based page index. Default: 1.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.PageSize">
+            <summary>Page size limit (1 to 100). Default: 20.</summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.ToDomainParameters(System.Collections.Generic.IReadOnlyList{System.Int64})">
             <summary>
@@ -262,7 +338,7 @@
             <response code="200">Current status of the authentication (e.g. PENDING or COMPLETE with customer profile).</response>
             <response code="401">Authentication failed or customer not found.</response>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Register(Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto)">
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Register(Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto,FluentValidation.IValidator{Nordiska.FrontendApi.Contracts.Requests.RegisterCustomerRequestDto},System.Threading.CancellationToken)">
             <summary>
             Registers a new customer and establishes an authenticated session.
             </summary>
@@ -270,8 +346,11 @@
             Creates a new customer identity record and immediately sets the HttpOnly authentication cookie.
             </remarks>
             <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
+            <param name="validator">Validator for customer registration request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Customer registered successfully and session established.</response>
-            <response code="400">Registration validation failed or email already registered.</response>
+            <response code="400">Registration validation failed (e.g. invalid personal number or email format).</response>
+            <response code="409">Conflict: email address or personal number is already registered.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.AuthController.Login(Nordiska.FrontendApi.Contracts.Requests.LoginRequest)">
             <summary>
@@ -355,7 +434,7 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.DecreaseHelpful(System.Int32,System.Threading.CancellationToken)">
             <summary>
-            Decreases the helpfulness count of an FAQ entry by 1 (minimum 0).
+            Decreases the helpfulness count of an FAQ entry by 1 (supports negative count for downvotes).
             </summary>
             <param name="id">The unique identifier of the FAQ entry.</param>
             <param name="cancellationToken">Cancellation token.</param>
@@ -391,14 +470,14 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.Create(Nordiska.Modules.Faq.Contracts.Requests.CreateFaqRequest,System.Threading.CancellationToken)">
             <summary>
-            Creates a new FAQ entry. Requires the faq:manage permission.
+            Creates a new FAQ entry. Requires the faq:manage policy (Admin role, e.g. login as admin@nordiska.se).
             </summary>
             <param name="request">The FAQ creation payload containing question, answer, category, keywords, and lang.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="201">FAQ entry created successfully.</response>
             <response code="400">Validation failed on the provided FAQ data.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
-            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+            <response code="403">Forbidden if the user lacks the Admin role / faq:manage policy.</response>
             <response code="413">Payload exceeds size limit.</response>
             <response code="415">Unsupported media type.</response>
         </member>
@@ -627,6 +706,63 @@
             <response code="200">The current policy rate and the date it took effect.</response>
             <response code="503">The Riksbank couldn't be reached and there is no earlier rate to fall back on.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.LoansController">
+            <summary>
+            API endpoints for customer loans.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves loans. Non-admin users only receive their own loans.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of loans.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a loan by its identifier.
+            </summary>
+            <remarks>
+            The outstanding amount includes interest accrued up to today.
+            </remarks>
+            <param name="id">The unique identifier of the loan.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Returns the loan.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Loan was not found or does not belong to the authenticated customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.Apply(Nordiska.Modules.Banking.Contracts.Requests.ApplyForLoanRequest,System.Threading.CancellationToken)">
+            <summary>
+            Applies for a personal loan for the authenticated customer.
+            </summary>
+            <remarks>
+            The loan is approved right away and paid out to the given account. The interest rate is the Riksbank policy rate plus a margin.
+            </remarks>
+            <param name="request">Payload containing amount, termMonths and payoutAccountId.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Loan created and paid out.</response>
+            <response code="400">Amount or term outside the allowed limits.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Payout account not found or does not belong to the authenticated customer.</response>
+            <response code="409">Payout account is closed or the total personal loan debt would be too high.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.Repay(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.RepayLoanRequest,System.Threading.CancellationToken)">
+            <summary>
+            Repays part of or the whole loan from one of the customer's accounts.
+            </summary>
+            <remarks>
+            Interest accrued up to today is added to the loan before the repayment is subtracted. The loan is marked repaid when nothing is left.
+            </remarks>
+            <param name="id">The unique identifier of the loan.</param>
+            <param name="request">Payload containing amount and fromAccountId.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Repayment registered, returns the updated loan.</response>
+            <response code="400">Invalid repayment request data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Loan or account not found or does not belong to the authenticated customer.</response>
+            <response code="409">Loan is not active, the amount exceeds what is owed or the account has insufficient funds.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController">
             <summary>
             API endpoints for viewing and managing operational messages, system alerts, and header banners.
@@ -789,6 +925,151 @@
             <response code="200">The calculated current balance amount.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
             <response code="404">Account not found or does not belong to the authenticated user.</response>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Inbox.InboxController">
+            <summary>
+            API endpoints for customer inbox, support tickets, and direct messaging threads.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.#ctor(Nordiska.Modules.Inbox.Application.IInboxService)">
+            <summary>
+            API endpoints for customer inbox, support tickets, and direct messaging threads.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetUnreadCount(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves total count of unread message threads for customer inbox badge.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Unread count response.</response>
+            <response code="401">Unauthorized.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetThreads(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves paginated list of conversations / support threads for the authenticated customer.
+            </summary>
+            <param name="folder">Folder to view ('inbox', 'sent', 'archive'). Default is 'inbox'.</param>
+            <param name="page">Page number (1-based, default 1).</param>
+            <param name="pageSize">Page size (1-100, default 20).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Paginated list of thread summaries.</response>
+            <response code="401">Unauthorized.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetThread(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves full details and message history for a specific thread.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Thread details and messages.</response>
+            <response code="404">Thread not found or belongs to another customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.CreateThread(Nordiska.Modules.Inbox.Contracts.Requests.CreateThreadRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new support ticket / inquiry thread with an initial message.
+            </summary>
+            <param name="request">Ticket subject, category (Sparkonto, Sparmål, Skatteunderlag, Allmänt), and message body.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Thread created successfully.</response>
+            <response code="400">Validation error.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.ReplyToThread(System.Int64,Nordiska.Modules.Inbox.Contracts.Requests.ReplyThreadRequest,System.Threading.CancellationToken)">
+            <summary>
+            Sends a reply message to an existing support thread.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="request">Reply message content.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Message sent successfully.</response>
+            <response code="400">Validation error or thread is closed/reply not allowed.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.MarkAsRead(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Marks all messages in the specified thread as read for the customer.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Thread marked as read.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.ArchiveThread(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Moves the specified thread to the archive folder for the customer.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Thread archived.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.RestoreThread(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Restores an archived message thread back to the inbox folder for the customer.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Thread restored to inbox.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.StaffReply(System.Int64,Nordiska.Modules.Inbox.Contracts.Requests.StaffReplyRequest,System.Threading.CancellationToken)">
+            <summary>
+            Allows bank staff/admin to post a reply to a customer support thread, logging sender_staff_id and notifying customer.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="request">Staff response content and reply permissions.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Staff reply posted and customer notified.</response>
+            <response code="400">Validation error.</response>
+            <response code="403">Forbidden if not bank staff/admin.</response>
+            <response code="404">Thread not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetDocuments(Nordiska.Modules.Inbox.Contracts.Requests.DocumentQueryParameters,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a paginated list of archived documents for the authenticated customer.
+            Supports filtering by year and document type (e.g. TaxReport, AnnualStatement, Agreement).
+            </summary>
+            <param name="parameters">Filter and pagination options.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of archived documents.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.DownloadDocument(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Downloads an archived document securely by its ID, verifying checksum integrity and logging first open timestamp for legal compliance.
+            </summary>
+            <param name="id">Unique identifier of the document.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">The PDF file stream.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+            <response code="404">Document not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetPendingTerms(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all pending terms and condition updates requiring digital acceptance from the customer
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of pending terms awaiting acceptance.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.AcceptTerm(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Digitally accepts an updated term or condition, recording audit log and timestamp
+            </summary>
+            <param name="id">Unique identifier of the term to accept.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Term acceptance confirmed.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+            <response code="404">Term not found or not pending for this customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.PublishTerm(Nordiska.Modules.Inbox.Contracts.Requests.PublishTermRequest,System.Threading.CancellationToken)">
+            <summary>
+            Publishes a new version of general terms or policy, generating pending acceptance records for affected customers
+            </summary>
+            <param name="request">Payload containing code, version, title, and document ID.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Term published successfully.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if not staff or admin.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.AuditController">
             <summary>

@@ -8,11 +8,19 @@ import type { PlannedTransfer } from "../../constants/transferAccounts";
 
 type View = "menu" | "edit" | "confirm-delete";
 
+/** "cleanup" = nya överföringen skapades men den gamla kunde inte tas bort. */
+export type EditPlannedError = "save" | "cleanup" | null;
+
 type PlannedTransferActionsModalProps = {
+    isOpen: boolean;
     transfer: PlannedTransfer;
     onClose: () => void;
     onSaveDate: (newDate: string) => void;
+    isSaving: boolean;
+    editError: EditPlannedError;
     onConfirmDelete: () => void;
+    isDeleting: boolean;
+    deleteError: boolean;
 };
 
 /**
@@ -20,10 +28,15 @@ type PlannedTransferActionsModalProps = {
  * "..."-ikonen. Samma Modal-skal som resten av appen, med tre vyer inuti.
  */
 export default function PlannedTransferActionsModal({
+    isOpen,
     transfer,
     onClose,
     onSaveDate,
+    isSaving,
+    editError,
     onConfirmDelete,
+    isDeleting,
+    deleteError,
 }: PlannedTransferActionsModalProps) {
     const { t } = useTranslation();
     const [view, setView] = useState<View>("menu");
@@ -36,13 +49,15 @@ export default function PlannedTransferActionsModal({
 
     return (
         <Modal
+            isOpen={isOpen}
             onClose={onClose}
+            onCloseAnimationComplete={() => setView("menu")}
             title={
                 view === "edit"
                     ? t("page-transfer.planned.edit-heading")
                     : view === "confirm-delete"
-                      ? t("page-transfer.planned.delete-heading")
-                      : t("page-transfer.planned.actions-heading")
+                        ? t("page-transfer.planned.delete-heading")
+                        : t("page-transfer.planned.actions-heading")
             }
             widthClassName="w-full max-w-[420px]"
         >
@@ -51,8 +66,8 @@ export default function PlannedTransferActionsModal({
                     {view === "edit"
                         ? t("page-transfer.planned.edit-heading")
                         : view === "confirm-delete"
-                          ? t("page-transfer.planned.delete-heading")
-                          : transfer.name}
+                            ? t("page-transfer.planned.delete-heading")
+                            : transfer.name}
                 </h3>
             </div>
 
@@ -88,7 +103,24 @@ export default function PlannedTransferActionsModal({
                         value={date}
                         onChange={setDate}
                     />
-                    <CollapsibleFormBtns onClose={onClose} />
+                    {editError && (
+                        <p className="m-0 text-sm text-red-600">
+                            {editError === "cleanup"
+                                ? t("page-transfer.planned.edit-cleanup-error")
+                                : t("page-transfer.planned.edit-error")}
+                        </p>
+                    )}
+                    <CollapsibleFormBtns
+                        onClose={onClose}
+                        isSubmitting={isSaving}
+                        submitLabel={
+                            isSaving
+                                ? t("page-transfer.planned.edit-save-loading")
+                                : undefined
+                        }
+                        // Nytt försök efter "cleanup" skulle skapa ännu en dubblett.
+                        submitDisabled={editError === "cleanup"}
+                    />
                 </form>
             )}
 
@@ -99,20 +131,29 @@ export default function PlannedTransferActionsModal({
                             name: transfer.name,
                         })}
                     </p>
+                    {deleteError && (
+                        <p className="m-0 text-sm text-red-600">
+                            {t("page-transfer.planned.delete-error")}
+                        </p>
+                    )}
                     <div className="flex justify-end gap-6 pt-2">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="cursor-pointer font-bold uppercase text-secondary"
+                            disabled={isDeleting}
+                            className="cursor-pointer font-bold uppercase text-secondary disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {t("generic.cancel")}
                         </button>
                         <button
                             type="button"
                             onClick={onConfirmDelete}
-                            className="cursor-pointer font-bold uppercase text-red-600"
+                            disabled={isDeleting}
+                            className="cursor-pointer font-bold uppercase text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {t("page-transfer.planned.delete-confirm")}
+                            {isDeleting
+                                ? t("page-transfer.planned.delete-confirm-loading")
+                                : t("page-transfer.planned.delete-confirm")}
                         </button>
                     </div>
                 </div>

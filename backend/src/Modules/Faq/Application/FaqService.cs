@@ -14,6 +14,10 @@ public interface IFaqRepository
         int id,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyCollection<FaqEntryResponse>> GetByRelationIdAsync(
+        Guid relationId,
+        CancellationToken cancellationToken = default);
+
     Task<int> CreateAsync(
         FaqEntry entry,
         CancellationToken cancellationToken = default);
@@ -55,6 +59,7 @@ public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, Fa
         string? category = null,
         string? keywords = null,
         string? language = "sv",
+        Guid? relationId = null,
         CancellationToken cancellationToken = default)
     {
         var entry = FaqEntry.Create(
@@ -62,7 +67,8 @@ public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, Fa
             answer,
             category,
             keywords,
-            language);
+            language,
+            relationId);
 
         var id = await repository.CreateAsync(
             entry,
@@ -111,6 +117,34 @@ public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, Fa
         }
 
         return entry;
+    }
+
+    public async Task<IReadOnlyCollection<FaqEntryResponse>> GetByRelationIdAsync(
+        Guid relationId,
+        CancellationToken cancellationToken = default)
+    {
+        var cacheKey = $"faq:relation:{relationId}";
+
+        if (cache.TryGetValue(
+            cacheKey,
+            out IReadOnlyCollection<FaqEntryResponse>? cached) &&
+            cached is not null)
+        {
+            return cached;
+        }
+
+        var changeToken = cacheInvalidator.GetChangeToken();
+
+        var result = await repository.GetByRelationIdAsync(
+            relationId,
+            cancellationToken);
+
+        cache.Set(
+            cacheKey,
+            result,
+            CreateEntryOptions(changeToken));
+
+        return result;
     }
 
     public async Task<IReadOnlyCollection<FaqEntryResponse>> SearchAsync(

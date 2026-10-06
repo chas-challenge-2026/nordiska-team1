@@ -5,7 +5,6 @@
 #include <openssl/store.h>
 #include <stdbool.h>
 #include <stddef.h>
-#define KEY_SECRET_MAX_LEN 1024
 
 #ifdef __cplusplus
 extern "C" {

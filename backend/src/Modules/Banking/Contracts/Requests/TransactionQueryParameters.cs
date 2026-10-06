@@ -9,6 +9,7 @@ namespace Nordiska.Modules.Banking.Contracts.Requests;
 public record TransactionQueryParameters(
     IReadOnlyList<long>? AccountIds = null,
     string? Type = null,
+    bool? IsPlanned = null,
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     decimal? MinAmount = null,

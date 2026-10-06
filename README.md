@@ -70,89 +70,213 @@ erDiagram
     Customer {
         bigint id PK
         string personal_num UK "BankID personnummer"
-        string name
-        string email UK
-        string phone_number "kontaktuppgift"
-        string password_hash
-        datetime created_at
+        string name "Fullständigt namn"
+        string email UK "E-postadress"
+        string phone_number "Kontaktuppgift"
+        string password_hash "Lösenordshash"
+        datetime created_at "Skapad tidpunkt"
         datetime updated_at "Senast uppdaterad"
     }
 
     AccountTypeConfig {
-        string account_type PK "saving, checking, flex"
-        decimal interest_rate "t.ex. 1.45 eller 3.46"
-        string description
+        string account_type PK "saving checking flex"
+        decimal interest_rate "Räntesats"
+        string description "Beskrivning"
+    }
+
+    AccountTypeRateHistory {
+        bigint id PK
+        string account_type FK "saving flex fix standard premium"
+        decimal interest_rate "Gällande räntesats för perioden"
+        datetime effective_from_utc "Giltig från och med"
+        datetime effective_to_utc "Giltig till och med"
+        datetime created_at_utc "Skapad tidpunkt"
     }
 
     SavingsAccount {
         bigint id PK
         bigint customer_id FK
-        string account_number UK "NOR-XXXXXX auto-genererad"
-        string account_name "Valbart kontonamn, max 40 tecken"
-        string account_type FK "saving, checking, flex"
+        string account_number UK "NOR-XXXXXX autogenererad"
+        string account_name "Valbart kontonamn"
+        string account_type FK "saving checking flex"
         decimal balance "Ledger snapshot"
-        decimal interest_rate
-        string status "active, closed"
-        datetime created_at
+        decimal interest_rate "Aktuell ränta"
+        string status "active closed"
+        datetime created_at "Skapad tidpunkt"
         datetime updated_at "Senast ändrad"
     }
 
     Transaction {
         bigint id PK
         bigint account_id FK
-        string type "deposit, withdrawal, transfer"
-        decimal amount
-        string label "Etikett t.ex. Hyra, Lön"
-        bigint target_account_id "Motparts-konto vid transfer"
+        string type "deposit withdrawal transfer"
+        decimal amount "Belopp"
+        string label "Etikett"
+        bigint target_account_id "Motpartskonto vid transfer"
         boolean is_planned "Planerad framtida transaktion"
         datetime planned_date "Planerat datum"
-        string repeating "week, month, year"
-        datetime created_at
+        string repeating "week month year"
+        datetime created_at "Skapad tidpunkt"
     }
 
     TaxReport {
         bigint id PK
         bigint account_id FK
-        int year
-        string status "pending, generated, signed"
-        string download_url
-        string signature
-        datetime created_at
+        int year "Skatteunderlagsår"
+        string status "pending generated signed"
+        string download_url "Url till PDF"
+        string signature "Digital signatur"
+        datetime created_at "Skapad tidpunkt"
     }
 
     FaqEntry {
         int id PK
-        string question
-        string answer
-        string category
-        int helpful_count
-        string keywords "taggar eller sokord"
+        uuid relation_id "Koppling för språkpar sv och en"
+        string language "Språkkod sv eller en"
+        string question "Fråga"
+        string answer "Svar"
+        string category "Kategori"
+        int helpful_count "Antal gillningar"
+        string keywords "Taggar och sökord"
+        int_array related_faq_ids "Relaterade artiklar"
+        datetime created_at "Skapad tidpunkt"
+        datetime updated_at "Senast uppdaterad"
     }
 
     Notification {
         bigint id PK
-        string recipient "email eller userId"
-        string type "email, push, sms"
+        string recipient "E-post eller userId"
+        string type "email push sms"
         bigint ref_id "FK till relaterad entitet"
-        string status "pending, sent, failed"
-        datetime sent_at
-        datetime created_at
+        string status "pending sent failed"
+        datetime sent_at "Skickat tidpunkt"
+        datetime created_at "Skapad tidpunkt"
     }
 
     AuditEntry {
         bigint id PK
-        string action "LOGIN, TRANSFER, UPDATE"
-        bigint user_id FK "Nullable"
+        string action "LOGIN TRANSFER UPDATE"
+        bigint user_id FK "Användar-ID"
         string details "JSON eller text"
-        string signature
-        datetime created_at
+        string signature "Signatur"
+        datetime created_at "Skapad tidpunkt"
+    }
+
+    MessageBox {
+        bigint id PK
+        bigint customer_id FK "Kopplad till kund"
+        int type "Personal"
+        datetime created_at "Skapad tidpunkt"
+    }
+
+    MessageThread {
+        bigint id PK
+        bigint message_box_id FK
+        string subject "Ärendeämne"
+        int status "Open Closed"
+        datetime created_at "Skapad tidpunkt"
+        datetime last_message_at "Senaste meddelande"
+    }
+
+    Message {
+        bigint id PK
+        bigint thread_id FK
+        int sender_type "Bank Customer System"
+        bigint sender_customer_id FK "Avsändar-ID"
+        string body "Meddelandetext"
+        boolean reply_allowed "Om svar är tillåtet"
+        datetime sent_at "Skickat tidpunkt"
+        datetime revoked_at "Återkallat tidpunkt"
+    }
+
+    MessageThreadState {
+        bigint id PK
+        bigint thread_id FK
+        bigint customer_id FK
+        int folder "Inbox Sent Archive"
+        datetime read_at "Läst tidpunkt"
+        datetime archived_at "Arkiverat tidpunkt"
+    }
+
+    CustomerNotification {
+        bigint id PK
+        bigint customer_id FK
+        string type "Notistyp"
+        int priority "Low Normal High Critical"
+        string title "Rubrik"
+        string body "Notistext"
+        int target_type "Document MessageThread Term"
+        bigint target_id "Mål-ID"
+        datetime created_at "Skapad tidpunkt"
+        datetime read_at "Läst tidpunkt"
+        datetime expires_at "Utgångsdatum"
+    }
+
+    FeedItem {
+        bigint id PK
+        bigint customer_id FK
+        string type "Händelsetyp"
+        string title "Rubrik"
+        string body "Text"
+        datetime published_at "Publicerat tidpunkt"
+    }
+
+    Document {
+        bigint id PK
+        string document_type "Dokumenttyp"
+        string title "Dokumenttitel"
+        string content_type "MIME-typ"
+        string storage_path "Lagringssökväg"
+        datetime created_at "Skapad tidpunkt"
+    }
+
+    CustomerDocument {
+        bigint id PK
+        bigint document_id FK
+        bigint customer_id FK
+        datetime published_at "Publicerat tidpunkt"
+        datetime first_opened_at "Först öppnad"
+        datetime available_until "Tillgänglig till"
+    }
+
+    Term {
+        bigint id PK
+        string code "Villkorskod"
+        int version "Versionsnummer"
+        string title "Villkorsrubrik"
+        bigint document_id FK
+        int status "Draft Active Superseded Archived"
+        datetime effective_from "Gäller från"
+    }
+
+    TermAcceptance {
+        bigint id PK
+        bigint term_id FK
+        bigint customer_id FK
+        int status "Pending Accepted Declined"
+        datetime created_at "Skapad tidpunkt"
+        datetime accepted_at "Godkänt tidpunkt"
+        datetime declined_at "Avböjt tidpunkt"
     }
 
     Customer ||--o{ SavingsAccount : "owns"
     AccountTypeConfig ||--o{ SavingsAccount : "defines_rate_for"
+    AccountTypeConfig ||--o{ AccountTypeRateHistory : "has_rate_history"
     SavingsAccount ||--o{ Transaction : "has ledger entries"
     SavingsAccount ||--o{ TaxReport : "has"
     Customer ||--o{ AuditEntry : "logs"
+    Customer ||--|o MessageBox : "has"
+    MessageBox ||--o{ MessageThread : "contains"
+    MessageThread ||--o{ Message : "contains"
+    MessageThread ||--o{ MessageThreadState : "tracks"
+    Customer ||--o{ MessageThreadState : "maintains"
+    Customer ||--o{ CustomerNotification : "receives"
+    Customer ||--o{ FeedItem : "receives"
+    Customer ||--o{ CustomerDocument : "owns"
+    Document ||--o{ CustomerDocument : "distributed_as"
+    Document ||--o{ Term : "defines"
+    Term ||--o{ TermAcceptance : "accepted_through"
+    Customer ||--o{ TermAcceptance : "signs"
 ```
 
 ## Dokumentation

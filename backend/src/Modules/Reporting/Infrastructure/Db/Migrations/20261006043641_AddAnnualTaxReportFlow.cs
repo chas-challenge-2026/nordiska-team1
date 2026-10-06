@@ -12,10 +12,6 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "tax_reports",
-                schema: "reporting");
-
             migrationBuilder.CreateTable(
                 name: "tax_reports",
                 schema: "reporting",
@@ -93,24 +89,6 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_audit_entries_Action",
-                schema: "reporting",
-                table: "audit_entries",
-                column: "Action");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_audit_entries_CreatedAt",
-                schema: "reporting",
-                table: "audit_entries",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_audit_entries_UserId_CreatedAt",
-                schema: "reporting",
-                table: "audit_entries",
-                columns: new[] { "UserId", "CreatedAt" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_tax_report_documents_DocumentId",
                 schema: "reporting",
                 table: "tax_report_documents",
@@ -140,49 +118,9 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                 name: "tax_report_jobs",
                 schema: "reporting");
 
-            migrationBuilder.DropIndex(
-                name: "IX_audit_entries_Action",
-                schema: "reporting",
-                table: "audit_entries");
-
-            migrationBuilder.DropIndex(
-                name: "IX_audit_entries_CreatedAt",
-                schema: "reporting",
-                table: "audit_entries");
-
-            migrationBuilder.DropIndex(
-                name: "IX_audit_entries_UserId_CreatedAt",
-                schema: "reporting",
-                table: "audit_entries");
-
             migrationBuilder.DropTable(
                 name: "tax_reports",
                 schema: "reporting");
-
-            migrationBuilder.CreateTable(
-                name: "tax_reports",
-                schema: "reporting",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    AccountId = table.Column<long>(type: "bigint", nullable: false),
-                    Year = table.Column<int>(type: "integer", nullable: false),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    DownloadUrl = table.Column<string>(type: "text", nullable: true),
-                    Signature = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tax_reports", x => x.Id);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_tax_reports_AccountId_Year",
-                schema: "reporting",
-                table: "tax_reports",
-                columns: new[] { "AccountId", "Year" });
         }
     }
 }

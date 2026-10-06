@@ -11,4 +11,9 @@ public interface IInterestRateService
     /// Retrieves the interest rate for every account type. Results are cached.
     /// </summary>
     Task<IEnumerable<AccountTypeConfigResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves historical interest rate records for a given account type.
+    /// </summary>
+    Task<IReadOnlyList<AccountTypeRateHistoryResponse>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default);
 }

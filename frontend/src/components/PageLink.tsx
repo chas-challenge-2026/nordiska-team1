@@ -1,5 +1,4 @@
 import { NavLink } from "react-router";
-import capitalize from "../utils/capitalize";
 
 type PageLinkProps = {
     title: string;
@@ -30,7 +29,6 @@ export default function PageLink({ title, route, header=false }: PageLinkProps) 
                 <span className={`
                     relative
                     inline-block
-
                     after:content-['']
                     after:absolute
                     after:top-full
@@ -49,7 +47,7 @@ export default function PageLink({ title, route, header=false }: PageLinkProps) 
                         : "after:w-0 hover:after:w-[70%]"
                     }
                 `}>
-                    {capitalize(title)}
+                    {title}
                 </span>
             )}
         </NavLink>

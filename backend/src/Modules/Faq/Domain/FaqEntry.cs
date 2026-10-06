@@ -11,6 +11,8 @@ public sealed class FaqEntry
     public int HelpfulCount { get; private set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; private set; }
+    public Guid RelationId { get; private set; }
+    public int[] RelatedFaqIds { get; private set; } = Array.Empty<int>();
 
     private FaqEntry() { }
 
@@ -19,11 +21,15 @@ public sealed class FaqEntry
         string answer,
         string? category = null,
         string? keywords = null,
-        string? language = "sv")
+        string? language = "sv",
+        Guid? relationId = null,
+        int[]? relatedFaqIds = null)
     {
         var entry = new FaqEntry
         {
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            RelationId = relationId ?? Guid.NewGuid(),
+            RelatedFaqIds = relatedFaqIds ?? Array.Empty<int>()
         };
         entry.SetLanguage(language);
         entry.ReviseEntry(question, answer, category, keywords);
@@ -79,7 +85,7 @@ public sealed class FaqEntry
 
     public void UnmarkHelpful()
     {
-        HelpfulCount = Math.Max(0, HelpfulCount - 1);
+        HelpfulCount = checked(HelpfulCount - 1);
         UpdatedAt = DateTime.UtcNow;
     }
 

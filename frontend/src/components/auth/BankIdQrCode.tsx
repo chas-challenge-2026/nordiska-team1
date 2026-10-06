@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 
 interface BankIdQrCodeProps {
@@ -6,7 +7,7 @@ interface BankIdQrCodeProps {
     qrStartSecret: string;
     autoStartToken?: string;
     status?: string;
-    onCancel: () => void;
+    onCancel?: () => void;
 }
 
 export default function BankIdQrCode({
@@ -15,6 +16,7 @@ export default function BankIdQrCode({
     autoStartToken,
     onCancel
 }: BankIdQrCodeProps) {
+    const { t } = useTranslation();
     const [qrValue, setQrValue] = useState<string>("");
 
     useEffect(() => {
@@ -68,12 +70,12 @@ export default function BankIdQrCode({
                 </div>
             ) : (
                 <div className="flex h-[160px] w-[160px] items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400">
-                    Laddar QR-kod...
+                    {t("login-route.qr-loading")}
                 </div>
             )}
 
             <p className="text-xs font-medium text-gray-700">
-                Öppna BankID-appen och scanna QR-koden
+                {t("login-route.qr-help")}
             </p>
 
             {autoStartToken && (
@@ -81,17 +83,19 @@ export default function BankIdQrCode({
                     href={`bankid:///?autostarttoken=${autoStartToken}&redirect=null`}
                     className="rounded bg-nordiska-orange px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
                 >
-                    Öppna BankID på denna enhet
+                    {t("login-route.open-app-again")}
                 </a>
             )}
 
-            <button
-                type="button"
-                onClick={onCancel}
-                className="text-xs text-gray-500 hover:text-red-600 underline cursor-pointer"
-            >
-                Avbryt
-            </button>
+            {onCancel && (
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="text-xs text-gray-500 hover:text-red-600 underline cursor-pointer"
+                >
+                    {t("generic.cancel")}
+                </button>
+            )}
         </div>
     );
 }

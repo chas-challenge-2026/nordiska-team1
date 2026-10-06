@@ -2,6 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Nordiska.Modules.Faq.Contracts.Requests;
 
+/// <summary>
+/// Payload for creating a new FAQ entry. Requires the faq:manage policy (Admin role).
+/// </summary>
+/// <param name="Question">The FAQ question text (5 to 500 characters).</param>
+/// <param name="Answer">The detailed answer text (1 to 2000 characters).</param>
+/// <param name="Category">Optional category grouping (e.g. 'Konto', 'Ränta', 'BankID', max 200 characters).</param>
+/// <param name="Keywords">Optional comma-separated search keywords / tags (max 500 characters).</param>
+/// <param name="Lang">Language code for the entry (e.g. 'sv' or 'en', default 'sv').</param>
 public record CreateFaqRequest(
     [Required]
     [StringLength(500, MinimumLength = 5)]
@@ -18,9 +26,14 @@ public record CreateFaqRequest(
     string? Keywords = null,
 
     [StringLength(10)]
-    string? Lang = "sv"
+    string? Lang = "sv",
+
+    Guid? RelationId = null
 );
 
+/// <summary>
+/// Payload for fully updating an existing FAQ entry.
+/// </summary>
 public record UpdateFaqRequest(
     [property: Required]
     int Id,
@@ -41,26 +54,32 @@ public record UpdateFaqRequest(
     string? Lang = null
 );
 
+/// <summary>
+/// Payload for partially updating an FAQ entry (PATCH).
+/// </summary>
 public record PatchFaqRequest(
-    [property: StringLength(500, MinimumLength = 5)]
+    [param: StringLength(500, MinimumLength = 5)]
     string? Title = null,
 
-    [property: StringLength(500, MinimumLength = 5)]
+    [param: StringLength(500, MinimumLength = 5)]
     string? Question = null,
 
-    [property: StringLength(2000, MinimumLength = 1)]
+    [param: StringLength(2000, MinimumLength = 1)]
     string? Answer = null,
 
-    [property: StringLength(200)]
+    [param: StringLength(200)]
     string? Category = null,
 
-    [property: StringLength(500)]
+    [param: StringLength(500)]
     string? Keywords = null,
 
-    [property: StringLength(10)]
+    [param: StringLength(10)]
     string? Lang = null
 );
 
+/// <summary>
+/// Query payload for searching FAQ entries.
+/// </summary>
 public record SearchFaqRequest(
     [param: StringLength(500)]
     string? SearchTerm = null,
@@ -72,6 +91,9 @@ public record SearchFaqRequest(
     string? Lang = null
 );
 
+/// <summary>
+/// Pagination and query parameters for FAQ listings.
+/// </summary>
 public record FaqQueryParameters(
     int Page = 1,
     int PageSize = 20,

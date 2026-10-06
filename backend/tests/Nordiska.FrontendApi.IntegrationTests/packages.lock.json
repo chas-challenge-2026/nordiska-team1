@@ -46,6 +46,15 @@
           "Microsoft.Extensions.Hosting": "8.0.1"
         }
       },
+      "Microsoft.EntityFrameworkCore.InMemory": {
+        "type": "Direct",
+        "requested": "[8.0.31, )",
+        "resolved": "8.0.31",
+        "contentHash": "2I/fD35g3NG5BKxhqvOEAlLnTnqOre2i2r8NlgFiP4OIGLpHO87Shl4UhzAfVEdIPbsaNeycHDbJjIt89Ob0Tw==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "8.0.31"
+        }
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.14.1, )",
@@ -142,24 +151,24 @@
       },
       "Microsoft.EntityFrameworkCore": {
         "type": "Transitive",
-        "resolved": "8.0.30",
-        "contentHash": "Y6GP16iuqAUkcXSgMqjgao9w0UHSz8x04LRDadsi++sn7yBI9C/sy61xNLzPKM+6DZEbyPRHGq3M58f6DhB25g==",
+        "resolved": "8.0.31",
+        "contentHash": "RlM+Py8bIwT1f1yKPq9LDPTK08ZVgC157oAQlIIYRhSTXj1bYpSqWHTvWXb8Wghyfqfsi1wo9hIviiEzTZjdpA==",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.30",
-          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.30",
+          "Microsoft.EntityFrameworkCore.Abstractions": "8.0.31",
+          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.31",
           "Microsoft.Extensions.Caching.Memory": "8.0.1",
           "Microsoft.Extensions.Logging": "8.0.1"
         }
       },
       "Microsoft.EntityFrameworkCore.Abstractions": {
         "type": "Transitive",
-        "resolved": "8.0.30",
-        "contentHash": "JoVu3708PrMcA3BUeo1+gTcD4nRI8o3g3kwNXwgTPUDhe0dqN2CQmHmEPDD0uZlI1v2oq3F7tR46VycUHzP9ng=="
+        "resolved": "8.0.31",
+        "contentHash": "2dnfIgy8TaEY31mWbQ2xCYWz/YgP2/cGFKhBskmLhovmn5PLgrnfcVLLFaGOZ0WhC2W0VzG8ps60NXEzflZ1dw=="
       },
       "Microsoft.EntityFrameworkCore.Analyzers": {
         "type": "Transitive",
-        "resolved": "8.0.30",
-        "contentHash": "+ZVRBR3CzGu0AGWTbewOWTzV+UG//yDrA0gdvb9i1dTidSvwG9qRRggEI9fie0MPC0LAcS9Z8X5HRYWWxefutg=="
+        "resolved": "8.0.31",
+        "contentHash": "ahYdpBYc7x6eyjjXycwdwuJZjbkFFsG0KgTs34c21PpiwY24KI3B1KdzDSzWIX6RWSSfS++2agQeGx5KK9JMVg=="
       },
       "Microsoft.EntityFrameworkCore.Relational": {
         "type": "Transitive",
@@ -769,6 +778,7 @@
           "Microsoft.OpenApi": "[2.7.5, )",
           "Nordiska.Modules.Banking": "[1.0.0, )",
           "Nordiska.Modules.Faq": "[1.0.0, )",
+          "Nordiska.Modules.Inbox": "[1.0.0, )",
           "Nordiska.Modules.Reporting": "[1.0.0, )",
           "Scalar.AspNetCore": "[2.17.2, )",
           "Swashbuckle.AspNetCore.SwaggerGen": "[10.2.3, )"
@@ -785,6 +795,13 @@
         }
       },
       "nordiska.modules.faq": {
+        "type": "Project",
+        "dependencies": {
+          "FluentValidation": "[11.6.0, )",
+          "Nordiska.BuildingBlocks.Database": "[1.0.0, )"
+        }
+      },
+      "nordiska.modules.inbox": {
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[11.6.0, )",

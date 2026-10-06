@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { checkSession } from "../services/authService";
+import { checkSession } from "../services/sessionsService";
 import { useUserStore } from "../store/userStore";
 
 export function useSessionCheck() {

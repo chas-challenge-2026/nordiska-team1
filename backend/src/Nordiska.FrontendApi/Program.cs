@@ -11,6 +11,9 @@ using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Faq.Application;
 using System.IO;
 using System.Reflection;
+using FluentValidation;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Validators;
 using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -22,7 +25,7 @@ using Nordiska.Modules.Banking.Infrastructure;
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.FrontendApi.BackgroundWorkers;
-
+using Nordiska.Modules.Inbox.Infrastructure.Db;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
@@ -70,6 +73,7 @@ builder.Services.AddApiAuthorization();
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IValidator<RegisterCustomerRequestDto>, RegisterCustomerRequestDtoValidator>();
 
 // Register controller services
 builder.Services.AddControllers();
@@ -110,7 +114,7 @@ builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
-
+builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
 // Background worker for scheduled & recurring transactions
 builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
  
@@ -231,6 +235,17 @@ using (var migrationScope = app.Services.CreateScope())
     catch (Exception ex)
     {
         app.Logger.LogWarning(ex, "Automatic Reporting database migration could not be completed: {Message}", ex.Message);
+    }
+    try
+    {
+        var inboxDb =services.GetRequiredService<InboxDbContext>();
+
+        await inboxDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(
+            ex, "Automatic Inbox database migration could not be completed: {Message}",ex.Message);
     }
 }
 
