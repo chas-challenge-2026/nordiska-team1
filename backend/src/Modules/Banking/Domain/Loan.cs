@@ -13,10 +13,61 @@ public sealed class Loan
     public LoanStatus Status { get; private set; }
     public DateOnly OpenedAt { get; private set; }
     public DateOnly? MaturityDate { get; private set; }
+    public DateOnly InterestAccruedThrough { get; private set; }
+
     private Loan() { }
-    public Loan(long customerId,string loanNumber,LoanType type,decimal principalAmount,decimal interestRate,DateOnly openedAt,DateOnly? maturityDate=null,string currency="SEK")
-    {if(principalAmount<=0) throw new ArgumentOutOfRangeException(nameof(principalAmount)); CustomerId=customerId; LoanNumber=loanNumber; Type=type; PrincipalAmount=OutstandingAmount=principalAmount; InterestRate=interestRate; Currency=currency; OpenedAt=openedAt; MaturityDate=maturityDate; Status=LoanStatus.Active;}
-    public void RegisterRepayment(decimal amount){if(amount<=0) throw new ArgumentOutOfRangeException(nameof(amount)); if(Status!=LoanStatus.Active) throw new InvalidOperationException("Loan is not active."); OutstandingAmount-=amount; if(OutstandingAmount<=0){OutstandingAmount=0; Status=LoanStatus.Repaid;}}
+
+    public Loan(long customerId, string loanNumber, LoanType type, decimal principalAmount, decimal interestRate, DateOnly openedAt, DateOnly? maturityDate = null, string currency = "SEK")
+    {
+        if (principalAmount <= 0) throw new ArgumentOutOfRangeException(nameof(principalAmount));
+
+        CustomerId = customerId;
+        LoanNumber = loanNumber;
+        Type = type;
+        PrincipalAmount = OutstandingAmount = principalAmount;
+        InterestRate = interestRate;
+        Currency = currency;
+        OpenedAt = openedAt;
+        MaturityDate = maturityDate;
+        InterestAccruedThrough = openedAt;
+        Status = LoanStatus.Active;
+    }
+
+    // Simple daily interest (actual/365) on the outstanding amount since interest was last booked
+    public decimal CalculateAccruedInterest(DateOnly asOf)
+    {
+        if (Status != LoanStatus.Active || asOf <= InterestAccruedThrough)
+        {
+            return 0m;
+        }
+
+        var days = asOf.DayNumber - InterestAccruedThrough.DayNumber;
+        return Math.Round(OutstandingAmount * InterestRate * days / 365m, 2, MidpointRounding.AwayFromZero);
+    }
+
+    public void AccrueInterest(DateOnly asOf)
+    {
+        if (Status != LoanStatus.Active || asOf <= InterestAccruedThrough) return;
+
+        OutstandingAmount += CalculateAccruedInterest(asOf);
+        InterestAccruedThrough = asOf;
+    }
+
+    public void RegisterRepayment(decimal amount)
+    {
+        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        if (Status != LoanStatus.Active) throw new InvalidOperationException("Loan is not active.");
+        // Paying more than what is owed would just make the extra money disappear
+        if (amount > OutstandingAmount) throw new InvalidOperationException("Repayment exceeds the outstanding amount.");
+
+        OutstandingAmount -= amount;
+        if (OutstandingAmount == 0)
+        {
+            Status = LoanStatus.Repaid;
+        }
+    }
 }
-public enum LoanType { Personal=1, Mortgage=2 }
-public enum LoanStatus { Pending=1, Active=2, Repaid=3, Closed=4, Defaulted=5 }
+
+public enum LoanType { Personal = 1, Mortgage = 2 }
+
+public enum LoanStatus { Pending = 1, Active = 2, Repaid = 3, Closed = 4, Defaulted = 5 }

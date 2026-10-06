@@ -140,6 +140,12 @@ public class DbInitializer
 
         try
         {
+            await SeedLoansAsync(db);
+        }
+        catch { }
+
+        try
+        {
             await SeedNotificationsAsync(db);
         }
         catch { }
@@ -161,6 +167,22 @@ public class DbInitializer
             await SeedDocumentsAsync(scope.ServiceProvider);
         }
         catch { }
+    }
+
+    private static async Task SeedLoansAsync(BankingDbContext db)
+    {
+        var anna = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198202116050");
+        if (anna is null || await db.Loans.AnyAsync(l => l.CustomerId == anna.Id))
+        {
+            return;
+        }
+
+        // Fixed loan numbers and rates so the demo data looks the same every time the database is recreated
+        db.Loans.AddRange(
+            new Loan(anna.Id, "LN-DEMO-PERSONAL-0001", LoanType.Personal, 120000m, 0.0675m, new DateOnly(2026, 8, 1), new DateOnly(2031, 8, 1)),
+            new Loan(anna.Id, "LN-DEMO-MORTGAGE-0001", LoanType.Mortgage, 2450000m, 0.0325m, new DateOnly(2026, 6, 1), new DateOnly(2076, 6, 1)));
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
