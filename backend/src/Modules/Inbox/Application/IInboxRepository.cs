@@ -1,4 +1,5 @@
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.Modules.Agreements.Domain;
 using Nordiska.Modules.Communication.Domain;
 using Nordiska.Modules.Documents.Domain;
 
@@ -56,4 +57,27 @@ public interface IInboxRepository
         CancellationToken cancellationToken = default);
 
     Task MarkDocumentOpenedAsync(long customerDocumentId, CancellationToken cancellationToken = default);
+
+    // Terms and Conditions Acceptance (NOR-254)
+    Task<IReadOnlyList<(TermAcceptance Acceptance, Term Term)>> GetPendingTermsAsync(
+        long customerId,
+        CancellationToken cancellationToken = default);
+
+    Task<(TermAcceptance? Acceptance, Term? Term)> GetTermAcceptanceAsync(
+        long customerId,
+        long termId,
+        CancellationToken cancellationToken = default);
+
+    Task<TermAcceptance> AcceptTermAsync(
+        TermAcceptance acceptance,
+        CancellationToken cancellationToken = default);
+
+    Task<Term> PublishTermAsync(
+        string code,
+        int version,
+        string title,
+        long documentId,
+        DateTimeOffset effectiveFrom,
+        IEnumerable<long>? targetCustomerIds = null,
+        CancellationToken cancellationToken = default);
 }

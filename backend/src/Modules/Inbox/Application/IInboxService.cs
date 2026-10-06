@@ -19,4 +19,9 @@ public interface IInboxService
     // Digital Document Archive
     Task<PagedResult<DocumentResponse>> GetDocumentsAsync(long customerId, DocumentQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<DocumentDownloadResult?> DownloadDocumentAsync(long customerId, long documentId, CancellationToken cancellationToken = default);
+
+    // Terms and Conditions Acceptance (NOR-254)
+    Task<IReadOnlyList<PendingTermResponse>> GetPendingTermsAsync(long customerId, CancellationToken cancellationToken = default);
+    Task<TermAcceptanceResult> AcceptTermAsync(long customerId, long termId, CancellationToken cancellationToken = default);
+    Task<TermResponse> PublishTermAsync(PublishTermRequest request, CancellationToken cancellationToken = default);
 }

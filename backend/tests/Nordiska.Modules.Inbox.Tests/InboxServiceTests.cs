@@ -477,4 +477,119 @@ public class InboxServiceTests
         // Assert
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task GetPendingTerms_ReturnsMappedPendingTerms()
+    {
+        // Arrange
+        const long customerId = 100;
+        var term = new Nordiska.Modules.Agreements.Domain.Term(
+            "TERMS_2026",
+            2,
+            "Allmänna kontovillkor 2026",
+            50,
+            DateTimeOffset.UtcNow);
+        var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term.Id, customerId);
+
+        _repoMock.Setup(r => r.GetPendingTermsAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([(acceptance, term)]);
+
+        // Act
+        var results = await _service.GetPendingTermsAsync(customerId);
+
+        // Assert
+        Assert.Single(results);
+        Assert.Equal("TERMS_2026", results[0].Code);
+        Assert.Equal("Allmänna kontovillkor 2026", results[0].Title);
+        Assert.Equal("Pending", results[0].Status);
+        Assert.Equal("/api/inbox/documents/50/download", results[0].DownloadUrl);
+    }
+
+    [Fact]
+    public async Task AcceptTerm_WhenPending_AcceptsAndSendsNotification()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long termId = 10;
+        var term = new Nordiska.Modules.Agreements.Domain.Term(
+            "TERMS_2026",
+            2,
+            "Allmänna kontovillkor 2026",
+            50,
+            DateTimeOffset.UtcNow);
+        var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term.Id, customerId);
+
+        _repoMock.Setup(r => r.GetTermAcceptanceAsync(customerId, termId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((acceptance, term));
+
+        _repoMock.Setup(r => r.AcceptTermAsync(acceptance, It.IsAny<CancellationToken>()))
+            .Callback<Nordiska.Modules.Agreements.Domain.TermAcceptance, CancellationToken>((ta, _) => ta.Accept())
+            .ReturnsAsync(acceptance);
+
+        // Act
+        var result = await _service.AcceptTermAsync(customerId, termId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Equal("Accepted", result.Status);
+        Assert.NotNull(result.AcceptedAt);
+        _repoMock.Verify(r => r.AcceptTermAsync(acceptance, It.IsAny<CancellationToken>()), Times.Once);
+        _repoMock.Verify(r => r.AddNotificationAsync(
+            customerId,
+            "terms_accepted",
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<Nordiska.Modules.Communication.Domain.NotificationPriority>(),
+            It.IsAny<Nordiska.Modules.Communication.Domain.NotificationTargetType?>(),
+            It.IsAny<long?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AcceptTerm_WhenAlreadyAccepted_ReturnsSuccess()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long termId = 10;
+        var term = new Nordiska.Modules.Agreements.Domain.Term(
+            "TERMS_2026",
+            2,
+            "Allmänna kontovillkor 2026",
+            50,
+            DateTimeOffset.UtcNow);
+        var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term.Id, customerId);
+        acceptance.Accept();
+
+        _repoMock.Setup(r => r.GetTermAcceptanceAsync(customerId, termId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((acceptance, term));
+
+        // Act
+        var result = await _service.AcceptTermAsync(customerId, termId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Equal("Accepted", result.Status);
+        _repoMock.Verify(r => r.AcceptTermAsync(It.IsAny<Nordiska.Modules.Agreements.Domain.TermAcceptance>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AcceptTerm_WhenNotFound_ReturnsFailureResult()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long termId = 999;
+
+        _repoMock.Setup(r => r.GetTermAcceptanceAsync(customerId, termId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(((Nordiska.Modules.Agreements.Domain.TermAcceptance?)null, (Nordiska.Modules.Agreements.Domain.Term?)null));
+
+        // Act
+        var result = await _service.AcceptTermAsync(customerId, termId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("NotFound", result.Status);
+    }
 }
