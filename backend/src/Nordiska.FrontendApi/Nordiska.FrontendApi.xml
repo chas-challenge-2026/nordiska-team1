@@ -226,11 +226,76 @@
             <summary>
             Query parameters for filtering, searching and paginating transaction records.
             </summary>
+            <param name="AccountId">Filter by a single account ID.</param>
+            <param name="AccountIds">Filter by multiple account IDs.</param>
+            <param name="Type">Filter by transaction type (e.g. 'deposit', 'withdrawal').</param>
+            <param name="IsPlanned">Optional filter on planned status: true for scheduled/planned transactions only, false for executed transactions only, or omit for all.</param>
+            <param name="FromDate">Start date filter (inclusive UTC).</param>
+            <param name="ToDate">End date filter (inclusive UTC).</param>
+            <param name="MinAmount">Minimum transaction amount filter.</param>
+            <param name="MaxAmount">Maximum transaction amount filter.</param>
+            <param name="SearchTerm">Search term matching description, type, or reference ID.</param>
+            <param name="SortBy">Sort column (e.g. 'createdAt' or 'amount'). Default: 'createdAt'.</param>
+            <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
+            <param name="Page">1-based page index. Default: 1.</param>
+            <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
         </member>
-        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.Boolean},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32)">
             <summary>
             Query parameters for filtering, searching and paginating transaction records.
             </summary>
+            <param name="AccountId">Filter by a single account ID.</param>
+            <param name="AccountIds">Filter by multiple account IDs.</param>
+            <param name="Type">Filter by transaction type (e.g. 'deposit', 'withdrawal').</param>
+            <param name="IsPlanned">Optional filter on planned status: true for scheduled/planned transactions only, false for executed transactions only, or omit for all.</param>
+            <param name="FromDate">Start date filter (inclusive UTC).</param>
+            <param name="ToDate">End date filter (inclusive UTC).</param>
+            <param name="MinAmount">Minimum transaction amount filter.</param>
+            <param name="MaxAmount">Maximum transaction amount filter.</param>
+            <param name="SearchTerm">Search term matching description, type, or reference ID.</param>
+            <param name="SortBy">Sort column (e.g. 'createdAt' or 'amount'). Default: 'createdAt'.</param>
+            <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
+            <param name="Page">1-based page index. Default: 1.</param>
+            <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.AccountId">
+            <summary>Filter by a single account ID.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.AccountIds">
+            <summary>Filter by multiple account IDs.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.Type">
+            <summary>Filter by transaction type (e.g. 'deposit', 'withdrawal').</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.IsPlanned">
+            <summary>Optional filter on planned status: true for scheduled/planned transactions only, false for executed transactions only, or omit for all.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.FromDate">
+            <summary>Start date filter (inclusive UTC).</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.ToDate">
+            <summary>End date filter (inclusive UTC).</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.MinAmount">
+            <summary>Minimum transaction amount filter.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.MaxAmount">
+            <summary>Maximum transaction amount filter.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.SearchTerm">
+            <summary>Search term matching description, type, or reference ID.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.SortBy">
+            <summary>Sort column (e.g. 'createdAt' or 'amount'). Default: 'createdAt'.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.SortOrder">
+            <summary>Sort direction ('asc' or 'desc'). Default: 'desc'.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.Page">
+            <summary>1-based page index. Default: 1.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.PageSize">
+            <summary>Page size limit (1 to 100). Default: 20.</summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.ToDomainParameters(System.Collections.Generic.IReadOnlyList{System.Int64})">
             <summary>

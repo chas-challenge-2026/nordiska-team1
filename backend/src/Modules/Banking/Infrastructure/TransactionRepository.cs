@@ -38,6 +38,11 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
             query = query.Where(l => l.Type.ToLower() == typeLower);
         }
 
+        if (parameters.IsPlanned.HasValue)
+        {
+            query = query.Where(l => l.IsPlanned == parameters.IsPlanned.Value);
+        }
+
         if (parameters.FromDate.HasValue)
         {
             query = query.Where(l => l.CreatedAt >= parameters.FromDate.Value);
