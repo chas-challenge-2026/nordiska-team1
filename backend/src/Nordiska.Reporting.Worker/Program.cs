@@ -10,6 +10,12 @@ string jsonPath = Path.Combine(
 
 string json = File.ReadAllText(jsonPath);
 
+string outputDirectory =
+    Environment.GetEnvironmentVariable("PDF_OUTPUT_DIRECTORY")
+    ?? AppContext.BaseDirectory;
+
+Directory.CreateDirectory(outputDirectory);
+
 GeneratedPdfBatch batch =
     service.GeneratePdfBatch(json);
 
@@ -18,7 +24,7 @@ int documentNumber = 1;
 foreach (KeyValuePair<string, byte[]> document in batch.Documents)
 {
     string path = Path.Combine(
-        AppContext.BaseDirectory,
+        outputDirectory,
         $"testfil-{documentNumber}.pdf");
 
     File.WriteAllBytes(
