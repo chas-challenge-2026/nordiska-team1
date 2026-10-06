@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
     <ProjectReference Include="..\BuildingBlocks\Database\Nordiska.BuildingBlocks.Database.csproj" />
+    <InternalsVisibleTo Include="Nordiska.Reporting.Worker.Tests" />
   </ItemGroup>
 
   <PropertyGroup>
