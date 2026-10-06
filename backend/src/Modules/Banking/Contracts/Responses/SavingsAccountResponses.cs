@@ -15,6 +15,7 @@ namespace Nordiska.Modules.Banking.Contracts.Responses;
 /// <param name="AccountName">Optional user-friendly nickname for the account.</param>
 /// <param name="UpdatedAt">Optional timestamp when the account details were last modified (UTC).</param>
 /// <param name="Status">The account status ("active" or "closed").</param>
+/// <param name="CurrencyCode">The account currency as a three-letter ISO 4217 code.</param>
 public record SavingsAccountResponse(
     long Id,
     long CustomerId,
@@ -25,7 +26,8 @@ public record SavingsAccountResponse(
     DateTime CreatedAt,
     string? AccountName = null,
     DateTime? UpdatedAt = null,
-    string Status = "active"
+    string Status = "active",
+    string CurrencyCode = "SEK"
 )
 {
     /// <summary>

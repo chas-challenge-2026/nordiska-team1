@@ -39,7 +39,8 @@ public static class BankingMappers
             acc.CreatedAt,
             acc.AccountName,
             acc.UpdatedAt,
-            acc.Status
+            acc.Status,
+            acc.CurrencyCode
         );
 
     public static AccountTypeConfig ToDomain(this CreateAccountTypeConfigRequest req)

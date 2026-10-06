@@ -58,6 +58,19 @@ public sealed class TaxReportConfiguration
             .IsRequired()
             .HasMaxLength(64);
 
+        builder.Property(x => x.ReportingStatus)
+            .IsRequired()
+            .HasMaxLength(30)
+            .HasDefaultValue("NotReported");
+
+        builder.Property(x => x.ReportedAt);
+
+        builder.Property(x => x.ReportingAuthority)
+            .HasMaxLength(100);
+
+        builder.Property(x => x.AuthorityReference)
+            .HasMaxLength(100);
+
         builder.HasIndex(x => new
             {
                 x.AccountId,

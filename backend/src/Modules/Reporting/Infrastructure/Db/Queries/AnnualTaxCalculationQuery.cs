@@ -60,31 +60,32 @@ public sealed class AnnualTaxCalculationQuery
                     {taxYear} AS "TaxYear",
 
                     COALESCE(
-                        SUM(t."AmountMinor")
+                        SUM(ROUND(t."Amount" * 100))
                         FILTER (WHERE t."Type" = 'interest'),
                         0
                     )::bigint AS "TotalInterestMinor",
 
                     COALESCE(
-                        SUM(ABS(t."AmountMinor"))
+                        SUM(ABS(ROUND(t."Amount" * 100)))
                         FILTER (WHERE t."Type" = 'tax'),
                         0
                     )::bigint AS "TaxDeductedMinor",
 
-                    a."Currency" AS "Currency",
+                    a."CurrencyCode" AS "Currency",
                     c."Name" AS "CustomerName",
                     a."AccountNumber" AS "AccountNumber",
-                    a."Name" AS "AccountName"
+                    COALESCE(a."AccountName", a."AccountType") AS "AccountName"
 
-                FROM banking."Accounts" a
+                FROM banking.savings_accounts a
 
-                JOIN banking."Customers" c
+                JOIN banking.customers c
                     ON c."Id" = a."CustomerId"
 
-                LEFT JOIN banking."Transactions" t
+                LEFT JOIN banking.ledger_entries t
                     ON t."AccountId" = a."Id"
-                    AND t."BookedAt" >= {yearStart}
-                    AND t."BookedAt" < {nextYearStart}
+                    AND NOT t."IsPlanned"
+                    AND t."CreatedAt" >= {yearStart}
+                    AND t."CreatedAt" < {nextYearStart}
 
                 WHERE
                     a."Id" = {accountId}
@@ -93,10 +94,11 @@ public sealed class AnnualTaxCalculationQuery
                 GROUP BY
                     c."Id",
                     a."Id",
-                    a."Currency",
+                    a."CurrencyCode",
                     c."Name",
                     a."AccountNumber",
-                    a."Name"
+                    a."AccountName",
+                    a."AccountType"
                 """)
             .SingleOrDefaultAsync(cancellationToken);
 

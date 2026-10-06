@@ -31,6 +31,7 @@ public sealed class TaxReport
         CreatedAt = createdAt;
         SchemaVersion = schemaVersion;
         PayloadHash = payloadHash;
+        ReportingStatus = "NotReported";
     }
 
     public long Id { get; private set; }
@@ -60,6 +61,14 @@ public sealed class TaxReport
 
     public string PayloadHash { get; private set; } = null!;
 
+    public string ReportingStatus { get; private set; } = "NotReported";
+
+    public DateTimeOffset? ReportedAt { get; private set; }
+
+    public string? ReportingAuthority { get; private set; }
+
+    public string? AuthorityReference { get; private set; }
+
     public static TaxReport Create(
         long customerId,
         long accountId,
@@ -87,5 +96,16 @@ public sealed class TaxReport
             createdAt,
             schemaVersion,
             payloadHash);
+    }
+
+    public void MarkReported(
+        string reportingAuthority,
+        string authorityReference,
+        DateTimeOffset reportedAt)
+    {
+        ReportingStatus = "Reported";
+        ReportingAuthority = reportingAuthority;
+        AuthorityReference = authorityReference;
+        ReportedAt = reportedAt;
     }
 }
