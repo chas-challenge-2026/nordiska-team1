@@ -986,6 +986,34 @@
             <response code="401">Unauthorized if not authenticated.</response>
             <response code="404">Document not found.</response>
         </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetPendingTerms(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all pending terms and condition updates requiring digital acceptance from the customer
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of pending terms awaiting acceptance.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.AcceptTerm(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Digitally accepts an updated term or condition, recording audit log and timestamp
+            </summary>
+            <param name="id">Unique identifier of the term to accept.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Term acceptance confirmed.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+            <response code="404">Term not found or not pending for this customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.PublishTerm(Nordiska.Modules.Inbox.Contracts.Requests.PublishTermRequest,System.Threading.CancellationToken)">
+            <summary>
+            Publishes a new version of general terms or policy, generating pending acceptance records for affected customers
+            </summary>
+            <param name="request">Payload containing code, version, title, and document ID.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Term published successfully.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if not staff or admin.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.AuditController">
             <summary>
             API endpoints for viewing and cryptographically verifying immutable audit logs.

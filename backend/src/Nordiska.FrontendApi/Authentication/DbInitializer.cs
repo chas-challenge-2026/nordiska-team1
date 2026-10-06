@@ -561,6 +561,24 @@ public class DbInitializer
 
             inboxDb.CustomerDocuments.AddRange(cd1, cd2, cd3);
             await inboxDb.SaveChangesAsync();
+
+            if (!await inboxDb.Terms.AnyAsync())
+            {
+                var term2026 = new Nordiska.Modules.Agreements.Domain.Term(
+                    code: "ALLMANNA_VILLKOR_2026",
+                    version: 2,
+                    title: "Allmänna kontovillkor 2026",
+                    documentId: doc3.Id,
+                    effectiveFrom: DateTimeOffset.UtcNow
+                );
+
+                inboxDb.Terms.Add(term2026);
+                await inboxDb.SaveChangesAsync();
+
+                var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term2026.Id, customerId);
+                inboxDb.TermAcceptances.Add(acceptance);
+                await inboxDb.SaveChangesAsync();
+            }
         }
     }
 }

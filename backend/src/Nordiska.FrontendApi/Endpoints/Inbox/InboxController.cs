@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.FrontendApi.Authentication.Claims;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Inbox.Application;
 using Nordiska.Modules.Inbox.Contracts.Requests;
 using Nordiska.Modules.Inbox.Contracts.Responses;
@@ -364,5 +365,77 @@ public sealed class InboxController(IInboxService service) : ControllerBase
         Response.Headers.Append("X-Document-Checksum-Valid", result.IsChecksumValid.ToString().ToLowerInvariant());
 
         return File(result.Content, result.MimeType, result.FileName);
+    }
+
+    /// <summary>
+    /// Retrieves all pending terms and condition updates requiring digital acceptance from the customer
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">List of pending terms awaiting acceptance.</response>
+    /// <response code="401">Unauthorized if not authenticated.</response>
+    [HttpGet("terms/pending")]
+    [ProducesResponseType(typeof(IReadOnlyList<PendingTermResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<PendingTermResponse>>> GetPendingTerms(
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var pendingTerms = await _service.GetPendingTermsAsync(customerId, cancellationToken);
+        return Ok(pendingTerms);
+    }
+
+    /// <summary>
+    /// Digitally accepts an updated term or condition, recording audit log and timestamp
+    /// </summary>
+    /// <param name="id">Unique identifier of the term to accept.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Term acceptance confirmed.</response>
+    /// <response code="401">Unauthorized if not authenticated.</response>
+    /// <response code="404">Term not found or not pending for this customer.</response>
+    [HttpPost("terms/{id:long}/accept")]
+    [AuditAction("TERMS_ACCEPT")]
+    [ProducesResponseType(typeof(TermAcceptanceResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TermAcceptanceResult>> AcceptTerm(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var result = await _service.AcceptTermAsync(customerId, id, cancellationToken);
+        if (!result.Success)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Villkor hittades inte",
+                Detail = result.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Publishes a new version of general terms or policy, generating pending acceptance records for affected customers
+    /// </summary>
+    /// <param name="request">Payload containing code, version, title, and document ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="201">Term published successfully.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden if not staff or admin.</response>
+    [HttpPost("terms/publish")]
+    [Authorize(Roles = "Admin,Staff")]
+    [AuditAction("TERMS_PUBLISH")]
+    [ProducesResponseType(typeof(TermResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<TermResponse>> PublishTerm(
+        [FromBody] PublishTermRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _service.PublishTermAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, response);
     }
 }
