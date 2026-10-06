@@ -46,6 +46,7 @@ COPY backend/src/BuildingBlocks/Database/*.csproj ./backend/src/BuildingBlocks/D
 COPY backend/src/Modules/Banking/*.csproj ./backend/src/Modules/Banking/
 COPY backend/src/Modules/Faq/*.csproj ./backend/src/Modules/Faq/
 COPY backend/src/Modules/Reporting/*.csproj ./backend/src/Modules/Reporting/
+COPY backend/src/Modules/Inbox/*.csproj ./backend/src/Modules/Inbox/
 
 RUN dotnet restore ./backend/src/Nordiska.FrontendApi/Nordiska.FrontendApi.csproj
 
