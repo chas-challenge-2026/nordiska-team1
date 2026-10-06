@@ -16,6 +16,8 @@ export interface Account {
     updatedAt: string;
     status: accountStatuses;
     type: AccountTypes;
+    accruedInterestYtd: number;
+    estimatedYearEndInterest: number;
 }
 
 export async function getAllAccounts(status?: accountStatuses): Promise<Account[]> {
