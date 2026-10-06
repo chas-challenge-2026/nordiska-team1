@@ -234,6 +234,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
             normalized.Category,
             normalized.Keywords,
             normalized.Lang ?? "sv",
+            normalized.RelationId,
             cancellationToken);
 
         return StatusCode(
@@ -272,6 +273,22 @@ public sealed class FaqController(FaqService service) : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("relation/{relationId:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(
+        typeof(IReadOnlyCollection<FaqEntryResponse>),
+        StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyCollection<FaqEntryResponse>>> GetByRelationId(
+        [FromRoute] Guid relationId,
+        CancellationToken cancellationToken)
+    {
+        var entries = await service.GetByRelationIdAsync(
+            relationId,
+            cancellationToken);
+
+        return Ok(entries);
     }
 
     /// <summary>

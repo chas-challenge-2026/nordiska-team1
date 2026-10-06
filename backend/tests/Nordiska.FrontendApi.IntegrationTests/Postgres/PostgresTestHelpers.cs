@@ -95,7 +95,7 @@ public static class PostgresTestData
         return client;
     }
 
-    // Everything in banking is DeleteBehavior.Restrict, so ledger entries go first, then accounts, then the customer
+    // Everything in banking is DeleteBehavior.Restrict, so ledger entries go first, then accounts and loans, then the customer
     public static async Task DeleteCustomersAsync(IServiceProvider services, IEnumerable<long> customerIds)
     {
         var ids = customerIds.ToList();
@@ -111,6 +111,7 @@ public static class PostgresTestData
 
         await db.LedgerEntries.Where(e => accountIds.Contains(e.AccountId)).ExecuteDeleteAsync();
         await db.SavingsAccounts.Where(a => accountIds.Contains(a.Id)).ExecuteDeleteAsync();
+        await db.Loans.Where(l => ids.Contains(l.CustomerId)).ExecuteDeleteAsync();
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Customer>>();
         foreach (var id in ids)

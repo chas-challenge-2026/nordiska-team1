@@ -95,6 +95,7 @@ export default function TransactionsPage() {
     const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
 
     const hasNextPage = transactions?.hasNextPage ?? false;
+    const hasPreviousPage = transactions?.hasPreviousPage ?? false;
 
     const totalCount = transactions?.totalCount ?? 0;
     const activeFilterCount = [filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length;
@@ -132,7 +133,7 @@ export default function TransactionsPage() {
     };
 
     return (
-        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 p-6 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
+        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 md:p-6 max-md:p-2 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
             <div className='hidden md:block'>
                 <TransactionFilter filters={filters} onChange={handleFiltersChange} onReset={handleFiltersReset} />
             </div>
@@ -144,7 +145,7 @@ export default function TransactionsPage() {
                     onChange={e => handleFiltersChange({ ...filters, search: e.target.value })}
                     placeholder={t("transactions-route.search")}
                     aria-label={t("transactions-route.search")}
-                    className='h-10 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm'
+                    className='bg-white h-10 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm'
                 />
                 <SheetTrigger
                     label={t("transactions-route.filter-aria", { count: activeFilterCount })}
@@ -163,12 +164,14 @@ export default function TransactionsPage() {
             </div>
 
             <TransactionTable
+                accounts={accounts ?? []}
                 transactions={transactions?.items ?? []}
                 totalCount={transactions?.totalCount ?? 0}
                 totalPages={transactions?.totalPages ?? 1}
                 emptyMessage={effectiveSelectedIds.length === 0 ? t("transactions-route.select-account") : t("transactions-route.no-transactions")}
                 page={page}
                 hasNextPage={hasNextPage}
+                hasPreviousPage={hasPreviousPage}
                 isPlaceholderData={isPlaceholderData}
                 onPageChange={setPage}
                 isLoading={transactionsLoading || accountsLoading}

@@ -513,11 +513,48 @@ public class TestOperationalMessageRepository : IOperationalMessageRepository
     }
 }
 
+// Anna (customer 1) has loan 1, Erik (customer 2) has loan 2
+public class TestLoanRepository : ILoanRepository
+{
+    private static readonly List<Loan> _store = new()
+    {
+        CreateLoan(1, 1, 50000m),
+        CreateLoan(2, 2, 80000m)
+    };
+
+    // Id has a private setter since EF is the one that normally sets it
+    private static Loan CreateLoan(long id, long customerId, decimal principal)
+    {
+        var loan = new Loan(customerId, $"LN-TEST-{id}", LoanType.Personal, principal, 0.0675m, DateOnly.FromDateTime(DateTime.UtcNow));
+        typeof(Loan).GetProperty(nameof(Loan.Id))!.SetValue(loan, id);
+        return loan;
+    }
+
+    public Task<IEnumerable<Loan>> GetAllAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<Loan>>(_store.ToList());
+
+    public Task<IEnumerable<Loan>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<Loan>>(_store.Where(l => l.CustomerId == customerId).ToList());
+
+    public Task<Loan?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
+
+    public Task CreateWithPayoutAsync(Loan loan, LedgerEntry payout, SavingsAccount account, CancellationToken cancellationToken = default)
+    {
+        _store.Add(loan);
+        return Task.CompletedTask;
+    }
+
+    public Task AddRepaymentAsync(Loan loan, LedgerEntry repayment, SavingsAccount account, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
+}
+
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Tests share one factory per class, so raise the limits to keep rate limiting out of the way (NOR-70)
+        builder.UseSetting("ConnectionStrings:DefaultConnection", "Host=localhost;Database=test;Username=postgres;Password=postgres");
         builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
         builder.UseSetting("RateLimiting:Transactions:PermitLimit", "10000");
 
@@ -540,6 +577,9 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IOperationalMessageRepository>();
             services.AddScoped<IOperationalMessageRepository, TestOperationalMessageRepository>();
+
+            services.RemoveAll<ILoanRepository>();
+            services.AddScoped<ILoanRepository, TestLoanRepository>();
         });
     }
 }

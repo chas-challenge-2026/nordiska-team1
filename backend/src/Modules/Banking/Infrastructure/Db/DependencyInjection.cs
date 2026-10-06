@@ -52,6 +52,15 @@ public static class DependencyInjection
 
         services.AddScoped<IPolicyRateService, PolicyRateService>();
 
+        services.AddOptions<LoanOptions>()
+            .Bind(configuration.GetSection(LoanOptions.SectionName))
+            .Validate(o => o.MinAmount > 0 && o.MinAmount <= o.MaxAmount, "Loans:MinAmount must be greater than zero and not above Loans:MaxAmount.")
+            .Validate(o => o.MinTermMonths > 0 && o.MinTermMonths <= o.MaxTermMonths, "Loans:MinTermMonths must be greater than zero and not above Loans:MaxTermMonths.")
+            .ValidateOnStart();
+
+        services.AddScoped<ILoanRepository, LoanRepository>();
+        services.AddScoped<ILoanService, LoanService>();
+
         return services;
     }
 }

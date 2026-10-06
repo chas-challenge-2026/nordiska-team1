@@ -439,6 +439,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.Property<long>("CustomerId")
                         .HasColumnType("bigint");
 
+                    b.Property<DateOnly>("InterestAccruedThrough")
+                        .HasColumnType("date");
+
                     b.Property<decimal>("InterestRate")
                         .HasPrecision(9, 6)
                         .HasColumnType("numeric(9,6)");

@@ -121,4 +121,25 @@ public static class BankingMappers
             msg.CreatedAt,
             msg.UpdatedAt
         );
+
+    // Interest is not booked on the loan until the next repayment, so it's calculated here for display
+    public static LoanResponse ToResponse(this Loan loan, DateOnly asOf)
+    {
+        var accruedInterest = loan.CalculateAccruedInterest(asOf);
+
+        return new(
+            loan.Id,
+            loan.CustomerId,
+            loan.LoanNumber,
+            loan.Type.ToString().ToLowerInvariant(),
+            loan.PrincipalAmount,
+            loan.OutstandingAmount + accruedInterest,
+            accruedInterest,
+            loan.InterestRate,
+            loan.Currency,
+            loan.Status.ToString().ToLowerInvariant(),
+            loan.OpenedAt,
+            loan.MaturityDate
+        );
+    }
 }

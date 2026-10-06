@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useUserStore } from "../store/userStore";
 import { useLogout } from "./useLogout";
 import { useTranslation } from "react-i18next";
-import { refreshSession } from "../services/authService";
+import { refreshSession } from "../services/sessionsService";
 
 const INACTIVITY_TIME = 3 * 60 * 1000; // 3 min
 const WARNING_TIME = 2 * 60 * 1000; // 2 min

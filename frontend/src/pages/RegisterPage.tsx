@@ -38,6 +38,19 @@ export default function RegisterPage() {
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [formError, setFormError] = useState("");
 
+    function handleFieldChange(field: keyof FieldErrors, setter: (value: string) => void) {
+        return (value: string) => {
+            setter(value);
+            setFormError("");
+            setFieldErrors((prev) => {
+                if (!(field in prev)) return prev;
+                const next = {...prev};
+                delete next[field];
+                return next
+            })
+        }
+    }
+
     function validate(): FieldErrors {
         const errors: FieldErrors = {};
         const trimmedName = name.trim();
@@ -143,7 +156,7 @@ export default function RegisterPage() {
                                 placeholder={t("forms.placeholder") + t("register-route.name")}
                                 value={name}
                                 required
-                                onChange={setName}
+                                onChange={handleFieldChange("name", setName)}
                                 error={fieldErrors.name}
                             />
                             <InputField
@@ -153,7 +166,7 @@ export default function RegisterPage() {
                                 placeholder={t("forms.placeholder") + t("forms.email")}
                                 value={email}
                                 required
-                                onChange={setEmail}
+                                onChange={handleFieldChange("email", setEmail)}
                                 error={fieldErrors.email}
                             />
                             <InputField
@@ -163,7 +176,7 @@ export default function RegisterPage() {
                                 placeholder={t("register-route.personal-num-placeholder")}
                                 value={personalNum}
                                 required
-                                onChange={setPersonalNum}
+                                onChange={handleFieldChange("personalNum", setPersonalNum)}
                                 error={fieldErrors.personalNum}
                             />
                             <InputField
@@ -172,8 +185,7 @@ export default function RegisterPage() {
                                 label={t("forms.phone")}
                                 placeholder="07xxxxxxxx"
                                 value={phoneNumber}
-                                required
-                                onChange={setPhoneNumber}
+                                onChange={handleFieldChange("phoneNumber", setPhoneNumber)}
                                 error={fieldErrors.phoneNumber}
                             />
 
