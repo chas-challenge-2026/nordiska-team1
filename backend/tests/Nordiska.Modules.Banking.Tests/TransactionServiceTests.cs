@@ -91,6 +91,11 @@ public class TransactionServiceTests
                 q = q.Where(l => l.Type.ToLowerInvariant() == typeLower);
             }
 
+            if (parameters.IsPlanned.HasValue)
+            {
+                q = q.Where(l => l.IsPlanned == parameters.IsPlanned.Value);
+            }
+
             if (parameters.FromDate.HasValue)
             {
                 q = q.Where(l => l.CreatedAt >= parameters.FromDate.Value);
@@ -258,6 +263,36 @@ public class TransactionServiceTests
         Assert.Single(res.Items);
         Assert.Equal(3, res.Items.First().Id);
         Assert.Equal(200, res.Items.First().Amount);
+    }
+
+    [Fact]
+    public async Task QueryPaged_WithIsPlannedFilter_FiltersPlannedAndExecutedTransactionsCorrectly()
+    {
+        var seed = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100, IsPlanned = false, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 2, AccountId = 1, Type = "withdrawal", Amount = -50, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(5), CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 3, AccountId = 1, Type = "deposit", Amount = 500, IsPlanned = false, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 4, AccountId = 1, Type = "withdrawal", Amount = -200, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(10), CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seed);
+        var accRepo = new FakeSavingsRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        // 1. Filter only planned transactions
+        var plannedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: true));
+        Assert.Equal(2, plannedResult.Items.Count);
+        Assert.All(plannedResult.Items, item => Assert.True(item.IsPlanned));
+
+        // 2. Filter only executed (non-planned) transactions
+        var executedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: false));
+        Assert.Equal(2, executedResult.Items.Count);
+        Assert.All(executedResult.Items, item => Assert.False(item.IsPlanned));
+
+        // 3. Filter without isPlanned parameter (returns all)
+        var allResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }));
+        Assert.Equal(4, allResult.Items.Count);
     }
 
     [Fact]
