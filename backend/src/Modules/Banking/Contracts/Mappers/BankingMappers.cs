@@ -45,7 +45,8 @@ public static class BankingMappers
             acc.UpdatedAt,
             acc.Status,
             accruedInterestYtd,
-            estimatedYearEndInterest
+            estimatedYearEndInterest,
+            acc.IsFavorite
         );
 
     public static AccountTypeConfig ToDomain(this CreateAccountTypeConfigRequest req)

@@ -13,6 +13,7 @@ public sealed class SavingsAccount
     public decimal Balance { get; set; }
     public decimal InterestRate { get; set; }
     public string Status { get; set; } = "active";
+    public bool IsFavorite { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 

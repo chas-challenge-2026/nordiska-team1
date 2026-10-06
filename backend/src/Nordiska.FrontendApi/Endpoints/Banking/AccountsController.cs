@@ -14,6 +14,7 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 [ApiController]
 [Route("api/accounts")]
 [Route("api/savingsaccounts")]
+[Route("api/savings-accounts")]
 [Tags("Accounts")]
 [Authorize]
 public class AccountsController : ControllerBase
@@ -26,22 +27,27 @@ public class AccountsController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves bank accounts. Non-admin users only receive their own accounts. Optionally filters by account type.
+    /// Retrieves bank accounts. Non-admin users only receive their own accounts. Optionally filters by account type, status, or favorite status.
     /// </summary>
     /// <param name="type">Optional account type filter (e.g., 'saving', 'standard', 'flex', 'fix', 'premium').</param>
-    /// <param name="status">Optional account status filter ('active' or 'closed')</param>
+    /// <param name="status">Optional account status filter ('active' or 'closed').</param>
+    /// <param name="isFavorite">Optional favorite filter (true for favorites only, false for non-favorites).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">List of bank accounts.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<SavingsAccountResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<SavingsAccountResponse>>> GetAll([FromQuery] string? type,[FromQuery] string? status, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<SavingsAccountResponse>>> GetAll(
+        [FromQuery] string? type,
+        [FromQuery] string? status,
+        [FromQuery] bool? isFavorite,
+        CancellationToken cancellationToken)
     {
         // Filter in the query so other customers' accounts never leave the database
         var results = User.IsAdmin()
-            ? await _service.GetAllAsync(cancellationToken)
-            : await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), cancellationToken);
+            ? await _service.GetAllAsync(isFavorite, cancellationToken)
+            : await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), isFavorite, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(type))
         {
@@ -106,6 +112,38 @@ public class AccountsController : ControllerBase
 
         var created = await _service.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>
+    /// Updates the favorite status of a bank account. A customer can have at most 4 active favorite accounts.
+    /// </summary>
+    /// <param name="id">The unique identifier of the bank account.</param>
+    /// <param name="request">Payload specifying whether the account should be marked as favorite.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Account favorite status successfully updated.</response>
+    /// <response code="400">Maximum favorite limit reached (max 4 favorite accounts allowed).</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="404">Account not found or does not belong to the authenticated customer.</response>
+    [HttpPatch("{id}/favorite")]
+    [HttpPut("{id}/favorite")]
+    [HttpPost("{id}/favorite")]
+    [ProducesResponseType(typeof(SavingsAccountResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SavingsAccountResponse>> SetFavorite(
+        long id,
+        [FromBody] SetAccountFavoriteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var existing = await _service.GetByIdAsync(id, cancellationToken);
+        if (existing is null || !User.CanAccessCustomer(existing.CustomerId))
+        {
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Bank account not found." });
+        }
+
+        var updated = await _service.SetFavoriteAsync(id, existing.CustomerId, request.IsFavorite, cancellationToken);
+        return Ok(updated);
     }
 
     /// <summary>

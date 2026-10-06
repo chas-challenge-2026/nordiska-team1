@@ -219,6 +219,9 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
+    public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
     public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
     {
         entity.Id = _next++;

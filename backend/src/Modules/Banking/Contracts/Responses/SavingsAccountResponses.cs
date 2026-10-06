@@ -27,7 +27,8 @@ public record SavingsAccountResponse(
     DateTime? UpdatedAt = null,
     string Status = "active",
     decimal AccruedInterestYtd = 0m,
-    decimal EstimatedYearEndInterest = 0m
+    decimal EstimatedYearEndInterest = 0m,
+    bool IsFavorite = false
 )
 {
     /// <summary>

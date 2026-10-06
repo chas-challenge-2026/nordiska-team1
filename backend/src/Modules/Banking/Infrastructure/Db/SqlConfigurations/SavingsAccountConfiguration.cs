@@ -40,6 +40,10 @@ public sealed class SavingsAccountConfiguration
             .HasMaxLength(20)
             .HasDefaultValue("active");
 
+        builder.Property(x => x.IsFavorite)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasIndex(x => x.AccountNumber)
             .IsUnique();
 
