@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <poll.h>
 
 /*---------------------INTERNAL----------------------_*/
 
@@ -42,9 +43,8 @@ static void send_error_response(int client_fd, signer_protocol_status_t status) 
 }
 /*--------------------------------------------------------*/
 
-
-int signer_server_run(pdf_signer_t* signer) {
-  if (!signer) {
+int signer_server_run(pdf_signer_t* signer, int shutdown_fd) {
+  if (!signer || shutdown_fd < 0) {
     return 1;
   }
 
@@ -75,9 +75,39 @@ int signer_server_run(pdf_signer_t* signer) {
 
   printf("Signer service listening on %s\n", addr.sun_path);
 
+  struct pollfd fds[2];
+
+  fds[0].fd     = fd;
+  fds[0].events = POLLIN;
+
+  fds[1].fd     = shutdown_fd;
+  fds[1].events = POLLIN;
+
   for (;;) {
+    int poll_result = poll(fds, 2, -1);
+
+    if (poll_result < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      perror("poll");
+      break;
+    }
+
+    if (fds[1].revents & POLLIN) {
+      break;
+    }
+
+    if (!(fds[0].revents & POLLIN)) {
+      continue;
+    }
+
     int client_fd = accept(fd, NULL, NULL);
+
     if (client_fd < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
       perror("accept");
       break;
     }
