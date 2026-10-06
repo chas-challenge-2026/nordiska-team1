@@ -1,245 +1,239 @@
-
+using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-
+using System.IO;
 namespace Nordiska.Modules.Reporting.PdfGeneration;
 
-
-
-public sealed record GeneratedPdfBatch(ulong CustomerId, IReadOnlyDictionary<string, byte[]> Documents);
+public sealed record GeneratedPdfBatch(
+    ulong CustomerId,
+    IReadOnlyDictionary<string, byte[]> Documents);
 
 /*
- * Marshaller = translates data between native memory to managed (.NET) objects
+ * Marshaller = translates data between native memory and managed (.NET) objects.
  */
 internal static unsafe class NativeBatchMarshaller
 {
-    internal static GeneratedPdfBatch Copy(NativePdfBatchView batch)
+    /* Copies and returns batched PDF bytes. */
+    internal static GeneratedPdfBatch Copy(
+        NativePdfBatchView batch)
     {
-        // Returned documents converted to integer
+        ValidateBatch(batch);
+
+        // Returned document count converted to an integer.
         int docCount = (int)batch.DocumentCount;
 
-        // will hold document id and pdf bytes
-        var docs = new Dictionary<string, byte[]>(); //todo kolla bättre val
+        // Will hold each document ID and its PDF bytes.
+        var docs = new Dictionary<string, byte[]>(
+            docCount,
+            StringComparer.Ordinal);
 
-        // processes each document per docCount (returned by native)
+        // Processes each document returned by native code.
         for (int i = 0; i < docCount; i++)
         {
-            
-            NativePdfDocumentView nativeDoc = batch.Documents[i];
-            
-            // converts the document id (utf-8) into a c# string
-            string documentId = Marshal.PtrToStringUTF8((nint)nativeDoc.DocumentId)!;
+            NativePdfDocumentView nativeDoc =
+                batch.Documents[i];
 
-            // copies the bytes into a c# byte array
-            byte[] pdfBytes = new ReadOnlySpan<byte>(nativeDoc.Bytes, (int)nativeDoc.Length).ToArray();
+            // Converts the UTF-8 document ID into a C# string.
+            string documentId =
+                Marshal.PtrToStringUTF8(
+                    (nint)nativeDoc.DocumentId)!;
 
-            // stores the copied bytes
+            /*
+             * Copies the bytes into a C# byte array.
+             * We do not want to rely on the C++ pointer because
+             * its memory is released when the callback returns.
+             */
+            byte[] pdfBytes =
+                new ReadOnlySpan<byte>(
+                    nativeDoc.Bytes,
+                    (int)nativeDoc.Length)
+                .ToArray();
+
+            // Stores the document ID and copied PDF bytes.
             docs.Add(documentId, pdfBytes);
         }
 
-        return new GeneratedPdfBatch(batch.CustomerId, docs);
+        return new GeneratedPdfBatch(
+            batch.CustomerId,
+            docs);
+    }
+
+    internal static void ValidateBatch(NativePdfBatchView batch)
+    {
+        if (batch.DocumentCount == 0)
+        {
+            throw new InvalidDataException(
+                "Native batch contains no documents.");
+        }
+
+        if (batch.DocumentCount > (nuint)int.MaxValue)
+        {
+            throw new InvalidDataException(
+                "Native batch contains too many documents.");
+        }
+
+        if (batch.Documents == null)
+        {
+            throw new InvalidDataException(
+                "Native batch documents are null.");
+        }
     }
 }
 
+// holds the result returned by the native callback.
+internal sealed class NativeCallbackState
+{
+    internal GeneratedPdfBatch? Result { get; set; }
 
+    internal Exception? Failure { get; set; }
+}
 
-
-
-
-
-
-
-
-
-/*
-    Callback metoden som c++ koden behöver. 
-    C++ metoden:
-    const int callback_status = callback(
-    reinterpret_cast<const uint8_t*>(bytes.data()), // PDF-datans adress
-    bytes.size(),                                  // Antal byte
-    index,                                         // Dokumentets index
-    callback_context                               // Ditt GCHandle-token
-);
-
-
-*/
-
-//  p/invoke koden hålls i en managed wrapper enligt Microsofts rekommendationer. 
 internal static unsafe class NativeGenerateCallback
 {
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    internal static int Recieve(byte* bytes, nuint len, nuint docIndex, nint ctx)
+    internal static int Receive(
+        NativePdfBatchView* batch,
+        nint context)
     {
-        ReportGenerationState? state = null;
+        NativeCallbackState? state = null;
+
         try
         {
-            state = (ReportGenerationState)GCHandle.FromIntPtr(ctx).Target!;
-            lock (state.ThreadSyncronizer)
-            {
-                state.Doc = new ReadOnlySpan<byte>(bytes, (int)len).ToArray();
-            }
+            // gets the callback state from the GCHandle token.
+            state =
+                (NativeCallbackState)
+                GCHandle.FromIntPtr(context).Target!;
+
+            // copies the returned native PDFs into managed memory.
+            state.Result =
+                NativeBatchMarshaller.Copy(*batch);
+
+            // tells native code that the callback succeeded.
             return 0;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            if (state != null)
+            // saves the error so it can be thrown after native code returns.
+            if (state is not null)
             {
-                lock (state.ThreadSyncronizer)
-                {
-                    state.Failed = ex;
-                }
+                state.Failure ??= exception;
             }
 
+            // tells native code that the callback failed.
             return 1;
         }
     }
 }
 
-
-/*
-    Detta är en wrapper klass som hålls kvar i minnet utanför garbage collectorns grepp.
-    Den innehåller både resultatet av genereringen, och kan även innehålla mer info om hur långt i processen den är osv!
-    Iom att vi håller kvar denna i minnet sen, kan vi ha runtime uppdatering till användaren potentiellt!
-
-*/
-internal sealed class ReportGenerationState
+public sealed class PdfGenerationService
 {
-    internal string Status { get; set; } = "Pending";
-    internal int CompletedPages { get; set; }
-    internal DateTimeOffset StartedAt { get; } = DateTimeOffset.UtcNow;
-    internal DateTimeOffset? FinishedAt { get; set; }
-    internal object ThreadSyncronizer { get; } = new object();
-    internal int MaxDocBytes { get; }
-    internal byte[]? Doc;
-    internal Exception? Failed = null;
-    internal ReportGenerationState(int maxDocBytes)
+    private static readonly UTF8Encoding Utf8 = new(false, true);
+
+    public unsafe GeneratedPdfBatch GeneratePdfBatch(string json)
     {
-        MaxDocBytes = maxDocBytes;
-    }
-}
+        // Calculates how many UTF-8 bytes the JSON requires.
+        int byteCount = Utf8.GetByteCount(json);
 
-
-
-public class PdfGenerationService
-{
-
-    private static readonly UTF8Encoding Utf8 = new(false, true); //TODO
-
-    public static string GetNativeVersion()
-    {
-        nint versionPointer = NativeMethods.Version();
-
-        return Marshal.PtrToStringAnsi(versionPointer)
-            ?? throw new InvalidOperationException("Native version returned null.");
-    }
-
-    /*
-        .NET Garbage collector (GC) flyttar inte stora objekt (large object heaps (alla objekt större än ca 85kb)).
-        Vilket innebär att vi kommer löpa risk för något som kallas
-        external fragmentation (specifikt LOH Fragmentation). Kortfattat
-        får vi stora luckor i minnet när stora objekt rensas av GC. 
-
-        För att förhindra detta har jag satt en gräns på antal bytes som
-        ett objekt får ta upp i heap minnet. Om json datan tar upp för mycket plats
-        kommer vi använda en ArrayPool som istället återanvänder samma array som sparats (i samband med arraypoolen tidigare)
-        i heap minnet. Så istället för att vi måste skapa nya minnesområden för nya stora objekt, kan vi istället
-        ta referensen till förgående skapade objekt och skriva det nya objektet till dess allokerade minnesområde (om minnet tillåter).
-
-        
-        Vinsten vi får är:
-        1. GC behöver inte allokera stora block i minnet på nya minnesplatser hela tiden
-        2. Risken för stora tomma luckor mellan objekt i LOH minskar, eftersom färre stora objekt skapas och tas bort 
-    */
-    private static bool ShouldRentMemory(int limit) => limit > 1000;
-
-    public unsafe byte[] Generate(string json)
-    {
-
-        int byteCount = Encoding.UTF8.GetByteCount(json);
-        bool shouldRent = ShouldRentMemory(byteCount);
-        byte[] jsonBytes = shouldRent ? ArrayPool<byte>.Shared.Rent(byteCount) : new byte[byteCount];
-
-        // 64 Mb (tillfälligt)
-        int maxBytes = 64_000_000;
-        // vår state som håller både progress och även response efter genereringen
-        var state = new ReportGenerationState(maxBytes);
-        // skyddar state från GC av uppenbara skäl
-        GCHandle gcCtx = default;
+        // Rents a reusable byte array for the JSON.
+        byte[] jsonBuffer =
+            ArrayPool<byte>.Shared.Rent(byteCount);
 
         try
         {
+            // Writes the JSON into the rented byte array.
+            int writtenBytes = Utf8.GetBytes(
+                json.AsSpan(),
+                jsonBuffer.AsSpan());
 
-            int bufferedBytes = Encoding.UTF8.GetBytes(json, 0, json.Length, jsonBytes, 0);
-            // GC skyddade bytes för error meddelande
-            Span<byte> errorBytes = stackalloc byte[1024];
-            gcCtx = GCHandle.Alloc(state, GCHandleType.Normal);
-            NativeStatus response;
+            // Holds the result returned by the native callback.
+            var state = new NativeCallbackState();
 
+            // Keeps the callback state alive while native code uses it.
+            GCHandle context = GCHandle.Alloc(state, GCHandleType.Normal);
 
-            fixed (byte* jsonPounter = jsonBytes)
-            fixed (byte* errorPointer = errorBytes)
+            try
             {
+                NativeStatus status;
 
-                response = NativeMethods.Generate(
-                    jsonPounter,
-                    (nuint)bufferedBytes,
-                    &NativeGenerateCallback.Recieve,
-                    GCHandle.ToIntPtr(gcCtx),
-                    errorPointer,
-                    (nuint)errorBytes.Length);
+                /*
+                 * Prevents the garbage collector from moving the JSON
+                 * array while native code uses its pointer.
+                 */
+                fixed (byte* jsonPointer = jsonBuffer)
+                {
+                    status =
+                        NativeMethods.GenerateCustomerBatch(
+                            jsonPointer,
+                            (nuint)writtenBytes,
+                            &NativeGenerateCallback.Receive,
+                            GCHandle.ToIntPtr(context));
+                }
 
+                // Copies the native error before making another native call.
+                string nativeError =
+                    status == NativeStatus.Ok
+                        ? string.Empty
+                        : ReadNativeUtf8(
+                            NativeMethods.GetLastError());
+
+                // Throws an exception that happened inside the callback.
+                if (state.Failure is not null)
+                {
+                    throw new InvalidOperationException(
+                        "The native callback could not copy the PDFs.",
+                        state.Failure);
+                }
+
+                // Throws when native PDF generation failed.
+                if (status != NativeStatus.Ok)
+                {
+                    string statusName =
+                        ReadNativeUtf8(
+                            NativeMethods.StatusName(
+                                (int)status));
+
+                    throw new InvalidOperationException(
+                        $"Native PDF generation failed with " +
+                        $"{statusName} ({(int)status}): " +
+                        $"{nativeError}");
+                }
+
+                // Returns the PDFs copied by the callback.
+                return state.Result
+                    ?? throw new InvalidOperationException(
+                        "Native PDF generation returned no result.");
             }
-
-            lock (state.ThreadSyncronizer)
+            finally
             {
-                if (state.Failed != null)
+                // Releases the handle that kept the callback state alive.
+                if (context.IsAllocated)
                 {
-                    throw new InvalidOperationException("Callback failed", state.Failed);
+                    context.Free();
                 }
-
-                if (response != NativeStatus.Ok)
-                {
-                    int end = errorBytes.IndexOf((byte)0);
-                    string msg = Encoding.UTF8.GetString(end < 0 ? errorBytes : errorBytes[..end]);
-                    throw new InvalidOperationException($"Error from Native: {msg}");
-                }
-
-                return state.Doc ?? throw new InvalidOperationException("No PDF returned!"); //TODO bättre felmeddelanden
             }
         }
-
         finally
         {
-            // frigör resurserna så GC kan rensa 
-            if (gcCtx.IsAllocated) gcCtx.Free();
-            if (shouldRent)
-            {
-                ArrayPool<byte>.Shared.Return(jsonBytes, clearArray: true);
-            }
+            // Clears the JSON data and returns the array to the pool.
+            ArrayPool<byte>.Shared.Return(
+                jsonBuffer,
+                clearArray: true);
+        }
+    }
+
+    // Converts a null-terminated native UTF-8 string into a C# string.
+    private static unsafe string ReadNativeUtf8(
+        byte* pointer)
+    {
+        if (pointer == null)
+        {
+            return string.Empty;
         }
 
-
-    }
-
-
-    private static byte[] EncodeJson(string json)
-    {
-        // the native method needs json in bytes so first we convert it
-        return Encoding.UTF8.GetBytes(json);
+        return Marshal.PtrToStringUTF8((nint)pointer)
+            ?? string.Empty;
     }
 }
-
-
-
-
-/*
-   "fixed" ensures that the GC doesnt move or remove the
-   pointer.
-
-   During runtime the json bytes will be saved to the heap memory as
-   one "managed object". 
-
-*/

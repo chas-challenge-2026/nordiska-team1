@@ -1,23 +1,32 @@
 using Nordiska.Modules.Reporting.PdfGeneration;
 
+var service = new PdfGenerationService();
 
-PdfGenerationService service = new();
-Console.WriteLine($"starting");
+Console.WriteLine("Starting");
 
-var jsonPath = Path.Combine(
+string jsonPath = Path.Combine(
     AppContext.BaseDirectory,
-    "sample-input-huge.json"
-);
-//nu
-string jsonhuge = File.ReadAllText(jsonPath);
+    "sample-input-huge.json");
 
-byte[] pdf = service.Generate(jsonhuge);
+string json = File.ReadAllText(jsonPath);
 
-string path = Path.Combine(AppContext.BaseDirectory, "testfil.pdf");
+GeneratedPdfBatch batch =
+    service.GeneratePdfBatch(json);
 
-File.WriteAllBytes(path, pdf);
+int documentNumber = 1;
 
-Console.WriteLine($"PDF at: {path}");
+foreach (KeyValuePair<string, byte[]> document in batch.Documents)
+{
+    string path = Path.Combine(
+        AppContext.BaseDirectory,
+        $"testfil-{documentNumber}.pdf");
 
+    File.WriteAllBytes(
+        path,
+        document.Value);
 
+    Console.WriteLine(
+        $"PDF {document.Key} at: {path}");
 
+    documentNumber++;
+}
