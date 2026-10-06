@@ -1,5 +1,4 @@
 using System.Data;
-using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Domain;
@@ -7,155 +6,96 @@ using Nordiska.Modules.Reporting.Infrastructure.Db;
 
 namespace Nordiska.Modules.Reporting.Infrastructure;
 
-public sealed class TaxReportJobRepository(ReportingDbContext db)
+public sealed class TaxReportJobRepository
     : ITaxReportJobRepository
 {
-    public async Task CreateAsync(
-        TaxReportJob job,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(job);
+    private readonly ReportingDbContext _dbContext;
 
-        db.TaxReportJobs.Add(job);
-        await db.SaveChangesAsync(cancellationToken);
+    public TaxReportJobRepository(
+        ReportingDbContext dbContext)
+    {
+        _dbContext = dbContext;
     }
 
-    public Task<TaxReportJob?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
+    public async Task<ClaimedTaxReportJob?> ClaimNextAsync(
+        string workerId,
+        DateTimeOffset now,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
     {
-        return db.TaxReportJobs
-            .SingleOrDefaultAsync(job => job.Id == id, cancellationToken);
-    }
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync(
+                IsolationLevel.ReadCommitted,
+                cancellationToken);
 
-    public Task<TaxReportJob?> GetActiveAsync(
-        long customerId,
-        long accountId,
-        int year,
-        CancellationToken cancellationToken = default)
-    {
-        return db.TaxReportJobs
-            .AsNoTracking()
-            .Where(job => job.CustomerId == customerId
-                && job.AccountId == accountId
-                && job.Year == year
-                && (job.Status == "Pending" || job.Status == "Processing"))
-            .OrderByDescending(job => job.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async Task<TaxReportJob?> ClaimNextPendingAsync(
-        CancellationToken cancellationToken = default)
-    {
-        var connection = db.Database.GetDbConnection();
-        var openedHere = connection.State == ConnectionState.Closed;
-        if (openedHere)
-        {
-            await connection.OpenAsync(cancellationToken);
-        }
-
-        try
-        {
-            await using var command = connection.CreateCommand();
-            command.CommandText = """
-                WITH next_job AS (
-                    SELECT "Id"
+        List<TaxReportJob> jobs =
+            await _dbContext.TaxReportJobs
+                .FromSqlInterpolated($"""
+                    SELECT *
                     FROM reporting.tax_report_jobs
-                    WHERE "Status" = 'Pending'
+                    WHERE
+                        (
+                            "Status" = {TaxReportJobStatuses.Pending}
+                            AND "AvailableAt" <= {now}
+                        )
+                        OR
+                        (
+                            "Status" = {TaxReportJobStatuses.Processing}
+                            AND "LeaseExpiresAt" <= {now}
+                        )
                     ORDER BY "CreatedAt", "Id"
                     FOR UPDATE SKIP LOCKED
                     LIMIT 1
-                ), claimed AS (
-                    UPDATE reporting.tax_report_jobs AS job
-                    SET "Status" = 'Processing',
-                        "StartedAt" = NOW(),
-                        "UpdatedAt" = NOW()
-                    FROM next_job
-                    WHERE job."Id" = next_job."Id"
-                    RETURNING job.*
-                )
-                SELECT * FROM claimed
-                """;
+                    """)
+                .ToListAsync(cancellationToken);
 
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            return !await reader.ReadAsync(cancellationToken)
-                ? null
-                : ReadJob(reader);
-        }
-        finally
-        {
-            if (openedHere)
-            {
-                await connection.CloseAsync();
-            }
-        }
-    }
+        TaxReportJob? job = jobs.SingleOrDefault();
 
-    public async Task<int> RequeueStaleProcessingAsync(
-        TimeSpan staleAfter,
-        CancellationToken cancellationToken = default)
-    {
-        if (staleAfter <= TimeSpan.Zero)
+        if (job is null)
         {
-            throw new ArgumentOutOfRangeException(nameof(staleAfter));
+            await transaction.CommitAsync(cancellationToken);
+            return null;
         }
 
-        var cutoff = DateTime.UtcNow - staleAfter;
+        job.Claim(
+            workerId,
+            now,
+            leaseDuration);
 
-        return await db.Database.ExecuteSqlInterpolatedAsync($"""
-            UPDATE reporting.tax_report_jobs
-            SET "Status" = 'Pending',
-                "StartedAt" = NULL,
-                "UpdatedAt" = NOW()
-            WHERE "Status" = 'Processing'
-              AND "StartedAt" < {cutoff}
-            """, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return new ClaimedTaxReportJob(
+            job.Id,
+            job.TaxReportId,
+            job.AttemptCount);
     }
 
-    public async Task UpdateAsync(
-        TaxReportJob job,
-        CancellationToken cancellationToken = default)
+    public async Task MarkFailedAsync(
+        long jobId,
+        string workerId,
+        string error,
+        DateTimeOffset failedAt,
+        TimeSpan retryDelay,
+        int maximumAttempts,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(job);
+        TaxReportJob job =
+            await _dbContext.TaxReportJobs.SingleAsync(
+                candidate =>
+                    candidate.Id == jobId &&
+                    candidate.Status ==
+                        TaxReportJobStatuses.Processing &&
+                    candidate.LockedBy == workerId,
+                cancellationToken);
 
-        db.TaxReportJobs.Update(job);
-        await db.SaveChangesAsync(cancellationToken);
-    }
+        job.MarkFailed(
+            workerId,
+            error,
+            failedAt,
+            retryDelay,
+            maximumAttempts);
 
-    private static TaxReportJob ReadJob(DbDataReader reader)
-    {
-        return new TaxReportJob
-        {
-            Id = reader.GetGuid(reader.GetOrdinal("Id")),
-            CustomerId = reader.GetInt64(reader.GetOrdinal("CustomerId")),
-            AccountId = reader.GetInt64(reader.GetOrdinal("AccountId")),
-            Year = reader.GetInt32(reader.GetOrdinal("Year")),
-            Status = reader.GetString(reader.GetOrdinal("Status")),
-            DownloadUrl = ReadNullableString(reader, "DownloadUrl"),
-            ErrorCode = ReadNullableInt(reader, "ErrorCode"),
-            ErrorMessage = ReadNullableString(reader, "ErrorMessage"),
-            CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
-            StartedAt = ReadNullableDateTime(reader, "StartedAt"),
-            CompletedAt = ReadNullableDateTime(reader, "CompletedAt"),
-            UpdatedAt = reader.GetDateTime(reader.GetOrdinal("UpdatedAt"))
-        };
-    }
-
-    private static string? ReadNullableString(DbDataReader reader, string name)
-    {
-        var ordinal = reader.GetOrdinal(name);
-        return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-    }
-
-    private static int? ReadNullableInt(DbDataReader reader, string name)
-    {
-        var ordinal = reader.GetOrdinal(name);
-        return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
-    }
-
-    private static DateTime? ReadNullableDateTime(DbDataReader reader, string name)
-    {
-        var ordinal = reader.GetOrdinal(name);
-        return reader.IsDBNull(ordinal) ? null : reader.GetDateTime(ordinal);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

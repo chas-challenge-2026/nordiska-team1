@@ -102,6 +102,7 @@ public class SavingsAccountServiceTests
         Assert.Equal(req.InitialDeposit, created.Balance);
         Assert.Equal("standard", created.AccountType);
         Assert.Equal(0.025m, created.InterestRate);
+        Assert.Equal("SEK", created.CurrencyCode);
     }
 
     [Fact]

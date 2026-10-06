@@ -24,6 +24,11 @@ public sealed class SavingsAccountConfiguration
             .IsRequired()
             .HasMaxLength(50);
 
+        builder.Property(x => x.CurrencyCode)
+            .IsRequired()
+            .HasMaxLength(3)
+            .HasDefaultValue("SEK");
+
         builder.Property(x => x.Balance)
             .IsRequired()
             .HasPrecision(18, 2);

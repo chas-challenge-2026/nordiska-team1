@@ -44,6 +44,7 @@ public static class BankingMappers
             acc.AccountName,
             acc.UpdatedAt,
             acc.Status,
+            acc.CurrencyCode,
             accruedInterestYtd,
             estimatedYearEndInterest
         );
@@ -122,12 +123,11 @@ public static class BankingMappers
             msg.UpdatedAt
         );
 
-    // Interest is not booked on the loan until the next repayment, so it's calculated here for display
     public static LoanResponse ToResponse(this Loan loan, DateOnly asOf)
     {
-        var accruedInterest = loan.CalculateAccruedInterest(asOf);
+        decimal accruedInterest = loan.CalculateAccruedInterest(asOf);
 
-        return new(
+        return new LoanResponse(
             loan.Id,
             loan.CustomerId,
             loan.LoanNumber,
@@ -139,7 +139,6 @@ public static class BankingMappers
             loan.Currency,
             loan.Status.ToString().ToLowerInvariant(),
             loan.OpenedAt,
-            loan.MaturityDate
-        );
+            loan.MaturityDate);
     }
 }
