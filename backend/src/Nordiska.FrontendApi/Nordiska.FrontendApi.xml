@@ -706,6 +706,63 @@
             <response code="200">The current policy rate and the date it took effect.</response>
             <response code="503">The Riksbank couldn't be reached and there is no earlier rate to fall back on.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.LoansController">
+            <summary>
+            API endpoints for customer loans.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves loans. Non-admin users only receive their own loans.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of loans.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a loan by its identifier.
+            </summary>
+            <remarks>
+            The outstanding amount includes interest accrued up to today.
+            </remarks>
+            <param name="id">The unique identifier of the loan.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Returns the loan.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Loan was not found or does not belong to the authenticated customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.Apply(Nordiska.Modules.Banking.Contracts.Requests.ApplyForLoanRequest,System.Threading.CancellationToken)">
+            <summary>
+            Applies for a personal loan for the authenticated customer.
+            </summary>
+            <remarks>
+            The loan is approved right away and paid out to the given account. The interest rate is the Riksbank policy rate plus a margin.
+            </remarks>
+            <param name="request">Payload containing amount, termMonths and payoutAccountId.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Loan created and paid out.</response>
+            <response code="400">Amount or term outside the allowed limits.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Payout account not found or does not belong to the authenticated customer.</response>
+            <response code="409">Payout account is closed or the total personal loan debt would be too high.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.Repay(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.RepayLoanRequest,System.Threading.CancellationToken)">
+            <summary>
+            Repays part of or the whole loan from one of the customer's accounts.
+            </summary>
+            <remarks>
+            Interest accrued up to today is added to the loan before the repayment is subtracted. The loan is marked repaid when nothing is left.
+            </remarks>
+            <param name="id">The unique identifier of the loan.</param>
+            <param name="request">Payload containing amount and fromAccountId.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Repayment registered, returns the updated loan.</response>
+            <response code="400">Invalid repayment request data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Loan or account not found or does not belong to the authenticated customer.</response>
+            <response code="409">Loan is not active, the amount exceeds what is owed or the account has insufficient funds.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController">
             <summary>
             API endpoints for viewing and managing operational messages, system alerts, and header banners.

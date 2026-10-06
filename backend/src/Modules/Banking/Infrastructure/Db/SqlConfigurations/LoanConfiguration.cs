@@ -53,6 +53,10 @@ public sealed class LoanConfiguration : IEntityTypeConfiguration<Loan>
         builder.Property(x => x.MaturityDate)
             .HasColumnType("date");
 
+        builder.Property(x => x.InterestAccruedThrough)
+            .HasColumnType("date")
+            .IsRequired();
+
         builder.HasIndex(x => x.LoanNumber)
             .IsUnique();
 
