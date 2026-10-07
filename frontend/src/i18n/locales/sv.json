@@ -296,16 +296,23 @@
         "add-account": {
             "heading": "Lägg till nytt konto",
             "help-text": "Kontot sparas bland dina mottagare och fylls i direkt i överföringen.",
+            "required-hint": "Fält markerade med * är obligatoriska.",
             "type-label": "Kontotyp",
-            "type-placeholder": "Bankkonto, Bankgiro eller Plusgiro",
+            "type-placeholder": "Välj kontotyp",
+            "type-personal": "Personkonto",
+            "type-bgpg": "Bankgiro/Plusgiro",
             "clearing-label": "Clearingnummer",
-            "clearing-placeholder": "4 siffror",
+            "clearing-placeholder": "4–5 siffror",
             "number-label": "Kontonummer",
-            "number-placeholder": "Utan bindestreck",
+            "number-placeholder": "7–10 siffror",
+            "bgpg-label": "Bankgiro-/Plusgironummer",
+            "bgpg-placeholder": "2–8 siffror",
             "name-label": "Namn på mottagaren",
             "name-placeholder": "T.ex. Olle Persson",
-            "default-type": "Bankkonto",
-            "default-name": "Nytt konto"
+            "error-required": "Obligatoriskt fält",
+            "error-clearing": "Ange 4–5 siffror",
+            "error-number": "Ange 7–10 siffror",
+            "error-bgpg": "Ange 2–8 siffror"
         },
         "modal": {
             "from-title": "Välj konto",

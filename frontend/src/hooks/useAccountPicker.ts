@@ -115,22 +115,13 @@ export function useAccountPicker({
     };
 
     const handleSaveAdd = (values: NewAccountValues) => {
-        const resolvedType =
-            values.type.trim() || t("page-transfer.add-account.default-type");
-        const kind = /giro/i.test(resolvedType) ? "bg" : "bank";
-        const meta = [
-            resolvedType,
-            [values.clearing, values.number].filter(Boolean).join(", "),
-        ]
-            .filter(Boolean)
-            .join(" ")
-            .trim();
+        const isBgPg = values.type === "bgpg";
         const account = addAccount({
-            kind,
-            name:
-                values.name.trim() ||
-                t("page-transfer.add-account.default-name"),
-            meta,
+            kind: isBgPg ? "bg" : "bank",
+            name: values.name,
+            meta: isBgPg
+                ? values.number
+                : `${values.clearing}, ${values.number}`,
         });
         setToId(account.id);
         handleCloseModal();

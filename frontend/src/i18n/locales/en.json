@@ -300,16 +300,23 @@
         "add-account": {
             "heading": "Add new account",
             "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
+            "required-hint": "Fields marked with * are required.",
             "type-label": "Account type",
-            "type-placeholder": "Bank account, Bankgiro or Plusgiro",
+            "type-placeholder": "Select account type",
+            "type-personal": "Personal account",
+            "type-bgpg": "Bankgiro/Plusgiro",
             "clearing-label": "Clearing number",
-            "clearing-placeholder": "4 digits",
+            "clearing-placeholder": "4–5 digits",
             "number-label": "Account number",
-            "number-placeholder": "Without dashes",
+            "number-placeholder": "7–10 digits",
+            "bgpg-label": "Bankgiro/Plusgiro number",
+            "bgpg-placeholder": "2–8 digits",
             "name-label": "Recipient name",
             "name-placeholder": "E.g. Olle Persson",
-            "default-type": "Bank account",
-            "default-name": "New account"
+            "error-required": "Required field",
+            "error-clearing": "Enter 4–5 digits",
+            "error-number": "Enter 7–10 digits",
+            "error-bgpg": "Enter 2–8 digits"
         },
         "modal": {
             "from-title": "Choose Account",
