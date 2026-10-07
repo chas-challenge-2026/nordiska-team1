@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useArchivedDocuments, useDownloadInboxDocument } from "../../hooks/useInbox";
 import { formatDate } from "../../utils/date";
 import PagePagination from "../PagePagination";
@@ -13,6 +14,7 @@ const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) {
+    const { t } = useTranslation();
     const [year, setYear] = useState<number | undefined>(undefined);
     const documents = useArchivedDocuments(page, 10, year);
     const download = useDownloadInboxDocument();
@@ -21,12 +23,14 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
     return (
         <div className="bg-white shadow-card">
             <div className="bg-dark-navy px-4 py-3 text-white">
-                <span className="block text-xs uppercase text-light-blue-accent">Archive</span>
-                <h2 className="font-bold">Documents</h2>
+                <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.archive")}</span>
+                <h2 className="font-bold">{t("inbox.documents")}</h2>
             </div>
 
             <div className="flex items-center gap-2 p-4">
-                <label htmlFor="doc-year" className="text-xs font-semibold uppercase text-secondary">Year</label>
+                <label htmlFor="doc-year" className="text-xs font-semibold uppercase text-secondary">
+                    {t("inbox.documents-tab.year")}
+                </label>
                 <select
                     id="doc-year"
                     value={year ?? ""}
@@ -36,30 +40,32 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
                     }}
                     className="border border-secondary p-2"
                 >
-                    <option value="">All years</option>
+                    <option value="">{t("inbox.documents-tab.all-years")}</option>
                     {years.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
             </div>
 
-            {documents.isPending && <p role="status" className="px-4 py-3 text-secondary">Loading...</p>}
+            {documents.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("inbox.loading")}</p>}
 
             {documents.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">Could not load documents.</span>
+                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
                     <button type="button" onClick={() => documents.refetch()} className="cursor-pointer text-primary-blue underline">
-                        Try again
+                        {t("inbox.try-again")}
                     </button>
                 </div>
             )}
 
-            {data && data.items.length === 0 && <p className="px-4 py-3 text-secondary">No documents.</p>}
+            {data && data.items.length === 0 && (
+                <p className="px-4 py-3 text-secondary">{t("inbox.empty.documents")}</p>
+            )}
 
-            {download.isError && <p role="alert" className="px-4 py-2 text-error">Could not download document.</p>}
+            {download.isError && <p role="alert" className="px-4 py-2 text-error">{t("inbox.error.action")}</p>}
 
             {data && data.items.length > 0 && (
                 <ul>
                     {data.items.map((doc) => {
-                        const name = doc.title ?? doc.fileName ?? "(untitled)";
+                        const name = doc.title ?? doc.fileName ?? t("inbox.untitled");
                         const downloading = download.isPending && download.variables === doc.documentId;
                         return (
                             <li
@@ -73,7 +79,7 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
                                             .join(" · ")}
                                     </span>
                                     <span className="block break-words">
-                                        {!doc.hasBeenOpened && <span className="sr-only">New: </span>}
+                                        {!doc.hasBeenOpened && <span className="sr-only">{t("inbox.new-prefix")}</span>}
                                         {name}
                                     </span>
                                 </span>
@@ -81,10 +87,10 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
                                     type="button"
                                     className={btn}
                                     disabled={download.isPending}
-                                    aria-label={`Download ${name}`}
+                                    aria-label={t("inbox.download-aria", { name })}
                                     onClick={() => download.mutate(doc.documentId)}
                                 >
-                                    {downloading ? "Downloading..." : "Download"}
+                                    {downloading ? t("inbox.downloading") : t("inbox.download")}
                                 </button>
                             </li>
                         );

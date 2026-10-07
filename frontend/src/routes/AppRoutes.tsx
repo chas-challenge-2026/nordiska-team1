@@ -25,6 +25,7 @@ import FaqAdmin from "../pages/admin/faq/Faq";
 import CreateAndUpdateFaq from "../pages/admin/faq/CreateAndUpdateFaq";
 import EditFaq from "../pages/admin/faq/EditFaq";
 import DeleteFaq from "../pages/admin/faq/DeleteFaq";
+import AdminInbox from "../pages/admin/inbox/AdminInbox";
 
 export default function AppRoutes() {
     return (
@@ -64,6 +65,7 @@ export default function AppRoutes() {
                         <Route path="edit/form" element={<CreateAndUpdateFaq />} />
                         <Route path="delete" element={<DeleteFaq />} />
                     </Route>
+                    <Route path="inbox" element={<AdminInbox />} />
                 </Route>
             </Route>
         </Routes>
