@@ -27,5 +27,32 @@ services:
       timeout: 5s
       retries: 12
 
+  pdf-signer:
+    build:
+      context: ../..
+      dockerfile: native/pdf-signer/docker/Dockerfile.service
+    restart: unless-stopped
+    environment:
+      PDF_SIGNER_PKCS11_PROVIDER: pkcs11
+      PDF_SIGNER_PKCS11_MODULE: /usr/lib/softhsm/libsofthsm2.so
+      PDF_SIGNER_PKCS11_URI: "pkcs11:token=key-load-dev;object=pdf-signer-test;type=private"
+      PDF_SIGNER_CERT_PATH: /app/tests/data/signing_cert.pem
+      PDF_SIGNER_TSA_CERT_PATH: /app/tests/data/tsa_cert.pem
+      PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
+      PDF_SIGNER_TSA_URL: http://127.0.0.1:8081/
+    volumes:
+      - pdf_signer_socket:/run/pdf-signer
+    secrets:
+      - pdf_signer_pkcs11_pin
+      - pdf_signer_pkcs11_so_pin
+
 volumes:
   postgres_v2_data:
+  pdf_signer_socket:
+
+secrets:
+  pdf_signer_pkcs11_pin:
+    file: ../../secrets/pdf_signer_pkcs11_pin.txt
+
+  pdf_signer_pkcs11_so_pin:
+    file: ../../secrets/pdf_signer_pkcs11_so_pin.txt
