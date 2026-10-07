@@ -79,6 +79,20 @@ public class SavingsAccountService : ISavingsAccountService
                 .Where(t => t.CreatedAt < yearStartDate)
                 .Sum(t => t.Amount);
 
+            // Fallback: If an account has a balance but no ledger transaction records,
+            // calculate interest from the account's creation date (or Jan 1 if opened before current year)
+            if (txList.Count == 0 && acc.Balance > 0)
+            {
+                if (acc.CreatedAt < yearStartDate)
+                {
+                    openingBalance = acc.Balance;
+                }
+                else
+                {
+                    txList.Add((acc.Balance, acc.CreatedAt));
+                }
+            }
+
             IEnumerable<(decimal Rate, DateTime EffectiveFromUtc, DateTime? EffectiveToUtc)>? rateHistory = null;
             if (_accountTypeConfigRepo != null && !string.IsNullOrWhiteSpace(acc.AccountType))
             {
@@ -166,7 +180,7 @@ public class SavingsAccountService : ISavingsAccountService
 
         _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}, initialDeposit={InitialDeposit}) for customer {CustomerId}", 
             entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, request.InitialDeposit, entity.CustomerId);
-        return entity.ToResponse();
+        return await MapWithInterestAsync(entity, cancellationToken);
     }
 
     private static string NormalizeAccountType(string? rawType)
