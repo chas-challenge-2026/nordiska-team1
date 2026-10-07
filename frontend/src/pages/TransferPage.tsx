@@ -11,10 +11,14 @@ import {
     todayIso,
     shouldSimulateFailure,
     toPlannedDateIso,
-    addOneMonthIso,
+    addRepeatIso,
+    parseCustomDays,
+    toRepeating,
+    repeatingLabel,
     toOwnAccount,
     SIMULATED_TRANSFER_DELAY_MS,
 } from "../components/transfer/transferHelpers";
+import type { RepeatInterval } from "../components/transfer/transferHelpers";
 import type { OwnAccount } from "../constants/transferAccounts";
 import { useGetAccounts } from "../hooks/useAccounts";
 import { useTransferFunds } from "../hooks/useTransactions";
@@ -41,6 +45,8 @@ export default function TransferPage() {
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
     const [recurring, setRecurring] = useState(false);
+    const [repeatInterval, setRepeatInterval] = useState<RepeatInterval>("month");
+    const [customDays, setCustomDays] = useState("");
     const [step, setStep] = useState<Step>("form");
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
@@ -57,27 +63,46 @@ export default function TransferPage() {
     const over = !!fromAccount && amountValue > fromAccount.balance;
     const isExternal = !!toAccount && !toAccount.own;
 
-    const canSubmit = !!fromAccount && !!toAccount && amountValue > 0 && !over;
+    const customDaysValue = parseCustomDays(customDays);
+    const customDaysError =
+        recurring &&
+        repeatInterval === "custom" &&
+        customDays.trim() !== "" &&
+        customDaysValue === null
+            ? t("page-transfer.custom-days-error")
+            : undefined;
+    // undefined = inte återkommande, eller eget intervall utan giltigt antal dagar.
+    const repeating = recurring
+        ? toRepeating(repeatInterval, customDaysValue)
+        : undefined;
+
+    const canSubmit =
+        !!fromAccount &&
+        !!toAccount &&
+        amountValue > 0 &&
+        !over &&
+        (!recurring || repeating !== undefined);
 
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
     const doneSummary = toAccount
         ? t(
-            recurring
+            repeating
                 ? "page-transfer.done.summary-recurring"
                 : "page-transfer.done.summary",
             {
                 amount: formatSek(amountValue),
                 name: toAccount.name,
                 date,
+                interval: repeating ? repeatingLabel(repeating, t) : "",
             },
         )
         : "";
 
     const commitLocalPlanned = () => {
         if (!toAccount) return;
-        const note = recurring
-            ? t("page-transfer.recurring-label")
+        const note = repeating
+            ? repeatingLabel(repeating, t)
             : t("page-transfer.planned.note-to", { name: toAccount.name });
         addLocalPlanned({
             date,
@@ -119,7 +144,7 @@ export default function TransferPage() {
                 plannedDate: toPlannedDateIso(date),
                 label,
                 targetAccountId: Number(toAccount.id),
-                repeating: recurring ? "month" : undefined,
+                repeating,
             })
                 .then(() => handleReset())
                 .catch(() => {
@@ -141,17 +166,17 @@ export default function TransferPage() {
             })
             .then(() => {
                 setTransferPhase("success");
-                if (recurring) {
-                    // Dagens överföring är redan gjord — lägg nästa månads
+                if (repeating) {
+                    // Dagens överföring är redan gjord — lägg nästa
                     // tillfälle i planerade överföringar.
                     createPlanned({
                         accountId: Number(fromAccount.id),
                         type: "Withdraw",
                         amount: amountValue,
-                        plannedDate: toPlannedDateIso(addOneMonthIso(date)),
+                        plannedDate: toPlannedDateIso(addRepeatIso(date, repeating)),
                         label,
                         targetAccountId: Number(toAccount.id),
-                        repeating: "month",
+                        repeating,
                     })
                         .catch(() => {
                             // Dagens överföring lyckades ändå — låt success-sidan stå kvar.
@@ -176,6 +201,8 @@ export default function TransferPage() {
         setAmount("");
         setDate(todayIso());
         setRecurring(false);
+        setRepeatInterval("month");
+        setCustomDays("");
         closeAll();
         setStep("form");
         setTransferPhase("processing");
@@ -199,6 +226,11 @@ export default function TransferPage() {
                             onDateChange={setDate}
                             recurring={recurring}
                             onRecurringChange={setRecurring}
+                            repeatInterval={repeatInterval}
+                            onRepeatIntervalChange={setRepeatInterval}
+                            customDays={customDays}
+                            onCustomDaysChange={setCustomDays}
+                            customDaysError={customDaysError}
                             name={name}
                             onNameChange={setName}
                             isExternal={isExternal}

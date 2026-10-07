@@ -285,9 +285,19 @@
         "amount-suffix": "sek",
         "amount-error": "Belopp överstiger saldo på {{account}}",
         "date-label": "Överföringsdatum",
-        "recurring-label": "Återkommande varje månad",
+        "recurring-label": "Återkommande",
+        "interval-label": "Intervall",
+        "custom-days-label": "Antal dagar mellan",
+        "custom-days-placeholder": "1–{{max}}",
+        "custom-days-suffix": "dagar",
+        "custom-days-error": "Ange 1–365 dagar",
         "repeating": {
-            "month": "Månadsvis"
+            "week": "Veckovis",
+            "month": "Månadsvis",
+            "year": "Årsvis",
+            "custom": "Eget intervall",
+            "days_one": "Varje dag",
+            "days_other": "Med {{count}} dagars intervall"
         },
         "cta-submit-internal": "Bekräfta överföring",
         "cta-submit-external": "Bekräfta med BankID",
@@ -336,7 +346,7 @@
             "processing": "Överföringen behandlas...",
             "heading": "Överföringen är genomförd",
             "summary": "{{amount}} sek till {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
+            "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · {{interval}}",
             "new-transfer": "Ny överföring",
             "failure-heading": "Överföring misslyckades",
             "back-to-transfers": "Tillbaka till överföringar"

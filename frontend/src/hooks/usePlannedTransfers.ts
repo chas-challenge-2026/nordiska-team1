@@ -2,7 +2,11 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PlannedTransfer } from "../constants/transferAccounts";
 import type { EditPlannedError } from "../components/transfer/PlannedTransferActionsModal";
-import { todayIso, toPlannedDateIso } from "../components/transfer/transferHelpers";
+import {
+    todayIso,
+    toPlannedDateIso,
+    repeatingLabel,
+} from "../components/transfer/transferHelpers";
 import {
     useTransactions,
     useCreatePlannedTransaction,
@@ -31,10 +35,7 @@ export function usePlannedTransfers() {
                     backendId: tx.id,
                     date: (tx.plannedDate ?? tx.createdAt).slice(0, 10),
                     name: tx.label?.trim() || t("page-transfer.default-name"),
-                    note:
-                        tx.repeating === "month"
-                            ? t("page-transfer.repeating.month")
-                            : (tx.repeating ?? ""),
+                    note: tx.repeating ? repeatingLabel(tx.repeating, t) : "",
                     sum: tx.amount,
                     accountId: tx.accountId,
                     targetAccountId: tx.targetAccountId,

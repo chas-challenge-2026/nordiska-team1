@@ -289,9 +289,19 @@
         "amount-suffix": "sek",
         "amount-error": "Amount exceeds the balance on {{account}}",
         "date-label": "Transfer date",
-        "recurring-label": "Recurring every month",
+        "recurring-label": "Recurring",
+        "interval-label": "Interval",
+        "custom-days-label": "Days between",
+        "custom-days-placeholder": "1–{{max}}",
+        "custom-days-suffix": "days",
+        "custom-days-error": "Enter 1–365 days",
         "repeating": {
-            "month": "Monthly"
+            "week": "Weekly",
+            "month": "Monthly",
+            "year": "Yearly",
+            "custom": "Custom interval",
+            "days_one": "Every day",
+            "days_other": "Every {{count}} days"
         },
         "cta-submit-internal": "Confirm transfer",
         "cta-submit-external": "Confirm with BankID",
@@ -340,7 +350,7 @@
             "processing": "Processing the transfer...",
             "heading": "The transfer is complete",
             "summary": "{{amount}} sek to {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
+            "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · {{interval}}",
             "new-transfer": "New transfer",
             "failure-heading": "Transfer failed",
             "back-to-transfers": "Back to transfers"
