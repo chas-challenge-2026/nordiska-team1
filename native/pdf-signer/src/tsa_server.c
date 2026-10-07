@@ -11,19 +11,27 @@
 #include <openssl/objects.h>
 #include <stdint.h>
 #include <limits.h>
+#include <stdatomic.h>
 
 
 /*-------------------INTERNAL-------------------------*/
-
+typedef struct
+{
+  TS_RESP_CTX* response_ctx;
+} tsa_worker_t;
 
 struct tsa_server
 {
   key_loader_t* key_loader;
   key_handle_t  key;
   cert_handle_t cert;
-  TS_RESP_CTX*  response_ctx;
-  uint64_t      next_serial;
+
+  tsa_worker_t* workers;
+  size_t        worker_count;
+
+  atomic_uint_fast64_t next_serial;
 };
+
 
 static key_secret_result_t tsa_secret_callback(key_secret_kind_t kind, const key_spec_t* spec,
                                                unsigned char* buffer, size_t buffer_len,
@@ -60,19 +68,73 @@ static ASN1_INTEGER* tsa_serial_callback(TS_RESP_CTX* ctx, void* data) {
     return NULL;
   }
 
+  uint64_t serial_value = atomic_fetch_add(&server->next_serial, 1);
+
   ASN1_INTEGER* serial = ASN1_INTEGER_new();
   if (!serial) {
     return NULL;
   }
 
-  if (ASN1_INTEGER_set_uint64(serial, server->next_serial) != 1) {
+  if (ASN1_INTEGER_set_uint64(serial, serial_value) != 1) {
     ASN1_INTEGER_free(serial);
     return NULL;
   }
 
-  server->next_serial++;
-
   return serial;
+}
+
+static int tsa_worker_init(tsa_server_t* server, tsa_worker_t* worker) {
+  if (!server || !worker) {
+    return 0;
+  }
+
+  worker->response_ctx = TS_RESP_CTX_new();
+  if (!worker->response_ctx) {
+    return 0;
+  }
+
+  TS_RESP_CTX_set_serial_cb(worker->response_ctx, tsa_serial_callback, server);
+
+  if (TS_RESP_CTX_set_signer_cert(worker->response_ctx, server->cert.certificate) != 1) {
+    return 0;
+  }
+
+  if (TS_RESP_CTX_set_signer_key(worker->response_ctx, server->key.pkey) != 1) {
+    return 0;
+  }
+
+  if (TS_RESP_CTX_set_signer_digest(worker->response_ctx, EVP_sha256()) != 1) {
+    return 0;
+  }
+
+  ASN1_OBJECT* policy = OBJ_txt2obj("1.3.6.1.4.1.55555.1.1", 1);
+
+  if (!policy) {
+    return 0;
+  }
+
+  int policy_result = TS_RESP_CTX_set_def_policy(worker->response_ctx, policy);
+
+  ASN1_OBJECT_free(policy);
+
+  if (policy_result != 1) {
+    return 0;
+  }
+
+  if (TS_RESP_CTX_add_md(worker->response_ctx, EVP_sha256()) != 1) {
+    return 0;
+  }
+
+  return 1;
+}
+
+static void tsa_worker_destroy(tsa_worker_t* worker) {
+  if (!worker) {
+    return;
+  }
+
+  TS_RESP_CTX_free(worker->response_ctx);
+  worker->response_ctx = NULL;
 }
 /*--------------------------------------------------*/
 
@@ -87,6 +149,7 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
   if (!server) {
     return TSA_SERVER_INTERNAL_ERROR;
   }
+  atomic_init(&server->next_serial, 1);
 
   key_loader_config_t loader_config = {
       .pkcs11_enabled       = true,
@@ -133,50 +196,20 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
     return TSA_SERVER_CERTIFICATE_ERROR;
   }
 
-  server->response_ctx = TS_RESP_CTX_new();
+  server->worker_count = 8;
 
-  if (!server->response_ctx) {
+  server->workers = calloc(server->worker_count, sizeof(*server->workers));
+
+  if (!server->workers) {
     tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
+    return TSA_SERVER_INTERNAL_ERROR;
   }
 
-  server->next_serial = 1;
-
-  TS_RESP_CTX_set_serial_cb(server->response_ctx, tsa_serial_callback, server);
-
-  if (TS_RESP_CTX_set_signer_cert(server->response_ctx, server->cert.certificate) != 1) {
-    tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
-  }
-
-  if (TS_RESP_CTX_set_signer_key(server->response_ctx, server->key.pkey) != 1) {
-    tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
-  }
-
-  if (TS_RESP_CTX_set_signer_digest(server->response_ctx, EVP_sha256()) != 1) {
-    tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
-  }
-
-  ASN1_OBJECT* policy = OBJ_txt2obj("1.3.6.1.4.1.55555.1.1", 1);
-
-  if (!policy) {
-    tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
-  }
-
-  if (TS_RESP_CTX_set_def_policy(server->response_ctx, policy) != 1) {
-    ASN1_OBJECT_free(policy);
-    tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
-  }
-
-  ASN1_OBJECT_free(policy);
-
-  if (TS_RESP_CTX_add_md(server->response_ctx, EVP_sha256()) != 1) {
-    tsa_server_destroy(server);
-    return TSA_SERVER_CONTEXT_ERROR;
+  for (size_t i = 0; i < server->worker_count; i++) {
+    if (!tsa_worker_init(server, &server->workers[i])) {
+      tsa_server_destroy(server);
+      return TSA_SERVER_CONTEXT_ERROR;
+    }
   }
 
   *out = server;
@@ -184,11 +217,13 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
   return TSA_SERVER_OK;
 }
 
-tsa_server_status_t tsa_server_create_response(tsa_server_t*        server,
+tsa_server_status_t tsa_server_create_response(tsa_server_t* server, size_t worker_index,
                                                const unsigned char* request_der,
                                                size_t               request_der_len,
                                                tsa_server_result_t* result) {
-  if (!server || !request_der || request_der_len == 0 || !result) {
+
+  if (!server || worker_index >= server->worker_count || !request_der || request_der_len == 0 ||
+      !result) {
     return TSA_SERVER_INVALID_ARGUMENT;
   }
 
@@ -205,7 +240,9 @@ tsa_server_status_t tsa_server_create_response(tsa_server_t*        server,
     return TSA_SERVER_CONTEXT_ERROR;
   }
 
-  TS_RESP* response = TS_RESP_create_response(server->response_ctx, request_bio);
+  TS_RESP* response =
+      TS_RESP_create_response(server->workers[worker_index].response_ctx, request_bio);
+
 
   BIO_free(request_bio);
 
@@ -259,8 +296,13 @@ void tsa_server_destroy(tsa_server_t* server) {
     return;
   }
 
-  TS_RESP_CTX_free(server->response_ctx);
-  server->response_ctx = NULL;
+  for (size_t i = 0; i < server->worker_count; i++) {
+    tsa_worker_destroy(&server->workers[i]);
+  }
+
+  free(server->workers);
+  server->workers      = NULL;
+  server->worker_count = 0;
 
   cert_dispose(&server->cert);
   key_dispose(&server->key);

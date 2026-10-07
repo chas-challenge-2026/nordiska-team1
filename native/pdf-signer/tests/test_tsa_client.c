@@ -18,6 +18,11 @@ static const tsa_config_t test_config = {
     .timeout_ms = 5000,
 };
 
+tsa_config_t config = {
+    .url        = "http://127.0.0.1:8080/",
+    .timeout_ms = 5000,
+};
+
 static int test_tsa_invalid_arguments(void) {
   unsigned char signature[256] = {0};
   tsa_result_t  result         = {0};

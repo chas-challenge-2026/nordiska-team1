@@ -21,7 +21,7 @@ typedef struct
 } tsa_server_result_t;
 
 tsa_server_status_t tsa_server_create(tsa_server_t** out);
-tsa_server_status_t tsa_server_create_response(tsa_server_t*        server,
+tsa_server_status_t tsa_server_create_response(tsa_server_t* server, size_t worker_index,
                                                const unsigned char* request_der,
                                                size_t request_der_len, tsa_server_result_t* result);
 
