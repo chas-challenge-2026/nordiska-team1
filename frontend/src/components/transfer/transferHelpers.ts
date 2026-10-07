@@ -1,4 +1,5 @@
-import type { TransferAccount } from "../../constants/transferAccounts";
+import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
+import type { Account } from "../../services/accountsService";
 
 // Ingen backend än — simulerar överföringen med en fördröjning. Skriv "fail"
 // i notisfältet för att medvetet trigga ett misslyckande under test. Byt ut
@@ -40,4 +41,16 @@ export function addOneMonthIso(dateStr: string) {
 export function matchesSearch(account: TransferAccount, query: string) {
     if (!query) return true;
     return `${account.name} ${account.meta}`.toLowerCase().includes(query);
+}
+
+export function toOwnAccount(account: Account): OwnAccount {
+    return {
+        id: String(account.id),
+        own: true,
+        type: account.accountType,
+        number: account.accountNumber,
+        name: account.accountName?.trim() || account.accountType,
+        meta: `${account.accountType} ${account.accountNumber}`,
+        balance: account.balance,
+    };
 }

@@ -3,34 +3,23 @@ import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
 import TransferModals from "../components/transfer/TransferModals";
-import type { ModalKind } from "../components/transfer/TransferModals";
-import type { AccountPickerGroup } from "../components/modals/AccountPickerModal";
-import type { NewAccountValues } from "../components/modals/AddAccountForm";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase } from "../components/TransferDone";
 import {
     formatSek,
     parseAmount,
     todayIso,
-    matchesSearch,
     shouldSimulateFailure,
     toPlannedDateIso,
     addOneMonthIso,
+    toOwnAccount,
     SIMULATED_TRANSFER_DELAY_MS,
 } from "../components/transfer/transferHelpers";
-import {
-    BG_PG_PAYEES,
-    BANK_PAYEES,
-    FAVORITE_ACCOUNT_IDS,
-} from "../constants/transferAccounts";
-import type {
-    OwnAccount,
-    Payee,
-    TransferAccount,
-} from "../constants/transferAccounts";
+import type { OwnAccount } from "../constants/transferAccounts";
 import { useGetAccounts } from "../hooks/useAccounts";
 import { useTransferFunds } from "../hooks/useTransactions";
 import { usePlannedTransfers } from "../hooks/usePlannedTransfers";
+import { useAccountPicker } from "../hooks/useAccountPicker";
 
 type Step = "form" | "bankid" | "done";
 
@@ -42,16 +31,7 @@ export default function TransferPage() {
     const { addLocalPlanned, createPlanned, panelProps } = usePlannedTransfers();
 
     const ownAccounts: OwnAccount[] = useMemo(
-        () =>
-            (accountsData ?? []).map((a) => ({
-                id: String(a.id),
-                own: true as const,
-                type: a.accountType,
-                number: a.accountNumber,
-                name: a.accountName?.trim() || a.accountType,
-                meta: `${a.accountType} ${a.accountNumber}`,
-                balance: a.balance,
-            })),
+        () => (accountsData ?? []).map(toOwnAccount),
         [accountsData],
     );
 
@@ -61,22 +41,15 @@ export default function TransferPage() {
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
     const [recurring, setRecurring] = useState(false);
-    const [modal, setModal] = useState<ModalKind>(null);
-    const [search, setSearch] = useState("");
-    const [addAccountOpen, setAddAccountOpen] = useState(false);
     const [step, setStep] = useState<Step>("form");
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
-    const [customs, setCustoms] = useState<Payee[]>([]);
 
     const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
 
-    const allAccounts: TransferAccount[] = [
-        ...ownAccounts,
-        ...BG_PG_PAYEES,
-        ...BANK_PAYEES,
-        ...customs,
-    ];
+    const { allAccounts, openFromModal, openToModal, closeAll, pickerProps } =
+        useAccountPicker({ ownAccounts, fromId, toId, setFromId, setToId });
+
     const fromAccount = ownAccounts.find((a) => a.id === fromId) ?? null;
     const toAccount = allAccounts.find((a) => a.id === toId) ?? null;
 
@@ -100,120 +73,6 @@ export default function TransferPage() {
             },
         )
         : "";
-
-    const query = search.trim().toLowerCase();
-    const selectedId = modal === "from" ? fromId : toId;
-    // Kontot som är valt på andra sidan går inte att välja (samma från och till).
-    const otherSideId = modal === "from" ? toId : fromId;
-    const otherSideReason =
-        modal === "from"
-            ? t("page-transfer.modal.selected-as-to")
-            : t("page-transfer.modal.selected-as-from");
-
-    const buildGroups = (): AccountPickerGroup[] => {
-        // Saldo visas bara för egna konton, aldrig för externa mottagare.
-        const wrap = (accounts: TransferAccount[]) =>
-            accounts
-                .filter((a) => matchesSearch(a, query))
-                .map((a) => ({
-                    id: a.id,
-                    name: a.name,
-                    meta: a.meta,
-                    balance: a.own ? `${formatSek(a.balance)} sek` : undefined,
-                    selected: a.id === selectedId,
-                    disabledReason:
-                        a.id === otherSideId ? otherSideReason : undefined,
-                }));
-
-        let groups: AccountPickerGroup[] = [];
-
-        if (modal === "from") {
-            groups = [
-                {
-                    title: t("page-transfer.modal.group-own"),
-                    items: wrap(ownAccounts),
-                },
-            ];
-        } else if (modal === "to") {
-            const favorites = allAccounts.filter((a) =>
-                FAVORITE_ACCOUNT_IDS.includes(a.id),
-            );
-            const bgAccounts = [
-                ...BG_PG_PAYEES,
-                ...customs.filter((c) => c.kind === "bg"),
-            ];
-            const bankAccounts = [
-                ...BANK_PAYEES,
-                ...customs.filter((c) => c.kind === "bank"),
-            ];
-            groups = [
-                {
-                    title: t("page-transfer.modal.group-favorites"),
-                    items: wrap(favorites),
-                },
-                {
-                    title: t("page-transfer.modal.group-own"),
-                    items: wrap(ownAccounts),
-                },
-                {
-                    title: t("page-transfer.modal.group-bg"),
-                    items: wrap(bgAccounts),
-                },
-                {
-                    title: t("page-transfer.modal.group-bank"),
-                    items: wrap(bankAccounts),
-                },
-            ];
-        }
-
-        return groups.filter((g) => g.items.length > 0);
-    };
-
-    const groups = buildGroups();
-    const isEmpty = modal !== null && groups.length === 0;
-
-    const handleSelectAccount = (id: string) => {
-        if (modal === "from") setFromId(id);
-        else if (modal === "to") setToId(id);
-        setModal(null);
-        setSearch("");
-    };
-
-    const handleCloseModal = () => {
-        setModal(null);
-        setSearch("");
-        setAddAccountOpen(false);
-    };
-
-    const handleOpenAdd = () => {
-        setAddAccountOpen(true);
-    };
-
-    const handleSaveAdd = (values: NewAccountValues) => {
-        const resolvedType =
-            values.type.trim() || t("page-transfer.add-account.default-type");
-        const kind = /giro/i.test(resolvedType) ? "bg" : "bank";
-        const meta = [
-            resolvedType,
-            [values.clearing, values.number].filter(Boolean).join(", "),
-        ]
-            .filter(Boolean)
-            .join(" ")
-            .trim();
-        const id = `custom-${customs.length + 1}`;
-        const account: Payee = {
-            id,
-            own: false,
-            kind,
-            name:
-                values.name.trim() ||
-                t("page-transfer.add-account.default-name"),
-            meta,
-        };
-        setCustoms((prev) => [...prev, account]);
-        setToId(id);
-        handleCloseModal();
-    };
 
     const commitLocalPlanned = () => {
         if (!toAccount) return;
@@ -317,9 +176,7 @@ export default function TransferPage() {
         setAmount("");
         setDate(todayIso());
         setRecurring(false);
-        setModal(null);
-        setSearch("");
-        setAddAccountOpen(false);
+        closeAll();
         setStep("form");
         setTransferPhase("processing");
     };
@@ -333,14 +190,8 @@ export default function TransferPage() {
                         <TransferForm
                             fromAccount={fromAccount}
                             toAccount={toAccount}
-                            onOpenFromModal={() => {
-                                setModal("from");
-                                setSearch("");
-                            }}
-                            onOpenToModal={() => {
-                                setModal("to");
-                                setSearch("");
-                            }}
+                            onOpenFromModal={openFromModal}
+                            onOpenToModal={openToModal}
                             amount={amount}
                             onAmountChange={setAmount}
                             over={over}
@@ -377,17 +228,7 @@ export default function TransferPage() {
             </div>
 
             <TransferModals
-                modal={modal}
-                addAccountOpen={addAccountOpen}
-                search={search}
-                onSearchChange={setSearch}
-                groups={groups}
-                isEmpty={isEmpty}
-                onSelectAccount={handleSelectAccount}
-                onCloseModal={handleCloseModal}
-                onOpenAdd={handleOpenAdd}
-                onCancelAdd={() => setAddAccountOpen(false)}
-                onSaveAdd={handleSaveAdd}
+                {...pickerProps}
                 showBankId={step === "bankid"}
                 fromAccount={fromAccount}
                 toAccount={toAccount}
