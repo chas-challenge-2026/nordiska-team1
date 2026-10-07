@@ -18,6 +18,7 @@ import {
     staffSendReply,
     type Folders,
 } from "../services/inboxService";
+import { getFaqCategories } from "../services/faqService";
 
 export const inboxKeys = {
     all: ["inbox"] as const,
@@ -29,6 +30,7 @@ export const inboxKeys = {
     documents: () => [...inboxKeys.all, "documents"] as const,
     documentList: (page: number, pageSize: number, year?: number, documentType?: string) =>
         [...inboxKeys.documents(), "list", { page, pageSize, year, documentType }] as const,
+    ticketCategories: (language: string) => [...inboxKeys.all, "ticket-categories", language] as const,
 };
 
 // ---------- Queries ----------
@@ -40,11 +42,12 @@ export function useUnreadCount() {
     });
 }
 
-export function useSupportThreads(folder: Folders, page: number, pageSize: number) {
+export function useSupportThreads(folder: Folders, page: number, pageSize: number, enabled = true) {
     return useQuery({
         queryKey: inboxKeys.threadList(folder, page, pageSize),
         queryFn: () => getAllSupportThreads(folder, page, pageSize),
         placeholderData: keepPreviousData,
+        enabled,
     });
 }
 
@@ -61,11 +64,13 @@ export function useArchivedDocuments(
     pageSize: number,
     year?: number,
     documentType?: string,
+    enabled = true,
 ) {
     return useQuery({
         queryKey: inboxKeys.documentList(page, pageSize, year, documentType),
         queryFn: () => getAllArchivedDocuments(page, pageSize, year, documentType),
         placeholderData: keepPreviousData,
+        enabled,
     });
 }
 
@@ -139,5 +144,13 @@ export function useDownloadInboxDocument() {
     return useMutation({
         mutationFn: (id: number) => downloadInboxDocument(id),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: inboxKeys.documents() }),
+    });
+}
+
+export function useTicketCategories(language: string) {
+    return useQuery({
+        queryKey: inboxKeys.ticketCategories(language),
+        queryFn: () => getFaqCategories(language),
+        staleTime: 5 * 60 * 1000,
     });
 }
