@@ -15,4 +15,5 @@ public interface ISavingsGoalService
     Task<bool> DeleteAsync(long goalId, long customerId, bool isAdmin = false, CancellationToken cancellationToken = default);
     Task<AutomateSavingsGoalResponse> AutomateAsync(long goalId, AutomateSavingsGoalRequest request, long customerId, bool isAdmin = false, CancellationToken cancellationToken = default);
     Task<bool> CancelAutomationAsync(long goalId, long customerId, bool isAdmin = false, CancellationToken cancellationToken = default);
+    Task<SavingsGoalDepositResponse> DepositAsync(long goalId, DepositToSavingsGoalRequest request, long customerId, bool isAdmin = false, CancellationToken cancellationToken = default);
 }

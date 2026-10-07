@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.FrontendApi.Authentication;
@@ -23,6 +25,8 @@ using Nordiska.FrontendApi.Extensions;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Communication.Domain;
+using Nordiska.Modules.Inbox.Application;
 using Xunit;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Authentication;
@@ -397,6 +401,74 @@ public class TestSavingsGoalRepository : ISavingsGoalRepository
     }
 }
 
+public sealed class TestSavingsGoalDepositRepository(
+    ISavingsGoalRepository goalRepository,
+    ISavingsAccountRepository accountRepository)
+    : ISavingsGoalDepositRepository
+{
+    public async Task<SavingsGoalDepositResult> DepositAsync(
+        long savingsGoalId,
+        long sourceAccountId,
+        decimal amount,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        var goal = await goalRepository.GetByIdAsync(savingsGoalId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmål med ID {savingsGoalId} hittades inte.");
+
+        var sourceAccount = await accountRepository.GetByIdAsync(sourceAccountId, cancellationToken)
+            ?? throw new NotFoundException($"Källkonto med ID {sourceAccountId} hittades inte.");
+
+        var targetAccount = await accountRepository.GetByIdAsync(goal.AccountId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmålets konto med ID {goal.AccountId} hittades inte.");
+
+        if (!isAdmin && goal.CustomerId != customerId)
+        {
+            throw new NotFoundException($"Sparmål med ID {savingsGoalId} hittades inte.");
+        }
+
+        if (!isAdmin && sourceAccount.CustomerId != customerId)
+        {
+            throw new ValidationException("Källkontot tillhör inte den inloggade kunden.");
+        }
+
+        if (sourceAccount.Balance < amount)
+        {
+            throw new ConflictException("Otillräckligt saldo.");
+        }
+
+        var depositedAt = DateTime.UtcNow;
+        goal.CurrentAmount += amount;
+        goal.UpdatedAt = depositedAt;
+
+        var completedNow = goal.CurrentAmount >= goal.TargetAmount &&
+                           !string.Equals(goal.Status, "completed", StringComparison.OrdinalIgnoreCase);
+
+        if (completedNow)
+        {
+            goal.Status = "completed";
+        }
+
+        await goalRepository.UpdateAsync(goal, cancellationToken);
+
+        return new SavingsGoalDepositResult(
+            goal.Id,
+            goal.CustomerId,
+            goal.Title,
+            sourceAccount.Id,
+            targetAccount.Id,
+            amount,
+            sourceAccount.Balance - amount,
+            targetAccount.Balance + amount,
+            goal.CurrentAmount,
+            goal.TargetAmount,
+            goal.Status,
+            completedNow,
+            depositedAt);
+    }
+}
+
 public class TestCustomerService : ICustomerService
 {
     private static readonly ConcurrentDictionary<long, Customer> _customers = new();
@@ -609,8 +681,13 @@ public class TestLoanRepository : ILoanRepository
 
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public ConcurrentQueue<(long CustomerId, string Type, string Title, long? TargetId)> Notifications { get; } = new();
+    public Exception? NotificationFailure { get; set; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureLogging(logging => logging.ClearProviders());
+
         // Tests share one factory per class, so raise the limits to keep rate limiting out of the way (NOR-70)
         builder.UseSetting("ConnectionStrings:DefaultConnection", "Host=localhost;Database=test;Username=postgres;Password=postgres");
         builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
@@ -641,6 +718,31 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<ISavingsGoalRepository>();
             services.AddScoped<ISavingsGoalRepository, TestSavingsGoalRepository>();
+
+            services.RemoveAll<ISavingsGoalDepositRepository>();
+            services.AddScoped<ISavingsGoalDepositRepository, TestSavingsGoalDepositRepository>();
+
+            var inboxRepository = new Mock<IInboxRepository>();
+            inboxRepository
+                .Setup(repository => repository.AddNotificationAsync(
+                    It.IsAny<long>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<NotificationPriority>(),
+                    It.IsAny<NotificationTargetType?>(),
+                    It.IsAny<long?>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<long, string, string, string?, NotificationPriority, NotificationTargetType?, long?, CancellationToken>(
+                    (customerId, type, title, _, _, _, targetId, _) =>
+                        Notifications.Enqueue((customerId, type, title, targetId)))
+                .Returns<long, string, string, string?, NotificationPriority, NotificationTargetType?, long?, CancellationToken>(
+                    (_, _, _, _, _, _, _, _) => NotificationFailure is null
+                        ? Task.FromResult(new CustomerNotification(1, "test", "test"))
+                        : Task.FromException<CustomerNotification>(NotificationFailure));
+
+            services.RemoveAll<IInboxRepository>();
+            services.AddSingleton(inboxRepository.Object);
         });
     }
 }
