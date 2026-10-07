@@ -11,6 +11,9 @@ namespace Nordiska.Modules.Inbox.Contracts.Responses;
 /// <param name="IsRead">Whether the current customer has read the latest messages in this thread.</param>
 /// <param name="Folder">Current folder for this customer ('Inbox', 'Sent', 'Archive').</param>
 /// <param name="MessageCount">Total number of messages in the thread.</param>
+/// <param name="IsInformationOnly">Whether this is a one-way announcement/information message.</param>
+/// <param name="CanReply">Whether replies are permitted on this thread.</param>
+/// <param name="Category">Optional category label.</param>
 public sealed record ThreadSummaryResponse(
     long Id,
     string Subject,
@@ -19,4 +22,7 @@ public sealed record ThreadSummaryResponse(
     DateTimeOffset LastMessageAt,
     bool IsRead,
     string Folder,
-    int MessageCount);
+    int MessageCount,
+    bool IsInformationOnly = false,
+    bool CanReply = true,
+    string? Category = null);

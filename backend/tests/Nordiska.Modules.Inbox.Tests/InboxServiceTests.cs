@@ -20,7 +20,8 @@ public class InboxServiceTests
             _repoMock.Object,
             new CreateThreadRequestValidator(),
             new ReplyThreadRequestValidator(),
-            new StaffReplyRequestValidator());
+            new StaffReplyRequestValidator(),
+            new CreateAdminThreadRequestValidator());
     }
 
     [Fact]
@@ -38,6 +39,8 @@ public class InboxServiceTests
                 "[Sparkonto] Räntefråga",
                 request.Body,
                 true,
+                false,
+                "Sparkonto",
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdThread);
 
@@ -70,6 +73,8 @@ public class InboxServiceTests
                 "[Sparmål] Autosparande",
                 request.Body,
                 true,
+                false,
+                "Sparmål",
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdThread);
 
@@ -591,5 +596,183 @@ public class InboxServiceTests
         Assert.NotNull(result);
         Assert.False(result.Success);
         Assert.Equal("NotFound", result.Status);
+    }
+
+    [Fact]
+    public async Task CloseThread_WhenCustomerOwnsThread_ClosesSuccessfully()
+    {
+        // Arrange
+        const long customerId = 100;
+        const long threadId = 5;
+        var state = new MessageThreadState(threadId, customerId, MessageFolder.Inbox);
+
+        _repoMock.Setup(r => r.GetThreadStateAsync(threadId, customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(state);
+        _repoMock.Setup(r => r.CloseThreadAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _service.CloseThreadAsync(customerId, threadId, isStaff: false);
+
+        // Assert
+        Assert.True(result);
+        _repoMock.Verify(r => r.CloseThreadAsync(threadId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAdminThread_SingleCustomer_CreatesThreadAndNotification()
+    {
+        // Arrange
+        const long customerId = 100;
+        var request = new CreateAdminThreadRequest(
+            CustomerId: customerId,
+            BroadcastToAll: false,
+            Subject: "Räntejustering",
+            Body: "Vi har justerat din sparränta.",
+            Category: "Information",
+            ReplyAllowed: false,
+            IsInformationOnly: true);
+
+        var createdThread = new MessageThread(1, "Räntejustering", isInformationOnly: true, category: "Information");
+
+        _repoMock.Setup(r => r.CreateThreadWithInitialMessageAsync(
+                customerId,
+                request.Subject,
+                request.Body,
+                request.ReplyAllowed,
+                request.IsInformationOnly,
+                request.Category,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(createdThread);
+
+        // Act
+        var count = await _service.CreateAdminThreadAsync(request);
+
+        // Assert
+        Assert.Equal(1, count);
+        _repoMock.Verify(r => r.MarkAsUnreadAsync(createdThread.Id, customerId, It.IsAny<CancellationToken>()), Times.Once);
+        _repoMock.Verify(r => r.AddNotificationAsync(
+            customerId,
+            "announcement",
+            request.Subject,
+            request.Body,
+            NotificationPriority.High,
+            NotificationTargetType.MessageThread,
+            createdThread.Id,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAdminThread_BroadcastToAll_CreatesThreadForAllCustomers()
+    {
+        // Arrange
+        var customerIds = new List<long> { 101, 102, 103 };
+        var request = new CreateAdminThreadRequest(
+            CustomerId: null,
+            BroadcastToAll: true,
+            Subject: "Driftinformation",
+            Body: "Underhållsarbete planerat.",
+            Category: "System",
+            ReplyAllowed: false,
+            IsInformationOnly: true);
+
+        _repoMock.Setup(r => r.GetAllCustomerIdsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customerIds);
+
+        var thread1 = new MessageThread(1, request.Subject, true, request.Category);
+        var thread2 = new MessageThread(2, request.Subject, true, request.Category);
+        var thread3 = new MessageThread(3, request.Subject, true, request.Category);
+
+        _repoMock.Setup(r => r.CreateThreadWithInitialMessageAsync(
+                It.IsAny<long>(),
+                request.Subject,
+                request.Body,
+                request.ReplyAllowed,
+                request.IsInformationOnly,
+                request.Category,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread1);
+
+        // Act
+        var count = await _service.CreateAdminThreadAsync(request);
+
+        // Assert
+        Assert.Equal(3, count);
+        _repoMock.Verify(r => r.CreateThreadWithInitialMessageAsync(
+            It.IsAny<long>(),
+            request.Subject,
+            request.Body,
+            request.ReplyAllowed,
+            request.IsInformationOnly,
+            request.Category,
+            It.IsAny<CancellationToken>()), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task GetNotifications_ReturnsMappedList()
+    {
+        // Arrange
+        const long customerId = 100;
+        var notification = new CustomerNotification(
+            customerId: customerId,
+            type: "support_message",
+            title: "Nytt svar",
+            body: "Handläggare har svarat.",
+            priority: NotificationPriority.Normal,
+            targetType: NotificationTargetType.MessageThread,
+            targetId: 10);
+
+        var pagedResult = PagedResult<CustomerNotification>.Create([notification], 1, 1, 20);
+
+        _repoMock.Setup(r => r.GetCustomerNotificationsAsync(customerId, false, 1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _service.GetNotificationsAsync(customerId, new NotificationQueryParameters());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Items);
+        Assert.Equal("Nytt svar", result.Items.First().Title);
+        Assert.False(result.Items.First().IsRead);
+    }
+
+    [Fact]
+    public async Task CreateSupportTicket_WhenContainingSensitiveData_SanitizesSubjectAndBody()
+    {
+        // Arrange
+        const long customerId = 100;
+        var request = new CreateThreadRequest(
+            Subject: "Fråga angående 19850512-1234",
+            Body: "Mitt personnummer är 19850512-1234",
+            Category: "Allmänt");
+
+        var thread = new MessageThread(10, "[Allmänt] Fråga angående 19850512-****");
+        _repoMock.Setup(r => r.CreateThreadWithInitialMessageAsync(
+            customerId,
+            "[Allmänt] Fråga angående 19850512-****",
+            "Mitt personnummer är 19850512-****",
+            true,
+            false,
+            "Allmänt",
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread);
+
+        _repoMock.Setup(r => r.GetMessagesByThreadIdAsync(thread.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var result = await _service.CreateSupportTicketAsync(customerId, request);
+
+        // Assert
+        Assert.NotNull(result);
+        _repoMock.Verify(r => r.CreateThreadWithInitialMessageAsync(
+            customerId,
+            "[Allmänt] Fråga angående 19850512-****",
+            "Mitt personnummer är 19850512-****",
+            true,
+            false,
+            "Allmänt",
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

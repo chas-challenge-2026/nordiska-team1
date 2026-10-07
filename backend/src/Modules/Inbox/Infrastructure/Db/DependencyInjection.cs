@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IValidator<CreateThreadRequest>, CreateThreadRequestValidator>();
         services.AddScoped<IValidator<ReplyThreadRequest>, ReplyThreadRequestValidator>();
         services.AddScoped<IValidator<StaffReplyRequest>, StaffReplyRequestValidator>();
+        services.AddScoped<IValidator<CreateAdminThreadRequest>, CreateAdminThreadRequestValidator>();
 
         return services;
     }
