@@ -26,16 +26,11 @@ import {
 import type {
     OwnAccount,
     Payee,
-    PlannedTransfer,
     TransferAccount,
 } from "../constants/transferAccounts";
 import { useGetAccounts } from "../hooks/useAccounts";
-import {
-    useTransactions,
-    useTransferFunds,
-    useCreatePlannedTransaction,
-    useCancelPlannedTransaction,
-} from "../hooks/useTransactions";
+import { useTransferFunds } from "../hooks/useTransactions";
+import { usePlannedTransfers } from "../hooks/usePlannedTransfers";
 
 type Step = "form" | "bankid" | "done";
 
@@ -43,11 +38,8 @@ export default function TransferPage() {
     const { t } = useTranslation();
 
     const { data: accountsData } = useGetAccounts("active");
-    // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
-    const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
     const transferFundsMutation = useTransferFunds();
-    const createPlannedMutation = useCreatePlannedTransaction();
-    const cancelPlannedMutation = useCancelPlannedTransaction();
+    const { addLocalPlanned, createPlanned, panelProps } = usePlannedTransfers();
 
     const ownAccounts: OwnAccount[] = useMemo(
         () =>
@@ -76,38 +68,8 @@ export default function TransferPage() {
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
     const [customs, setCustoms] = useState<Payee[]>([]);
-    const [localPlannedTransfers, setLocalPlannedTransfers] = useState<PlannedTransfer[]>([]);
 
     const fromId = selectedFromId ?? ownAccounts[0]?.id ?? null;
-
-    const backendPlannedTransfers: PlannedTransfer[] = useMemo(
-        () =>
-            (transactionsData?.items ?? [])
-                .filter((tx) => tx.isPlanned)
-                .map((tx) => ({
-                    localId: `backend-${tx.id}`,
-                    source: "backend" as const,
-                    backendId: tx.id,
-                    date: (tx.plannedDate ?? tx.createdAt).slice(0, 10),
-                    name: tx.label?.trim() || t("page-transfer.default-name"),
-                    note:
-                        tx.repeating === "month"
-                            ? t("page-transfer.repeating.month")
-                            : (tx.repeating ?? ""),
-                    sum: tx.amount,
-                    accountId: tx.accountId,
-                    targetAccountId: tx.targetAccountId,
-                    type: tx.type,
-                    label: tx.label,
-                    repeating: tx.repeating,
-                })),
-        [transactionsData, t],
-    );
-
-    const plannedTransfers = [
-        ...backendPlannedTransfers,
-        ...localPlannedTransfers,
-    ];
 
     const allAccounts: TransferAccount[] = [
         ...ownAccounts,
@@ -138,10 +100,6 @@ export default function TransferPage() {
             },
         )
         : "";
-
-    const upcomingTransfers = plannedTransfers.filter(
-        (p) => p.date >= todayIso(),
-    );
 
     const query = search.trim().toLowerCase();
     const selectedId = modal === "from" ? fromId : toId;
@@ -257,101 +215,16 @@ export default function TransferPage() {
         handleCloseModal();
     };
 
-    // BG/PG- och bankmottagare saknar backend-stöd (se plan) — de överföringarna
-    // simuleras fortfarande lokalt och sparas bara i sidans egen state.
     const commitLocalPlanned = () => {
         if (!toAccount) return;
         const note = recurring
             ? t("page-transfer.recurring-label")
             : t("page-transfer.planned.note-to", { name: toAccount.name });
-        const transferName = name.trim() || t("page-transfer.default-name");
-        setLocalPlannedTransfers((prev) => [
-            {
-                localId: `local-${crypto.randomUUID()}`,
-                source: "local",
-                date,
-                name: transferName,
-                note,
-                sum: amountValue,
-            },
-            ...prev,
-        ]);
-    };
-
-    const handleEditPlannedTransfer = (
-        transfer: PlannedTransfer,
-        newDate: string,
-        onSaved: () => void,
-    ) => {
-        if (transfer.source === "local") {
-            setLocalPlannedTransfers((prev) =>
-                prev.map((p) =>
-                    p.localId === transfer.localId
-                        ? { ...p, date: newDate }
-                        : p,
-                ),
-            );
-            onSaved();
-            return;
-        }
-
-        const { backendId, accountId } = transfer;
-        if (backendId === undefined || accountId === undefined) {
-            return;
-        }
-
-        // Backend saknar uppdatering, så datumbyte = skapa ny + ta bort gammal.
-        // Skapa först: misslyckas något blir det i värsta fall en dubblett,
-        // aldrig en försvunnen överföring.
-        createPlannedMutation.mutate(
-            {
-                accountId,
-                // Transaction type is lowercase; create endpoint expects "Deposit" | "Withdraw"
-                type: transfer.type === "deposit" ? "Deposit" : "Withdraw",
-                amount: transfer.sum,
-                plannedDate: toPlannedDateIso(newDate),
-                label: transfer.label,
-                targetAccountId: transfer.targetAccountId,
-                repeating: transfer.repeating,
-            },
-            {
-                onSuccess: () =>
-                    cancelPlannedMutation.mutate(backendId, {
-                        onSuccess: onSaved,
-                    }),
-            },
-        );
-    };
-
-    const resetPlannedMutations = () => {
-        createPlannedMutation.reset();
-        cancelPlannedMutation.reset();
-    };
-
-    // "cleanup" = nya överföringen skapades men den gamla kunde inte tas bort.
-    const editPlannedError = createPlannedMutation.isError
-        ? "save"
-        : cancelPlannedMutation.isError
-            ? "cleanup"
-            : null;
-
-    const handleDeletePlannedTransfer = (
-        transfer: PlannedTransfer,
-        onDeleted: () => void,
-    ) => {
-        // Lokala överföringar tas bort direkt och går inte via mutationen,
-        // så de påverkar aldrig isPending/isError.
-        if (transfer.source === "local") {
-            setLocalPlannedTransfers((prev) =>
-                prev.filter((p) => p.localId !== transfer.localId),
-            );
-            onDeleted();
-            return;
-        }
-
-        if (transfer.backendId === undefined) return;
-        cancelPlannedMutation.mutate(transfer.backendId, {
-            onSuccess: onDeleted,
+        addLocalPlanned({
+            date,
+            name: name.trim() || t("page-transfer.default-name"),
+            note,
+            sum: amountValue,
         });
     };
 
@@ -380,16 +253,15 @@ export default function TransferPage() {
         if (!isToday) {
             // Framtida datum (återkommande eller ej): registrera bara en planerad
             // post, exekvera inget nu och visa inget success/failure-steg.
-            createPlannedMutation
-                .mutateAsync({
-                    accountId: Number(fromAccount.id),
-                    type: "Withdraw",
-                    amount: amountValue,
-                    plannedDate: toPlannedDateIso(date),
-                    label,
-                    targetAccountId: Number(toAccount.id),
-                    repeating: recurring ? "month" : undefined,
-                })
+            createPlanned({
+                accountId: Number(fromAccount.id),
+                type: "Withdraw",
+                amount: amountValue,
+                plannedDate: toPlannedDateIso(date),
+                label,
+                targetAccountId: Number(toAccount.id),
+                repeating: recurring ? "month" : undefined,
+            })
                 .then(() => handleReset())
                 .catch(() => {
                     setStep("done");
@@ -413,16 +285,15 @@ export default function TransferPage() {
                 if (recurring) {
                     // Dagens överföring är redan gjord — lägg nästa månads
                     // tillfälle i planerade överföringar.
-                    createPlannedMutation
-                        .mutateAsync({
-                            accountId: Number(fromAccount.id),
-                            type: "Withdraw",
-                            amount: amountValue,
-                            plannedDate: toPlannedDateIso(addOneMonthIso(date)),
-                            label,
-                            targetAccountId: Number(toAccount.id),
-                            repeating: "month",
-                        })
+                    createPlanned({
+                        accountId: Number(fromAccount.id),
+                        type: "Withdraw",
+                        amount: amountValue,
+                        plannedDate: toPlannedDateIso(addOneMonthIso(date)),
+                        label,
+                        targetAccountId: Number(toAccount.id),
+                        repeating: "month",
+                    })
                         .catch(() => {
                             // Dagens överföring lyckades ändå — låt success-sidan stå kvar.
                         });
@@ -500,19 +371,7 @@ export default function TransferPage() {
                 <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
 
 
-                <PlannedTransfersPanel
-                    upcomingTransfers={upcomingTransfers}
-                    onEditTransfer={handleEditPlannedTransfer}
-                    onDeleteTransfer={handleDeletePlannedTransfer}
-                    isSaving={
-                        createPlannedMutation.isPending ||
-                        cancelPlannedMutation.isPending
-                    }
-                    editError={editPlannedError}
-                    isDeleting={cancelPlannedMutation.isPending}
-                    deleteError={cancelPlannedMutation.isError}
-                    onResetStatus={resetPlannedMutations}
-                />
+                <PlannedTransfersPanel {...panelProps} />
 
                 </div>
             </div>
