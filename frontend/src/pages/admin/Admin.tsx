@@ -131,8 +131,11 @@ export default function Admin(){
                 <button className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold">
                         Se hjälpcenter statistik
                 </button>
-                <button className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold">
-                        ?????
+                <button
+                    onClick={() => navigate("inbox")}
+                    className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold"
+                >
+                    Kommunikationscenter
                 </button>
             </nav>
             </>
