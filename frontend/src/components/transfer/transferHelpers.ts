@@ -50,7 +50,7 @@ export function toOwnAccount(account: Account): OwnAccount {
         type: account.accountType,
         number: account.accountNumber,
         name: account.accountName?.trim() || account.accountType,
-        meta: `${account.accountType} ${account.accountNumber}`,
+        meta: account.accountNumber,
         balance: account.balance,
     };
 }
