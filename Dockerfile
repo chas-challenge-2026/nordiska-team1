@@ -39,17 +39,32 @@ RUN cmake -B build \
     -DOPENSSL_USE_STATIC_LIBS=TRUE \
     && cmake --build build --config Release --target nordiska_pdf_generator_c_api
 
-# Stage 2: Build React frontend
-FROM node:20-alpine AS frontend-builder
+# Stage 2: Restore React frontend dependencies
+FROM node:20-alpine AS frontend-dependencies
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
 RUN npm ci
 
+# Stage 3: React development server
+FROM frontend-dependencies AS frontend-development
+
+COPY frontend/ ./
+
+EXPOSE 5173
+
+ENV VITE_API_BASE_URL=http://localhost:5031/api
+ENV CHOKIDAR_USEPOLLING=true
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+# Stage 4: Build the production React frontend
+FROM frontend-dependencies AS frontend-builder
+
 COPY frontend/ ./
 RUN VITE_API_BASE_URL=/api npm run build
 
-# Stage 3: Build .NET 8 Web API and Reporting Worker
+# Stage 5: Build .NET 8 Web API and Reporting Worker
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-builder
 WORKDIR /src
 
@@ -78,7 +93,7 @@ RUN dotnet publish ./backend/src/Nordiska.Reporting.Worker/Nordiska.Reporting.Wo
     -o /app/worker \
     /p:UseAppHost=false
 
-# Stage 4: Shared .NET runtime with the native PDF library
+# Stage 6: Shared .NET runtime with the native PDF library
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime-base
 WORKDIR /app
 
@@ -91,7 +106,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=native-builder /src/native/pdf_generator/build/libnordiska_pdf_generator_c_api.so /usr/local/lib/
 RUN ldconfig
 
-# Stage 5: Reporting Worker runtime
+# Stage 7: Reporting Worker runtime
 FROM runtime-base AS reporting-worker
 
 COPY --from=backend-builder /app/worker .
@@ -106,7 +121,25 @@ USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.Reporting.Worker.dll"]
 
-# Stage 6: Existing Web API + React runtime (kept as the default final target)
+# Stage 8: Backend-only Web API runtime for local frontend development
+FROM runtime-base AS api
+
+COPY --from=backend-builder /app/publish .
+
+RUN mkdir -p /var/lib/nordiska/report-documents \
+    && chown -R $APP_UID:$APP_UID /var/lib/nordiska/report-documents
+
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ReportDocumentStorage__RootPath=/var/lib/nordiska/report-documents
+
+# Run container as unprivileged non-root user
+USER $APP_UID
+
+ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]
+
+# Stage 9: Existing combined Web API + React runtime
 FROM runtime-base AS final
 
 COPY --from=backend-builder /app/publish .

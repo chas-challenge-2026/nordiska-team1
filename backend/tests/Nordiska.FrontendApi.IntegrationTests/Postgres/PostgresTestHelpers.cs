@@ -33,8 +33,7 @@ public sealed class PostgresFactAttribute : FactAttribute
     }
 }
 
-// Real services, no fakes. Limits are raised so the rate limiter never answers before the lockout does,
-// and so the transaction tests don't hit the 10/min per customer limit.
+ 
 public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -50,9 +49,7 @@ public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Pr
         });
     }
 }
-
-// Every test class starts its own host and runs the EF migrations on startup. In parallel they race against
-// the same CI database, so these tests run alone (after the parallel ones) to get a fully migrated database.
+ 
 [CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class PostgresCollection : ICollectionFixture<PostgresAuthWebApplicationFactory>
 {
