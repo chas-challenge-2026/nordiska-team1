@@ -38,8 +38,22 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         {
             return false;
         }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
         db.FaqEntries.Remove(entry);
         await db.SaveChangesAsync(cancellationToken);
+
+        // Relations belong to the article, so they're only removed when its last language version is gone
+        var hasOtherVersions = await db.FaqEntries.AnyAsync(e => e.RelationId == entry.RelationId, cancellationToken);
+        if (!hasOtherVersions)
+        {
+            await db.FaqRelationships
+                .Where(r => r.RelationId == entry.RelationId || r.RelatedRelationId == entry.RelationId)
+                .ExecuteDeleteAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
         return true;
     }
 
@@ -205,4 +219,100 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
             .Select(e => e.ToResponse())
             .ToList();
     }
-}
+
+    public async Task<IReadOnlyList<RelatedFaqResponse>> GetExplicitRelatedAsync(
+        Guid relationId,
+        string language,
+        CancellationToken cancellationToken = default)
+    {
+        // Inner join drops related articles that don't have a version in this language
+        var related = await db.FaqRelationships
+            .AsNoTracking()
+            .Where(r => r.RelationId == relationId)
+            .Join(
+                db.FaqEntries.Where(e => e.Language == language),
+                r => r.RelatedRelationId,
+                e => e.RelationId,
+                (r, e) => new { r.SortOrder, e.Id, e.Question, e.Category })
+            .OrderBy(x => x.SortOrder)
+            .ToListAsync(cancellationToken);
+
+        return related
+            .Select(x => new RelatedFaqResponse(x.Id, x.Question, x.Category))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<RelatedFaqResponse>> GetPopularInCategoryAsync(
+        string language,
+        string category,
+        int excludeId,
+        DateTime viewsSince,
+        int count,
+        CancellationToken cancellationToken = default)
+    {
+        // Helpful count and age break ties, so it still gives a sensible order before anything has been viewed
+        var popular = await db.FaqEntries
+            .AsNoTracking()
+            .Where(e => e.Language == language && e.Category == category && e.Id != excludeId)
+            .Select(e => new
+            {
+                e.Id,
+                e.Question,
+                e.Category,
+                e.HelpfulCount,
+                e.CreatedAt,
+                Views = db.FaqViewLogs.Count(v => v.FaqEntryId == e.Id && v.ViewedAt >= viewsSince)
+            })
+            .OrderByDescending(x => x.Views)
+            .ThenByDescending(x => x.HelpfulCount)
+            .ThenByDescending(x => x.CreatedAt)
+            .Take(count)
+            .ToListAsync(cancellationToken);
+
+        return popular
+            .Select(x => new RelatedFaqResponse(x.Id, x.Question, x.Category))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetRelatedRelationIdsAsync(
+        Guid relationId,
+        CancellationToken cancellationToken = default)
+    {
+        return await db.FaqRelationships
+            .AsNoTracking()
+            .Where(r => r.RelationId == relationId)
+            .OrderBy(r => r.SortOrder)
+            .Select(r => r.RelatedRelationId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<Guid>> GetExistingRelationIdsAsync(
+        IReadOnlyCollection<Guid> relationIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await db.FaqEntries
+            .AsNoTracking()
+            .Where(e => relationIds.Contains(e.RelationId))
+            .Select(e => e.RelationId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task SetRelatedAsync(
+        Guid relationId,
+        IReadOnlyList<Guid> relatedRelationIds,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        await db.FaqRelationships
+            .Where(r => r.RelationId == relationId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        db.FaqRelationships.AddRange(relatedRelationIds
+            .Select((relatedId, index) => FaqRelationship.Create(relationId, relatedId, index)));
+
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+}

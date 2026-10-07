@@ -103,3 +103,11 @@ public record FaqQueryParameters(
     string? Lang = null
 );
 
+/// <summary>
+/// Payload for setting the related articles of an FAQ article. Replaces the current list.
+/// </summary>
+/// <param name="RelatedRelationIds">RelationIds of the related articles, in the order they should be shown (max 5).</param>
+public record SetRelatedFaqsRequest(
+    [Required]
+    Guid[] RelatedRelationIds
+);
