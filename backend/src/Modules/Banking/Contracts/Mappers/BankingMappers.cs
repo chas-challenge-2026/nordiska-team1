@@ -44,6 +44,7 @@ public static class BankingMappers
             acc.AccountName,
             acc.UpdatedAt,
             acc.Status,
+            acc.CurrencyCode,
             accruedInterestYtd,
             estimatedYearEndInterest
         );
@@ -121,4 +122,23 @@ public static class BankingMappers
             msg.CreatedAt,
             msg.UpdatedAt
         );
+
+    public static LoanResponse ToResponse(this Loan loan, DateOnly asOf)
+    {
+        decimal accruedInterest = loan.CalculateAccruedInterest(asOf);
+
+        return new LoanResponse(
+            loan.Id,
+            loan.CustomerId,
+            loan.LoanNumber,
+            loan.Type.ToString().ToLowerInvariant(),
+            loan.PrincipalAmount,
+            loan.OutstandingAmount + accruedInterest,
+            accruedInterest,
+            loan.InterestRate,
+            loan.Currency,
+            loan.Status.ToString().ToLowerInvariant(),
+            loan.OpenedAt,
+            loan.MaturityDate);
+    }
 }

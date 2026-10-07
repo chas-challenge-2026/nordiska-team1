@@ -28,7 +28,9 @@
         "next": "Nästa",
         "previous": "Föregående",
         "page": "Sida",
-        "loading": "Laddar..."
+        "loading": "Laddar...",
+        "help-center": "Hjälpcenter",
+        "related-articles": "Relaterade artiklar"
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -96,12 +98,17 @@
         "no-transactions": "Inga transaktioner hittades."
     },
     "accounts-route": {
+        "help-card-search": "rapporter konto villkor",
         "yearly-interest": "Beräknad årsränta",
         "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo",
         "my-accounts": "Mina konton",
+        "pick-account": "Välj konto",
+        "pick-one-account": "Välj ett konto",
         "total-balance": "Totalt saldo",
+        "show-accountinfo": "Visa kontoinformation",
         "new-account": "Nytt konto",
-        "full-report": "Skatteunderlag för samtliga konton",
+        "full-report": "Skatteunderlag",
+        "account-report": "Kontoutdrag",
         "loading-accounts": "Laddar konton...",
         "accounts-error": "Ett problem uppstod vid hämtning av konton",
         "no-accounts": "Inga konton hittades.",
@@ -120,13 +127,24 @@
         "invalid-amount": "ogiltigt belopp",
         "invalid-interest-rate": "ogiltig ränta",
         "create-account-error": "Kunde inte skapa kontot. Försök igen.",
-        "close-account": "Stäng konto",
+        "close-account": "Avsluta konto",
+        "close-account-info": "Du är på väg att permanent avsluta konto.",
         "close-account-warning": "Stäng konto \"{{accountNumber}}\"? Kontot går ej att återöppna.",
-        "close-confirmation": "Stäng konto bekräftelse",
+        "close-confirmation": "Kontot går inte att återöppna efter att det har avslutats.",
         "close-error": "Det gick ej att stänga kontot. Försök igen.",
         "closing": "Stänger...",
         "loading-account-types": "Laddar kontotyper...",
-        "error-account-types": "Kunde inte hämta kontotyper"
+        "error-account-types": "Kunde inte hämta kontotyper",
+        "create-savingsgoal": "Sätt ett sparmål",
+        "favorite": "Favoritmarkera",
+        "payback": "Intjänad och beräknad årsränta",
+        "accured-interest": "Intjänad ränta",
+        "accured-interest-info": "Intjänad ränta beräknas från 1 januari varje år.",
+        "aria-label": {
+            "new-account": "Skapa nytt konto",
+            "generate-full-report": "Generera skatteunderlag",
+            "account-action-buttons": "Hantera konto knappar"
+        }
     },
     "overview-route": {
         "savings-title": "Sparmål",

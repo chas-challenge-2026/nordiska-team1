@@ -420,6 +420,8 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
                     b.HasIndex("AccountId");
 
+                    b.HasIndex("AccountId", "CreatedAt");
+
                     b.ToTable("ledger_entries", "banking");
                 });
 
@@ -438,6 +440,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
                     b.Property<long>("CustomerId")
                         .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("InterestAccruedThrough")
+                        .HasColumnType("date");
 
                     b.Property<decimal>("InterestRate")
                         .HasPrecision(9, 6)
@@ -608,6 +613,13 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("SEK");
 
                     b.Property<long>("CustomerId")
                         .HasColumnType("bigint");

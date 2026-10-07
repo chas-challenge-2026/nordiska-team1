@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using FluentValidation;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.Modules.Agreements.Domain;
 using Nordiska.Modules.Communication.Domain;
 using Nordiska.Modules.Inbox.Contracts.Requests;
 using Nordiska.Modules.Inbox.Contracts.Responses;
@@ -378,6 +379,107 @@ public sealed class InboxService(
                       $"xref\n0 4\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\n" +
                       $"trailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF\n% Document: {doc.Title}\n";
         return Encoding.UTF8.GetBytes(pdfText);
+    }
+
+    public async Task<IReadOnlyList<PendingTermResponse>> GetPendingTermsAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = await _repository.GetPendingTermsAsync(customerId, cancellationToken);
+        return pending.Select(item => new PendingTermResponse(
+            AcceptanceId: item.Acceptance.Id,
+            TermId: item.Term.Id,
+            Code: item.Term.Code,
+            Version: item.Term.Version,
+            Title: item.Term.Title,
+            DocumentId: item.Term.DocumentId,
+            EffectiveFrom: item.Term.EffectiveFrom,
+            PublishedAt: item.Term.PublishedAt,
+            Status: item.Acceptance.Status.ToString(),
+            CreatedAt: item.Acceptance.CreatedAt,
+            DownloadUrl: $"/api/inbox/documents/{item.Term.DocumentId}/download"
+        )).ToList();
+    }
+
+    public async Task<TermAcceptanceResult> AcceptTermAsync(
+        long customerId,
+        long termId,
+        CancellationToken cancellationToken = default)
+    {
+        var (acceptance, term) = await _repository.GetTermAcceptanceAsync(customerId, termId, cancellationToken);
+        if (acceptance is null || term is null)
+        {
+            return new TermAcceptanceResult(
+                AcceptanceId: 0,
+                TermId: termId,
+                CustomerId: customerId,
+                Status: "NotFound",
+                AcceptedAt: null,
+                Success: false,
+                Message: $"Villkor eller samtycke med id '{termId}' kunde inte hittas.");
+        }
+
+        if (acceptance.Status == TermAcceptanceStatus.Accepted)
+        {
+            return new TermAcceptanceResult(
+                AcceptanceId: acceptance.Id,
+                TermId: term.Id,
+                CustomerId: customerId,
+                Status: acceptance.Status.ToString(),
+                AcceptedAt: acceptance.AcceptedAt,
+                Success: true,
+                Message: "Villkoren har redan godkänts tidigare.");
+        }
+
+        var updated = await _repository.AcceptTermAsync(acceptance, cancellationToken);
+
+        // Send confirmation notification to customer inbox
+        await _repository.AddNotificationAsync(
+            customerId,
+            "terms_accepted",
+            $"Villkor godkända: {term.Title}",
+            $"Du godkände {term.Title} (version {term.Version}) den {updated.AcceptedAt:yyyy-MM-dd HH:mm}.",
+            NotificationPriority.Normal,
+            NotificationTargetType.Document,
+            term.DocumentId,
+            cancellationToken);
+
+        return new TermAcceptanceResult(
+            AcceptanceId: updated.Id,
+            TermId: term.Id,
+            CustomerId: customerId,
+            Status: updated.Status.ToString(),
+            AcceptedAt: updated.AcceptedAt,
+            Success: true,
+            Message: $"Villkor '{term.Title}' har godkänts.");
+    }
+
+    public async Task<TermResponse> PublishTermAsync(
+        PublishTermRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var effectiveFrom = request.EffectiveFrom ?? DateTimeOffset.UtcNow;
+        var term = await _repository.PublishTermAsync(
+            request.Code,
+            request.Version,
+            request.Title,
+            request.DocumentId,
+            effectiveFrom,
+            null,
+            cancellationToken);
+
+        return new TermResponse(
+            Id: term.Id,
+            Code: term.Code,
+            Version: term.Version,
+            Title: term.Title,
+            DocumentId: term.DocumentId,
+            Status: term.Status.ToString(),
+            EffectiveFrom: term.EffectiveFrom,
+            PublishedAt: term.PublishedAt,
+            DownloadUrl: $"/api/inbox/documents/{term.DocumentId}/download");
     }
 
     private static MessageFolder ParseFolder(string? folder)

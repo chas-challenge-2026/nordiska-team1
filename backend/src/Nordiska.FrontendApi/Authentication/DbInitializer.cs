@@ -50,6 +50,7 @@ public class DbInitializer
             existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
             existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
             await db.SaveChangesAsync();
+
         }
 
         var erikPersonalNum = "197903142380";
@@ -140,6 +141,12 @@ public class DbInitializer
 
         try
         {
+            await SeedLoansAsync(db);
+        }
+        catch { }
+
+        try
+        {
             await SeedNotificationsAsync(db);
         }
         catch { }
@@ -161,6 +168,22 @@ public class DbInitializer
             await SeedDocumentsAsync(scope.ServiceProvider);
         }
         catch { }
+    }
+
+    private static async Task SeedLoansAsync(BankingDbContext db)
+    {
+        var anna = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198202116050");
+        if (anna is null || await db.Loans.AnyAsync(l => l.CustomerId == anna.Id))
+        {
+            return;
+        }
+
+        // Fixed loan numbers and rates so the demo data looks the same every time the database is recreated
+        db.Loans.AddRange(
+            new Loan(anna.Id, "LN-DEMO-PERSONAL-0001", LoanType.Personal, 120000m, 0.0675m, new DateOnly(2026, 8, 1), new DateOnly(2031, 8, 1)),
+            new Loan(anna.Id, "LN-DEMO-MORTGAGE-0001", LoanType.Mortgage, 2450000m, 0.0325m, new DateOnly(2026, 6, 1), new DateOnly(2076, 6, 1)));
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
@@ -318,6 +341,43 @@ public class DbInitializer
                     acc.Status = "active";
                 }
             }
+            await db.SaveChangesAsync();
+
+            var annaReportAccounts = await db.SavingsAccounts
+                .Where(a => a.CustomerId == anna.Id)
+                .ToListAsync();
+
+            var annaTaxReportTransactions = new[]
+            {
+                new { AccountNumber = "NOR-100001", Type = "interest", Amount = 1250.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100001", Type = "tax", Amount = -375.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "interest", Amount = 300.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "tax", Amount = -90.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) }
+            };
+
+            foreach (var transaction in annaTaxReportTransactions)
+            {
+                var account = annaReportAccounts.Single(a =>
+                    a.AccountNumber == transaction.AccountNumber);
+
+                var alreadyExists = await db.LedgerEntries.AnyAsync(entry =>
+                    entry.AccountId == account.Id &&
+                    entry.Type == transaction.Type &&
+                    entry.Label == transaction.Label);
+
+                if (!alreadyExists)
+                {
+                    db.LedgerEntries.Add(new LedgerEntry
+                    {
+                        AccountId = account.Id,
+                        Type = transaction.Type,
+                        Amount = transaction.Amount,
+                        Label = transaction.Label,
+                        CreatedAt = transaction.CreatedAt
+                    });
+                }
+            }
+
             await db.SaveChangesAsync();
         }
 
@@ -561,6 +621,24 @@ public class DbInitializer
 
             inboxDb.CustomerDocuments.AddRange(cd1, cd2, cd3);
             await inboxDb.SaveChangesAsync();
+
+            if (!await inboxDb.Terms.AnyAsync())
+            {
+                var term2026 = new Nordiska.Modules.Agreements.Domain.Term(
+                    code: "ALLMANNA_VILLKOR_2026",
+                    version: 2,
+                    title: "Allmänna kontovillkor 2026",
+                    documentId: doc3.Id,
+                    effectiveFrom: DateTimeOffset.UtcNow
+                );
+
+                inboxDb.Terms.Add(term2026);
+                await inboxDb.SaveChangesAsync();
+
+                var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term2026.Id, customerId);
+                inboxDb.TermAcceptances.Add(acceptance);
+                await inboxDb.SaveChangesAsync();
+            }
         }
     }
 }

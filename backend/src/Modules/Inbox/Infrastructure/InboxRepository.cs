@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Nordiska.BuildingBlocks.Database;
+using Nordiska.Modules.Agreements.Domain;
 using Nordiska.Modules.Communication.Domain;
 using Nordiska.Modules.Documents.Domain;
 using Nordiska.Modules.Inbox.Application;
@@ -289,5 +290,75 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
             customerDoc.MarkOpened();
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    public async Task<IReadOnlyList<(TermAcceptance Acceptance, Term Term)>> GetPendingTermsAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = from ta in _dbContext.TermAcceptances
+                    join t in _dbContext.Terms on ta.TermId equals t.Id
+                    where ta.CustomerId == customerId && ta.Status == TermAcceptanceStatus.Pending && t.Status == TermStatus.Published
+                    orderby t.EffectiveFrom descending
+                    select new { Acceptance = ta, Term = t };
+
+        var list = await query.ToListAsync(cancellationToken);
+        return list.Select(x => (x.Acceptance, x.Term)).ToList();
+    }
+
+    public async Task<(TermAcceptance? Acceptance, Term? Term)> GetTermAcceptanceAsync(
+        long customerId,
+        long termId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = from ta in _dbContext.TermAcceptances
+                    join t in _dbContext.Terms on ta.TermId equals t.Id
+                    where ta.CustomerId == customerId && (ta.TermId == termId || ta.Id == termId)
+                    select new { Acceptance = ta, Term = t };
+
+        var result = await query.FirstOrDefaultAsync(cancellationToken);
+        return result is null ? (null, null) : (result.Acceptance, result.Term);
+    }
+
+    public async Task<TermAcceptance> AcceptTermAsync(
+        TermAcceptance acceptance,
+        CancellationToken cancellationToken = default)
+    {
+        acceptance.Accept();
+        _dbContext.TermAcceptances.Update(acceptance);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return acceptance;
+    }
+
+    public async Task<Term> PublishTermAsync(
+        string code,
+        int version,
+        string title,
+        long documentId,
+        DateTimeOffset effectiveFrom,
+        IEnumerable<long>? targetCustomerIds = null,
+        CancellationToken cancellationToken = default)
+    {
+        var term = new Term(code, version, title, documentId, effectiveFrom);
+        _dbContext.Terms.Add(term);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var customerIds = targetCustomerIds?.ToList();
+        if (customerIds is null || customerIds.Count == 0)
+        {
+            customerIds = await _dbContext.MessageBoxes
+                .Select(mb => mb.CustomerId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        }
+
+        var acceptances = customerIds.Select(cid => new TermAcceptance(term.Id, cid)).ToList();
+        if (acceptances.Count > 0)
+        {
+            _dbContext.TermAcceptances.AddRange(acceptances);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return term;
     }
 }

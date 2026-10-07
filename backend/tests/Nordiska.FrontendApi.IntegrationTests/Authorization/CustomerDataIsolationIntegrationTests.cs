@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Authorization;
 
-// Anna (customer 1) owns accounts 1 and 2, Erik (customer 2) owns account 3.
+// Anna (customer 1) owns accounts 1 and 2 and loan 1, Erik (customer 2) owns account 3 and loan 2.
 // Another customer's data should look like it does not exist, so every attempt returns 404.
 public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWebApplicationFactory>
 {
@@ -48,6 +48,7 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
     [InlineData("GET", "/api/transactions?accountId=3")]
     [InlineData("GET", "/api/transactions/balance/3")]
     [InlineData("GET", "/api/reports/tax-report?accountId=3&year=2025")]
+    [InlineData("GET", "/api/loans/2")]
     public async Task OtherCustomersData_Returns_404NotFound(string method, string url)
     {
         var client = await CreateAuthenticatedClientAsync();
@@ -114,7 +115,7 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
     {
         var client = await CreateAuthenticatedClientAsync();
 
-        var response = await client.PostAsJsonAsync("/api/reports/tax-report", new { accountId = 3, year = 2025 });
+        var response = await client.PostAsJsonAsync("/api/reports/tax-report", new { accountId = 3, taxYear = 2025 });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -136,6 +137,7 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
     [InlineData("/api/transactions/1")]
     [InlineData("/api/transactions/balance/1")]
     [InlineData("/api/transactions?accountId=1")]
+    [InlineData("/api/loans/1")]
     public async Task OwnData_Returns_200Ok(string url)
     {
         var client = await CreateAuthenticatedClientAsync();
@@ -154,5 +156,46 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
 
         accounts.Should().NotBeNullOrEmpty();
         accounts!.Should().OnlyContain(a => a.CustomerId == 2);
+    }
+
+    [Fact]
+    public async Task RepayLoan_BelongingToOtherCustomer_Returns_404NotFound()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/loans/2/repayments", new { amount = 100m, fromAccountId = 1 });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task RepayLoan_FromOtherCustomersAccount_Returns_404NotFound()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/loans/1/repayments", new { amount = 100m, fromAccountId = 3 });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ApplyForLoan_PaidOutToOtherCustomersAccount_Returns_404NotFound()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/loans", new { amount = 50000m, termMonths = 24, payoutAccountId = 3 });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetLoans_ReturnsOnlyOwnLoans()
+    {
+        var client = await CreateAuthenticatedClientAsync(ErikEmail);
+
+        var loans = await client.GetFromJsonAsync<List<LoanResponse>>("/api/loans");
+
+        loans.Should().NotBeNullOrEmpty();
+        loans!.Should().OnlyContain(l => l.CustomerId == 2);
     }
 }

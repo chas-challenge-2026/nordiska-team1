@@ -17,3 +17,9 @@ public record FaqEntryResponse(
 
 public sealed record FaqCreatedResponse(int Id);
 
+public sealed record FaqContentGapResponse(
+    string Query,
+    string Lang,
+    int SearchCount,
+    DateTime LastSearchedAt);
+

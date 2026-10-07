@@ -1,4 +1,5 @@
--- DEV ONLY
+-- LOCAL DEVELOPMENT ONLY.
+-- Allows API CRUD across all tables (not migration though)
 
 BEGIN;
 
@@ -51,27 +52,43 @@ REVOKE ALL
     ON ALL TABLES IN SCHEMA banking, reporting
     FROM nordiska_reporting_worker;
 
-GRANT USAGE
+REVOKE ALL
+    ON ALL SEQUENCES IN SCHEMA banking, reporting
+    FROM nordiska_reporting_worker;
+
+REVOKE ALL
     ON SCHEMA banking, reporting
+    FROM nordiska_reporting_worker;
+
+GRANT USAGE
+    ON SCHEMA reporting
     TO nordiska_reporting_worker;
 
 GRANT SELECT
-    ON ALL TABLES IN SCHEMA banking
+    ON TABLE reporting.tax_reports,
+             reporting.tax_report_jobs,
+             reporting.generated_documents,
+             reporting.tax_report_documents,
+             reporting.account_statements,
+             reporting.account_statement_entries,
+             reporting.account_statement_jobs,
+             reporting.account_statement_documents
     TO nordiska_reporting_worker;
 
-GRANT SELECT, INSERT, UPDATE
-    ON ALL TABLES IN SCHEMA reporting
+GRANT UPDATE
+    ON TABLE reporting.tax_report_jobs,
+             reporting.account_statement_jobs
     TO nordiska_reporting_worker;
 
-ALTER DEFAULT PRIVILEGES
-    FOR ROLE nordiska_migrator
-    IN SCHEMA banking
-    GRANT SELECT ON TABLES TO nordiska_reporting_worker;
+GRANT INSERT
+    ON TABLE reporting.generated_documents,
+             reporting.tax_report_documents,
+             reporting.account_statement_documents
+    TO nordiska_reporting_worker;
 
-ALTER DEFAULT PRIVILEGES
-    FOR ROLE nordiska_migrator
-    IN SCHEMA reporting
-    GRANT SELECT, INSERT, UPDATE ON TABLES TO nordiska_reporting_worker;
+GRANT USAGE
+    ON SEQUENCE reporting."generated_documents_Id_seq"
+    TO nordiska_reporting_worker;
 
 DO $$
 DECLARE

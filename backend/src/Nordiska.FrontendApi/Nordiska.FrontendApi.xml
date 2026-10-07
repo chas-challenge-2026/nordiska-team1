@@ -97,6 +97,16 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.FaqSearchLogBackgroundWorker">
+            <summary>
+            Saves queued FAQ searches to the database in batches.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.FaqSearchLogCleanupWorker">
+            <summary>
+            Deletes FAQ search logs older than the retention period, once at startup and then on an interval.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.BackgroundWorkers.PlannedTransactionsBackgroundWorker">
             <summary>
             Background worker that periodically polls and executes pending planned and recurring transactions.
@@ -415,6 +425,23 @@
             <response code="200">Paginated list of FAQ entries matching the criteria.</response>
             <response code="400">Validation failed for query parameters.</response>
         </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetContentGaps(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves FAQ searches that gave no results, most searched first. Requires the faq:manage permission.
+            </summary>
+            <remarks>
+            Searches are saved in the background, so a search made just now can take a moment to show up.
+            The same search from the same session is only counted once per 15 minutes.
+            </remarks>
+            <param name="lang">Optional language filter ('sv' or 'en').</param>
+            <param name="days">How many days back to look (default 30, max 90).</param>
+            <param name="limit">Max number of searches to return (default 50, max 200).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Searches without results, grouped by normalized query and language.</response>
+            <response code="400">Validation failed for query parameters.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+        </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetCategories(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves distinct FAQ categories available for a specific language.
@@ -706,6 +733,63 @@
             <response code="200">The current policy rate and the date it took effect.</response>
             <response code="503">The Riksbank couldn't be reached and there is no earlier rate to fall back on.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.LoansController">
+            <summary>
+            API endpoints for customer loans.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves loans. Non-admin users only receive their own loans.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of loans.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.GetById(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a loan by its identifier.
+            </summary>
+            <remarks>
+            The outstanding amount includes interest accrued up to today.
+            </remarks>
+            <param name="id">The unique identifier of the loan.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Returns the loan.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Loan was not found or does not belong to the authenticated customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.Apply(Nordiska.Modules.Banking.Contracts.Requests.ApplyForLoanRequest,System.Threading.CancellationToken)">
+            <summary>
+            Applies for a personal loan for the authenticated customer.
+            </summary>
+            <remarks>
+            The loan is approved right away and paid out to the given account. The interest rate is the Riksbank policy rate plus a margin.
+            </remarks>
+            <param name="request">Payload containing amount, termMonths and payoutAccountId.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Loan created and paid out.</response>
+            <response code="400">Amount or term outside the allowed limits.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Payout account not found or does not belong to the authenticated customer.</response>
+            <response code="409">Payout account is closed or the total personal loan debt would be too high.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.LoansController.Repay(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.RepayLoanRequest,System.Threading.CancellationToken)">
+            <summary>
+            Repays part of or the whole loan from one of the customer's accounts.
+            </summary>
+            <remarks>
+            Interest accrued up to today is added to the loan before the repayment is subtracted. The loan is marked repaid when nothing is left.
+            </remarks>
+            <param name="id">The unique identifier of the loan.</param>
+            <param name="request">Payload containing amount and fromAccountId.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Repayment registered, returns the updated loan.</response>
+            <response code="400">Invalid repayment request data.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Loan or account not found or does not belong to the authenticated customer.</response>
+            <response code="409">Loan is not active, the amount exceeds what is owed or the account has insufficient funds.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.OperationalMessagesController">
             <summary>
             API endpoints for viewing and managing operational messages, system alerts, and header banners.
@@ -985,6 +1069,34 @@
             <response code="200">The PDF file stream.</response>
             <response code="401">Unauthorized if not authenticated.</response>
             <response code="404">Document not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetPendingTerms(System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all pending terms and condition updates requiring digital acceptance from the customer
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of pending terms awaiting acceptance.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.AcceptTerm(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Digitally accepts an updated term or condition, recording audit log and timestamp
+            </summary>
+            <param name="id">Unique identifier of the term to accept.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Term acceptance confirmed.</response>
+            <response code="401">Unauthorized if not authenticated.</response>
+            <response code="404">Term not found or not pending for this customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.PublishTerm(Nordiska.Modules.Inbox.Contracts.Requests.PublishTermRequest,System.Threading.CancellationToken)">
+            <summary>
+            Publishes a new version of general terms or policy, generating pending acceptance records for affected customers
+            </summary>
+            <param name="request">Payload containing code, version, title, and document ID.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Term published successfully.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if not staff or admin.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Reporting.AuditController">
             <summary>

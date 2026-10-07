@@ -84,6 +84,56 @@ namespace Nordiska.Modules.Faq.Infrastructure.Db.Migrations
 
                     b.ToTable("faq_entries", "faq");
                 });
+
+            modelBuilder.Entity("Nordiska.Modules.Faq.Domain.FaqSearchLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("language");
+
+                    b.Property<string>("NormalizedQuery")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("normalized_query");
+
+                    b.Property<string>("Query")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("query");
+
+                    b.Property<int>("ResultCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("result_count");
+
+                    b.Property<DateTime>("SearchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("searched_at");
+
+                    b.Property<string>("SessionHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("session_hash");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SearchedAt");
+
+                    b.HasIndex("NormalizedQuery", "Language");
+
+                    b.ToTable("faq_search_log", "faq");
+                });
 #pragma warning restore 612, 618
         }
     }
