@@ -1,12 +1,10 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import {
-    useArchivedDocuments,
-    useSupportThreads,
-    useUnreadCount,
-} from "../../hooks/useInbox";
+import { useNotifications, useSupportThreads, useUnreadCount } from "../../hooks/useInbox";
 import { formatWhen } from "../../utils/date";
+import { toNotificationViews } from "../inbox/inboxAdapters";
 
 type InboxDropdownProps = {
     open: boolean;
@@ -14,15 +12,16 @@ type InboxDropdownProps = {
 };
 
 export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps) {
+    const { t } = useTranslation();
     const ref = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const reduceMotion = useReducedMotion();
 
     const { data: unreadCount = 0 } = useUnreadCount();
     const threads = useSupportThreads("inbox", 1, 5, open);
-    const documents = useArchivedDocuments(1, 10, undefined, undefined, open);
+    const notifications = useNotifications(true, 1, 5, open);
 
-    const unreadDocuments = (documents.data?.items ?? []).filter((doc) => !doc.hasBeenOpened);
+    const unreadNotifications = toNotificationViews(notifications.data);
     const close = () => onOpenChange(false);
 
     useEffect(() => {
@@ -61,9 +60,13 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
             <button
                 ref={buttonRef}
                 type="button"
-                title="Inbox"
+                title={t("inbox.title")}
                 onClick={() => onOpenChange(!open)}
-                aria-label={unreadCount > 0 ? `Inbox, ${unreadCount} unread` : "Inbox"}
+                aria-label={
+                    unreadCount > 0
+                        ? t("inbox.aria-label-unread", { count: unreadCount })
+                        : t("inbox.title")
+                }
                 aria-expanded={open}
                 aria-controls="inbox-panel"
                 className="relative flex h-11 w-11 cursor-pointer items-end justify-end text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
@@ -74,7 +77,7 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                         aria-hidden="true"
                         className="absolute right-[-6px] top-2 rounded-full bg-nordiska-orange px-1.5 text-xs font-bold text-dark-navy"
                     >
-                        {unreadCount > 9 ? "9+" : unreadCount}
+                        {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                 )}
             </button>
@@ -91,33 +94,40 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                     >
                         <div className="max-h-[calc(100dvh-60px)] overflow-y-auto md:max-h-[calc(100dvh-75px)]">
                             <div className="bg-dark-navy px-4 py-3 text-white">
-                                <span className="block text-xs uppercase text-light-blue-accent">Inbox</span>
-                                <strong>{unreadCount} unread</strong>
+                                <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.title")}</span>
+                                <strong>{t("inbox.unread-count", { count: unreadCount })}</strong>
                             </div>
 
+                            <p
+                                id="inbox-panel-messages"
+                                className="px-4 pt-3 text-xs font-semibold uppercase text-secondary"
+                            >
+                                {t("inbox.messages")}
+                            </p>
+
                             {threads.isPending && (
-                                <p role="status" className="px-4 py-3 text-secondary">Loading...</p>
+                                <p role="status" className="px-4 py-3 text-secondary">{t("inbox.loading")}</p>
                             )}
 
                             {threads.isError && (
                                 <div className="flex items-center justify-between px-4 py-3">
-                                    <span role="alert" className="text-error">Could not load messages.</span>
+                                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
                                     <button
                                         type="button"
                                         onClick={() => threads.refetch()}
                                         className="cursor-pointer text-primary-blue underline"
                                     >
-                                        Try again
+                                        {t("inbox.try-again")}
                                     </button>
                                 </div>
                             )}
 
                             {threads.data && threads.data.items.length === 0 && (
-                                <p className="px-4 py-3 text-secondary">No messages.</p>
+                                <p className="px-4 py-3 text-secondary">{t("inbox.empty.messages")}</p>
                             )}
 
                             {threads.data && threads.data.items.length > 0 && (
-                                <ul aria-label="Messages">
+                                <ul aria-labelledby="inbox-panel-messages" className="mt-2">
                                     {threads.data.items.map((thread) => (
                                         <li key={thread.id} className="border-t border-light-blue-accent/50">
                                             <Link
@@ -126,42 +136,62 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                                                 className={`block px-4 py-3 ${thread.isRead ? "" : "bg-light-blue-accent/20 font-bold"}`}
                                             >
                                                 <span className="block text-xs font-normal text-secondary">
-                                                    {formatWhen(thread.lastMessageAt)} · {thread.messageCount}{" "}
-                                                    {thread.messageCount === 1 ? "message" : "messages"}
+                                                    {formatWhen(thread.lastMessageAt)} · {t("inbox.message-count", { count: thread.messageCount })}
                                                 </span>
-                                                {!thread.isRead && <span className="sr-only">Unread: </span>}
-                                                {thread.subject ?? "(no subject)"}
+                                                {!thread.isRead && <span className="sr-only">{t("inbox.unread-prefix")}</span>}
+                                                {thread.subject ?? t("inbox.no-subject")}
                                             </Link>
                                         </li>
                                     ))}
                                 </ul>
                             )}
 
-                            {unreadDocuments.length > 0 && (
-                                <>
-                                    <p
-                                        id="inbox-new-documents"
-                                        className="border-t border-light-blue-accent/50 px-4 pt-3 text-xs font-semibold uppercase text-secondary"
+                            <p
+                                id="inbox-panel-notifications"
+                                className="border-t border-light-blue-accent/50 px-4 pt-3 text-xs font-semibold uppercase text-secondary"
+                            >
+                                {t("inbox.notifications")}
+                            </p>
+
+                            {notifications.isPending && (
+                                <p role="status" className="px-4 py-3 text-secondary">{t("inbox.loading")}</p>
+                            )}
+
+                            {notifications.isError && (
+                                <div className="flex items-center justify-between px-4 py-3">
+                                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => notifications.refetch()}
+                                        className="cursor-pointer text-primary-blue underline"
                                     >
-                                        New documents
-                                    </p>
-                                    <ul aria-labelledby="inbox-new-documents">
-                                        {unreadDocuments.map((doc) => (
-                                            <li key={doc.documentId}>
-                                                <Link
-                                                    to="/inbox?folder=documents"
-                                                    onClick={close}
-                                                    className="block px-4 py-2 font-bold"
-                                                >
-                                                    <span className="block text-xs font-normal text-secondary">
-                                                        {formatWhen(doc.publishedAt)}
-                                                    </span>
-                                                    {doc.title ?? doc.fileName ?? "(untitled)"}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </>
+                                        {t("inbox.try-again")}
+                                    </button>
+                                </div>
+                            )}
+
+                            {notifications.isSuccess && unreadNotifications.length === 0 && (
+                                <p className="px-4 py-3 text-secondary">{t("inbox.empty.new-notifications")}</p>
+                            )}
+
+                            {unreadNotifications.length > 0 && (
+                                <ul aria-labelledby="inbox-panel-notifications" className="mt-2">
+                                    {unreadNotifications.map((item) => (
+                                        <li key={item.id} className="border-t border-light-blue-accent/50">
+                                            <Link
+                                                to="/inbox?folder=notifications"
+                                                onClick={close}
+                                                className="block bg-light-blue-accent/20 px-4 py-3 font-bold"
+                                            >
+                                                <span className="block text-xs font-normal text-secondary">
+                                                    {formatWhen(item.date)}
+                                                </span>
+                                                <span className="sr-only">{t("inbox.unread-prefix")}</span>
+                                                {item.title ?? t("inbox.untitled")}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
                             )}
 
                             <div className="border-t border-light-blue-accent/50 p-4">
@@ -170,7 +200,7 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                                     onClick={close}
                                     className="block rounded bg-primary-blue px-4 py-2 text-center font-semibold text-white"
                                 >
-                                    Open inbox
+                                    {t("inbox.open-inbox")}
                                 </Link>
                             </div>
                         </div>
