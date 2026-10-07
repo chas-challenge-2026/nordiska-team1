@@ -31,3 +31,9 @@ export function toDateKey(value: DateInput): string {
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
+/** Time for today, date otherwise. Empty string on invalid input. */
+export function formatWhen(value: DateInput): string {
+    const isToday = toDateKey(value) === toDateKey(new Date().toISOString());
+    return isToday ? formatTime(value) : formatDate(value);
+}
