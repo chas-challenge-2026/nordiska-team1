@@ -4,15 +4,16 @@ import LogoutButton from "./LogoutButton";
 import LanguageButton from "./LanguageBtn";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
-import {motion, AnimatePresence} from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useUserStore } from "../../store/userStore";
+import InboxDropdown from "./InboxDropdown";
 
 type pageHeaderProps = {
-    protectedHeader : boolean,
+    protectedHeader: boolean,
     noShow: boolean,
 }
 
-export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
+export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps) {
     // ----- USER UX -----
     const user = useUserStore((state) => state.user);
     const username = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "user";
@@ -39,12 +40,13 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
 
     // ----- NAV: add more navLinks below -----
     const menuItems = [
-        { route: "/", title: t("page-header.my-nordiska"),},
-        { route: "/help", title: t("page-header.help-center"),},
-        { route: "/settings", title: t("page-header.settings"),},
+        { route: "/", title: t("page-header.my-nordiska"), },
+        { route: "/help", title: t("page-header.help-center"), },
+        { route: "/settings", title: t("page-header.settings"), },
     ];
 
     // ----- STYLING -----
+    const [inboxOpen, setInboxOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const closeMenu = () => setMenuOpen(false);
     let headerBackground = "bg-dark-navy"
@@ -59,7 +61,7 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
             headerBackground = "bg-[url('/images/winter_forrest.webp')] bg-cover bg-center"
             languageSelectBg = ""
             break;
-        
+
         case "/welcome":
         case "/inactive":
         case "/logged-out":
@@ -68,184 +70,191 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
     }
 
     return (
-    noShow 
-    ? <></> 
-    : <>
-        {!protectedHeader 
-        ? ( // ----- NOT PROTECTED (LARGE) HEADER -----
-            <motion.header
-                key={location.pathname}
-                initial= {{y: "-100%"}}
-                animate= {{y: 0}}
-                transition={{
-                    duration: 0.5,
-                    ease: "easeOut",
-                }}
-                className={`fixed top-0 z-[1001] w-screen md:h-[120px] h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}
-                > 
-
-                    {/* ----- LOGO ----- */}
-                    <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer -mb-1`}>
-                        nordiska<span className={dotColor}>.</span>
-                    </a>
-
-                {/* ----- SPRÅK ----- */}
-                    <div ref={languageRef} className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setLanguageOpen(!languageOpen)}
-                            aria-expanded={languageOpen}
-                            aria-haspopup="true"
-                            className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white text-shadow-lg/40 font-normal"
+        noShow
+            ? <></>
+            : <>
+                {!protectedHeader
+                    ? ( // ----- NOT PROTECTED (LARGE) HEADER -----
+                        <motion.header
+                            key={location.pathname}
+                            initial={{ y: "-100%" }}
+                            animate={{ y: 0 }}
+                            transition={{
+                                duration: 0.5,
+                                ease: "easeOut",
+                            }}
+                            className={`fixed top-0 z-[1001] w-screen md:h-[120px] h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}
                         >
-                            <img className="h-[14px] w-[19px] invert -mr-1.5" src="icons/lang-icon.svg" aria-hidden="true"/>
-                            {i18n.language}
-                        </button>
 
-                        {languageOpen && (
-                            <div className={`fixed  top-[70px] md:top-[115px] right-0 flex h-10 w-25 items-center justify-center rounded-bl-2xl ${languageSelectBg} `}>
+                            {/* ----- LOGO ----- */}
+                            <a href="/welcome" className={`font-montserrat-alternates text-3xl md:text-6xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer -mb-1`}>
+                                nordiska<span className={dotColor}>.</span>
+                            </a>
+
+                            {/* ----- SPRÅK ----- */}
+                            <div ref={languageRef} className="relative">
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        i18n.changeLanguage(i18n.language === "sv" ? "en" : "sv");
-                                        setLanguageOpen(false);
-                                    }}
-                                    className="cursor-pointer ml-2 px-3 py-2 text-[14px] uppercase tracking-[0.18em] text-white text-shadow-lg/40"
+                                    onClick={() => setLanguageOpen(!languageOpen)}
+                                    aria-expanded={languageOpen}
+                                    aria-haspopup="true"
+                                    className="flex cursor-pointer items-center gap-2 text-[14px] font-light uppercase tracking-[0.18em] text-white text-shadow-lg/40 font-normal"
                                 >
-                                    {i18n.language === "sv" ? "English" : "Svenska"}
+                                    <img className="h-[14px] w-[19px] invert -mr-1.5" src="icons/lang-icon.svg" aria-hidden="true" />
+                                    {i18n.language}
                                 </button>
+
+                                {languageOpen && (
+                                    <div className={`fixed  top-[70px] md:top-[115px] right-0 flex h-10 w-25 items-center justify-center rounded-bl-2xl ${languageSelectBg} `}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                i18n.changeLanguage(i18n.language === "sv" ? "en" : "sv");
+                                                setLanguageOpen(false);
+                                            }}
+                                            className="cursor-pointer ml-2 px-3 py-2 text-[14px] uppercase tracking-[0.18em] text-white text-shadow-lg/40"
+                                        >
+                                            {i18n.language === "sv" ? "English" : "Svenska"}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                
-            </motion.header>
 
-        ) : ( // ----- PROTECTED HEADER -----
-        <>
-        <header className={`fixed z-[1001] w-screen h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
+                        </motion.header>
 
-            {/* ----- LOGO ----- */}
-            <section>
-                <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer text-shadow-lg/50`}>
-                    nordiska<span className={dotColor}>.</span>
-                </a>
-            </section>
+                    ) : ( // ----- PROTECTED HEADER -----
+                        <>
+                            <header className={`fixed z-[1001] w-screen h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
 
-            {/* ----- HELP & MENU ----- */}
-            <section className="flex -mr-1 mb-0.5">
+                                {/* ----- LOGO ----- */}
+                                <section>
+                                    <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer text-shadow-lg/50`}>
+                                        nordiska<span className={dotColor}>.</span>
+                                    </a>
+                                </section>
 
-                {/* HELP ICON */}
-                {!menuOpen && (
-                    isHelpPage
-                    ? (
-                        <button
-                            type="button"
-                            title={t("page-header.help-center")}
-                            onClick={() => navigate(-1)}
-                            aria-label={t("page-header.help-center")}
-                            className="flex min-h-11 min-w-11 items-end justify-end text-white cursor-pointer"
-                        >
-                            <img src="/icons/close.svg" alt="" aria-hidden="true" className="h-7 w-7 invert"/>
-                        </button>
+                                {/* ----- HELP & MENU ----- */}
+                                <section className="flex -mr-1 mb-0.5">
+                                    <InboxDropdown
+                                        open={inboxOpen}
+                                        onOpenChange={(next) => {
+                                            setInboxOpen(next);
+                                            if (next) closeMenu();
+                                        }}
+                                    />
 
-                    ):(     
-                        <Link
-                            title={t("page-header.help-center")}
-                            to="/help"
-                            onClick={closeMenu}
-                            aria-label={t("page-header.help-center")}
-                            className="flex min-h-11 min-w-11 items-end justify-end text-white"
-                        >
-                            <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert"/>
-                        </Link>
-                    )
-                )}
+                                    {/* HELP ICON */}
+                                    {!menuOpen && (
+                                        isHelpPage
+                                            ? (
+                                                <button
+                                                    type="button"
+                                                    title={t("page-header.help-center")}
+                                                    onClick={() => navigate(-1)}
+                                                    aria-label={t("page-header.help-center")}
+                                                    className="flex min-h-11 min-w-11 items-end justify-end text-white cursor-pointer"
+                                                >
+                                                    <img src="/icons/close.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
+                                                </button>
 
-                {/* MENU BTN */}
-                <button
-                    title={t("page-header.menu")}
-                    type="button"
-                    onClick={() => setMenuOpen(!menuOpen) }
-                    aria-label={
-                        menuOpen
-                            ? t("aria-label.mobile-menu-close")
-                            : t("aria-label.mobile-menu-open")
-                    }
-                    aria-expanded={menuOpen}
-                    className="flex h-11 w-11 cursor-pointer items-end justify-end text-white"
-                >
-                    <span
-                        aria-hidden="true"
-                        className="text-4xl font-light leading-none"
-                    >
-                        {menuOpen 
-                            ? <img src="/icons/close.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" /> 
-                            : <img src="/icons/hamburger.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />}
-                    </span>
-                </button>
-            </section>
-        </header>
+                                            ) : (
+                                                <Link
+                                                    title={t("page-header.help-center")}
+                                                    to="/help"
+                                                    onClick={closeMenu}
+                                                    aria-label={t("page-header.help-center")}
+                                                    className="flex min-h-11 min-w-11 items-end justify-end text-white"
+                                                >
+                                                    <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
+                                                </Link>
+                                            )
+                                    )}
 
-        <AnimatePresence>
-        {menuOpen && (
-        <>
-            {/* OVERLAY */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.8 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                onClick={closeMenu}
-                className={`fixed inset-0 z-[999] hidden md:block ${headerBackground}`}
-                aria-hidden="true"
-            />
+                                    {/* MENU BTN */}
+                                    <button
+                                        title={t("page-header.menu")}
+                                        type="button"
+                                        onClick={() => { setMenuOpen(!menuOpen); setMenuOpen(!menuOpen) }}
+                                        aria-label={
+                                            menuOpen
+                                                ? t("aria-label.mobile-menu-close")
+                                                : t("aria-label.mobile-menu-open")
+                                        }
+                                        aria-expanded={menuOpen}
+                                        className="flex h-11 w-11 cursor-pointer items-end justify-end text-white"
+                                    >
+                                        <span
+                                            aria-hidden="true"
+                                            className="text-4xl font-light leading-none"
+                                        >
+                                            {menuOpen
+                                                ? <img src="/icons/close.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
+                                                : <img src="/icons/hamburger.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />}
+                                        </span>
+                                    </button>
+                                </section>
+                            </header>
 
-            {/* MENY */}
-            <motion.aside
-                initial={{ x: "100%", opacity: 0,}}
-                animate={{ x: 0, opacity: 1,}}
-                exit={{ x: "100%", opacity: 0,}}
-                transition={{
-                    duration: 0.4,
-                    ease: [0.4, 0, 0.2, 1],
-                }}
-                    className={`fixed right-0 top-0 z-[1000] flex h-screen flex-col inset-0 justify-end ${headerBackground} px-6 pb-10 pt-[110px] text-white shadow-2xl md:left-auto md:right-0 md:w-[350px]`}
-            >
-                <div className="flex flex-1 flex-col items-center">
+                            <AnimatePresence>
+                                {menuOpen && (
+                                    <>
+                                        {/* OVERLAY */}
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 0.8 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            onClick={closeMenu}
+                                            className={`fixed inset-0 z-[999] hidden md:block ${headerBackground}`}
+                                            aria-hidden="true"
+                                        />
 
-                    {/* NAVLINKS */}
-                    <nav className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat text-xl font-semibold uppercase tracking-wider text-shadow-lg/80">
-                        {menuItems.map((item) => (
-                            <div key={item.route} onClick={closeMenu}>
-                                <PageLink route={item.route} title={item.title} hamburger/>
-                            </div>
-                        ))}
-                    </nav>
+                                        {/* MENY */}
+                                        <motion.aside
+                                            initial={{ x: "100%", opacity: 0, }}
+                                            animate={{ x: 0, opacity: 1, }}
+                                            exit={{ x: "100%", opacity: 0, }}
+                                            transition={{
+                                                duration: 0.4,
+                                                ease: [0.4, 0, 0.2, 1],
+                                            }}
+                                            className={`fixed right-0 top-0 z-[1000] flex h-screen flex-col inset-0 justify-end ${headerBackground} px-6 pb-10 pt-[110px] text-white shadow-2xl md:left-auto md:right-0 md:w-[350px]`}
+                                        >
+                                            <div className="flex flex-1 flex-col items-center">
 
-                    {/* USER & LOG OUT */}
-                    <div className="flex flex-col items-center font-normal mb-30">
-                        <p className="mb-5 text-xs capitalize text-shadow-md/80">
-                            {t("page-header.user")}
-                            <span className="text-sm font-medium"> {username} </span>
-                        </p>
+                                                {/* NAVLINKS */}
+                                                <nav className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat text-xl font-semibold uppercase tracking-wider text-shadow-lg/80">
+                                                    {menuItems.map((item) => (
+                                                        <div key={item.route} onClick={closeMenu}>
+                                                            <PageLink route={item.route} title={item.title} hamburger />
+                                                        </div>
+                                                    ))}
+                                                </nav>
 
-                        <div onClick={closeMenu} className="text-lg font-medium">
-                            <LogoutButton title={t("page-header.logout")}/>
-                        </div>
-                    </div>
+                                                {/* USER & LOG OUT */}
+                                                <div className="flex flex-col items-center font-normal mb-30">
+                                                    <p className="mb-5 text-xs capitalize text-shadow-md/80">
+                                                        {t("page-header.user")}
+                                                        <span className="text-sm font-medium"> {username} </span>
+                                                    </p>
 
-                    {/* SPRÅK */}
-                    <div className="flex justify-center">
-                        <LanguageButton />
-                    </div>
+                                                    <div onClick={closeMenu} className="text-lg font-medium">
+                                                        <LogoutButton title={t("page-header.logout")} />
+                                                    </div>
+                                                </div>
 
-                </div>
-            </motion.aside>
-        </>
-    )}
-</AnimatePresence>
-        </>
-        )}
-    </>
+                                                {/* SPRÅK */}
+                                                <div className="flex justify-center">
+                                                    <LanguageButton />
+                                                </div>
+
+                                            </div>
+                                        </motion.aside>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </>
+                    )}
+            </>
     );
 }
