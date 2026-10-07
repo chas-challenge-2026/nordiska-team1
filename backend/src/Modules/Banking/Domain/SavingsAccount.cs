@@ -21,4 +21,5 @@ public sealed class SavingsAccount
     public Customer Customer { get; set; } = null!;
     public AccountTypeConfig AccountTypeConfig { get; set; } = null!;
     public ICollection<LedgerEntry> Transactions { get; set; } = new List<LedgerEntry>();
+    public ICollection<SavingsGoal> SavingsGoals { get; set; } = new List<SavingsGoal>();
 }

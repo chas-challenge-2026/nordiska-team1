@@ -13,8 +13,10 @@ public sealed class LedgerEntry
     public bool IsPlanned { get; set; }
     public DateTime? PlannedDate { get; set; }
     public string? Repeating { get; set; }
+    public long? SavingsGoalId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
     public SavingsAccount Account { get; set; } = null!;
+    public SavingsGoal? SavingsGoal { get; set; }
 }
