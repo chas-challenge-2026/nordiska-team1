@@ -118,6 +118,7 @@ builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
 // Background worker for scheduled & recurring transactions
 builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
 builder.Services.AddHostedService<FaqSearchLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqViewLogBackgroundWorker>();
 builder.Services.AddHostedService<FaqSearchLogCleanupWorker>();
  
 builder.Services

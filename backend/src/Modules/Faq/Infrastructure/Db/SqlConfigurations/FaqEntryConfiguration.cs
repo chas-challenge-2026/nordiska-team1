@@ -21,10 +21,6 @@ public sealed class FaqEntryConfiguration
 
         builder.HasIndex(x => x.RelationId);
 
-        builder.Property(x => x.RelatedFaqIds)
-            .IsRequired()
-            .HasDefaultValue(Array.Empty<int>());
-
         builder.Property(x => x.Language)
             .IsRequired()
             .HasMaxLength(10)

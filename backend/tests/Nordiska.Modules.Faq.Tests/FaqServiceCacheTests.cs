@@ -22,6 +22,9 @@ public class FaqServiceCacheTests
         public int GetCategoriesCalls { get; private set; }
         public int AdjustHelpfulCalls { get; private set; }
         public int PatchCalls { get; private set; }
+        public int GetRelatedCalls { get; private set; }
+        public int GetPopularCalls { get; private set; }
+        public Dictionary<Guid, List<Guid>> Relations { get; } = new();
 
         public FakeFaqRepo(IEnumerable<FaqEntryResponse>? seed = null)
         {
@@ -125,10 +128,53 @@ public class FaqServiceCacheTests
             IReadOnlyCollection<FaqEntryResponse> result = _store.Where(e => e.RelationId == relationId).ToList();
             return Task.FromResult(result);
         }
+
+        public Task<IReadOnlyList<RelatedFaqResponse>> GetExplicitRelatedAsync(Guid relationId, string language, CancellationToken cancellationToken = default)
+        {
+            GetRelatedCalls++;
+            var relatedIds = Relations.TryGetValue(relationId, out var ids) ? ids : new List<Guid>();
+            IReadOnlyList<RelatedFaqResponse> result = relatedIds
+                .Select(id => _store.FirstOrDefault(e => e.RelationId == id && e.Lang == language))
+                .Where(e => e is not null)
+                .Select(e => new RelatedFaqResponse(e!.Id, e.Question, e.Category))
+                .ToList();
+            return Task.FromResult(result);
+        }
+
+        // No view log in the fake, so popular is just helpful count
+        public Task<IReadOnlyList<RelatedFaqResponse>> GetPopularInCategoryAsync(string language, string category, int excludeId, DateTime viewsSince, int count, CancellationToken cancellationToken = default)
+        {
+            GetPopularCalls++;
+            IReadOnlyList<RelatedFaqResponse> result = _store
+                .Where(e => e.Lang == language && e.Category == category && e.Id != excludeId)
+                .OrderByDescending(e => e.HelpfulCount)
+                .Take(count)
+                .Select(e => new RelatedFaqResponse(e.Id, e.Question, e.Category))
+                .ToList();
+            return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyList<Guid>> GetRelatedRelationIdsAsync(Guid relationId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Guid> result = Relations.TryGetValue(relationId, out var ids) ? ids.ToList() : new List<Guid>();
+            return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyCollection<Guid>> GetExistingRelationIdsAsync(IReadOnlyCollection<Guid> relationIds, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyCollection<Guid> result = _store.Select(e => e.RelationId).Where(relationIds.Contains).Distinct().ToList();
+            return Task.FromResult(result);
+        }
+
+        public Task SetRelatedAsync(Guid relationId, IReadOnlyList<Guid> relatedRelationIds, CancellationToken cancellationToken = default)
+        {
+            Relations[relationId] = relatedRelationIds.ToList();
+            return Task.CompletedTask;
+        }
     }
 
-    private static FaqEntryResponse Entry(int id, string lang = "sv", string category = "General") =>
-        new(id, $"Question {id}?", $"Answer {id}", category, 0, new[] { "tag1" }, Guid.NewGuid(), lang, DateTime.UtcNow);
+    private static FaqEntryResponse Entry(int id, string lang = "sv", string category = "General", Guid? relationId = null, int helpful = 0) =>
+        new(id, $"Question {id}?", $"Answer {id}", category, helpful, new[] { "tag1" }, relationId ?? Guid.NewGuid(), lang, DateTime.UtcNow);
 
     private class FakeSearchLogRepo : IFaqSearchLogRepository
     {
@@ -145,8 +191,11 @@ public class FaqServiceCacheTests
     private static FaqSearchLogQueue CreateQueue()
         => new(new MemoryCache(new MemoryCacheOptions()), Options.Create(new FaqSearchLogOptions { Salt = "test-salt" }), NullLogger<FaqSearchLogQueue>.Instance);
 
-    private static FaqService CreateService(FakeFaqRepo repo, FaqSearchLogQueue? queue = null)
-        => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator(), queue ?? CreateQueue(), new FakeSearchLogRepo());
+    private static FaqViewLogQueue CreateViewQueue()
+        => new(new MemoryCache(new MemoryCacheOptions()), Options.Create(new FaqSearchLogOptions { Salt = "test-salt" }), NullLogger<FaqViewLogQueue>.Instance);
+
+    private static FaqService CreateService(FakeFaqRepo repo, FaqSearchLogQueue? queue = null, FaqViewLogQueue? viewQueue = null)
+        => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator(), queue ?? CreateQueue(), new FakeSearchLogRepo(), viewQueue ?? CreateViewQueue());
 
     [Fact]
     public async Task GetById_SecondCall_IsServedFromCache()
@@ -309,6 +358,152 @@ public class FaqServiceCacheTests
         await service.GetByLanguagePagedAsync(new FaqQueryParameters(Lang: "sv"), "session-1");
 
         Assert.Equal(0, queue.Reader.Count);
+    }
+
+    [Fact]
+    public async Task GetWithRelated_ExplicitRelations_AreReturnedInOrderWithoutFallback()
+    {
+        var articleA = Guid.NewGuid();
+        var articleB = Guid.NewGuid();
+        var articleC = Guid.NewGuid();
+        var repo = new FakeFaqRepo(new[]
+        {
+            Entry(1, relationId: articleA),
+            Entry(2, relationId: articleB),
+            Entry(3, relationId: articleC),
+            Entry(4, helpful: 10)
+        });
+        repo.Relations[articleA] = new List<Guid> { articleC, articleB };
+        var service = CreateService(repo);
+
+        var entry = await service.GetWithRelatedAsync(1, "sv");
+
+        Assert.NotNull(entry);
+        Assert.Equal(new[] { 3, 2 }, entry.RelatedFaqs!.Select(r => r.Id));
+        Assert.Equal(0, repo.GetPopularCalls);
+    }
+
+    [Fact]
+    public async Task GetWithRelated_RelatedArticleMissingInLanguage_IsSkipped()
+    {
+        var articleA = Guid.NewGuid();
+        var onlyEnglish = Guid.NewGuid();
+        var both = Guid.NewGuid();
+        var repo = new FakeFaqRepo(new[]
+        {
+            Entry(1, relationId: articleA),
+            Entry(2, "en", relationId: onlyEnglish),
+            Entry(3, relationId: both),
+            Entry(4, "en", relationId: both)
+        });
+        repo.Relations[articleA] = new List<Guid> { onlyEnglish, both };
+        var service = CreateService(repo);
+
+        var entry = await service.GetWithRelatedAsync(1, "sv");
+
+        Assert.Equal(new[] { 3 }, entry!.RelatedFaqs!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public async Task GetWithRelated_NoExplicitRelations_FallsBackToPopularInSameCategory()
+    {
+        var repo = new FakeFaqRepo(new[]
+        {
+            Entry(1, category: "Kort"),
+            Entry(2, category: "Kort", helpful: 1),
+            Entry(3, category: "Kort", helpful: 5),
+            Entry(4, category: "Kort", helpful: 3),
+            Entry(5, category: "Kort", helpful: 0),
+            Entry(6, category: "Lån", helpful: 50),
+            Entry(7, "en", category: "Kort", helpful: 50)
+        });
+        var service = CreateService(repo);
+
+        var entry = await service.GetWithRelatedAsync(1, null);
+
+        Assert.Equal(new[] { 3, 4, 2 }, entry!.RelatedFaqs!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public async Task GetWithRelated_NoCategory_ReturnsEmptyList()
+    {
+        var repo = new FakeFaqRepo(new[] { Entry(1, category: ""), Entry(2, category: "", helpful: 5) });
+        var service = CreateService(repo);
+
+        var entry = await service.GetWithRelatedAsync(1, "sv");
+
+        Assert.Empty(entry!.RelatedFaqs!);
+        Assert.Equal(0, repo.GetPopularCalls);
+    }
+
+    [Fact]
+    public async Task GetWithRelated_WrongLanguage_ReturnsNull()
+    {
+        var repo = new FakeFaqRepo(new[] { Entry(1, "en") });
+        var service = CreateService(repo);
+
+        Assert.Null(await service.GetWithRelatedAsync(1, "sv"));
+        Assert.NotNull(await service.GetWithRelatedAsync(1, "EN"));
+    }
+
+    [Fact]
+    public async Task GetWithRelated_SecondCall_IsServedFromCacheUntilRelationsChange()
+    {
+        var articleA = Guid.NewGuid();
+        var articleB = Guid.NewGuid();
+        var repo = new FakeFaqRepo(new[] { Entry(1, relationId: articleA), Entry(2, relationId: articleB) });
+        var service = CreateService(repo);
+
+        await service.GetWithRelatedAsync(1, "sv");
+        await service.GetWithRelatedAsync(1, "sv");
+        Assert.Equal(1, repo.GetRelatedCalls);
+
+        await service.SetRelatedAsync(articleA, new[] { articleB });
+        var entry = await service.GetWithRelatedAsync(1, "sv");
+
+        Assert.Equal(2, repo.GetRelatedCalls);
+        Assert.Equal(new[] { 2 }, entry!.RelatedFaqs!.Select(r => r.Id));
+    }
+
+    [Fact]
+    public async Task SetRelated_InvalidIds_Throw()
+    {
+        var articleA = Guid.NewGuid();
+        var articleB = Guid.NewGuid();
+        var repo = new FakeFaqRepo(new[] { Entry(1, relationId: articleA), Entry(2, relationId: articleB) });
+        var service = CreateService(repo);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.SetRelatedAsync(articleA, new[] { articleA }));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.SetRelatedAsync(articleA, new[] { articleB, articleB }));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.SetRelatedAsync(articleA, new[] { Guid.NewGuid() }));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.SetRelatedAsync(articleA,
+            Enumerable.Range(0, FaqService.MaxRelatedFaqs + 1).Select(_ => Guid.NewGuid()).ToList()));
+
+        Assert.Empty(repo.Relations);
+    }
+
+    [Fact]
+    public async Task SetRelated_UnknownArticle_ReturnsFalse()
+    {
+        var articleB = Guid.NewGuid();
+        var repo = new FakeFaqRepo(new[] { Entry(1, relationId: articleB) });
+        var service = CreateService(repo);
+
+        Assert.False(await service.SetRelatedAsync(Guid.NewGuid(), new[] { articleB }));
+        Assert.Null(await service.GetRelatedRelationIdsAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task RegisterView_QueuesExistingEntryOnly()
+    {
+        var repo = new FakeFaqRepo(new[] { Entry(1) });
+        var viewQueue = CreateViewQueue();
+        var service = CreateService(repo, viewQueue: viewQueue);
+
+        Assert.True(await service.RegisterViewAsync(1, "session-1"));
+        Assert.False(await service.RegisterViewAsync(2, "session-1"));
+
+        Assert.Equal(1, viewQueue.Reader.Count);
     }
 
     [Fact]

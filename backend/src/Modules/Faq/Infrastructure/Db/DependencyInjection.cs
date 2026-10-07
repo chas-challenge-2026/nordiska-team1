@@ -31,6 +31,10 @@ public static class DependencyInjection
 
         services.AddSingleton<FaqSearchLogQueue>();
         services.AddScoped<IFaqSearchLogRepository, FaqSearchLogRepository>();
+
+        // Views use the same salt, queue capacity and retention as the search log
+        services.AddSingleton<FaqViewLogQueue>();
+        services.AddScoped<IFaqViewLogRepository, FaqViewLogRepository>();
         return services;
     }
 }

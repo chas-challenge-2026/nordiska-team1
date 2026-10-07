@@ -4,7 +4,7 @@ using Nordiska.Modules.Faq.Application;
 namespace Nordiska.FrontendApi.BackgroundWorkers;
 
 /// <summary>
-/// Deletes FAQ search logs older than the retention period, once at startup and then on an interval.
+/// Deletes FAQ search and view logs older than the retention period, once at startup and then on an interval.
 /// </summary>
 public sealed class FaqSearchLogCleanupWorker : BackgroundService
 {
@@ -48,13 +48,20 @@ public sealed class FaqSearchLogCleanupWorker : BackgroundService
         {
             using var scope = _scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IFaqSearchLogRepository>();
+            var viewRepository = scope.ServiceProvider.GetRequiredService<IFaqViewLogRepository>();
 
             var cutoff = DateTime.UtcNow.AddDays(-_options.RetentionDays);
             var deleted = await repository.DeleteOlderThanAsync(cutoff, cancellationToken);
+            var deletedViews = await viewRepository.DeleteOlderThanAsync(cutoff, cancellationToken);
 
             if (deleted > 0)
             {
                 _logger.LogInformation("Deleted {Count} FAQ search log(s) older than {Cutoff}", deleted, cutoff);
+            }
+
+            if (deletedViews > 0)
+            {
+                _logger.LogInformation("Deleted {Count} FAQ view log(s) older than {Cutoff}", deletedViews, cutoff);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -63,7 +70,7 @@ public sealed class FaqSearchLogCleanupWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to clean up old FAQ search logs");
+            _logger.LogError(ex, "Failed to clean up old FAQ search and view logs");
         }
     }
 }

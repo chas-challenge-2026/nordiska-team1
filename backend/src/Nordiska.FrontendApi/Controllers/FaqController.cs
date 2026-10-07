@@ -321,8 +321,139 @@ public sealed class FaqController(FaqService service) : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves an FAQ entry by its ID.
+    /// Retrieves the related articles of an FAQ article, in the order they're shown. Requires the faq:manage permission.
     /// </summary>
+    /// <remarks>
+    /// Only returns the related articles set by an admin, not the popular fallback.
+    /// </remarks>
+    /// <param name="relationId">The RelationId shared by the language versions of the article.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">RelationIds of the related articles, empty if none are set.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+    /// <response code="404">FAQ article not found.</response>
+    [HttpGet("relation/{relationId:guid}/related")]
+    [Authorize(Policy = "faq:manage")]
+    [ProducesResponseType(typeof(IReadOnlyList<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<Guid>>> GetRelated(
+        [FromRoute] Guid relationId,
+        CancellationToken cancellationToken)
+    {
+        var related = await service.GetRelatedRelationIdsAsync(relationId, cancellationToken);
+        if (related is null)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "FAQ entry not found.");
+        }
+
+        return Ok(related);
+    }
+
+    /// <summary>
+    /// Sets the related articles of an FAQ article, replacing the current ones. Requires the faq:manage permission.
+    /// </summary>
+    /// <remarks>
+    /// Relations are one-way and cover every language version of the articles.
+    /// Send an empty list to go back to the popular articles in the same category.
+    /// </remarks>
+    /// <param name="relationId">The RelationId shared by the language versions of the article.</param>
+    /// <param name="request">RelationIds of the related articles in the order they should be shown (max 5).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Related articles saved.</response>
+    /// <response code="400">Too many, duplicate, unknown or self-referencing related articles.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+    /// <response code="404">FAQ article not found.</response>
+    [HttpPut("relation/{relationId:guid}/related")]
+    [Authorize(Policy = "faq:manage")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetRelated(
+        [FromRoute] Guid relationId,
+        [FromBody] SetRelatedFaqsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var updated = await service.SetRelatedAsync(relationId, request.RelatedRelationIds, cancellationToken);
+        if (!updated)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "FAQ entry not found.");
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Registers that an FAQ article was opened. Used to find the most popular articles in a category.
+    /// </summary>
+    /// <remarks>
+    /// Views are saved in the background. The same article opened from the same session is only counted once per 15 minutes.
+    /// </remarks>
+    /// <param name="id">The unique identifier of the FAQ entry.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="202">View registered.</response>
+    /// <response code="404">FAQ entry not found.</response>
+    [HttpPost("{id:int}/view")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RegisterView(
+        [FromRoute, Range(1, int.MaxValue)] int id,
+        CancellationToken cancellationToken)
+    {
+        var found = await service.RegisterViewAsync(id, GetSessionKey(), cancellationToken);
+        if (!found)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "FAQ entry not found.");
+        }
+
+        return Accepted();
+    }
+
+    /// <summary>
+    /// Retrieves an FAQ entry by language and ID, with its related articles in the same language.
+    /// </summary>
+    /// <param name="lang">The language code (e.g. 'sv', 'en').</param>
+    /// <param name="id">The unique identifier of the FAQ entry.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">FAQ entry retrieved successfully.</response>
+    /// <response code="400">Invalid identifier.</response>
+    /// <response code="404">FAQ entry not found in this language.</response>
+    [HttpGet("{lang:regex(^(sv|en)$)}/{id:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FaqEntryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<FaqEntryResponse>> GetByLanguageAndId(
+        [FromRoute] string lang,
+        [FromRoute, Range(1, int.MaxValue)] int id,
+        CancellationToken cancellationToken)
+    {
+        var entry = await service.GetWithRelatedAsync(id, lang, cancellationToken);
+        if (entry is null)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "FAQ entry not found.");
+        }
+
+        return Ok(entry);
+    }
+
+    /// <summary>
+    /// Retrieves an FAQ entry by its ID, with its related articles in the same language.
+    /// </summary>
+    /// <remarks>
+    /// Related articles are the ones set by an admin. If none are set, the 3 most viewed articles
+    /// in the same category over the last 30 days are returned instead.
+    /// </remarks>
     /// <param name="id">The unique identifier of the FAQ entry.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">FAQ entry retrieved successfully.</response>
@@ -337,8 +468,9 @@ public sealed class FaqController(FaqService service) : ControllerBase
         [FromRoute, Range(1, int.MaxValue)] int id,
         CancellationToken cancellationToken)
     {
-        var entry = await service.GetByIdAsync(
+        var entry = await service.GetWithRelatedAsync(
             id,
+            null,
             cancellationToken);
 
         if (entry is null)
@@ -367,7 +499,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
         return Ok(result);
     }
 
-    // Search is anonymous so there is no real session, IP + browser is close enough to tell users apart.
+    // Search and views are anonymous so there is no real session, IP + browser is close enough to tell users apart.
     // It's hashed with a salt before it is stored.
     private string GetSessionKey()
     {
