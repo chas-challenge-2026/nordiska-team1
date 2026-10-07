@@ -107,7 +107,7 @@ internal static class ConsoleUi
         if (trimmed.StartsWith("[START]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[GENERATE]", StringComparison.Ordinal) ||
             trimmed.Contains("[GENERATE]", StringComparison.Ordinal) ||
-            trimmed.StartsWith("[PASSWORDS]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[SECRETS]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[ENV]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[CONNECTION STRINGS]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[DATABASE TEST]", StringComparison.Ordinal) ||
@@ -214,9 +214,9 @@ internal static class Program
             await DatabaseSetup.CheckDockerAsync(root);
             await DatabaseSetup.RestoreToolsAsync(root);
 
-            // Keep existing generated passwords stable between setup runs.
-            // Only missing or empty password variables are generated.
-            PasswordGenerator.EnsureEnv(root);
+            // Keep existing generated secrets stable between setup runs.
+            // Only missing, empty, or placeholder values are generated.
+            SecretGenerator.EnsureEnv(root);
 
             var passwords = DatabaseSetup.ReadEnv(root);
 
@@ -610,20 +610,22 @@ internal static class Program
     }
 }
 
-internal static class PasswordGenerator
+internal static class SecretGenerator
 {
-    private static readonly string[] PasswordVariables =
+    private static readonly string[] SecretVariables =
     [
         "POSTGRES_BOOTSTRAP_PASSWORD",
         "NORDISKA_MIGRATOR_PASSWORD",
         "NORDISKA_API_PASSWORD",
-        "NORDISKA_REPORTING_WORKER_PASSWORD"
+        "NORDISKA_REPORTING_WORKER_PASSWORD",
+        "NORDISKA_JWT_SECRET",
+        "NORDISKA_AUDIT_SIGNING_KEY"
     ];
 
-    private static readonly HashSet<string> PasswordVariableSet =
-        new(PasswordVariables, StringComparer.Ordinal);
+    private static readonly HashSet<string> SecretVariableSet =
+        new(SecretVariables, StringComparer.Ordinal);
 
-    public static IReadOnlyList<string> RequiredVariables => PasswordVariables;
+    public static IReadOnlyList<string> RequiredVariables => SecretVariables;
 
     public static string Generate()
     {
@@ -646,7 +648,7 @@ internal static class PasswordGenerator
         try
         {
             ConsoleUi.WriteLine();
-            ConsoleUi.WriteLine("[PASSWORDS] Checking generated password variables...");
+            ConsoleUi.WriteLine("[SECRETS] Checking required environment secrets...");
             ConsoleUi.WriteLine($".env path: {path}");
 
             var existingLines = File.Exists(path)
@@ -658,34 +660,36 @@ internal static class PasswordGenerator
             else
                 ConsoleUi.WriteLine("No .env file found. A new one will be created.");
 
-            var existingPasswords = ReadExistingGeneratedPasswords(existingLines);
-            var finalPasswords = new Dictionary<string, string>(StringComparer.Ordinal);
+            var existingSecrets = ReadExistingGeneratedSecrets(existingLines);
+            var finalSecrets = new Dictionary<string, string>(StringComparer.Ordinal);
             var generatedCount = 0;
             var reusedCount = 0;
 
-            foreach (var variable in PasswordVariables)
+            foreach (var variable in SecretVariables)
             {
-                if (existingPasswords.TryGetValue(variable, out var existingValue) &&
-                    !string.IsNullOrWhiteSpace(existingValue))
+                if (existingSecrets.TryGetValue(variable, out var existingValue) &&
+                    IsUsableSecret(existingValue))
                 {
-                    finalPasswords[variable] = existingValue;
+                    finalSecrets[variable] = existingValue;
                     reusedCount++;
                     ConsoleUi.WriteLine($"  [REUSE] {variable}");
                 }
                 else
                 {
-                    finalPasswords[variable] = Generate();
+                    finalSecrets[variable] = Generate();
                     generatedCount++;
 
-                    var reason = existingPasswords.ContainsKey(variable)
-                        ? "existing value was empty"
-                        : "variable was missing";
+                    var reason = !existingSecrets.TryGetValue(variable, out var invalidValue)
+                        ? "variable was missing"
+                        : string.IsNullOrWhiteSpace(invalidValue)
+                            ? "existing value was empty"
+                            : "existing value was a template placeholder";
 
                     ConsoleUi.WriteLine($"  [GENERATE] {variable} ({reason})");
                 }
             }
 
-            var updatedLines = MergeGeneratedVariables(existingLines, finalPasswords);
+            var updatedLines = MergeGeneratedSecrets(existingLines, finalSecrets);
 
             // Write to a temporary file first, then replace the destination.
             // This avoids leaving a half-written .env if writing fails.
@@ -703,47 +707,47 @@ internal static class PasswordGenerator
             }
 
             ConsoleUi.WriteLine(
-                $"[PASSWORDS] Complete. Reused {reusedCount} password(s); " +
-                $"generated {generatedCount} password(s).");
-            ConsoleUi.WriteLine("[PASSWORDS] Password values are intentionally not printed.");
+                $"[SECRETS] Complete. Reused {reusedCount} secret(s); " +
+                $"generated {generatedCount} secret(s).");
+            ConsoleUi.WriteLine("[SECRETS] Secret values are intentionally not printed.");
         }
         catch (Exception exception)
         {
             throw new InvalidOperationException(
-                $"Failed while checking or updating generated passwords in '{path}'. " +
+                $"Failed while checking or updating generated secrets in '{path}'. " +
                 $"{exception.GetType().Name}: {exception.Message}",
                 exception);
         }
     }
 
-    private static Dictionary<string, string> ReadExistingGeneratedPasswords(
+    private static Dictionary<string, string> ReadExistingGeneratedSecrets(
         IEnumerable<string> lines)
     {
-        var passwords = new Dictionary<string, string>(StringComparer.Ordinal);
+        var secrets = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var line in lines)
         {
             if (!TryReadVariable(line, out var variable, out var value) ||
-                !PasswordVariableSet.Contains(variable))
+                !SecretVariableSet.Contains(variable))
             {
                 continue;
             }
 
-            // Prefer the first non-empty value. This lets us safely clean up
-            // accidental duplicate generated entries without rotating a password.
-            if (!passwords.TryGetValue(variable, out var current) ||
-                string.IsNullOrWhiteSpace(current))
+            // Prefer the first usable value. This lets us clean up accidental
+            // duplicates without rotating an existing secret.
+            if (!secrets.TryGetValue(variable, out var current) ||
+                !IsUsableSecret(current))
             {
-                passwords[variable] = value;
+                secrets[variable] = value;
             }
         }
 
-        return passwords;
+        return secrets;
     }
 
-    private static List<string> MergeGeneratedVariables(
+    private static List<string> MergeGeneratedSecrets(
         IEnumerable<string> existingLines,
-        IReadOnlyDictionary<string, string> passwords)
+        IReadOnlyDictionary<string, string> secrets)
     {
         var result = new List<string>();
         var written = new HashSet<string>(StringComparer.Ordinal);
@@ -751,25 +755,39 @@ internal static class PasswordGenerator
         foreach (var line in existingLines)
         {
             if (!TryReadVariable(line, out var variable, out _) ||
-                !PasswordVariableSet.Contains(variable))
+                !SecretVariableSet.Contains(variable))
             {
                 result.Add(line);
                 continue;
             }
 
             // Normalize the first occurrence to the chosen value and remove
-            // accidental duplicates. Existing non-empty passwords are reused.
+            // accidental duplicates. Existing usable secrets are reused.
             if (written.Add(variable))
-                result.Add($"{variable}={passwords[variable]}");
+                result.Add($"{variable}={secrets[variable]}");
         }
 
-        foreach (var variable in PasswordVariables)
+        foreach (var variable in SecretVariables)
         {
             if (written.Add(variable))
-                result.Add($"{variable}={passwords[variable]}");
+                result.Add($"{variable}={secrets[variable]}");
         }
 
         return result;
+    }
+
+    private static bool IsUsableSecret(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        return !string.Equals(
+                   value,
+                   "placeholder",
+                   StringComparison.OrdinalIgnoreCase) &&
+               !value.StartsWith(
+                   "replace-with-",
+                   StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryReadVariable(
@@ -852,18 +870,18 @@ internal static class DatabaseSetup
                 }
             }
 
-            foreach (var requiredVariable in PasswordGenerator.RequiredVariables)
+            foreach (var requiredVariable in SecretGenerator.RequiredVariables)
             {
                 if (!values.TryGetValue(requiredVariable, out var value))
                 {
                     throw new InvalidOperationException(
-                        $"Required generated password '{requiredVariable}' is missing from '{path}'.");
+                        $"Required generated secret '{requiredVariable}' is missing from '{path}'.");
                 }
 
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     throw new InvalidOperationException(
-                        $"Required generated password '{requiredVariable}' is empty in '{path}'.");
+                        $"Required generated secret '{requiredVariable}' is empty in '{path}'.");
                 }
             }
 
