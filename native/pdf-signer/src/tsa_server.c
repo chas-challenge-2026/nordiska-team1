@@ -1,7 +1,7 @@
 #include "tsa_server.h"
 #include "key_load.h"
 #include "cert_load.h"
-
+#include "runtime_config.h"
 #include <openssl/ts.h>
 #include <openssl/x509.h>
 
@@ -153,8 +153,8 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
 
   key_loader_config_t loader_config = {
       .pkcs11_enabled       = true,
-      .pkcs11_provider_name = "pkcs11",
-      .pkcs11_module_path   = "/usr/lib/libsofthsm2.so",
+      .pkcs11_provider_name = runtime_config_pkcs11_provider(),
+      .pkcs11_module_path   = runtime_config_pkcs11_module(),
       .pkcs11_no_deinit     = true,
   };
 
@@ -167,9 +167,7 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
 
   key_spec_t key_spec = {
       .source       = KEY_SOURCE_PKCS11,
-      .u.pkcs11.uri = "pkcs11:token=key-load-dev;"
-                      "object=pdf-signer-test;"
-                      "type=private",
+      .u.pkcs11.uri = runtime_config_pkcs11_uri(),
   };
 
   key_credentials_t credentials = {
@@ -184,7 +182,7 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
     return TSA_SERVER_CRYPTO_ERROR;
   }
 
-  cert_status_t cert_status = cert_load_file("tests/data/tsa_cert.pem", &server->cert);
+  cert_status_t cert_status = cert_load_file(runtime_config_tsa_cert(), &server->cert);
 
   if (cert_status != CERT_STATUS_OK) {
     tsa_server_destroy(server);

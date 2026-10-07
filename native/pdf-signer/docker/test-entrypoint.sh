@@ -62,6 +62,9 @@ openssl req \
   -addext "keyUsage = critical,digitalSignature" \
   -addext "extendedKeyUsage = critical,timeStamping"
 
+cp tests/data/tsa_cert.pem /usr/local/share/ca-certificates/pdf-tsa-test.crt
+update-ca-certificates
+
 openssl x509 \
   -in tests/data/signing_cert.pem \
   -outform DER \

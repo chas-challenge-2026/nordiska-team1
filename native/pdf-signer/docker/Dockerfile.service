@@ -1,0 +1,24 @@
+FROM ubuntu:26.04
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    openssl \
+    softhsm2 \
+    libsofthsm2 \
+    pkcs11-provider \
+    opensc \
+    ca-certificates \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY native/pdf-signer/ ./
+
+RUN make services
+
+RUN chmod +x docker/service-entrypoint.sh
+
+ENTRYPOINT ["/app/docker/service-entrypoint.sh"]

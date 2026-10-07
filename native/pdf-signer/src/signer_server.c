@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include "runtime_config.h"
 
 /*---------------------INTERNAL----------------------_*/
 
@@ -57,7 +58,12 @@ int signer_server_run(pdf_signer_t* signer, int shutdown_fd) {
   struct sockaddr_un addr = {0};
   addr.sun_family         = AF_UNIX;
 
-  strncpy(addr.sun_path, "/tmp/pdf-signer.sock", sizeof(addr.sun_path) - 1);
+  const char* socket_path = runtime_config_signer_socket();
+  if (strlen(socket_path) >= sizeof(addr.sun_path)) {
+    close(fd);
+    return 1;
+  }
+  strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
   unlink(addr.sun_path);
 
   if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
@@ -143,14 +149,17 @@ int signer_server_run(pdf_signer_t* signer, int shutdown_fd) {
     uint32_t version_net;
     uint32_t algorithm_net;
     uint32_t digest_len_net;
+    uint32_t sign_mode_net;
 
     memcpy(&version_net, headers, 4);
     memcpy(&algorithm_net, headers + 4, 4);
     memcpy(&digest_len_net, headers + 8, 4);
+    memcpy(&sign_mode_net, headers + 12, 4);
 
     uint32_t version    = ntohl(version_net);
     uint32_t algorithm  = ntohl(algorithm_net);
     uint32_t digest_len = ntohl(digest_len_net);
+    uint32_t sign_mode  = ntohl(sign_mode_net);
 
 
     if (version != SIGNER_PROTOCOL_VERSION) {
@@ -173,6 +182,15 @@ int signer_server_run(pdf_signer_t* signer, int shutdown_fd) {
 
     if (digest_len != SIGNER_SHA256_DIGEST_LEN) {
       printf("Invalid digest length\n");
+
+      send_error_response(client_fd, SIGNER_STATUS_INVALID_REQUEST);
+
+      close(client_fd);
+      continue;
+    }
+
+    if (sign_mode != SIGNER_MODE_PLAIN && sign_mode != SIGNER_MODE_TIMESTAMP) {
+      printf("Invalid sign mode\n");
 
       send_error_response(client_fd, SIGNER_STATUS_INVALID_REQUEST);
 
@@ -211,6 +229,7 @@ int signer_server_run(pdf_signer_t* signer, int shutdown_fd) {
         .version          = version,
         .digest_algorithm = algorithm,
         .digest_len       = digest_len,
+        .sign_mode        = sign_mode,
     };
 
     memcpy(req.digest, buffer, SIGNER_REQUEST_DIGEST_SIZE);
@@ -221,7 +240,13 @@ int signer_server_run(pdf_signer_t* signer, int shutdown_fd) {
 
     pdf_sign_result_t res = {0};
 
-    pdf_sign_status_t status = pdf_signer_sign(signer, &sign_req, &res);
+    pdf_sign_status_t status;
+
+    if (req.sign_mode == SIGNER_MODE_TIMESTAMP) {
+      status = pdf_signer_sign_with_timestamp(signer, &sign_req, &res);
+    } else {
+      status = pdf_signer_sign(signer, &sign_req, &res);
+    }
 
     if (status != PDF_SIGN_OK) {
       send_error_response(client_fd, SIGNER_STATUS_SIGNING_ERROR);

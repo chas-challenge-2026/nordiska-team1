@@ -42,6 +42,9 @@ typedef struct
 pdf_sign_status_t pdf_signer_create(pdf_signer_t** out);
 pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t* req,
                                   pdf_sign_result_t* result);
+pdf_sign_status_t pdf_signer_sign_with_timestamp(pdf_signer_t*             signer,
+                                                 const pdf_sign_request_t* req,
+                                                 pdf_sign_result_t*        result);
 void              pdf_sign_result_dispose(pdf_sign_result_t* result);
 void              pdf_signer_destroy(pdf_signer_t* signer);
 

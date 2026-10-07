@@ -49,7 +49,7 @@ static int write_exact(int fd, const unsigned char* buffer, size_t len) {
   return 0;
 }
 
-static int test_sign_request(void) {
+static int test_sign_request_mode(uint32_t sign_mode) {
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
   CHECK(fd >= 0);
 
@@ -62,19 +62,16 @@ static int test_sign_request(void) {
 
   unsigned char request[SIGNER_REQUEST_SIZE] = {0};
 
-  uint32_t version_net = htonl(SIGNER_PROTOCOL_VERSION);
-
-  uint32_t algorithm_net = htonl(SIGNER_DIGEST_SHA256);
-
+  uint32_t version_net    = htonl(SIGNER_PROTOCOL_VERSION);
+  uint32_t algorithm_net  = htonl(SIGNER_DIGEST_SHA256);
   uint32_t digest_len_net = htonl(SIGNER_SHA256_DIGEST_LEN);
+  uint32_t sign_mode_net  = htonl(sign_mode);
 
   memcpy(request, &version_net, 4);
   memcpy(request + 4, &algorithm_net, 4);
   memcpy(request + 8, &digest_len_net, 4);
+  memcpy(request + 12, &sign_mode_net, 4);
 
-  /*
-   * Dummy SHA-256 digest.
-   */
   memset(request + SIGNER_REQUEST_HEADER_SIZE, 0x42, SIGNER_SHA256_DIGEST_LEN);
 
   CHECK(write_exact(fd, request, sizeof(request)) == 0);
@@ -97,7 +94,6 @@ static int test_sign_request(void) {
   CHECK(hex_len <= SIGNER_RESPONSE_MAX_SIZE);
 
   unsigned char* contents_hex = malloc((size_t)hex_len + 1);
-
   CHECK(contents_hex != NULL);
 
   CHECK(read_exact(fd, contents_hex, hex_len) == 0);
@@ -115,7 +111,6 @@ static int test_sign_request(void) {
 
   return 0;
 }
-
 static int test_unsupported_version(void) {
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
   CHECK(fd >= 0);
@@ -132,10 +127,12 @@ static int test_unsupported_version(void) {
   uint32_t version_net    = htonl(SIGNER_PROTOCOL_VERSION + 1);
   uint32_t algorithm_net  = htonl(SIGNER_DIGEST_SHA256);
   uint32_t digest_len_net = htonl(SIGNER_SHA256_DIGEST_LEN);
+  uint32_t sign_mode_net  = htonl(SIGNER_MODE_PLAIN);
 
   memcpy(request, &version_net, 4);
   memcpy(request + 4, &algorithm_net, 4);
   memcpy(request + 8, &digest_len_net, 4);
+  memcpy(request + 12, &sign_mode_net, 4);
 
   CHECK(write_exact(fd, request, sizeof(request)) == 0);
 
@@ -169,13 +166,16 @@ static int test_unsupported_algorithm(void) {
 
   unsigned char request[SIGNER_REQUEST_SIZE] = {0};
 
+
   uint32_t version_net    = htonl(SIGNER_PROTOCOL_VERSION);
   uint32_t algorithm_net  = htonl(SIGNER_DIGEST_SHA256 + 1);
   uint32_t digest_len_net = htonl(SIGNER_SHA256_DIGEST_LEN);
+  uint32_t sign_mode_net  = htonl(SIGNER_MODE_PLAIN);
 
   memcpy(request, &version_net, 4);
   memcpy(request + 4, &algorithm_net, 4);
   memcpy(request + 8, &digest_len_net, 4);
+  memcpy(request + 12, &sign_mode_net, 4);
 
   CHECK(write_exact(fd, request, sizeof(request)) == 0);
 
@@ -208,15 +208,15 @@ static int test_invalid_digest_length(void) {
   CHECK(connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 
   unsigned char request[SIGNER_REQUEST_SIZE] = {0};
-
-  uint32_t version_net    = htonl(SIGNER_PROTOCOL_VERSION);
-  uint32_t algorithm_net  = htonl(SIGNER_DIGEST_SHA256);
-  uint32_t digest_len_net = htonl(SIGNER_SHA256_DIGEST_LEN - 1);
+  uint32_t      version_net                  = htonl(SIGNER_PROTOCOL_VERSION);
+  uint32_t      algorithm_net                = htonl(SIGNER_DIGEST_SHA256);
+  uint32_t      digest_len_net               = htonl(SIGNER_SHA256_DIGEST_LEN - 1);
+  uint32_t      sign_mode_net                = htonl(SIGNER_MODE_PLAIN);
 
   memcpy(request, &version_net, 4);
   memcpy(request + 4, &algorithm_net, 4);
   memcpy(request + 8, &digest_len_net, 4);
-
+  memcpy(request + 12, &sign_mode_net, 4);
   CHECK(write_exact(fd, request, sizeof(request)) == 0);
 
   unsigned char response_header[SIGNER_RESPONSE_HEADER_SIZE];
@@ -239,7 +239,8 @@ static int test_invalid_digest_length(void) {
 int main(void) {
   int failed = 0;
 
-  failed += test_sign_request();
+  failed += test_sign_request_mode(SIGNER_MODE_PLAIN);
+  failed += test_sign_request_mode(SIGNER_MODE_TIMESTAMP);
   failed += test_unsupported_version();
   failed += test_unsupported_algorithm();
   failed += test_invalid_digest_length();

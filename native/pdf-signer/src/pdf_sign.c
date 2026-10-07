@@ -5,6 +5,8 @@
 #include <string.h>
 #include <openssl/cms.h>
 #include <stdio.h>
+#include "tsa_client.h"
+#include "runtime_config.h"
 
 /*---------------------------INTERNAL-----------------------------*/
 struct pdf_signer
@@ -138,11 +140,10 @@ pdf_sign_status_t pdf_signer_create(pdf_signer_t** out) {
   if (!signer) {
     return PDF_SIGN_INTERNAL_ERROR;
   }
-
   key_loader_config_t loader_config = {
       .pkcs11_enabled       = true,
-      .pkcs11_provider_name = "pkcs11",
-      .pkcs11_module_path   = "/usr/lib/libsofthsm2.so",
+      .pkcs11_provider_name = runtime_config_pkcs11_provider(),
+      .pkcs11_module_path   = runtime_config_pkcs11_module(),
       .pkcs11_no_deinit     = true,
   };
 
@@ -154,9 +155,7 @@ pdf_sign_status_t pdf_signer_create(pdf_signer_t** out) {
 
   key_spec_t key_spec = {
       .source       = KEY_SOURCE_PKCS11,
-      .u.pkcs11.uri = "pkcs11:token=key-load-dev;"
-                      "object=pdf-signer-test;"
-                      "type=private",
+      .u.pkcs11.uri = runtime_config_pkcs11_uri(),
   };
 
   key_credentials_t credentials = {
@@ -171,8 +170,7 @@ pdf_sign_status_t pdf_signer_create(pdf_signer_t** out) {
     return PDF_SIGN_CRYPTO_ERROR;
   }
 
-  cert_status_t cert_status = cert_load_file("tests/data/signing_cert.pem", &signer->cert);
-
+  cert_status_t cert_status = cert_load_file(runtime_config_signing_cert(), &signer->cert);
   if (cert_status != CERT_STATUS_OK) {
     pdf_signer_destroy(signer);
     return PDF_SIGN_CERTIFICATE_ERROR;
@@ -216,8 +214,134 @@ pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t
     return PDF_SIGN_CMS_ERROR;
   }
 
-  printf("CMS DER length: %zu\n", der_len);
 
+  size_t hex_len = 0;
+  char*  hex     = der_to_hex(der, der_len, &hex_len);
+
+  free(der);
+  CMS_ContentInfo_free(cms);
+
+  if (!hex) {
+    return PDF_SIGN_OUTPUT_ERROR;
+  }
+
+  result->contents_hex     = hex;
+  result->contents_hex_len = hex_len;
+
+  return PDF_SIGN_OK;
+}
+
+pdf_sign_status_t pdf_signer_sign_with_timestamp(pdf_signer_t*             signer,
+                                                 const pdf_sign_request_t* req,
+                                                 pdf_sign_result_t*        result) {
+  if (!signer || !req || !result) {
+    return PDF_SIGN_INVALID_ARGUMENT;
+  }
+
+  result->contents_hex     = NULL;
+  result->contents_hex_len = 0;
+
+  if (req->digest_algorithm != PDF_SIGN_DIGEST_SHA256) {
+    return PDF_SIGN_INVALID_ARGUMENT;
+  }
+
+  if (!req->digest || req->digest_len != 32) {
+    return PDF_SIGN_INVALID_ARGUMENT;
+  }
+
+  CMS_ContentInfo* cms = create_cms(signer, req);
+  if (!cms) {
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  STACK_OF(CMS_SignerInfo)* signer_infos = CMS_get0_SignerInfos(cms);
+  if (!signer_infos || sk_CMS_SignerInfo_num(signer_infos) != 1) {
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  CMS_SignerInfo* signer_info = sk_CMS_SignerInfo_value(signer_infos, 0);
+
+  const ASN1_OCTET_STRING* signature = CMS_SignerInfo_get0_signature(signer_info);
+
+  if (!signature || !signature->data || signature->length <= 0) {
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  tsa_config_t tsa_config = {
+      .url        = runtime_config_tsa_url(),
+      .timeout_ms = 5000,
+  };
+  tsa_result_t tsa_result = {0};
+
+  tsa_status_t tsa_status =
+      tsa_request_timestamp(&tsa_config, signature->data, (size_t)signature->length, &tsa_result);
+
+  if (tsa_status != TSA_STATUS_OK) {
+    tsa_result_dispose(&tsa_result);
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  const unsigned char* p = tsa_result.token_der;
+
+  PKCS7* timestamp_token = d2i_PKCS7(NULL, &p, (long)tsa_result.token_der_len);
+
+  if (!timestamp_token || p != tsa_result.token_der + tsa_result.token_der_len) {
+    PKCS7_free(timestamp_token);
+    tsa_result_dispose(&tsa_result);
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  int token_len = i2d_PKCS7(timestamp_token, NULL);
+
+  if (token_len <= 0) {
+    PKCS7_free(timestamp_token);
+    tsa_result_dispose(&tsa_result);
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  unsigned char* token_der = malloc((size_t)token_len);
+  if (!token_der) {
+    PKCS7_free(timestamp_token);
+    tsa_result_dispose(&tsa_result);
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_INTERNAL_ERROR;
+  }
+
+  unsigned char* token_p = token_der;
+
+  if (i2d_PKCS7(timestamp_token, &token_p) != token_len) {
+    free(token_der);
+    PKCS7_free(timestamp_token);
+    tsa_result_dispose(&tsa_result);
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  if (CMS_unsigned_add1_attr_by_NID(signer_info, NID_id_smime_aa_timeStampToken, V_ASN1_SEQUENCE,
+                                    token_der, token_len) != 1) {
+    free(token_der);
+    PKCS7_free(timestamp_token);
+    tsa_result_dispose(&tsa_result);
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
+
+  free(token_der);
+  PKCS7_free(timestamp_token);
+  tsa_result_dispose(&tsa_result);
+
+  size_t         der_len = 0;
+  unsigned char* der     = cms_to_der(cms, &der_len);
+
+  if (!der) {
+    CMS_ContentInfo_free(cms);
+    return PDF_SIGN_CMS_ERROR;
+  }
 
   size_t hex_len = 0;
   char*  hex     = der_to_hex(der, der_len, &hex_len);

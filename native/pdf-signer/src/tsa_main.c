@@ -1,6 +1,6 @@
 #include "tsa_server.h"
 #include "tsa_http_server.h"
-
+#include "runtime_config.h"
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -46,7 +46,8 @@ int main(void) {
 
   printf("TSA server initialized\n");
 
-  int result = tsa_http_server_run(server, shutdown_pipe[0], 8080);
+  // unsigned short port   = runtime_config_tsa_port();
+  int result = tsa_http_server_run(server, shutdown_pipe[0], 8081);
 
   tsa_server_destroy(server);
 
