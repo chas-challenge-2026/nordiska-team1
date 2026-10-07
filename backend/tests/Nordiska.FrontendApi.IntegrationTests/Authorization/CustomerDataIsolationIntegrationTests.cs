@@ -115,7 +115,7 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
     {
         var client = await CreateAuthenticatedClientAsync();
 
-        var response = await client.PostAsJsonAsync("/api/reports/tax-report", new { accountId = 3, year = 2025 });
+        var response = await client.PostAsJsonAsync("/api/reports/tax-report", new { accountId = 3, taxYear = 2025 });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

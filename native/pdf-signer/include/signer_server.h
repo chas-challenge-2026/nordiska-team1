@@ -2,6 +2,6 @@
 #define SIGNER_SERVER_H
 #include "pdf_sign.h"
 
-int signer_server_run(pdf_signer_t* signer);
+int signer_server_run(pdf_signer_t* signer, int shutdown_fd);
 
 #endif
