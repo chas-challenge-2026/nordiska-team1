@@ -43,6 +43,7 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     /// Retrieves paginated list of conversations / support threads for the authenticated customer.
     /// </summary>
     /// <param name="folder">Folder to view ('inbox', 'sent', 'archive'). Default is 'inbox'.</param>
+    /// <param name="searchTerm">Optional search query to filter by subject or message content.</param>
     /// <param name="page">Page number (1-based, default 1).</param>
     /// <param name="pageSize">Page size (1-100, default 20).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -52,12 +53,13 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     [ProducesResponseType(typeof(PagedResult<ThreadSummaryResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<ThreadSummaryResponse>>> GetThreads(
         [FromQuery] string folder = "inbox",
+        [FromQuery] string? searchTerm = null,
         [FromQuery, System.ComponentModel.DataAnnotations.Range(1, int.MaxValue)] int page = 1,
         [FromQuery, System.ComponentModel.DataAnnotations.Range(1, 100)] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         var customerId = User.GetRequiredCustomerId();
-        var query = new InboxQueryParameters(page, pageSize, folder);
+        var query = new InboxQueryParameters(page, pageSize, folder, searchTerm);
         var result = await _service.GetThreadsAsync(customerId, query, cancellationToken);
         return Ok(result);
     }
@@ -263,6 +265,190 @@ public sealed class InboxController(IInboxService service) : ControllerBase
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Closes the specified support thread, marking it as resolved and blocking further replies.
+    /// </summary>
+    /// <param name="id">Unique identifier of the message thread.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Thread closed successfully.</response>
+    /// <response code="404">Thread not found or customer has no access.</response>
+    [HttpPatch("threads/{id:long}/close")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CloseThread(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var isStaff = User.IsInRole("Admin") || User.IsInRole("Staff");
+        var customerId = isStaff ? 0 : User.GetRequiredCustomerId();
+        var success = await _service.CloseThreadAsync(customerId, id, isStaff, cancellationToken);
+        if (!success)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Hittades inte",
+                Detail = $"Ärendet med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reopens a closed support thread allowing replies again.
+    /// </summary>
+    /// <param name="id">Unique identifier of the message thread.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Thread reopened successfully.</response>
+    /// <response code="404">Thread not found or customer has no access.</response>
+    [HttpPatch("threads/{id:long}/reopen")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReopenThread(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var isStaff = User.IsInRole("Admin") || User.IsInRole("Staff");
+        var customerId = isStaff ? 0 : User.GetRequiredCustomerId();
+        var success = await _service.ReopenThreadAsync(customerId, id, isStaff, cancellationToken);
+        if (!success)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Hittades inte",
+                Detail = $"Ärendet med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of support threads across all customers for bank staff/admin.
+    /// </summary>
+    /// <param name="parameters">Filter options including customerId, status, and searchTerm.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">List of admin thread summaries.</response>
+    /// <response code="403">Forbidden if not bank staff or admin.</response>
+    [HttpGet("admin/threads")]
+    [Authorize(Roles = "Admin,Staff")]
+    [ProducesResponseType(typeof(PagedResult<AdminThreadSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedResult<AdminThreadSummaryResponse>>> GetAdminThreads(
+        [FromQuery] AdminThreadQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _service.GetAdminThreadsAsync(parameters, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a direct support inquiry or general broadcast information message from bank staff/admin.
+    /// </summary>
+    /// <param name="request">Admin message options including customerId or broadcastToAll.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="201">Message(s) created successfully.</response>
+    /// <response code="400">Validation error.</response>
+    /// <response code="403">Forbidden if not bank staff or admin.</response>
+    [HttpPost("admin/threads")]
+    [Authorize(Roles = "Admin,Staff")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CreateAdminThread(
+        [FromBody] CreateAdminThreadRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var count = await _service.CreateAdminThreadAsync(request, cancellationToken);
+            return StatusCode(StatusCodes.Status201Created, new
+            {
+                Success = true,
+                CreatedCount = count,
+                Message = request.BroadcastToAll
+                    ? $"Meddelande skickades till {count} kunder."
+                    : "Meddelande skapades för kunden."
+            });
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Valideringsfel",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of notifications for the authenticated customer.
+    /// </summary>
+    /// <param name="unreadOnly">Filter only unread notifications.</param>
+    /// <param name="page">Page number (1-based, default 1).</param>
+    /// <param name="pageSize">Page size (1-100, default 20).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Paginated list of customer notifications.</response>
+    [HttpGet("notifications")]
+    [ProducesResponseType(typeof(PagedResult<CustomerNotificationResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<CustomerNotificationResponse>>> GetNotifications(
+        [FromQuery] bool unreadOnly = false,
+        [FromQuery, System.ComponentModel.DataAnnotations.Range(1, int.MaxValue)] int page = 1,
+        [FromQuery, System.ComponentModel.DataAnnotations.Range(1, 100)] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var query = new NotificationQueryParameters(unreadOnly, page, pageSize);
+        var result = await _service.GetNotificationsAsync(customerId, query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Marks a specific customer notification as read.
+    /// </summary>
+    /// <param name="id">Unique identifier of the notification.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Notification marked as read.</response>
+    /// <response code="404">Notification not found.</response>
+    [HttpPatch("notifications/{id:long}/read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkNotificationRead(
+        [FromRoute] long id,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var success = await _service.MarkNotificationReadAsync(customerId, id, cancellationToken);
+        if (!success)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Hittades inte",
+                Detail = $"Notisen med id '{id}' kunde inte hittas.",
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Marks all unread notifications as read for the authenticated customer.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Total count of notifications marked as read.</response>
+    [HttpPatch("notifications/read-all")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> MarkAllNotificationsRead(CancellationToken cancellationToken = default)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var count = await _service.MarkAllNotificationsReadAsync(customerId, cancellationToken);
+        return Ok(new { Count = count, Message = $"{count} notiser markerades som lästa." });
     }
 
     /// <summary>

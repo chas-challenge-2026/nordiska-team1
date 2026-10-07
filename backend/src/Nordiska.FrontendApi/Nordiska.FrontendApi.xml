@@ -1087,11 +1087,12 @@
             <response code="200">Unread count response.</response>
             <response code="401">Unauthorized.</response>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetThreads(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetThreads(System.String,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
             <summary>
             Retrieves paginated list of conversations / support threads for the authenticated customer.
             </summary>
             <param name="folder">Folder to view ('inbox', 'sent', 'archive'). Default is 'inbox'.</param>
+            <param name="searchTerm">Optional search query to filter by subject or message content.</param>
             <param name="page">Page number (1-based, default 1).</param>
             <param name="pageSize">Page size (1-100, default 20).</param>
             <param name="cancellationToken">Cancellation token.</param>
@@ -1153,6 +1154,69 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="204">Thread restored to inbox.</response>
             <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.CloseThread(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Closes the specified support thread, marking it as resolved and blocking further replies.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Thread closed successfully.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.ReopenThread(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Reopens a closed support thread allowing replies again.
+            </summary>
+            <param name="id">Unique identifier of the message thread.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Thread reopened successfully.</response>
+            <response code="404">Thread not found or customer has no access.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetAdminThreads(Nordiska.Modules.Inbox.Contracts.Requests.AdminThreadQueryParameters,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a paginated list of support threads across all customers for bank staff/admin.
+            </summary>
+            <param name="parameters">Filter options including customerId, status, and searchTerm.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of admin thread summaries.</response>
+            <response code="403">Forbidden if not bank staff or admin.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.CreateAdminThread(Nordiska.Modules.Inbox.Contracts.Requests.CreateAdminThreadRequest,System.Threading.CancellationToken)">
+            <summary>
+            Creates a direct support inquiry or general broadcast information message from bank staff/admin.
+            </summary>
+            <param name="request">Admin message options including customerId or broadcastToAll.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="201">Message(s) created successfully.</response>
+            <response code="400">Validation error.</response>
+            <response code="403">Forbidden if not bank staff or admin.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetNotifications(System.Boolean,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a paginated list of notifications for the authenticated customer.
+            </summary>
+            <param name="unreadOnly">Filter only unread notifications.</param>
+            <param name="page">Page number (1-based, default 1).</param>
+            <param name="pageSize">Page size (1-100, default 20).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Paginated list of customer notifications.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.MarkNotificationRead(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Marks a specific customer notification as read.
+            </summary>
+            <param name="id">Unique identifier of the notification.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Notification marked as read.</response>
+            <response code="404">Notification not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.MarkAllNotificationsRead(System.Threading.CancellationToken)">
+            <summary>
+            Marks all unread notifications as read for the authenticated customer.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Total count of notifications marked as read.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.StaffReply(System.Int64,Nordiska.Modules.Inbox.Contracts.Requests.StaffReplyRequest,System.Threading.CancellationToken)">
             <summary>

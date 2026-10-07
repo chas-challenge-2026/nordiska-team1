@@ -212,6 +212,13 @@ public sealed class InboxDbContext(
                 .HasConversion<int>()
                 .IsRequired();
 
+            builder.Property(x => x.IsInformationOnly)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            builder.Property(x => x.Category)
+                .HasMaxLength(100);
+
             builder.Property(x => x.CreatedAt).IsRequired();
             builder.Property(x => x.LastMessageAt).IsRequired();
 
