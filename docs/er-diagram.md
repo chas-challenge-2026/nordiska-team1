@@ -376,15 +376,7 @@ flowchart LR
     class InboxCustomer inbox
     class TaxReport,Statement,StatementEntry,Audit reporting
 ```
-
-### Why no cross-schema foreign keys?
-
-- Each module owns its own schema.
-- Reporting stores immutable historical snapshots.
-- The Reporting Worker only receives access to the reporting data it needs.
-- Modules can evolve without creating tightly coupled database migrations.
-- Least-privilege database permissions remain easier to enforce.
-
+ 
 ---
 
 <div align="center">
