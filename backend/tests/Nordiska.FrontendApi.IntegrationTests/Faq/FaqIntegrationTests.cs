@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.IntegrationTests.Postgres;
+using Nordiska.Modules.Faq.Application;
 using Nordiska.Modules.Faq.Contracts.Requests;
 using Nordiska.Modules.Faq.Contracts.Responses;
 using Nordiska.Modules.Faq.Domain;
@@ -27,6 +28,7 @@ public class FaqIntegrationTests : IAsyncLifetime
     private readonly PostgresAuthWebApplicationFactory _factory;
     private readonly List<int> _createdFaqIds = new();
     private readonly List<long> _createdCustomerIds = new();
+    private readonly List<string> _searchMarkers = new();
 
     public FaqIntegrationTests(PostgresAuthWebApplicationFactory factory)
     {
@@ -175,6 +177,100 @@ public class FaqIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [PostgresFact]
+    public async Task Search_WithoutHits_IsLoggedMaskedAndShownInContentGaps()
+    {
+        var marker = NewSearchMarker();
+        var client = _factory.CreateClient();
+
+        // Searched twice from the same client, the second one is within 15 minutes so it shouldn't be counted
+        var search = Uri.EscapeDataString($"finns inte {marker} 199001011234");
+        (await client.GetAsync($"/api/faq/sv?search={search}")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await client.GetAsync($"/api/faq/sv?search={search}")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var logs = await WaitForSearchLogsAsync(marker);
+
+        logs.Should().ContainSingle();
+        logs[0].Query.Should().Be($"finns inte {marker} [personnummer]");
+        logs[0].Query.Should().NotContain("199001011234");
+        logs[0].ResultCount.Should().Be(0);
+        logs[0].Language.Should().Be("sv");
+        logs[0].SessionHash.Should().HaveLength(64);
+
+        var admin = _factory.CreateClient();
+        admin.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateFaqManageToken());
+
+        var response = await admin.GetAsync("/api/faq/analytics/content-gaps?lang=sv&limit=200");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var gaps = await response.Content.ReadFromJsonAsync<List<FaqContentGapResponse>>();
+        gaps.Should().ContainSingle(g => g.Query.Contains(marker))
+            .Which.SearchCount.Should().Be(1);
+    }
+
+    [PostgresFact]
+    public async Task Search_WithHits_IsNotShownInContentGaps()
+    {
+        var marker = NewSearchMarker();
+        await SeedFaqEntryAsync($"Fråga om {marker}?", "Svar.", category: null, keywords: null);
+
+        var client = _factory.CreateClient();
+        await client.GetAsync($"/api/faq/sv?search={marker}");
+
+        var logs = await WaitForSearchLogsAsync(marker);
+        logs.Should().ContainSingle().Which.ResultCount.Should().Be(1);
+
+        var admin = _factory.CreateClient();
+        admin.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateFaqManageToken());
+        var gaps = await admin.GetFromJsonAsync<List<FaqContentGapResponse>>("/api/faq/analytics/content-gaps?limit=200");
+
+        gaps.Should().NotContain(g => g.Query.Contains(marker));
+    }
+
+    [PostgresFact]
+    public async Task ContentGaps_WithoutFaqManagePermission_Returns403Forbidden()
+    {
+        var client = await CreateLoggedInRegularCustomerClientAsync();
+
+        var response = await client.GetAsync("/api/faq/analytics/content-gaps");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [PostgresFact]
+    public async Task ContentGaps_WithoutAuthentication_Returns401Unauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/faq/analytics/content-gaps");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [PostgresFact]
+    public async Task DeleteOlderThan_RemovesOnlyLogsBeforeCutoff()
+    {
+        var marker = NewSearchMarker();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+            db.FaqSearchLogs.AddRange(
+                FaqSearchLog.Create($"gammal {marker}", $"gammal {marker}", "sv", 0, new string('a', 64), DateTime.UtcNow.AddDays(-100)),
+                FaqSearchLog.Create($"ny {marker}", $"ny {marker}", "sv", 0, new string('a', 64), DateTime.UtcNow.AddDays(-1)));
+            await db.SaveChangesAsync();
+        }
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var repository = scope.ServiceProvider.GetRequiredService<IFaqSearchLogRepository>();
+            await repository.DeleteOlderThanAsync(DateTime.UtcNow.AddDays(-90));
+        }
+
+        var remaining = await GetSearchLogsAsync(marker);
+        remaining.Should().ContainSingle().Which.Query.Should().StartWith("ny ");
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
 
     // Remove everything this test class created so the shared CI database stays clean
@@ -187,7 +283,44 @@ public class FaqIntegrationTests : IAsyncLifetime
         db.FaqEntries.RemoveRange(entries);
         await db.SaveChangesAsync();
 
+        foreach (var marker in _searchMarkers)
+        {
+            await db.FaqSearchLogs.Where(l => l.NormalizedQuery.Contains(marker)).ExecuteDeleteAsync();
+        }
+
         await PostgresTestData.DeleteCustomersAsync(_factory.Services, _createdCustomerIds);
+    }
+
+    // Unique text in the search so the test only looks at (and cleans up) its own log rows
+    private string NewSearchMarker()
+    {
+        var marker = "nor288x" + Guid.NewGuid().ToString("N")[..8];
+        _searchMarkers.Add(marker);
+        return marker;
+    }
+
+    private async Task<List<FaqSearchLog>> GetSearchLogsAsync(string marker)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+        return await db.FaqSearchLogs.AsNoTracking().Where(l => l.NormalizedQuery.Contains(marker)).ToListAsync();
+    }
+
+    // Searches are saved by a background worker, so give it a few seconds before giving up
+    private async Task<List<FaqSearchLog>> WaitForSearchLogsAsync(string marker)
+    {
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            var logs = await GetSearchLogsAsync(marker);
+            if (logs.Count > 0)
+            {
+                return logs;
+            }
+
+            await Task.Delay(100);
+        }
+
+        return new List<FaqSearchLog>();
     }
 
     private async Task<int> SeedFaqEntryAsync(string question, string answer, string? category, string? keywords)

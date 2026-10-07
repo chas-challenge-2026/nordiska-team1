@@ -49,7 +49,12 @@ public interface IFaqRepository
         CancellationToken cancellationToken = default);
 }
 
-public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, FaqCacheInvalidator cacheInvalidator)
+public sealed class FaqService(
+    IFaqRepository repository,
+    IMemoryCache cache,
+    FaqCacheInvalidator cacheInvalidator,
+    FaqSearchLogQueue searchLogQueue,
+    IFaqSearchLogRepository searchLogRepository)
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
 
@@ -166,11 +171,13 @@ public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, Fa
 
     public async Task<PagedResult<FaqEntryResponse>> GetByLanguagePagedAsync(
         FaqQueryParameters parameters,
+        string? sessionKey = null,
         CancellationToken cancellationToken = default)
     {
         var cacheKey = $"faq:paged:{Normalize(parameters.Lang)}|{parameters.Page}|{parameters.PageSize}|{Normalize(parameters.SearchTerm)}|{Normalize(parameters.Category)}|{Normalize(parameters.Keyword)}";
         if (cache.TryGetValue(cacheKey, out PagedResult<FaqEntryResponse>? cached) && cached is not null)
         {
+            LogSearch(parameters, cached.TotalCount, sessionKey);
             return cached;
         }
 
@@ -178,7 +185,18 @@ public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, Fa
         var result = await repository.QueryPagedAsync(parameters, cancellationToken);
 
         cache.Set(cacheKey, result, CreateEntryOptions(changeToken));
+        LogSearch(parameters, result.TotalCount, sessionKey);
         return result;
+    }
+
+    public async Task<IReadOnlyList<FaqContentGapResponse>> GetContentGapsAsync(
+        string? language,
+        int days,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        var since = DateTime.UtcNow.AddDays(-days);
+        return await searchLogRepository.GetContentGapsAsync(language, since, limit, cancellationToken);
     }
 
     public async Task<IReadOnlyList<string>> GetCategoriesAsync(
@@ -228,6 +246,17 @@ public sealed class FaqService(IFaqRepository repository, IMemoryCache cache, Fa
         }
 
         return result;
+    }
+
+    // Only the first page counts as a search, the next pages are the same search scrolled further
+    private void LogSearch(FaqQueryParameters parameters, int resultCount, string? sessionKey)
+    {
+        if (sessionKey is null || parameters.Page != 1 || string.IsNullOrWhiteSpace(parameters.SearchTerm))
+        {
+            return;
+        }
+
+        searchLogQueue.TryEnqueue(parameters.SearchTerm, parameters.Lang ?? "sv", resultCount, sessionKey);
     }
 
     private static MemoryCacheEntryOptions CreateEntryOptions(IChangeToken changeToken)

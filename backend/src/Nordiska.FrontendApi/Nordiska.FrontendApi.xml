@@ -97,6 +97,16 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.FaqSearchLogBackgroundWorker">
+            <summary>
+            Saves queued FAQ searches to the database in batches.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.BackgroundWorkers.FaqSearchLogCleanupWorker">
+            <summary>
+            Deletes FAQ search logs older than the retention period, once at startup and then on an interval.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.BackgroundWorkers.PlannedTransactionsBackgroundWorker">
             <summary>
             Background worker that periodically polls and executes pending planned and recurring transactions.
@@ -414,6 +424,23 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Paginated list of FAQ entries matching the criteria.</response>
             <response code="400">Validation failed for query parameters.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetContentGaps(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves FAQ searches that gave no results, most searched first. Requires the faq:manage permission.
+            </summary>
+            <remarks>
+            Searches are saved in the background, so a search made just now can take a moment to show up.
+            The same search from the same session is only counted once per 15 minutes.
+            </remarks>
+            <param name="lang">Optional language filter ('sv' or 'en').</param>
+            <param name="days">How many days back to look (default 30, max 90).</param>
+            <param name="limit">Max number of searches to return (default 50, max 200).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">Searches without results, grouped by normalized query and language.</response>
+            <response code="400">Validation failed for query parameters.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetCategories(System.String,System.Threading.CancellationToken)">
             <summary>
