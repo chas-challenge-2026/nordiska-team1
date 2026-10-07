@@ -229,6 +229,88 @@
         "paragraph": "Ett internt serverfel uppstod. Försök igen om en stund.",
         "button": "Tillbaka till hem"
     },
+    "inbox": {
+        "title": "Inkorg",
+        "messages": "Meddelanden",
+        "notifications": "Aviseringar",
+        "documents": "Dokument",
+        "terms": "Villkor",
+        "sent": "Skickat",
+        "archive": "Arkiv",
+        "unread": "Olästa",
+        "subject": "Ämne",
+        "loading": "Laddar...",
+        "try-again": "Försök igen",
+        "no-subject": "(inget ämne)",
+        "untitled": "(namnlös)",
+        "unread-prefix": "Oläst: ",
+        "new-prefix": "Nytt: ",
+        "message-count_one": "{{count}} meddelande",
+        "message-count_other": "{{count}} meddelanden",
+        "unread-count": "{{count}} olästa",
+        "aria-label-unread": "Inkorg, {{count}} olästa",
+        "send": "Skicka",
+        "sending": "Skickar...",
+        "mark-read": "Markera som läst",
+        "mark-read-aria": "Markera som läst: {{title}}",
+        "mark-all-read": "Markera alla som lästa",
+        "download": "Ladda ner",
+        "download-aria": "Ladda ner {{name}}",
+        "downloading": "Laddar ner...",
+        "back": "Tillbaka",
+        "folders-label": "Mappar",
+        "view-message": "Visa meddelande",
+        "select-message": "Välj ett meddelande",
+        "select-prompt": "Välj ett meddelande för att läsa det.",
+        "open-inbox": "Öppna inkorgen",
+        "empty": {
+            "messages": "Inga meddelanden.",
+            "notifications": "Inga aviseringar.",
+            "new-notifications": "Inga nya aviseringar.",
+            "documents": "Inga dokument.",
+            "terms": "Inga villkor att godkänna."
+        },
+        "thread": {
+            "status": "Status",
+            "you": "Du",
+            "support": "Kundservice",
+            "reply": "Svara",
+            "reply-sent": "Svaret har skickats.",
+            "archive": "Arkivera",
+            "restore": "Återställ"
+        },
+        "notifications-tab": {
+            "unread-only": "Endast olästa"
+        },
+        "documents-tab": {
+            "year": "År",
+            "all-years": "Alla år"
+        },
+        "terms-tab": {
+            "to-accept": "Att godkänna",
+            "version": "Version {{version}}",
+            "effective-from": "Gäller från {{date}}",
+            "accept": "Godkänn",
+            "accepting": "Godkänner...",
+            "accept-aria": "Godkänn {{title}}"
+        },
+        "ticket": {
+            "new": "Nytt meddelande",
+            "category": "Kategori",
+            "select-category": "Välj kategori",
+            "message": "Meddelande",
+            "cancel": "Avbryt",
+            "close": "Stäng",
+            "received-heading": "Vi har tagit emot ditt meddelande",
+            "received-body": "Vi svarar inom {{time}}. Du hittar svaret i din inkorg.",
+            "reply-time": "2 arbetsdagar"
+        },
+        "error": {
+            "load": "Det gick inte att hämta innehållet.",
+            "action": "Något gick fel. Försök igen.",
+            "required-fields": "Fyll i ämne, kategori och meddelande."
+        }
+    },
     "page-header": {
         "help-center": "Hjälpcenter",
         "settings": "Inställningar",

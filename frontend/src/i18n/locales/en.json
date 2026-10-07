@@ -233,6 +233,94 @@
         "paragraph": "An internal server error occurred. Please try again shortly.",
         "button": "Back to home"
     },
+    "inbox": {
+        "title": "Inbox",
+        "messages": "Messages",
+        "notifications": "Notifications",
+        "documents": "Documents",
+        "terms": "Terms",
+        "sent": "Sent",
+        "archive": "Archive",
+        "unread": "Unread",
+        "subject": "Subject",
+        "loading": "Loading...",
+        "try-again": "Try again",
+        "no-subject": "(no subject)",
+        "untitled": "(untitled)",
+        "unread-prefix": "Unread: ",
+        "new-prefix": "New: ",
+        "message-count_one": "{{count}} message",
+        "message-count_other": "{{count}} messages",
+        "unread-count": "{{count}} unread",
+        "aria-label-unread": "Inbox, {{count}} unread",
+        "send": "Send",
+        "sending": "Sending...",
+        "mark-read": "Mark as read",
+        "mark-read-aria": "Mark as read: {{title}}",
+        "mark-all-read": "Mark all as read",
+        "download": "Download",
+        "download-aria": "Download {{name}}",
+        "downloading": "Downloading...",
+        "back": "Back",
+        "folders-label": "Folders",
+        "view-message": "View message",
+        "select-message": "Select a message",
+        "select-prompt": "Select a message to read it.",
+        "open-inbox": "Open inbox",
+        "empty": {
+            "messages": "No messages.",
+            "notifications": "No notifications.",
+            "new-notifications": "No new notifications.",
+            "documents": "No documents.",
+            "terms": "No terms to accept."
+        },
+        "thread": {
+            "status": "Status",
+            "you": "You",
+            "support": "Support",
+            "reply": "Reply",
+            "reply-sent": "Reply sent.",
+            "archive": "Archive",
+            "restore": "Restore"
+        },
+        "notifications-tab": {
+            "unread-only": "Unread only"
+        },
+        "documents-tab": {
+            "year": "Year",
+            "all-years": "All years"
+        },
+        "terms-tab": {
+            "to-accept": "To accept",
+            "version": "Version {{version}}",
+            "effective-from": "Effective from {{date}}",
+            "accept": "Accept",
+            "accepting": "Accepting...",
+            "accept-aria": "Accept {{title}}"
+        },
+        "ticket": {
+            "new": "New message",
+            "category": "Category",
+            "select-category": "Select category",
+            "message": "Message",
+            "cancel": "Cancel",
+            "close": "Close",
+            "received-heading": "We have received your message",
+            "received-body": "We will reply within {{time}}. You will find the reply in your inbox.",
+            "reply-time": "2 business days",
+            "categories": {
+                "Sparkonto": "Savings account",
+                "Sparmål": "Savings goal",
+                "Skatteunderlag": "Tax statement",
+                "Allmänt": "General"
+            }
+        },
+        "error": {
+            "load": "Could not load content.",
+            "action": "Something went wrong. Try again.",
+            "required-fields": "Fill in subject, category and message."
+        }
+    },
     "page-header": {
         "help-center": "Help Center",
         "settings": "Settings",
