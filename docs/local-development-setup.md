@@ -64,12 +64,11 @@ docker compose --project-name nordiska-v2 `
 docker compose ps
 ```
 
-The `frontend`, `api`, `reporting-worker` and `db` containers should be running.
+The `api`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5031`
+- Combined frontend and backend: `http://localhost:8080`
 
 </details>
 
@@ -118,12 +117,11 @@ docker compose --project-name nordiska-v2 \
 docker compose ps
 ```
 
-The `frontend`, `api`, `reporting-worker` and `db` containers should be running.
+The `api`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5031`
+- Combined frontend and backend: `http://localhost:8080`
 
 > macOS and Linux use `\` for command continuation. PowerShell backticks do not work in `zsh` or `bash`.
 
@@ -174,12 +172,11 @@ docker compose --project-name nordiska-v2 \
 docker compose ps
 ```
 
-The `frontend`, `api`, `reporting-worker` and `db` containers should be running.
+The `api`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5031`
+- Combined frontend and backend: `http://localhost:8080`
 
 </details>
 
@@ -189,12 +186,11 @@ Open the services at:
 
 ## Common commands
 
-The local Docker environment runs four separate containers:
+The standard local Docker environment keeps the existing combined frontend and backend container:
 
 | Container | Address | Responsibility |
 |---|---|---|
-| `frontend` | `http://localhost:5173` | React and Vite development server |
-| `api` | `http://localhost:5031` | .NET backend API |
+| `api` | `http://localhost:8080` | Combined React frontend and .NET backend API |
 | `reporting-worker` | No public port | Native PDF generation and job processing |
 | `db` | `localhost:5433` | PostgreSQL database |
 
@@ -206,7 +202,7 @@ After DevSetup has been run once, frontend developers can run this from the `fro
 npm run setup:local-backend
 ```
 
-The command creates `frontend/.env.local` when needed and starts only `db`, `api` and `reporting-worker`. It never overwrites an existing `.env.local` and does not start Vite or the Docker frontend service.
+The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts only `db`, the backend-only `api` on `http://localhost:5031`, and `reporting-worker`. It never overwrites an existing `.env.local`, does not start Vite and does not change the standard combined Docker environment on `http://localhost:8080`.
 
 Start the frontend separately:
 

@@ -53,7 +53,7 @@ export async function setupLocalBackend({
             "-f",
             "docker-compose.yml",
             "-f",
-            "docker-compose.override.yml",
+            "docker-compose.frontend-local.yml",
             "up",
             "-d",
             "--build",

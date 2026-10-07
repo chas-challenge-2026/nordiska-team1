@@ -121,7 +121,7 @@ USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.Reporting.Worker.dll"]
 
-# Stage 8: Backend-only Web API runtime for local container development
+# Stage 8: Backend-only Web API runtime for local frontend development
 FROM runtime-base AS api
 
 COPY --from=backend-builder /app/publish .
@@ -139,7 +139,21 @@ USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]
 
-# Stage 9: Combined Web API + React runtime for production-like builds
-FROM api AS final
+# Stage 9: Existing combined Web API + React runtime
+FROM runtime-base AS final
 
+COPY --from=backend-builder /app/publish .
 COPY --from=frontend-builder /app/frontend/dist ./wwwroot
+
+RUN mkdir -p /var/lib/nordiska/report-documents \
+    && chown -R $APP_UID:$APP_UID /var/lib/nordiska/report-documents
+
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ReportDocumentStorage__RootPath=/var/lib/nordiska/report-documents
+
+# Run container as unprivileged non-root user
+USER $APP_UID
+
+ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]

@@ -1,0 +1,38 @@
+services:
+  db:
+    ports:
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      - ./postgres/permissions/post-migration-permissions.development.sql:/opt/nordiska/post-migration-permissions.sql:ro
+
+  api:
+    build:
+      target: api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:5031:8080"
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: frontend-development
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      VITE_API_BASE_URL: http://localhost:5031/api
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ../../frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    ports:
+      - "127.0.0.1:5173:5173"
+
+volumes:
+  frontend_node_modules:
