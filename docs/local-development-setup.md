@@ -189,8 +189,6 @@ Open the services at:
 
 ## Common commands
 
-Run these commands from `infra/v2`.
-
 The local Docker environment runs four separate containers:
 
 | Container | Address | Responsibility |
@@ -199,6 +197,24 @@ The local Docker environment runs four separate containers:
 | `api` | `http://localhost:5031` | .NET backend API |
 | `reporting-worker` | No public port | Native PDF generation and job processing |
 | `db` | `localhost:5433` | PostgreSQL database |
+
+### Local frontend with the Docker backend
+
+After DevSetup has been run once, frontend developers can run this from the `frontend` directory:
+
+```shell
+npm run setup:local-backend
+```
+
+The command creates `frontend/.env.local` when needed and starts only `db`, `api` and `reporting-worker`. It never overwrites an existing `.env.local` and does not start Vite or the Docker frontend service.
+
+Start the frontend separately:
+
+```shell
+npm run dev
+```
+
+Run the remaining Docker commands below from `infra/v2`.
 
 ### Start the environment
 
