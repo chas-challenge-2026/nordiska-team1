@@ -986,6 +986,33 @@
             <response code="403">Forbidden if user is not an administrator.</response>
             <response code="404">Message was not found.</response>
         </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController">
+            <summary>
+            API endpoints for managing and automating savings goals.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.Automate(System.Int64,Nordiska.Modules.Banking.Contracts.Requests.AutomateSavingsGoalRequest,System.Threading.CancellationToken)">
+            <summary>
+            Schedules or updates an automated recurring monthly transfer towards a savings goal.
+            </summary>
+            <param name="id">The unique identifier of the savings goal.</param>
+            <param name="request">Automation settings including source account, monthly amount, and day of month.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">The monthly automation was successfully scheduled.</response>
+            <response code="400">Invalid parameters provided.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">The savings goal or source account was not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.CancelAutomate(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Cancels an automated recurring monthly savings transfer for a savings goal.
+            </summary>
+            <param name="id">The unique identifier of the savings goal.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">The automated savings transfer was successfully cancelled.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">The savings goal was not found.</response>
+        </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController">
             <summary>
             API endpoints for querying and executing account transactions (deposits and withdrawals) using the ledger pattern.

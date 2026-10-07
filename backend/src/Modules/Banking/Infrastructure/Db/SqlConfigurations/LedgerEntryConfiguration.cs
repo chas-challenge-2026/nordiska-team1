@@ -39,5 +39,12 @@ public sealed class LedgerEntryConfiguration
             x.AccountId,
             x.CreatedAt
         });
+
+        builder.HasOne(x => x.SavingsGoal)
+            .WithMany()
+            .HasForeignKey(x => x.SavingsGoalId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(x => x.SavingsGoalId);
     }
 }

@@ -341,6 +341,60 @@ public class TestTransactionRepository : ITransactionRepository
         }
         return Task.FromResult(false);
     }
+
+    public Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(l => l.SavingsGoalId == savingsGoalId && l.IsPlanned));
+}
+
+public class TestSavingsGoalRepository : ISavingsGoalRepository
+{
+    private static readonly List<SavingsGoal> _store = new();
+    private static long _next = 1;
+
+    public static void Reset()
+    {
+        _store.Clear();
+        _next = 1;
+    }
+
+    public static void Seed(SavingsGoal goal)
+    {
+        if (goal.Id == 0) goal.Id = _next++;
+        _store.Add(goal);
+    }
+
+    public Task<SavingsGoal?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(g => g.Id == id));
+
+    public Task<List<SavingsGoal>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Where(g => g.CustomerId == customerId).ToList());
+
+    public Task<List<SavingsGoal>> GetByAccountIdAsync(long accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Where(g => g.AccountId == accountId).ToList());
+
+    public Task<long> CreateAsync(SavingsGoal goal, CancellationToken cancellationToken = default)
+    {
+        goal.Id = _next++;
+        _store.Add(goal);
+        return Task.FromResult(goal.Id);
+    }
+
+    public Task<bool> UpdateAsync(SavingsGoal goal, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(g => g.Id == goal.Id);
+        if (idx >= 0)
+        {
+            _store[idx] = goal;
+            return Task.FromResult(true);
+        }
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var count = _store.RemoveAll(g => g.Id == id);
+        return Task.FromResult(count > 0);
+    }
 }
 
 public class TestCustomerService : ICustomerService
@@ -584,6 +638,9 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<ILoanRepository>();
             services.AddScoped<ILoanRepository, TestLoanRepository>();
+
+            services.RemoveAll<ISavingsGoalRepository>();
+            services.AddScoped<ISavingsGoalRepository, TestSavingsGoalRepository>();
         });
     }
 }
