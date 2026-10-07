@@ -17,6 +17,7 @@ import TransactionsPage from "../pages/TransactionsPage";
 import SettingsPage from "../pages/SettingsPage";
 import AccountsPage from "../pages/AccountsPage";
 import FaqPage from "../pages/FaqPage";
+import InboxPage from "../pages/InboxPage";
 
 // Admin
 import Admin from "../pages/admin/Admin";
@@ -46,8 +47,9 @@ export default function AppRoutes() {
                 <Route path="/" element={<DesktopLayout />}>
                     <Route index element={<OverviewPage />} />
                     <Route path="/transfer" element={<TransferPage />} />
-                    <Route path="/transactions" element={<TransactionsPage />}/>
+                    <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/accounts" element={<AccountsPage />} />
+                    <Route path="/inbox/:threadId?" element={<InboxPage />} />
                 </Route>
             </Route>
 
