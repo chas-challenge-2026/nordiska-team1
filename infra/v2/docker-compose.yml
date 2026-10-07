@@ -47,6 +47,8 @@ services:
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       ConnectionStrings__ReportingDatabase: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__InboxDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       Jwt__SecretKey: ${NORDISKA_JWT_SECRET:?Set NORDISKA_JWT_SECRET in infra/v2/.env}
       Jwt__Issuer: NordiskaSparbanken
       Jwt__Audience: NordiskaSparbankenPortal

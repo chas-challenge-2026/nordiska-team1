@@ -15,6 +15,8 @@ services:
       - "127.0.0.1:5031:8080"
 
   frontend:
+    profiles:
+      - full-docker
     build:
       context: ../..
       dockerfile: Dockerfile
