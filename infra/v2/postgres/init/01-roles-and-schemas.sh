@@ -51,13 +51,14 @@ CREATE ROLE nordiska_reporting_worker
 CREATE SCHEMA banking AUTHORIZATION nordiska_migrator;
 CREATE SCHEMA faq AUTHORIZATION nordiska_migrator;
 CREATE SCHEMA reporting AUTHORIZATION nordiska_migrator;
+CREATE SCHEMA inbox AUTHORIZATION nordiska_migrator;
 
-REVOKE ALL ON SCHEMA banking, faq, reporting FROM PUBLIC;
+REVOKE ALL ON SCHEMA banking, faq, reporting, inbox FROM PUBLIC;
 
 GRANT CONNECT ON DATABASE :"database_name"
     TO nordiska_migrator, nordiska_api, nordiska_reporting_worker;
 
-GRANT USAGE ON SCHEMA banking, faq, reporting
+GRANT USAGE ON SCHEMA banking, faq, reporting, inbox
     TO nordiska_api;
 
 GRANT USAGE ON SCHEMA reporting
@@ -72,6 +73,9 @@ ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA faq
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA reporting
     GRANT SELECT, INSERT, UPDATE ON TABLES TO nordiska_api;
 
+ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA inbox
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO nordiska_api;
+
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA banking
     GRANT USAGE ON SEQUENCES TO nordiska_api;
 
@@ -79,6 +83,9 @@ ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA faq
     GRANT USAGE ON SEQUENCES TO nordiska_api;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA reporting
+    GRANT USAGE ON SEQUENCES TO nordiska_api;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA inbox
     GRANT USAGE ON SEQUENCES TO nordiska_api;
 SQL
 
