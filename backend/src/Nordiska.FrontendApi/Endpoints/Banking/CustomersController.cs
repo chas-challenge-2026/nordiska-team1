@@ -99,12 +99,12 @@ public sealed class CustomersController : ControllerBase
             return CustomerNotFound();
         }
 
-        var updated = await _service.UpdateAsync(targetId, request.Name, request.Email, request.PersonalNum, request.EffectivePhone, cancellationToken);
+        var updated = await _service.UpdateAsync(targetId, request.Name, request.Email, request.PersonalNum, request.EffectivePhone, request.OverviewPreference, cancellationToken);
         return Ok(updated.ToResponse());
     }
 
     /// <summary>
-    /// Partially updates specific customer profile fields (e.g. email or phone number).
+    /// Partially updates specific customer profile fields (e.g. email, phone number, or overview preferences).
     /// </summary>
     /// <param name="id">Customer ID from route.</param>
     /// <param name="request">Partial customer fields to update.</param>
@@ -125,7 +125,7 @@ public sealed class CustomersController : ControllerBase
             return CustomerNotFound();
         }
 
-        var updated = await _service.PatchProfileAsync(id, request.Name, request.Email, request.EffectivePhone, cancellationToken);
+        var updated = await _service.PatchProfileAsync(id, request.Name, request.Email, request.EffectivePhone, request.OverviewPreference, cancellationToken);
         return Ok(updated.ToResponse());
     }
 
@@ -145,7 +145,7 @@ public sealed class CustomersController : ControllerBase
             return CustomerNotFound();
         }
 
-        var updated = await _service.PatchProfileAsync(targetId, request.Name, request.Email, request.EffectivePhone, cancellationToken);
+        var updated = await _service.PatchProfileAsync(targetId, request.Name, request.Email, request.EffectivePhone, request.OverviewPreference, cancellationToken);
         return Ok(updated.ToResponse());
     }
 

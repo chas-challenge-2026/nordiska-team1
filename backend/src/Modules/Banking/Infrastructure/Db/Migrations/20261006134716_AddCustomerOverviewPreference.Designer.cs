@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 {
     [DbContext(typeof(BankingDbContext))]
-    partial class BankingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006134716_AddCustomerOverviewPreference")]
+    partial class AddCustomerOverviewPreference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -426,8 +429,6 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("AccountId", "CreatedAt");
-
                     b.ToTable("ledger_entries", "banking");
                 });
 
@@ -620,24 +621,12 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasDefaultValue("SEK");
-
                     b.Property<long>("CustomerId")
                         .HasColumnType("bigint");
 
                     b.Property<decimal>("InterestRate")
                         .HasPrecision(9, 6)
                         .HasColumnType("numeric(9,6)");
-
-                    b.Property<bool>("IsFavorite")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
 
                     b.Property<string>("Status")
                         .IsRequired()

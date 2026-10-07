@@ -240,6 +240,34 @@ public class SavingsAccountServiceTests
         Assert.Equal(created.Id, entry.AccountId);
         Assert.Equal("deposit", entry.Type);
         Assert.Equal(750m, entry.Amount);
+        Assert.True(created.EstimatedYearEndInterest > 0m);
+    }
+
+    [Fact]
+    public async Task GetById_AccountWithBalanceButNoLedgerEntries_CalculatesInterestUsingFallback()
+    {
+        var acc = new SavingsAccount
+        {
+            Id = 42,
+            CustomerId = 1,
+            AccountNumber = "NOR-999888",
+            AccountType = "saving",
+            Balance = 10000m,
+            InterestRate = 0.035m,
+            Status = "active",
+            CreatedAt = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        var savingsRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(); // empty tx repo
+        var service = new SavingsAccountService(savingsRepo, new TestLogger<SavingsAccountService>(), null, txRepo);
+
+        var result = await service.GetByIdAsync(42);
+
+        Assert.NotNull(result);
+        Assert.Equal(10000m, result.Balance);
+        Assert.True(result.EstimatedYearEndInterest > 0m);
+        Assert.True(result.AccruedInterestYtd > 0m);
     }
 
     [Fact]

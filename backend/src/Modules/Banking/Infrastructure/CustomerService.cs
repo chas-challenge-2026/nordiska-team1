@@ -60,7 +60,7 @@ public sealed class CustomerService : ICustomerService
         return customer;
     }
 
-    public async Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public async Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, System.Collections.Generic.List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
         var customer = await GetByIdAsync(id, cancellationToken);
 
@@ -79,6 +79,9 @@ public sealed class CustomerService : ICustomerService
         if (phoneNumber != null)
             customer.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber;
 
+        if (overviewPreference != null)
+            customer.OverviewPreference = overviewPreference;
+
         customer.UpdatedAt = DateTime.UtcNow;
 
         var result = await _userManager.UpdateAsync(customer);
@@ -93,9 +96,9 @@ public sealed class CustomerService : ICustomerService
         return customer;
     }
 
-    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, System.Collections.Generic.List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
-        return UpdateAsync(id, name, email, personalNum: null, phoneNumber: phoneNumber, cancellationToken);
+        return UpdateAsync(id, name, email, personalNum: null, phoneNumber: phoneNumber, overviewPreference: overviewPreference, cancellationToken: cancellationToken);
     }
 
     public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)

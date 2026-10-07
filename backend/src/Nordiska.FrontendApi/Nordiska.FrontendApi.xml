@@ -122,8 +122,9 @@
             <param name="PersonalNum">The Swedish personal identification number (10-12 digits).</param>
             <param name="PhoneNumber">The optional updated phone number.</param>
             <param name="Phone">Alias for phone number.</param>
+            <param name="OverviewPreference">The optional updated list of overview card preference keys.</param>
         </member>
-        <member name="M:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest.#ctor(System.Int64,System.String,System.String,System.String,System.String,System.String)">
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest.#ctor(System.Int64,System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.List{System.String})">
             <summary>
             Request payload for updating customer profile information.
             </summary>
@@ -133,6 +134,7 @@
             <param name="PersonalNum">The Swedish personal identification number (10-12 digits).</param>
             <param name="PhoneNumber">The optional updated phone number.</param>
             <param name="Phone">Alias for phone number.</param>
+            <param name="OverviewPreference">The optional updated list of overview card preference keys.</param>
         </member>
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest.Id">
             <summary>The unique customer identifier.</summary>
@@ -152,15 +154,48 @@
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest.Phone">
             <summary>Alias for phone number.</summary>
         </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest.OverviewPreference">
+            <summary>The optional updated list of overview card preference keys.</summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest">
             <summary>
             Request payload for partially patching customer profile fields.
             </summary>
+            <param name="Id">Optional customer identifier.</param>
+            <param name="Name">Optional updated name.</param>
+            <param name="Email">Optional updated email address.</param>
+            <param name="PhoneNumber">Optional updated phone number.</param>
+            <param name="Phone">Alias for phone number.</param>
+            <param name="OverviewPreference">Optional updated list of overview card preference keys.</param>
         </member>
-        <member name="M:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.#ctor(System.Nullable{System.Int64},System.String,System.String,System.String,System.String)">
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.#ctor(System.Nullable{System.Int64},System.String,System.String,System.String,System.String,System.Collections.Generic.List{System.String})">
             <summary>
             Request payload for partially patching customer profile fields.
             </summary>
+            <param name="Id">Optional customer identifier.</param>
+            <param name="Name">Optional updated name.</param>
+            <param name="Email">Optional updated email address.</param>
+            <param name="PhoneNumber">Optional updated phone number.</param>
+            <param name="Phone">Alias for phone number.</param>
+            <param name="OverviewPreference">Optional updated list of overview card preference keys.</param>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.Id">
+            <summary>Optional customer identifier.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.Name">
+            <summary>Optional updated name.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.Email">
+            <summary>Optional updated email address.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.PhoneNumber">
+            <summary>Optional updated phone number.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.Phone">
+            <summary>Alias for phone number.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest.OverviewPreference">
+            <summary>Optional updated list of overview card preference keys.</summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.CustomerResponse">
             <summary>
@@ -174,8 +209,9 @@
             <param name="Phone">Alias for phone number.</param>
             <param name="CreatedAt">Timestamp when the customer profile was created.</param>
             <param name="UpdatedAt">Optional timestamp when the customer profile was last updated.</param>
+            <param name="OverviewPreference">List of overview card preference keys in desired display order.</param>
         </member>
-        <member name="M:Nordiska.FrontendApi.Contracts.Requests.CustomerResponse.#ctor(System.Int64,System.String,System.String,System.String,System.String,System.DateTime,System.String,System.Nullable{System.DateTime})">
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.CustomerResponse.#ctor(System.Int64,System.String,System.String,System.String,System.String,System.DateTime,System.String,System.Nullable{System.DateTime},System.Collections.Generic.IReadOnlyList{System.String})">
             <summary>
             Customer profile response representation.
             </summary>
@@ -187,6 +223,7 @@
             <param name="Phone">Alias for phone number.</param>
             <param name="CreatedAt">Timestamp when the customer profile was created.</param>
             <param name="UpdatedAt">Optional timestamp when the customer profile was last updated.</param>
+            <param name="OverviewPreference">List of overview card preference keys in desired display order.</param>
         </member>
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.CustomerResponse.Id">
             <summary>Unique identifier of the customer.</summary>
@@ -211,6 +248,9 @@
         </member>
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.CustomerResponse.UpdatedAt">
             <summary>Optional timestamp when the customer profile was last updated.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CustomerResponse.OverviewPreference">
+            <summary>List of overview card preference keys in desired display order.</summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.LoginRequest">
             <summary>
@@ -695,7 +735,7 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.CustomersController.Patch(System.Int64,Nordiska.FrontendApi.Contracts.Requests.PatchCustomerRequest,System.Threading.CancellationToken)">
             <summary>
-            Partially updates specific customer profile fields (e.g. email or phone number).
+            Partially updates specific customer profile fields (e.g. email, phone number, or overview preferences).
             </summary>
             <param name="id">Customer ID from route.</param>
             <param name="request">Partial customer fields to update.</param>
