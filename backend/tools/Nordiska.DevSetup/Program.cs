@@ -34,8 +34,7 @@ internal static class ConsoleUi
         string text,
         bool outputIsRedirected)
     {
-        // Color is supplemental only. Tags such as [OK], [WARNING], and [ADVICE]
-        // remain in the text so redirected logs and non-color terminals stay readable.
+ 
         var normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
         var lines = normalized.Split('\n');
 
@@ -778,14 +777,23 @@ internal static class SecretGenerator
 
     private static bool IsUsableSecret(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        var normalized = value.Trim();
+
+        if (normalized.Length >= 2 &&
+            ((normalized[0] == '"' && normalized[^1] == '"') ||
+             (normalized[0] == '\'' && normalized[^1] == '\'')))
+        {
+            normalized = normalized[1..^1].Trim();
+        }
+
+        if (normalized.Length == 0)
             return false;
 
         return !string.Equals(
-                   value,
+                   normalized,
                    "placeholder",
                    StringComparison.OrdinalIgnoreCase) &&
-               !value.StartsWith(
+               !normalized.StartsWith(
                    "replace-with-",
                    StringComparison.OrdinalIgnoreCase);
     }
@@ -1527,7 +1535,7 @@ internal static class DatabaseSetup
         {
             foreach (var entry in environment)
             {
-                if (LooksSensitive(entry.Key) && !string.IsNullOrWhiteSpace(entry.Value))
+                if (!string.IsNullOrWhiteSpace(entry.Value))
                     valuesToRedact.Add(entry.Value);
             }
         }
@@ -1560,12 +1568,6 @@ internal static class DatabaseSetup
             redacted = redacted.Replace(value, "***REDACTED***", StringComparison.Ordinal);
 
         return redacted;
-    }
-
-    private static bool LooksSensitive(string key)
-    {
-        return key.Contains("PASSWORD", StringComparison.OrdinalIgnoreCase) ||
-               key.Contains("CONNECTIONSTRING", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatCommand(string executable, IEnumerable<string> arguments)
