@@ -28,7 +28,7 @@ COPY native/pdf-signer/ ./pdf-signer/
 
 WORKDIR /src/native/pdf_generator
 
-RUN ./tools/setup-openssl-3.3.sh
+RUN sed 's/\r$//' ./tools/setup-openssl-3.3.sh | bash
 
 RUN cmake -B build \
     -G Ninja \
