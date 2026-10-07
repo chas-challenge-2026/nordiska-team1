@@ -132,10 +132,4 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
-
-    public async Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)
-    {
-        return await db.LedgerEntries
-            .FirstOrDefaultAsync(l => l.SavingsGoalId == savingsGoalId && l.IsPlanned, cancellationToken);
-    }
 }

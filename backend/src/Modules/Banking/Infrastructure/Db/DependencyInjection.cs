@@ -22,10 +22,8 @@ public static class DependencyInjection
         services.AddScoped<ISavingsAccountRepository, SavingsAccountRepository>();
         services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
-        services.AddScoped<ISavingsGoalRepository, SavingsGoalRepository>();
         services.AddScoped<ISavingsAccountService, SavingsAccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
-        services.AddScoped<ISavingsGoalService, SavingsGoalService>();
         services.AddScoped<ICustomerService, CustomerService>();
 
         // Interest rates & account types are read often and change rarely, so they are cached in memory

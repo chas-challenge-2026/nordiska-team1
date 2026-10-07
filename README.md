@@ -113,24 +113,10 @@ erDiagram
         decimal amount "Belopp"
         string label "Etikett"
         bigint target_account_id "Motpartskonto vid transfer"
-        bigint savings_goal_id FK "Kopplat sparmål vid månadstransfer"
         boolean is_planned "Planerad framtida transaktion"
         datetime planned_date "Planerat datum"
         string repeating "week month year"
         datetime created_at "Skapad tidpunkt"
-    }
-
-    SavingsGoal {
-        bigint id PK
-        bigint account_id FK "Kopplat sparkonto"
-        bigint customer_id FK "Ägande kund"
-        string title "Målets namn max 50 tecken"
-        decimal target_amount "Målbelopp"
-        decimal current_amount "Sparat belopp"
-        datetime target_date "Måldatum"
-        string status "active paused completed"
-        datetime created_at "Skapad tidpunkt"
-        datetime updated_at "Senast ändrad"
     }
 
     TaxReport {
@@ -274,12 +260,9 @@ erDiagram
     }
 
     Customer ||--o{ SavingsAccount : "owns"
-    Customer ||--o{ SavingsGoal : "defines"
     AccountTypeConfig ||--o{ SavingsAccount : "defines_rate_for"
     AccountTypeConfig ||--o{ AccountTypeRateHistory : "has_rate_history"
-    SavingsAccount ||--o{ SavingsGoal : "has_goals"
     SavingsAccount ||--o{ Transaction : "has ledger entries"
-    SavingsGoal ||--o{ Transaction : "automated_by"
     SavingsAccount ||--o{ TaxReport : "has"
     Customer ||--o{ AuditEntry : "logs"
     Customer ||--|o MessageBox : "has"

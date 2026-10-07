@@ -16,7 +16,6 @@ public sealed class BankingDbContext(
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<OperationalMessage> OperationalMessages => Set<OperationalMessage>();
     public DbSet<Loan> Loans => Set<Loan>();
-    public DbSet<SavingsGoal> SavingsGoals => Set<SavingsGoal>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

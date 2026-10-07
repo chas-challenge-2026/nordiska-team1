@@ -16,5 +16,4 @@ public sealed class Customer : IdentityUser<long>
     public List<string> OverviewPreference { get; set; } = new();
 
     public ICollection<SavingsAccount> SavingsAccounts { get; set; } = new List<SavingsAccount>();
-    public ICollection<SavingsGoal> SavingsGoals { get; set; } = new List<SavingsGoal>();
 }
