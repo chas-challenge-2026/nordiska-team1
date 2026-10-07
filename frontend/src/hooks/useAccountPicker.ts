@@ -4,11 +4,6 @@ import type { ModalKind } from "../components/transfer/TransferModals";
 import type { AccountPickerGroup } from "../components/modals/AccountPickerModal";
 import type { NewAccountValues } from "../components/modals/AddAccountForm";
 import { formatSek, matchesSearch } from "../components/transfer/transferHelpers";
-import {
-    BG_PG_PAYEES,
-    BANK_PAYEES,
-    FAVORITE_ACCOUNT_IDS,
-} from "../constants/transferAccounts";
 import type {
     OwnAccount,
     Payee,
@@ -37,12 +32,7 @@ export function useAccountPicker({
     const [addAccountOpen, setAddAccountOpen] = useState(false);
     const [customs, setCustoms] = useState<Payee[]>([]);
 
-    const allAccounts: TransferAccount[] = [
-        ...ownAccounts,
-        ...BG_PG_PAYEES,
-        ...BANK_PAYEES,
-        ...customs,
-    ];
+    const allAccounts: TransferAccount[] = [...ownAccounts, ...customs];
 
     const query = search.trim().toLowerCase();
     const selectedId = modal === "from" ? fromId : toId;
@@ -78,22 +68,9 @@ export function useAccountPicker({
                 },
             ];
         } else if (modal === "to") {
-            const favorites = allAccounts.filter((a) =>
-                FAVORITE_ACCOUNT_IDS.includes(a.id),
-            );
-            const bgAccounts = [
-                ...BG_PG_PAYEES,
-                ...customs.filter((c) => c.kind === "bg"),
-            ];
-            const bankAccounts = [
-                ...BANK_PAYEES,
-                ...customs.filter((c) => c.kind === "bank"),
-            ];
+            const bgAccounts = customs.filter((c) => c.kind === "bg");
+            const bankAccounts = customs.filter((c) => c.kind === "bank");
             groups = [
-                {
-                    title: t("page-transfer.modal.group-favorites"),
-                    items: wrap(favorites),
-                },
                 {
                     title: t("page-transfer.modal.group-own"),
                     items: wrap(ownAccounts),
