@@ -454,8 +454,8 @@ export default function TransferPage() {
     };
 
     return (
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 bg-light-gray">
-            <div className="mx-auto grid max-w-[1240px] grid-cols-2  gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-20 md:pb-6 lg:p-10 bg-light-gray">
+            <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
 
                 <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
                     {(step === "form" || step === "bankid") && (
