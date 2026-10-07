@@ -46,7 +46,8 @@ public static class BankingMappers
             acc.Status,
             acc.CurrencyCode,
             accruedInterestYtd,
-            estimatedYearEndInterest
+            estimatedYearEndInterest,
+            acc.IsFavorite
         );
 
     public static AccountTypeConfig ToDomain(this CreateAccountTypeConfigRequest req)

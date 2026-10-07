@@ -35,6 +35,9 @@ public class SavingsAccountServiceTests
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
+        public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
         public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
             entity.Id = _next++;
@@ -237,5 +240,77 @@ public class SavingsAccountServiceTests
         Assert.Equal(created.Id, entry.AccountId);
         Assert.Equal("deposit", entry.Type);
         Assert.Equal(750m, entry.Amount);
+    }
+
+    [Fact]
+    public async Task SetFavorite_WhenUnderLimit_UpdatesAccountToFavorite()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "standard", IsFavorite = false, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var result = await service.SetFavoriteAsync(1, 1, true);
+
+        Assert.True(result.IsFavorite);
+        var inRepo = await repo.GetByIdAsync(1);
+        Assert.True(inRepo?.IsFavorite);
+    }
+
+    [Fact]
+    public async Task SetFavorite_WhenReachingFiveFavorites_ThrowsValidationException()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 3, CustomerId = 1, AccountNumber = "A3", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 4, CustomerId = 1, AccountNumber = "A4", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 5, CustomerId = 1, AccountNumber = "A5", IsFavorite = false, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => service.SetFavoriteAsync(5, 1, true));
+        Assert.Equal("Du kan maximalt ha 4 favoritkonton markerade samtidigt.", ex.Message);
+    }
+
+    [Fact]
+    public async Task SetFavorite_UnsettingFavorite_SucceedsEvenIfLimitWasReached()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", IsFavorite = true, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var result = await service.SetFavoriteAsync(1, 1, false);
+
+        Assert.False(result.IsFavorite);
+    }
+
+    [Fact]
+    public async Task GetByCustomerId_WithIsFavoriteTrue_ReturnsOnlyFavorites()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2", IsFavorite = false, Status = "active" },
+            new SavingsAccount { Id = 3, CustomerId = 1, AccountNumber = "A3", IsFavorite = true, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var favorites = await service.GetByCustomerIdAsync(1, isFavorite: true);
+
+        Assert.Equal(2, favorites.Count());
+        Assert.All(favorites, f => Assert.True(f.IsFavorite));
     }
 }

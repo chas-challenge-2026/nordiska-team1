@@ -31,7 +31,8 @@ public record SavingsAccountResponse(
     string Status = "active",
     string CurrencyCode = "SEK",
     decimal AccruedInterestYtd = 0m,
-    decimal EstimatedYearEndInterest = 0m
+    decimal EstimatedYearEndInterest = 0m,
+    bool IsFavorite = false
 )
 {
     /// <summary>

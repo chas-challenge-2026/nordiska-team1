@@ -33,16 +33,30 @@ public class SavingsAccountService : ISavingsAccountService
         _txRepo = txRepo;
     }
 
-    public async Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+        => GetAllAsync(null, cancellationToken);
+
+    public async Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(bool? isFavorite, CancellationToken cancellationToken = default)
     {
         var list = await _repo.GetAllAsync(cancellationToken);
+        if (isFavorite.HasValue)
+        {
+            list = list.Where(a => a.IsFavorite == isFavorite.Value);
+        }
         var tasks = list.Select(a => MapWithInterestAsync(a, cancellationToken));
         return await Task.WhenAll(tasks);
     }
 
-    public async Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => GetByCustomerIdAsync(customerId, null, cancellationToken);
+
+    public async Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, bool? isFavorite, CancellationToken cancellationToken = default)
     {
         var list = await _repo.GetByCustomerIdAsync(customerId, cancellationToken);
+        if (isFavorite.HasValue)
+        {
+            list = list.Where(a => a.IsFavorite == isFavorite.Value);
+        }
         var tasks = list.Select(a => MapWithInterestAsync(a, cancellationToken));
         return await Task.WhenAll(tasks);
     }
@@ -183,6 +197,31 @@ public class SavingsAccountService : ISavingsAccountService
 
     private static bool IsStandardType(string type)
         => type is "saving" or "flex" or "fix" or "standard" or "premium";
+
+    public async Task<SavingsAccountResponse> SetFavoriteAsync(long id, long customerId, bool isFavorite, CancellationToken cancellationToken = default)
+    {
+        var acc = await _repo.GetByIdAsync(id, cancellationToken);
+        if (acc is null || acc.CustomerId != customerId)
+            throw new NotFoundException($"Savings account with ID {id} was not found.");
+
+        if (isFavorite && !acc.IsFavorite)
+        {
+            var favoritesCount = await _repo.CountFavoritesByCustomerIdAsync(customerId, cancellationToken);
+            if (favoritesCount >= 4)
+            {
+                throw new ValidationException("Du kan maximalt ha 4 favoritkonton markerade samtidigt.");
+            }
+        }
+
+        acc.IsFavorite = isFavorite;
+        acc.UpdatedAt = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(acc, cancellationToken);
+        _logger.LogInformation("Updated account {Id} (accountNumber={AccountNumber}) favorite status to {IsFavorite} for customer {CustomerId}",
+            acc.Id, acc.AccountNumber, acc.IsFavorite, acc.CustomerId);
+
+        return await MapWithInterestAsync(acc, cancellationToken);
+    }
 
     public async Task<SavingsAccountResponse> CloseAccountAsync(long id, CancellationToken cancellationToken = default)
     {
