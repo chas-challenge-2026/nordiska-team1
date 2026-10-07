@@ -10,7 +10,7 @@ interface SupportThreadsResponse {
     hasPreviousPage: boolean;
 }
 
-type Thread = {
+export type Thread = {
     id: number;
     subject: string | null;
     status: string | null;
@@ -21,7 +21,7 @@ type Thread = {
     messageCount: number;
 }
 
-type Message = {
+export type Message = {
     id: number;
     threadId: number;
     senderType: string | null;
@@ -32,13 +32,13 @@ type Message = {
     sentAt: string
 }
 
-interface SupportTicketThread extends Thread {
+export interface SupportTicketThread extends Thread {
     canReply: boolean;
     messages: Message[];
 }
 
-interface DocumentsResponse {
-    items: Document[];
+export interface DocumentsResponse {
+    items: InboxDocument[];
     totalCount: number;
     page: number;
     pageSize: number;
@@ -47,7 +47,7 @@ interface DocumentsResponse {
     hasPreviousPage: boolean;
 }
 
-type Document = {
+export type InboxDocument = {
     id: number;
     documentId: number;
     documentType: string | null;
@@ -65,8 +65,8 @@ type Document = {
 export type Folders = "inbox" | "sent" | "archive";
 
 export async function getUnreadCount(): Promise<number> {
-    const res = await axiosInstance.get("/inbox/unread-count");
-    return res.data;
+    const res = await axiosInstance.get<{ unreadCount: number }>("/inbox/unread-count");
+    return res.data.unreadCount;
 }
 
 export async function getAllSupportThreads(folder: Folders, page: number, pageSize: number): Promise<SupportThreadsResponse> {
