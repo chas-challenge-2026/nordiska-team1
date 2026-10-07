@@ -1,12 +1,31 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { initiateTaxReport, checkReportStatus, downloadReport, type ReportStatus } from "../services/reportsService";
+import {
+    initiateTaxReport,
+    checkTaxReportStatus,
+    downloadTaxReport,
+    initiateAccountStatement,
+    checkAccountStatementStatus,
+    downloadAccountStatement,
+    type ReportStatus,
+} from "../services/reportsService";
 
-const TERMINAL_STATUSES: ReportStatus[] = ["Done", "Failed"];
+const TERMINAL_STATUSES: ReportStatus[] = ["Completed", "Failed"];
 const POLL_INTERVAL_MS = 2000;
+
+function getPollInterval(isError: boolean, status: ReportStatus | null | undefined): number | false {
+    if (isError) return false;
+    return status && TERMINAL_STATUSES.includes(status) ? false : POLL_INTERVAL_MS;
+}
 
 interface InitiateTaxReportVars {
     accountId: number;
     year?: number;
+}
+
+interface InitiateAccountStatementVars {
+    accountId: number;
+    fromDate: string;
+    toDate: string;
 }
 
 export function useInitiateTaxReport() {
@@ -16,19 +35,37 @@ export function useInitiateTaxReport() {
     });
 }
 
-export function useReportStatus(jobId: string | undefined) {
+export function useReportStatus(jobId: number | undefined) {
     return useQuery({
-        queryKey: ["reports", "jobs", jobId],
-        queryFn: () => checkReportStatus(jobId!),
-        enabled: !!jobId,
-        refetchInterval: (query) => {
-            if (query.state.status === "error") return false;
-            const status = query.state.data?.status;
-            return status && TERMINAL_STATUSES.includes(status) ? false : POLL_INTERVAL_MS;
-        },
+        queryKey: ["reports", "tax", "jobs", jobId],
+        queryFn: () => checkTaxReportStatus(jobId!),
+        enabled: jobId !== undefined,
+        refetchInterval: (query) =>
+            getPollInterval(query.state.status === "error", query.state.data?.status),
     });
 }
 
 export function useDownloadReport() {
-    return useMutation({ mutationFn: downloadReport });
+    return useMutation({ mutationFn: downloadTaxReport });
+}
+
+export function useInitiateAccountStatement() {
+    return useMutation({
+        mutationFn: ({ accountId, fromDate, toDate }: InitiateAccountStatementVars) =>
+            initiateAccountStatement(accountId, fromDate, toDate),
+    });
+}
+
+export function useAccountStatementStatus(jobId: number | undefined) {
+    return useQuery({
+        queryKey: ["reports", "account-statements", "jobs", jobId],
+        queryFn: () => checkAccountStatementStatus(jobId!),
+        enabled: jobId !== undefined,
+        refetchInterval: (query) =>
+            getPollInterval(query.state.status === "error", query.state.data?.status),
+    });
+}
+
+export function useDownloadAccountStatement() {
+    return useMutation({ mutationFn: downloadAccountStatement });
 }

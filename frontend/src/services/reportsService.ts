@@ -1,28 +1,44 @@
 import axiosInstance from "./axiosInstance";
 
-export type ReportStatus = "Pending" | "Processing" | "Done" | "Failed";
+export type ReportStatus = "Pending" | "Processing" | "Completed" | "Failed";
 
-interface ReportResponse {
-    jobId: string | null;
+interface TaxReportResponse {
+    taxReportId: number;
+    jobId: number;
     status: ReportStatus | null;
     createdAt: string;
-    downloadUrl: string | null;
+}
+
+interface TaxReportJobStatus extends TaxReportResponse {
+    completedAt: string | null;
     error: string | null;
 }
 
-export async function initiateTaxReport(accountId: number, year?: number): Promise<ReportResponse> {
-    const res = await axiosInstance.post("/reports/tax-report", { accountId, year });
+interface AccountStatementResponse {
+    accountStatementId: number;
+    jobId: number;
+    status: ReportStatus | null;
+    createdAt: string;
+}
+
+interface AccountStatementJobStatus extends AccountStatementResponse {
+    completedAt: string | null;
+    error: string | null;
+}
+
+export async function initiateTaxReport(accountId: number, taxYear?: number): Promise<TaxReportResponse> {
+    const res = await axiosInstance.post("/reports/tax", { accountId, taxYear });
     return res.data;
 }
 
-export async function checkReportStatus(jobId: string): Promise<ReportResponse> {
-    const res = await axiosInstance.get(`/reports/jobs/${jobId}`);
+export async function checkTaxReportStatus(jobId: number): Promise<TaxReportJobStatus> {
+    const res = await axiosInstance.get(`/reports/tax/jobs/${jobId}`);
     return res.data;
 }
 
-export async function downloadReport(jobId: string): Promise<void> {
+export async function downloadTaxReport(taxReportId: number): Promise<void> {
     const res = await axiosInstance.get<Blob>(
-        `/reports/jobs/${encodeURIComponent(jobId)}/download`,
+        `/reports/tax/jobs/${taxReportId}/pdf`,
         {
             responseType: "blob",
             headers: { Accept: "application/pdf" },
@@ -33,7 +49,37 @@ export async function downloadReport(jobId: string): Promise<void> {
     const url = URL.createObjectURL(res.data);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `tax-report-${jobId}.pdf`;
+    link.download = `tax-report-${taxReportId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+export async function initiateAccountStatement(accountId: number, fromDate: string, toDate: string): Promise<AccountStatementResponse> {
+    const res = await axiosInstance.post("/reports/account-statements", {accountId, fromDate, toDate});
+    return res.data;
+}
+
+export async function checkAccountStatementStatus(jobId: number): Promise<AccountStatementJobStatus> {
+    const res = await axiosInstance.get(`/reports/account-statements/jobs/${jobId}`);
+    return res.data;
+}
+
+export async function downloadAccountStatement(accountStatementId: number): Promise<void> {
+    const res = await axiosInstance.get<Blob>(
+        `/reports/account-statements/jobs/${accountStatementId}/pdf`,
+        {
+            responseType: "blob",
+            headers: { Accept: "application/pdf" },
+            timeout: 60000,
+        }
+    );
+
+    const url = URL.createObjectURL(res.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `account-statement-${accountStatementId}.pdf`;
     document.body.appendChild(link);
     link.click();
     link.remove();

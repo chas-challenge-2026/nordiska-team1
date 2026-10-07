@@ -7,6 +7,7 @@ import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import HelpCard from "../components/faq/HelpCard";
 import ActionButton from "../components/accounts/ActionButton";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
+import AccountStatementBtn from "../components/AccountStatementButton";
 
 /*
 id: 1
@@ -341,11 +342,9 @@ export default function AccountsPage() {
                                             title={t("accounts-route.create-savingsgoal")}
                                         />
                                         {/* KONTOUTDRAG */}
-                                        <ActionButton
-                                            onClick={() => {}}
-                                            ariaLabel={t("accounts-route.account-report")}
-                                            prefixIcon="/icons/file-pdf.svg"
-                                            title={t("accounts-route.account-report")}
+                                        <AccountStatementBtn
+                                            key={expandedAccount.id}
+                                            accountId={expandedAccount.id}
                                         />
                                         {/* FAVORIT */}
                                         <ActionButton
