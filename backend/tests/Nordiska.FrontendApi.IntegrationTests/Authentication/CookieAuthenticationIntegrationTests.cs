@@ -367,20 +367,21 @@ public class TestCustomerService : ICustomerService
         throw new NotFoundException($"Customer with id {id} was not found.");
     }
 
-    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
         var customer = _customers.GetOrAdd(id, k => new Customer { Id = k, Name = "User", Email = "u@ex.se", PersonalNum = "198001010000" });
         if (!string.IsNullOrWhiteSpace(name)) customer.Name = name;
         if (!string.IsNullOrWhiteSpace(email)) customer.Email = email;
         if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum;
         if (phoneNumber != null) customer.PhoneNumber = phoneNumber;
+        if (overviewPreference != null) customer.OverviewPreference = overviewPreference;
         customer.UpdatedAt = DateTime.UtcNow;
         return Task.FromResult(customer);
     }
 
-    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
-        return UpdateAsync(id, name, email, null, phoneNumber, cancellationToken);
+        return UpdateAsync(id, name, email, null, phoneNumber, overviewPreference, cancellationToken);
     }
 
     public Task DeleteAsync(long id, CancellationToken cancellationToken = default)

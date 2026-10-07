@@ -13,5 +13,7 @@ public sealed class Customer : IdentityUser<long>
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
+    public List<string> OverviewPreference { get; set; } = new();
+
     public ICollection<SavingsAccount> SavingsAccounts { get; set; } = new List<SavingsAccount>();
 }
