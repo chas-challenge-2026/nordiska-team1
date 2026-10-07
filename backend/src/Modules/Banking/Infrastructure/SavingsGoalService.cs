@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -29,9 +31,192 @@ public sealed class SavingsGoalService : ISavingsGoalService
         _logger = logger;
     }
 
-    public async Task<SavingsGoal?> GetByIdAsync(long goalId, CancellationToken cancellationToken = default)
+    public async Task<SavingsGoalResponse?> GetByIdAsync(
+        long goalId,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
     {
-        return await _goalRepo.GetByIdAsync(goalId, cancellationToken);
+        var goal = await _goalRepo.GetByIdAsync(goalId, cancellationToken);
+        if (goal is null)
+        {
+            return null;
+        }
+
+        if (!isAdmin && goal.CustomerId != customerId)
+        {
+            return null;
+        }
+
+        return MapToResponse(goal);
+    }
+
+    public async Task<List<SavingsGoalResponse>> GetGoalsAsync(
+        long customerId,
+        long? accountId = null,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        List<SavingsGoal> goals;
+
+        if (accountId.HasValue)
+        {
+            var account = await _accountRepo.GetByIdAsync(accountId.Value, cancellationToken);
+            if (account is null || (!isAdmin && account.CustomerId != customerId))
+            {
+                return new List<SavingsGoalResponse>();
+            }
+
+            goals = await _goalRepo.GetByAccountIdAsync(accountId.Value, cancellationToken);
+        }
+        else
+        {
+            goals = await _goalRepo.GetByCustomerIdAsync(customerId, cancellationToken);
+        }
+
+        return goals.Select(MapToResponse).ToList();
+    }
+
+    public async Task<SavingsGoalResponse> CreateAsync(
+        CreateSavingsGoalRequest request,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 50)
+        {
+            throw new ValidationException("Namn på sparmål måste anges och får vara max 50 tecken.");
+        }
+
+        if (request.TargetAmount <= 0)
+        {
+            throw new ValidationException("Målbelopp måste vara större än 0 kr.");
+        }
+
+        if (request.TargetDate.HasValue && request.TargetDate.Value <= DateTime.UtcNow)
+        {
+            throw new ValidationException("Måldatum måste vara ett framtida datum.");
+        }
+
+        var account = await _accountRepo.GetByIdAsync(request.AccountId, cancellationToken)
+            ?? throw new NotFoundException($"Sparkonto med ID {request.AccountId} hittades inte.");
+
+        if (!isAdmin && account.CustomerId != customerId)
+        {
+            throw new ValidationException("Sparkontot tillhör inte den inloggade kunden.");
+        }
+
+        var goal = new SavingsGoal
+        {
+            AccountId = request.AccountId,
+            CustomerId = account.CustomerId,
+            Title = request.Title.Trim(),
+            TargetAmount = request.TargetAmount,
+            CurrentAmount = 0m,
+            TargetDate = request.TargetDate,
+            Status = "active",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var id = await _goalRepo.CreateAsync(goal, cancellationToken);
+        goal.Id = id;
+
+        _logger.LogInformation("Created savings goal {GoalId} '{Title}' for customer {CustomerId} on account {AccountId}",
+            goal.Id, goal.Title, goal.CustomerId, goal.AccountId);
+
+        return MapToResponse(goal);
+    }
+
+    public async Task<SavingsGoalResponse> UpdateAsync(
+        long goalId,
+        UpdateSavingsGoalRequest request,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var goal = await _goalRepo.GetByIdAsync(goalId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmål med ID {goalId} hittades inte.");
+
+        if (!isAdmin && goal.CustomerId != customerId)
+        {
+            throw new NotFoundException($"Sparmål med ID {goalId} hittades inte.");
+        }
+
+        if (request.Title is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 50)
+            {
+                throw new ValidationException("Namn på sparmål får inte vara tomt och kan max vara 50 tecken.");
+            }
+            goal.Title = request.Title.Trim();
+        }
+
+        if (request.TargetAmount.HasValue)
+        {
+            if (request.TargetAmount.Value <= 0)
+            {
+                throw new ValidationException("Målbelopp måste vara större än 0 kr.");
+            }
+            goal.TargetAmount = request.TargetAmount.Value;
+        }
+
+        if (request.TargetDate.HasValue)
+        {
+            if (request.TargetDate.Value <= DateTime.UtcNow)
+            {
+                throw new ValidationException("Måldatum måste vara ett framtida datum.");
+            }
+            goal.TargetDate = request.TargetDate.Value;
+        }
+
+        if (request.Status is not null)
+        {
+            var status = request.Status.Trim().ToLowerInvariant();
+            if (status is not ("active" or "paused" or "completed"))
+            {
+                throw new ValidationException("Ogiltig status. Tillåtna statusar är: active, paused, completed.");
+            }
+            goal.Status = status;
+        }
+
+        goal.UpdatedAt = DateTime.UtcNow;
+
+        await _goalRepo.UpdateAsync(goal, cancellationToken);
+        _logger.LogInformation("Updated savings goal {GoalId}", goal.Id);
+
+        return MapToResponse(goal);
+    }
+
+    public async Task<bool> DeleteAsync(
+        long goalId,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        var goal = await _goalRepo.GetByIdAsync(goalId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmål med ID {goalId} hittades inte.");
+
+        if (!isAdmin && goal.CustomerId != customerId)
+        {
+            throw new NotFoundException($"Sparmål med ID {goalId} hittades inte.");
+        }
+
+        // Clean up any automated monthly recurring plan tied to this goal
+        var existingPlan = await _txRepo.GetPlannedTransactionByGoalIdAsync(goalId, cancellationToken);
+        if (existingPlan is not null)
+        {
+            await _txRepo.DeleteAsync(existingPlan.Id, cancellationToken);
+            _logger.LogInformation("Cancelled planned recurring transaction {TxId} during goal {GoalId} deletion", existingPlan.Id, goalId);
+        }
+
+        await _goalRepo.DeleteAsync(goalId, cancellationToken);
+        _logger.LogInformation("Deleted savings goal {GoalId} for customer {CustomerId}", goalId, customerId);
+
+        return true;
     }
 
     public async Task<AutomateSavingsGoalResponse> AutomateAsync(
@@ -168,5 +353,26 @@ public sealed class SavingsGoalService : ISavingsGoalService
         var targetDayNextMonth = Math.Min(dayOfMonth, daysInNextMonth);
 
         return new DateTime(nextMonthDate.Year, nextMonthDate.Month, targetDayNextMonth, 0, 0, 0, DateTimeKind.Utc);
+    }
+
+    private static SavingsGoalResponse MapToResponse(SavingsGoal goal)
+    {
+        var progress = goal.TargetAmount > 0
+            ? Math.Round(Math.Min(100m, (goal.CurrentAmount / goal.TargetAmount) * 100m), 1)
+            : 0m;
+
+        return new SavingsGoalResponse(
+            Id: goal.Id,
+            AccountId: goal.AccountId,
+            CustomerId: goal.CustomerId,
+            Title: goal.Title,
+            TargetAmount: goal.TargetAmount,
+            CurrentAmount: goal.CurrentAmount,
+            TargetDate: goal.TargetDate,
+            Status: goal.Status,
+            ProgressPercentage: progress,
+            CreatedAt: goal.CreatedAt,
+            UpdatedAt: goal.UpdatedAt
+        );
     }
 }

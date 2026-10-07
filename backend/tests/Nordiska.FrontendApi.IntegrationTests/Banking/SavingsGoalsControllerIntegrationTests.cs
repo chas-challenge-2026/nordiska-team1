@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -34,6 +35,186 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
         var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, "password123"));
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         return client;
+    }
+
+    [Fact]
+    public async Task Create_WithoutAuthentication_Returns401Unauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/savings-goals",
+            new CreateSavingsGoalRequest(1, "Buffert", 10000m));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Create_ValidGoal_Returns201Created()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var request = new CreateSavingsGoalRequest(
+            AccountId: 1,
+            Title: "Drömresan 2027",
+            TargetAmount: 25000m,
+            TargetDate: DateTime.UtcNow.AddMonths(12)
+        );
+
+        var response = await client.PostAsJsonAsync("/api/savings-goals", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var body = await response.Content.ReadFromJsonAsync<SavingsGoalResponse>();
+        body.Should().NotBeNull();
+        body!.Title.Should().Be("Drömresan 2027");
+        body.TargetAmount.Should().Be(25000m);
+        body.CurrentAmount.Should().Be(0m);
+        body.Status.Should().Be("active");
+        body.AccountId.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Create_InvalidTitleOrAmount_Returns400BadRequest()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var emptyTitleReq = new CreateSavingsGoalRequest(1, "", 10000m);
+        var resp1 = await client.PostAsJsonAsync("/api/savings-goals", emptyTitleReq);
+        resp1.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var negativeAmountReq = new CreateSavingsGoalRequest(1, "Giltig titel", -500m);
+        var resp2 = await client.PostAsJsonAsync("/api/savings-goals", negativeAmountReq);
+        resp2.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GetGoals_Returns200WithCustomerGoals()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 601,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Konto 1 Mål",
+            TargetAmount = 5000m,
+            Status = "active"
+        });
+
+        var response = await client.GetAsync("/api/savings-goals");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var list = await response.Content.ReadFromJsonAsync<List<SavingsGoalResponse>>();
+        list.Should().NotBeNull();
+        list.Should().Contain(g => g.Id == 601 && g.Title == "Konto 1 Mål");
+    }
+
+    [Fact]
+    public async Task GetById_ExistingGoal_Returns200()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 602,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Detaljvy Mål",
+            TargetAmount = 8000m,
+            Status = "active"
+        });
+
+        var response = await client.GetAsync("/api/savings-goals/602");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<SavingsGoalResponse>();
+        body.Should().NotBeNull();
+        body!.Id.Should().Be(602);
+        body.Title.Should().Be("Detaljvy Mål");
+    }
+
+    [Fact]
+    public async Task GetById_NonExistentGoal_Returns404NotFound()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.GetAsync("/api/savings-goals/999999");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Update_ValidPatch_Returns200WithUpdatedFields()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 603,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Gammal titel",
+            TargetAmount = 5000m,
+            Status = "active"
+        });
+
+        var patchReq = new UpdateSavingsGoalRequest(
+            Title: "Ny uppdaterad titel",
+            TargetAmount: 7000m,
+            Status: "paused"
+        );
+
+        var response = await client.PatchAsJsonAsync("/api/savings-goals/603", patchReq);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<SavingsGoalResponse>();
+        body.Should().NotBeNull();
+        body!.Title.Should().Be("Ny uppdaterad titel");
+        body.TargetAmount.Should().Be(7000m);
+        body.Status.Should().Be("paused");
+    }
+
+    [Fact]
+    public async Task Update_InvalidStatus_Returns400BadRequest()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 604,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Titel",
+            TargetAmount = 5000m,
+            Status = "active"
+        });
+
+        var patchReq = new UpdateSavingsGoalRequest(Status: "ogiltig_status");
+
+        var response = await client.PatchAsJsonAsync("/api/savings-goals/604", patchReq);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Delete_ValidGoal_Returns204NoContent()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 605,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Radera mig",
+            TargetAmount = 5000m,
+            Status = "active"
+        });
+
+        var response = await client.DeleteAsync("/api/savings-goals/605");
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Verify it was deleted
+        var getResp = await client.GetAsync("/api/savings-goals/605");
+        getResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -83,7 +264,6 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
     {
         var client = await CreateAuthenticatedClientAsync();
 
-        // 1. Arrange test goal for Anna (CustomerId 1, AccountId 1)
         var goal = new SavingsGoal
         {
             Id = 555,
@@ -97,7 +277,6 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
         };
         TestSavingsGoalRepository.Seed(goal);
 
-        // 2. Schedule automation (SourceAccountId 2: Lönekonto)
         var request = new AutomateSavingsGoalRequest(
             SourceAccountId: 2,
             MonthlyAmount: 750m,
@@ -116,7 +295,6 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
         body.DayOfMonth.Should().Be(27);
         body.Status.Should().Be("active");
 
-        // 3. Cancel automation
         var cancelResponse = await client.DeleteAsync($"/api/savings-goals/{goal.Id}/automate");
         cancelResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -137,7 +315,6 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
         };
         TestSavingsGoalRepository.Seed(goal);
 
-        // Account 3 belongs to Erik (CustomerId 2)
         var request = new AutomateSavingsGoalRequest(
             SourceAccountId: 3,
             MonthlyAmount: 500m,
