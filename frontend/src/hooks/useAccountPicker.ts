@@ -6,9 +6,9 @@ import type { NewAccountValues } from "../components/modals/AddAccountForm";
 import { formatSek, matchesSearch } from "../components/transfer/transferHelpers";
 import type {
     OwnAccount,
-    Payee,
     TransferAccount,
 } from "../constants/transferAccounts";
+import { useExternalAccounts } from "./useExternalAccounts";
 
 type UseAccountPickerArgs = {
     ownAccounts: OwnAccount[];
@@ -30,7 +30,7 @@ export function useAccountPicker({
     const [modal, setModal] = useState<ModalKind>(null);
     const [search, setSearch] = useState("");
     const [addAccountOpen, setAddAccountOpen] = useState(false);
-    const [customs, setCustoms] = useState<Payee[]>([]);
+    const { accounts: customs, addAccount } = useExternalAccounts();
 
     const allAccounts: TransferAccount[] = [...ownAccounts, ...customs];
 
@@ -125,18 +125,14 @@ export function useAccountPicker({
             .filter(Boolean)
             .join(" ")
             .trim();
-        const id = `custom-${customs.length + 1}`;
-        const account: Payee = {
-            id,
-            own: false,
+        const account = addAccount({
             kind,
             name:
                 values.name.trim() ||
                 t("page-transfer.add-account.default-name"),
             meta,
-        };
-        setCustoms((prev) => [...prev, account]);
-        setToId(id);
+        });
+        setToId(account.id);
         handleCloseModal();
     };
 
