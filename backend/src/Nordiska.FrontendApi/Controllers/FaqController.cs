@@ -54,8 +54,37 @@ public sealed class FaqController(FaqService service) : ControllerBase
             Keyword: keyword,
             Lang: lang);
 
-        var result = await service.GetByLanguagePagedAsync(parameters, cancellationToken);
+        var result = await service.GetByLanguagePagedAsync(parameters, GetSessionKey(), cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Retrieves FAQ searches that gave no results, most searched first. Requires the faq:manage permission.
+    /// </summary>
+    /// <remarks>
+    /// Searches are saved in the background, so a search made just now can take a moment to show up.
+    /// The same search from the same session is only counted once per 15 minutes.
+    /// </remarks>
+    /// <param name="lang">Optional language filter ('sv' or 'en').</param>
+    /// <param name="days">How many days back to look (default 30, max 90).</param>
+    /// <param name="limit">Max number of searches to return (default 50, max 200).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Searches without results, grouped by normalized query and language.</response>
+    /// <response code="400">Validation failed for query parameters.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+    [HttpGet("analytics/content-gaps")]
+    [Authorize(Policy = "faq:manage")]
+    [ProducesResponseType(typeof(IReadOnlyList<FaqContentGapResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<FaqContentGapResponse>>> GetContentGaps(
+        [FromQuery, RegularExpression("^(sv|en)$")] string? lang = null,
+        [FromQuery, Range(1, 90)] int days = 30,
+        [FromQuery, Range(1, 200)] int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var gaps = await service.GetContentGapsAsync(lang, days, limit, cancellationToken);
+        return Ok(gaps);
     }
 
     /// <summary>
@@ -336,5 +365,14 @@ public sealed class FaqController(FaqService service) : ControllerBase
     {
         var result = await service.SearchAsync(request, cancellationToken);
         return Ok(result);
+    }
+
+    // Search is anonymous so there is no real session, IP + browser is close enough to tell users apart.
+    // It's hashed with a salt before it is stored.
+    private string GetSessionKey()
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var userAgent = Request.Headers.UserAgent.ToString();
+        return $"{ip}|{userAgent}";
     }
 }

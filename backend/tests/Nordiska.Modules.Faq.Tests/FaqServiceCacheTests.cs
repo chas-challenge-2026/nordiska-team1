@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Faq.Application;
 using Nordiska.Modules.Faq.Contracts.Requests;
@@ -128,8 +130,23 @@ public class FaqServiceCacheTests
     private static FaqEntryResponse Entry(int id, string lang = "sv", string category = "General") =>
         new(id, $"Question {id}?", $"Answer {id}", category, 0, new[] { "tag1" }, Guid.NewGuid(), lang, DateTime.UtcNow);
 
-    private static FaqService CreateService(FakeFaqRepo repo)
-        => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator());
+    private class FakeSearchLogRepo : IFaqSearchLogRepository
+    {
+        public Task AddRangeAsync(IReadOnlyCollection<FaqSearchLog> logs, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task<IReadOnlyList<FaqContentGapResponse>> GetContentGapsAsync(string? language, DateTime since, int limit, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<FaqContentGapResponse>>(new List<FaqContentGapResponse>());
+
+        public Task<int> DeleteOlderThanAsync(DateTime cutoff, CancellationToken cancellationToken = default)
+            => Task.FromResult(0);
+    }
+
+    private static FaqSearchLogQueue CreateQueue()
+        => new(new MemoryCache(new MemoryCacheOptions()), Options.Create(new FaqSearchLogOptions { Salt = "test-salt" }), NullLogger<FaqSearchLogQueue>.Instance);
+
+    private static FaqService CreateService(FakeFaqRepo repo, FaqSearchLogQueue? queue = null)
+        => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator(), queue ?? CreateQueue(), new FakeSearchLogRepo());
 
     [Fact]
     public async Task GetById_SecondCall_IsServedFromCache()
@@ -265,6 +282,33 @@ public class FaqServiceCacheTests
         Assert.Equal(2, repo.GetByIdCalls);
         Assert.Equal(2, repo.SearchCalls);
         Assert.Single(result);
+    }
+
+    [Fact]
+    public async Task GetByLanguagePaged_CachedSearch_IsStillLogged()
+    {
+        var repo = new FakeFaqRepo(new[] { Entry(1, "sv") });
+        var queue = CreateQueue();
+        var service = CreateService(repo, queue);
+
+        await service.GetByLanguagePagedAsync(new FaqQueryParameters(SearchTerm: "ränta", Lang: "sv"), "session-1");
+        await service.GetByLanguagePagedAsync(new FaqQueryParameters(SearchTerm: "ränta", Lang: "sv"), "session-2");
+
+        Assert.Equal(1, repo.QueryPagedCalls);
+        Assert.Equal(2, queue.Reader.Count);
+    }
+
+    [Fact]
+    public async Task GetByLanguagePaged_LaterPageOrNoSearch_IsNotLogged()
+    {
+        var repo = new FakeFaqRepo(new[] { Entry(1, "sv") });
+        var queue = CreateQueue();
+        var service = CreateService(repo, queue);
+
+        await service.GetByLanguagePagedAsync(new FaqQueryParameters(Page: 2, SearchTerm: "ränta", Lang: "sv"), "session-1");
+        await service.GetByLanguagePagedAsync(new FaqQueryParameters(Lang: "sv"), "session-1");
+
+        Assert.Equal(0, queue.Reader.Count);
     }
 
     [Fact]

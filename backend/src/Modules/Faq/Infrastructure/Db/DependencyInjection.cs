@@ -19,6 +19,18 @@ public static class DependencyInjection
         services.AddSingleton<FaqCacheInvalidator>();
         services.AddScoped<IFaqRepository, FaqRepository>();
         services.AddScoped<FaqService>();
+
+        // The salt has no safe default, so a missing one should stop the app at startup
+        services.AddOptions<FaqSearchLogOptions>()
+            .Bind(configuration.GetSection(FaqSearchLogOptions.SectionName))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Salt), "FaqSearchLog:Salt is required.")
+            .Validate(o => o.RetentionDays > 0, "FaqSearchLog:RetentionDays must be greater than zero.")
+            .Validate(o => o.QueueCapacity > 0, "FaqSearchLog:QueueCapacity must be greater than zero.")
+            .Validate(o => o.CleanupIntervalHours > 0, "FaqSearchLog:CleanupIntervalHours must be greater than zero.")
+            .ValidateOnStart();
+
+        services.AddSingleton<FaqSearchLogQueue>();
+        services.AddScoped<IFaqSearchLogRepository, FaqSearchLogRepository>();
         return services;
     }
 }

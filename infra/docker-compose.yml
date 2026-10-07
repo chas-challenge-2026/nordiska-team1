@@ -44,6 +44,7 @@ services:
       - Jwt__Issuer=NordiskaSparbanken
       - Jwt__Audience=NordiskaSparbankenPortal
       - Jwt__TokenLifetimeInMinutes=15
+      - FaqSearchLog__Salt=${FAQ_SEARCH_LOG_SALT:-nordiska-faq-search-salt-dev}
     depends_on:
       db:
         condition: service_healthy
