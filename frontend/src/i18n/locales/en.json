@@ -29,6 +29,7 @@
         "previous": "Previous",
         "page": "Page",
         "loading": "Loading...",
+        "help": "Help",
         "help-center": "Helpcenter",
         "related-articles": "Related articles"
     },
@@ -42,7 +43,8 @@
         "mobile-menu-open": "Open menu",
         "mobile-nav": "Mobile navigation",
         "previous-page": "Previous page",
-        "next-page": "Next page"
+        "next-page": "Next page",
+        "open-help": "Open help"
     },
     "welcome-route": {
         "title": "Customer Portal",
