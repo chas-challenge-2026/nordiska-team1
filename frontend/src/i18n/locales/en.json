@@ -31,11 +31,16 @@
         "loading": "Loading...",
         "help": "Help",
         "help-center": "Helpcenter",
-        "related-articles": "Related articles"
+        "related-articles": "Related articles",
+        "from-date": "From date",
+        "to-date": "To date",
+        "download": "Download",
+        "year": "Year"
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
-        "no-user": "Could not find user."
+        "no-user": "Could not find user.",
+        "report": "Could not create the report. Try again."
     },
     "aria-label": {
         "page-nav": "Main navigation",

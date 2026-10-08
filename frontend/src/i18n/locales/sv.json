@@ -31,11 +31,16 @@
         "loading": "Laddar...",
         "help": "Hjälp",
         "help-center": "Hjälpcenter",
-        "related-articles": "Relaterade artiklar"
+        "related-articles": "Relaterade artiklar",
+        "from-date": "Från datum",
+        "to-date": "Till datum",
+        "download": "Ladda ner",
+        "year": "År"
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
-        "no-user": "Kan inte hitta användare."
+        "no-user": "Kan inte hitta användare.",
+        "report": "Det gick inte att skapa rapporten. Försök igen."
     },
     "aria-label": {
         "page-nav": "Huvudnavigation",
