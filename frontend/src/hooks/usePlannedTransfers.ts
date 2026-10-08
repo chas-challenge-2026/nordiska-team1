@@ -15,8 +15,14 @@ import {
 
 type LocalPlannedInput = Pick<
     PlannedTransfer,
-    "date" | "name" | "note" | "sum" | "fromName" | "toName"
+    "date" | "name" | "note" | "sum" | "fromName" | "toName" | "repeating"
 >;
+
+export type PlannedTransferChanges = {
+    date: string;
+    /** undefined = inte återkommande. */
+    repeating: string | undefined;
+};
 
 export function usePlannedTransfers(ownAccounts: OwnAccount[]) {
     const { t } = useTranslation();
@@ -79,14 +85,19 @@ export function usePlannedTransfers(ownAccounts: OwnAccount[]) {
 
     const handleEditPlannedTransfer = (
         transfer: PlannedTransfer,
-        newDate: string,
+        { date: newDate, repeating }: PlannedTransferChanges,
         onSaved: () => void,
     ) => {
         if (transfer.source === "local") {
             setLocalPlannedTransfers((prev) =>
                 prev.map((p) =>
                     p.localId === transfer.localId
-                        ? { ...p, date: newDate }
+                        ? {
+                            ...p,
+                            date: newDate,
+                            repeating,
+                            note: repeating ? repeatingLabel(repeating, t) : "",
+                        }
                         : p,
                 ),
             );
@@ -99,7 +110,7 @@ export function usePlannedTransfers(ownAccounts: OwnAccount[]) {
             return;
         }
 
-        // Backend saknar uppdatering, så datumbyte = skapa ny + ta bort gammal.
+        // Backend saknar uppdatering, så ändring = skapa ny + ta bort gammal.
         // Skapa först: misslyckas något blir det i värsta fall en dubblett,
         // aldrig en försvunnen överföring.
         createPlannedMutation.mutate(
@@ -111,7 +122,7 @@ export function usePlannedTransfers(ownAccounts: OwnAccount[]) {
                 plannedDate: toPlannedDateIso(newDate),
                 label: transfer.label,
                 targetAccountId: transfer.targetAccountId,
-                repeating: transfer.repeating,
+                repeating,
             },
             {
                 onSuccess: () =>

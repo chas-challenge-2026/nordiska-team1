@@ -4,7 +4,10 @@ import { useTranslation } from "react-i18next";
 import Modal from "../modals/Modal";
 import InputField from "../forms/InputField";
 import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
+import RecurrenceFields from "./RecurrenceFields";
 import type { PlannedTransfer } from "../../constants/transferAccounts";
+import type { PlannedTransferChanges } from "../../hooks/usePlannedTransfers";
+import { useRecurrence } from "../../hooks/useRecurrence";
 
 type View = "menu" | "edit" | "confirm-delete";
 
@@ -15,7 +18,7 @@ type PlannedTransferActionsModalProps = {
     isOpen: boolean;
     transfer: PlannedTransfer;
     onClose: () => void;
-    onSaveDate: (newDate: string) => void;
+    onSave: (changes: PlannedTransferChanges) => void;
     isSaving: boolean;
     editError: EditPlannedError;
     onConfirmDelete: () => void;
@@ -31,7 +34,7 @@ export default function PlannedTransferActionsModal({
     isOpen,
     transfer,
     onClose,
-    onSaveDate,
+    onSave,
     isSaving,
     editError,
     onConfirmDelete,
@@ -41,10 +44,16 @@ export default function PlannedTransferActionsModal({
     const { t } = useTranslation();
     const [view, setView] = useState<View>("menu");
     const [date, setDate] = useState(transfer.date);
+    const recurrence = useRecurrence(transfer.repeating);
+    const { recurring, repeating } = recurrence;
 
-    const handleSaveDate = (e: SubmitEvent<HTMLFormElement>) => {
+    const isUnchanged =
+        date === transfer.date && repeating === transfer.repeating;
+
+    const handleSave = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSaveDate(date);
+        if (!recurrence.isValid || isUnchanged) return;
+        onSave({ date, repeating });
     };
 
     return (
@@ -92,7 +101,7 @@ export default function PlannedTransferActionsModal({
 
             {view === "edit" && (
                 <form
-                    onSubmit={handleSaveDate}
+                    onSubmit={handleSave}
                     className="flex flex-1 flex-col gap-5 overflow-y-auto px-7 py-6"
                 >
                     <InputField
@@ -103,6 +112,23 @@ export default function PlannedTransferActionsModal({
                         value={date}
                         onChange={setDate}
                     />
+                    <label className="flex cursor-pointer items-center gap-2.5 text-sm text-dark-navy">
+                        <input
+                            type="checkbox"
+                            checked={recurring}
+                            onChange={(e) =>
+                                recurrence.setRecurring(e.target.checked)
+                            }
+                            className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-nordiska-blue)]"
+                        />
+                        {t("page-transfer.recurring-label")}
+                    </label>
+                    {recurring && (
+                        <RecurrenceFields
+                            name="plannedTransfer"
+                            {...recurrence.fieldProps}
+                        />
+                    )}
                     {editError && (
                         <p className="m-0 text-sm text-red-600">
                             {editError === "cleanup"
@@ -119,7 +145,11 @@ export default function PlannedTransferActionsModal({
                                 : undefined
                         }
                         // Nytt försök efter "cleanup" skulle skapa ännu en dubblett.
-                        submitDisabled={editError === "cleanup"}
+                        submitDisabled={
+                            editError === "cleanup" ||
+                            !recurrence.isValid ||
+                            isUnchanged
+                        }
                     />
                 </form>
             )}

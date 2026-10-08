@@ -1,10 +1,9 @@
 import { useTranslation } from "react-i18next";
 import InputField from "../forms/InputField";
 import AccountTriggerButton from "./AccountTriggerButton";
-import { formatSek, CUSTOM_DAYS_MAX } from "./transferHelpers";
-import type { RepeatInterval } from "./transferHelpers";
-
-const REPEAT_INTERVALS: RepeatInterval[] = ["week", "month", "year", "custom"];
+import RecurrenceFields from "./RecurrenceFields";
+import type { RecurrenceFieldsValue } from "./RecurrenceFields";
+import { formatSek } from "./transferHelpers";
 import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
 
 type TransferFormProps = {
@@ -19,11 +18,7 @@ type TransferFormProps = {
     onDateChange: (value: string) => void;
     recurring: boolean;
     onRecurringChange: (value: boolean) => void;
-    repeatInterval: RepeatInterval;
-    onRepeatIntervalChange: (value: RepeatInterval) => void;
-    customDays: string;
-    onCustomDaysChange: (value: string) => void;
-    customDaysError?: string;
+    recurrence: RecurrenceFieldsValue;
     name: string;
     onNameChange: (value: string) => void;
     isExternal: boolean;
@@ -44,11 +39,7 @@ export default function TransferForm({
     onDateChange,
     recurring,
     onRecurringChange,
-    repeatInterval,
-    onRepeatIntervalChange,
-    customDays,
-    onCustomDaysChange,
-    customDaysError,
+    recurrence,
     name,
     onNameChange,
     isExternal,
@@ -157,51 +148,7 @@ export default function TransferForm({
                 </div>
 
                 {recurring && (
-                    <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
-                        <div>
-                            <label
-                                htmlFor="transferInterval"
-                                className="text-sm font-bold text-dark-navy first-letter:uppercase"
-                            >
-                                {t("page-transfer.interval-label")}
-                            </label>
-                            <select
-                                id="transferInterval"
-                                name="transferInterval"
-                                value={repeatInterval}
-                                onChange={(e) =>
-                                    onRepeatIntervalChange(
-                                        e.target.value as RepeatInterval,
-                                    )
-                                }
-                                className="mt-1 w-full rounded-md border border-nordiska-blue bg-white px-3 py-2"
-                            >
-                                {REPEAT_INTERVALS.map((interval) => (
-                                    <option key={interval} value={interval}>
-                                        {t(`page-transfer.repeating.${interval}`)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        {repeatInterval === "custom" && (
-                            <InputField
-                                name="transferCustomDays"
-                                type="text"
-                                label={t("page-transfer.custom-days-label")}
-                                placeholder={t(
-                                    "page-transfer.custom-days-placeholder",
-                                    { max: CUSTOM_DAYS_MAX },
-                                )}
-                                value={customDays}
-                                required
-                                onChange={(value) =>
-                                    onCustomDaysChange(value.replace(/\D/g, ""))
-                                }
-                                suffix={t("page-transfer.custom-days-suffix")}
-                                error={customDaysError}
-                            />
-                        )}
-                    </div>
+                    <RecurrenceFields name="transfer" {...recurrence} />
                 )}
 
                 <InputField

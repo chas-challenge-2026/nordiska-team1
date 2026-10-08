@@ -57,6 +57,18 @@ export function parseRepeatingDays(repeating: string) {
     return match ? Number(match[1]) : null;
 }
 
+/** Motsatsen till toRepeating — används för att fylla i redigeringsformuläret. */
+export function fromRepeating(repeating: string | undefined) {
+    const days = repeating ? parseRepeatingDays(repeating) : null;
+    if (days !== null) {
+        return { recurring: true, interval: "custom" as RepeatInterval, customDays: String(days) };
+    }
+    if (repeating === "week" || repeating === "month" || repeating === "year") {
+        return { recurring: true, interval: repeating as RepeatInterval, customDays: "" };
+    }
+    return { recurring: false, interval: "month" as RepeatInterval, customDays: "" };
+}
+
 export function addRepeatIso(dateStr: string, repeating: string) {
     const d = new Date(`${dateStr}T00:00:00Z`);
     const days = parseRepeatingDays(repeating);

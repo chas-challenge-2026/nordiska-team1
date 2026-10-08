@@ -12,18 +12,16 @@ import {
     shouldSimulateFailure,
     toPlannedDateIso,
     addRepeatIso,
-    parseCustomDays,
-    toRepeating,
     repeatingLabel,
     toOwnAccount,
     SIMULATED_TRANSFER_DELAY_MS,
 } from "../components/transfer/transferHelpers";
-import type { RepeatInterval } from "../components/transfer/transferHelpers";
 import type { OwnAccount } from "../constants/transferAccounts";
 import { useGetAccounts } from "../hooks/useAccounts";
 import { useTransferFunds } from "../hooks/useTransactions";
 import { usePlannedTransfers } from "../hooks/usePlannedTransfers";
 import { useAccountPicker } from "../hooks/useAccountPicker";
+import { useRecurrence } from "../hooks/useRecurrence";
 
 type Step = "form" | "bankid" | "done";
 
@@ -46,9 +44,8 @@ export default function TransferPage() {
     const [toId, setToId] = useState<string | null>(null);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
-    const [recurring, setRecurring] = useState(false);
-    const [repeatInterval, setRepeatInterval] = useState<RepeatInterval>("month");
-    const [customDays, setCustomDays] = useState("");
+    const recurrence = useRecurrence();
+    const { recurring, repeating } = recurrence;
     const [step, setStep] = useState<Step>("form");
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
@@ -65,25 +62,12 @@ export default function TransferPage() {
     const over = !!fromAccount && amountValue > fromAccount.balance;
     const isExternal = !!toAccount && !toAccount.own;
 
-    const customDaysValue = parseCustomDays(customDays);
-    const customDaysError =
-        recurring &&
-        repeatInterval === "custom" &&
-        customDays.trim() !== "" &&
-        customDaysValue === null
-            ? t("page-transfer.custom-days-error")
-            : undefined;
-    // undefined = inte återkommande, eller eget intervall utan giltigt antal dagar.
-    const repeating = recurring
-        ? toRepeating(repeatInterval, customDaysValue)
-        : undefined;
-
     const canSubmit =
         !!fromAccount &&
         !!toAccount &&
         amountValue > 0 &&
         !over &&
-        (!recurring || repeating !== undefined);
+        recurrence.isValid;
 
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
@@ -103,6 +87,7 @@ export default function TransferPage() {
             date,
             name: name.trim() || t("page-transfer.default-name"),
             note: repeating ? repeatingLabel(repeating, t) : "",
+            repeating,
             sum: amountValue,
             fromName: fromAccount.name,
             toName: toAccount.name,
@@ -199,9 +184,7 @@ export default function TransferPage() {
         setToId(null);
         setAmount("");
         setDate(todayIso());
-        setRecurring(false);
-        setRepeatInterval("month");
-        setCustomDays("");
+        recurrence.reset();
         closeAll();
         setStep("form");
         setTransferPhase("processing");
@@ -224,12 +207,8 @@ export default function TransferPage() {
                             date={date}
                             onDateChange={setDate}
                             recurring={recurring}
-                            onRecurringChange={setRecurring}
-                            repeatInterval={repeatInterval}
-                            onRepeatIntervalChange={setRepeatInterval}
-                            customDays={customDays}
-                            onCustomDaysChange={setCustomDays}
-                            customDaysError={customDaysError}
+                            onRecurringChange={recurrence.setRecurring}
+                            recurrence={recurrence.fieldProps}
                             name={name}
                             onNameChange={setName}
                             isExternal={isExternal}
