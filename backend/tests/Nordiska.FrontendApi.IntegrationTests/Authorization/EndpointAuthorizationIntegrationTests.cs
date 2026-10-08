@@ -36,6 +36,8 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
         "GET api/operational-messages",
         "GET api/faqs/{lang:regex(^(sv|en)$)}",
         "GET api/faqs/{lang:regex(^(sv|en)$)}/categories",
+        "GET api/faqs/{lang:regex(^(sv|en)$)}/{id:int}",
+        "POST api/faqs/{id:int}/view",
         "POST api/faqs/{id:int}/increase",
         "PATCH api/faqs/{id:int}/increase",
         "POST api/faqs/{id:int}/decrease",
@@ -45,6 +47,8 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
         "GET api/faq/search",
         "GET api/faq/{lang:regex(^(sv|en)$)}",
         "GET api/faq/{lang:regex(^(sv|en)$)}/categories",
+        "GET api/faq/{lang:regex(^(sv|en)$)}/{id:int}",
+        "POST api/faq/{id:int}/view",
         "POST api/faq/{id:int}/increase",
         "PATCH api/faq/{id:int}/increase",
         "POST api/faq/{id:int}/decrease",
@@ -114,6 +118,8 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
     [InlineData("GET", "/api/reports/jobs/job_123")]
     [InlineData("GET", "/api/reports/tax-report?accountId=1&year=2025")]
     [InlineData("GET", "/api/test/secure")]
+    [InlineData("GET", "/api/faq/relation/00000000-0000-0000-0000-000000000001/related")]
+    [InlineData("PUT", "/api/faq/relation/00000000-0000-0000-0000-000000000001/related")]
     public async Task ProtectedEndpoint_WithoutAuthCookie_Returns_401Unauthorized(string method, string url)
     {
         var client = _factory.CreateClient();

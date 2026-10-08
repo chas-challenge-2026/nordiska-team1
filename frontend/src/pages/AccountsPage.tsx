@@ -6,6 +6,9 @@ import Modal from "../components/modals/Modal";
 import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import HelpCard from "../components/faq/HelpCard";
 import ActionButton from "../components/accounts/ActionButton";
+import HelpCardBubble from "../components/faq/HelpCardBubble";
+import AccountStatementBtn from "../components/reports/AccountStatementButton";
+import TaxReportBtn from "../components/reports/TaxReportButton";
 
 /*
 id: 1
@@ -68,8 +71,8 @@ export default function AccountsPage() {
     }
 
     return (
-    <main className="min-h-screen w-full bg-light-gray/40 text-dark-navy">
-        <div className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-6 sm:py-8 lg:px-1 lg:py-10 ">
+    <main className="min-h-screen w-full text-dark-navy">
+        <div className="mx-auto w-full max-w-7xl px-2 sm:px-6 sm:py-8 lg:px-1 lg:py-10 ">
             {/* HEADER  */}
             <header className="mb-5">
                 <div className="mb-3 grid gap-5 items-end lg:border-b-2 lg:border-nordiska-orange lg:pb-2 lg:grid-cols-[minmax(220px,280px)_1fr] xl:grid-cols-[280px_1fr_240px]">
@@ -96,13 +99,7 @@ export default function AccountsPage() {
                                 {t("accounts-route.new-account")}
                             </button>
 
-                            <button
-                                aria-label={t("accounts-route.aria-label.generate-full-report")}
-                                className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-nordiska-blue sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm"
-                            >
-                                <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5"/>
-                                {t("accounts-route.full-report")}
-                            </button>
+                        <TaxReportBtn key={selectedAccountId} accountId={selectedAccountId} />
                         </div>
                     </div>
                 </div>
@@ -115,7 +112,7 @@ export default function AccountsPage() {
                 <nav aria-label={t("accounts-route.my-accounts")} className="min-w-0">
 
                     {/* MOBILE ACCOUNT SELECTOR */}
-                    <div className="lg:hidden overflow-hidden border border-primary-blue/40 bg-primary-blue/30 shadow-sm">
+                    <div className="lg:hidden overflow-hidden border border-primary-blue/40 bg-primary-blue/10 md:shadow-sm">
 
                         {/* COLLAPSIBLE HEADER */}
                         <button
@@ -196,7 +193,7 @@ export default function AccountsPage() {
                     </div>
 
                     {/* DESKTOP ACCOUNT NAVIGATION */}
-                    <div className="hidden lg:block overflow-hidden border border-gray-200 bg-white shadow-sm">
+                    <div className="hidden lg:block overflow-hidden border border-gray-200 bg-white md:shadow-sm">
 
                         {/* NAV HEADER */}
                         <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-dark-navy px-4 py-3">
@@ -250,7 +247,7 @@ export default function AccountsPage() {
                 {/* ACCOUNT INFORMATION */}
                 <section
                     aria-labelledby="account-details-heading"
-                    className="min-w-0 overflow-hidden border border-gray-200 bg-white shadow-sm"
+                    className="min-w-0 overflow-hidden md:border md:border-gray-200 bg-white md:shadow-sm"
                 >
                     {expandedAccount && (
                         <article>
@@ -340,11 +337,9 @@ export default function AccountsPage() {
                                             title={t("accounts-route.create-savingsgoal")}
                                         />
                                         {/* KONTOUTDRAG */}
-                                        <ActionButton
-                                            onClick={() => {}}
-                                            ariaLabel={t("accounts-route.account-report")}
-                                            prefixIcon="/icons/file-pdf.svg"
-                                            title={t("accounts-route.account-report")}
+                                        <AccountStatementBtn
+                                            key={expandedAccount.id}
+                                            accountId={expandedAccount.id}
                                         />
                                         {/* FAVORIT */}
                                         <ActionButton
@@ -376,7 +371,7 @@ export default function AccountsPage() {
                 </section>
 
                 {/* RELATERAT */}
-                <aside aria-label="Hjälp" className="min-w-0  border border-gray-200 bg-white shadow-sm">
+                <aside aria-label={t("generic.help")} className="hidden xl:block min-w-0 border border-nordiska-blue/50 md:border-gray-200 bg-white md:shadow-sm">
                     <div className=" bg-nordiska-blue min-h-22 items-center justify-between px-4 py-3 text-white">
                         <p className="truncate uppercase text-sm mt-2 text-right text-white/80">{t("generic.help-center")}</p>
                         <p className="mt-1 truncate text-md text-right font-semibold">{t("generic.related-articles")}</p>
@@ -385,6 +380,7 @@ export default function AccountsPage() {
                         <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={12}/>
                     </div>
                 </aside>
+
             </div>
 
 
@@ -428,7 +424,7 @@ export default function AccountsPage() {
                     </div>
                 </div>
             </Modal>
-
+            
             {/* CREATE ACCOUNT */}
             <CreateAccountModal
                 isModalOpen={isCreateAccountOpen}
@@ -437,6 +433,11 @@ export default function AccountsPage() {
                     setSelectedAccount(newAccount.id);
                     setIsCreateAccountOpen(false);
                 }}
+            />
+
+            <HelpCardBubble 
+                searchTerms={t("accounts-route.help-card-search")}
+                numOfHits={6}
             />
         </div>
     </main>

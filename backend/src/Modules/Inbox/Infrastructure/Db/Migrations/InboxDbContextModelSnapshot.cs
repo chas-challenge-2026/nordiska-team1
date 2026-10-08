@@ -18,7 +18,7 @@ namespace Nordiska.Modules.Inbox.Infrastructure.Db.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("inbox")
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "8.0.30")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -225,8 +225,17 @@ namespace Nordiska.Modules.Inbox.Infrastructure.Db.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsInformationOnly")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTimeOffset>("LastMessageAt")
                         .HasColumnType("timestamp with time zone");

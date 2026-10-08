@@ -12,7 +12,6 @@ public sealed class FaqEntry
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; private set; }
     public Guid RelationId { get; private set; }
-    public int[] RelatedFaqIds { get; private set; } = Array.Empty<int>();
 
     private FaqEntry() { }
 
@@ -22,14 +21,12 @@ public sealed class FaqEntry
         string? category = null,
         string? keywords = null,
         string? language = "sv",
-        Guid? relationId = null,
-        int[]? relatedFaqIds = null)
+        Guid? relationId = null)
     {
         var entry = new FaqEntry
         {
             CreatedAt = DateTime.UtcNow,
-            RelationId = relationId ?? Guid.NewGuid(),
-            RelatedFaqIds = relatedFaqIds ?? Array.Empty<int>()
+            RelationId = relationId ?? Guid.NewGuid()
         };
         entry.SetLanguage(language);
         entry.ReviseEntry(question, answer, category, keywords);

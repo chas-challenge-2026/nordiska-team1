@@ -52,6 +52,16 @@ openssl req \
   -days 365 \
   -subj "/CN=PDF Signer Test"
 
+openssl req \
+  -new \
+  -x509 \
+  -key tests/data/private_key.pem \
+  -out tests/data/tsa_cert.pem \
+  -days 365 \
+  -subj "/CN=PDF TSA Test" \
+  -addext "keyUsage = critical,digitalSignature" \
+  -addext "extendedKeyUsage = critical,timeStamping"
+
 openssl x509 \
   -in tests/data/signing_cert.pem \
   -outform DER \

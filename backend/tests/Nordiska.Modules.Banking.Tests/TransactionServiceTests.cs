@@ -40,6 +40,9 @@ public class TransactionServiceTests
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
+        public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
         public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
             entity.Id = _next++;
@@ -124,6 +127,11 @@ public class TransactionServiceTests
                                  || l.AccountId.ToString().Contains(term));
             }
 
+            if (parameters.CorrelationId.HasValue)
+            {
+                q = q.Where(l => l.CorrelationId == parameters.CorrelationId.Value);
+            }
+
             var totalCount = q.Count();
 
             var isAsc = string.Equals(parameters.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
@@ -182,6 +190,12 @@ public class TransactionServiceTests
                 return Task.FromResult(true);
             }
             return Task.FromResult(false);
+        }
+
+        public Task<IEnumerable<LedgerEntry>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+        {
+            var entries = _store.Where(l => l.CorrelationId == correlationId).ToList();
+            return Task.FromResult<IEnumerable<LedgerEntry>>(entries);
         }
 
         public int Count => _store.Count;
@@ -702,5 +716,36 @@ public class TransactionServiceTests
         await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(5));
 
         Assert.NotNull(await svc.GetByIdAsync(5));
+    }
+
+    [Fact]
+    public async Task TransferAsync_AssignsSameCorrelationId_ToBothEntries()
+    {
+        var sourceAcc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "SRC", Balance = 1000m };
+        var targetAcc = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "TGT", Balance = 100m };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 1000m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seedTx);
+        var accRepo = new FakeSavingsRepo(new[] { sourceAcc, targetAcc });
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var result = await svc.TransferAsync(new TransferRequest(1, 2, 250m, "Överföring buffert"));
+
+        Assert.NotNull(result.CorrelationId);
+        Assert.NotEqual(Guid.Empty, result.CorrelationId.Value);
+
+        var related = (await svc.GetByCorrelationIdAsync(result.CorrelationId.Value)).ToList();
+        Assert.Equal(2, related.Count);
+
+        var withdrawal = related.Single(t => t.AccountId == 1);
+        var deposit = related.Single(t => t.AccountId == 2);
+
+        Assert.Equal(-250m, withdrawal.Amount);
+        Assert.Equal(250m, deposit.Amount);
+        Assert.Equal(result.CorrelationId, withdrawal.CorrelationId);
+        Assert.Equal(result.CorrelationId, deposit.CorrelationId);
     }
 }

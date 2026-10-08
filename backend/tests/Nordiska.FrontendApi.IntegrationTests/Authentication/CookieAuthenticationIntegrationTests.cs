@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.FrontendApi.Authentication;
@@ -23,6 +25,8 @@ using Nordiska.FrontendApi.Extensions;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Communication.Domain;
+using Nordiska.Modules.Inbox.Application;
 using Xunit;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Authentication;
@@ -219,6 +223,9 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
+    public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
     public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
     {
         entity.Id = _next++;
@@ -338,6 +345,128 @@ public class TestTransactionRepository : ITransactionRepository
         }
         return Task.FromResult(false);
     }
+
+    public Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(l => l.SavingsGoalId == savingsGoalId && l.IsPlanned));
+}
+
+public class TestSavingsGoalRepository : ISavingsGoalRepository
+{
+    private static readonly List<SavingsGoal> _store = new();
+    private static long _next = 1;
+
+    public static void Reset()
+    {
+        _store.Clear();
+        _next = 1;
+    }
+
+    public static void Seed(SavingsGoal goal)
+    {
+        if (goal.Id == 0) goal.Id = _next++;
+        _store.Add(goal);
+    }
+
+    public Task<SavingsGoal?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(g => g.Id == id));
+
+    public Task<List<SavingsGoal>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Where(g => g.CustomerId == customerId).ToList());
+
+    public Task<List<SavingsGoal>> GetByAccountIdAsync(long accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Where(g => g.AccountId == accountId).ToList());
+
+    public Task<long> CreateAsync(SavingsGoal goal, CancellationToken cancellationToken = default)
+    {
+        goal.Id = _next++;
+        _store.Add(goal);
+        return Task.FromResult(goal.Id);
+    }
+
+    public Task<bool> UpdateAsync(SavingsGoal goal, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(g => g.Id == goal.Id);
+        if (idx >= 0)
+        {
+            _store[idx] = goal;
+            return Task.FromResult(true);
+        }
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var count = _store.RemoveAll(g => g.Id == id);
+        return Task.FromResult(count > 0);
+    }
+}
+
+public sealed class TestSavingsGoalDepositRepository(
+    ISavingsGoalRepository goalRepository,
+    ISavingsAccountRepository accountRepository)
+    : ISavingsGoalDepositRepository
+{
+    public async Task<SavingsGoalDepositResult> DepositAsync(
+        long savingsGoalId,
+        long sourceAccountId,
+        decimal amount,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        var goal = await goalRepository.GetByIdAsync(savingsGoalId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmål med ID {savingsGoalId} hittades inte.");
+
+        var sourceAccount = await accountRepository.GetByIdAsync(sourceAccountId, cancellationToken)
+            ?? throw new NotFoundException($"Källkonto med ID {sourceAccountId} hittades inte.");
+
+        var targetAccount = await accountRepository.GetByIdAsync(goal.AccountId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmålets konto med ID {goal.AccountId} hittades inte.");
+
+        if (!isAdmin && goal.CustomerId != customerId)
+        {
+            throw new NotFoundException($"Sparmål med ID {savingsGoalId} hittades inte.");
+        }
+
+        if (!isAdmin && sourceAccount.CustomerId != customerId)
+        {
+            throw new ValidationException("Källkontot tillhör inte den inloggade kunden.");
+        }
+
+        if (sourceAccount.Balance < amount)
+        {
+            throw new ConflictException("Otillräckligt saldo.");
+        }
+
+        var depositedAt = DateTime.UtcNow;
+        goal.CurrentAmount += amount;
+        goal.UpdatedAt = depositedAt;
+
+        var completedNow = goal.CurrentAmount >= goal.TargetAmount &&
+                           !string.Equals(goal.Status, "completed", StringComparison.OrdinalIgnoreCase);
+
+        if (completedNow)
+        {
+            goal.Status = "completed";
+        }
+
+        await goalRepository.UpdateAsync(goal, cancellationToken);
+
+        return new SavingsGoalDepositResult(
+            goal.Id,
+            goal.CustomerId,
+            goal.Title,
+            sourceAccount.Id,
+            targetAccount.Id,
+            amount,
+            sourceAccount.Balance - amount,
+            targetAccount.Balance + amount,
+            goal.CurrentAmount,
+            goal.TargetAmount,
+            goal.Status,
+            completedNow,
+            depositedAt);
+    }
 }
 
 public class TestCustomerService : ICustomerService
@@ -367,20 +496,21 @@ public class TestCustomerService : ICustomerService
         throw new NotFoundException($"Customer with id {id} was not found.");
     }
 
-    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
         var customer = _customers.GetOrAdd(id, k => new Customer { Id = k, Name = "User", Email = "u@ex.se", PersonalNum = "198001010000" });
         if (!string.IsNullOrWhiteSpace(name)) customer.Name = name;
         if (!string.IsNullOrWhiteSpace(email)) customer.Email = email;
         if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum;
         if (phoneNumber != null) customer.PhoneNumber = phoneNumber;
+        if (overviewPreference != null) customer.OverviewPreference = overviewPreference;
         customer.UpdatedAt = DateTime.UtcNow;
         return Task.FromResult(customer);
     }
 
-    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
-        return UpdateAsync(id, name, email, null, phoneNumber, cancellationToken);
+        return UpdateAsync(id, name, email, null, phoneNumber, overviewPreference, cancellationToken);
     }
 
     public Task DeleteAsync(long id, CancellationToken cancellationToken = default)
@@ -551,8 +681,13 @@ public class TestLoanRepository : ILoanRepository
 
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public ConcurrentQueue<(long CustomerId, string Type, string Title, long? TargetId)> Notifications { get; } = new();
+    public Exception? NotificationFailure { get; set; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureLogging(logging => logging.ClearProviders());
+
         // Tests share one factory per class, so raise the limits to keep rate limiting out of the way (NOR-70)
         builder.UseSetting("ConnectionStrings:DefaultConnection", "Host=localhost;Database=test;Username=postgres;Password=postgres");
         builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
@@ -580,6 +715,34 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<ILoanRepository>();
             services.AddScoped<ILoanRepository, TestLoanRepository>();
+
+            services.RemoveAll<ISavingsGoalRepository>();
+            services.AddScoped<ISavingsGoalRepository, TestSavingsGoalRepository>();
+
+            services.RemoveAll<ISavingsGoalDepositRepository>();
+            services.AddScoped<ISavingsGoalDepositRepository, TestSavingsGoalDepositRepository>();
+
+            var inboxRepository = new Mock<IInboxRepository>();
+            inboxRepository
+                .Setup(repository => repository.AddNotificationAsync(
+                    It.IsAny<long>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<NotificationPriority>(),
+                    It.IsAny<NotificationTargetType?>(),
+                    It.IsAny<long?>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<long, string, string, string?, NotificationPriority, NotificationTargetType?, long?, CancellationToken>(
+                    (customerId, type, title, _, _, _, targetId, _) =>
+                        Notifications.Enqueue((customerId, type, title, targetId)))
+                .Returns<long, string, string, string?, NotificationPriority, NotificationTargetType?, long?, CancellationToken>(
+                    (_, _, _, _, _, _, _, _) => NotificationFailure is null
+                        ? Task.FromResult(new CustomerNotification(1, "test", "test"))
+                        : Task.FromException<CustomerNotification>(NotificationFailure));
+
+            services.RemoveAll<IInboxRepository>();
+            services.AddSingleton(inboxRepository.Object);
         });
     }
 }

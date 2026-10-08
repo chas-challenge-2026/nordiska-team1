@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Channels;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -54,7 +52,7 @@ public sealed class FaqSearchLogQueue
         var masked = Truncate(FaqSearchQuery.Mask(query.Trim()));
         var normalized = Truncate(FaqSearchQuery.Normalize(masked));
         var lang = language.Trim().ToLowerInvariant();
-        var sessionHash = HashSession(sessionKey);
+        var sessionHash = FaqSessionHash.Compute(_options.Salt, sessionKey);
 
         var dedupeKey = $"faqsearch:{sessionHash}|{lang}|{normalized}";
         if (_cache.TryGetValue(dedupeKey, out _))
@@ -73,12 +71,6 @@ public sealed class FaqSearchLogQueue
 
         _cache.Set(dedupeKey, true, DedupeWindow);
         return true;
-    }
-
-    private string HashSession(string sessionKey)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{_options.Salt}|{sessionKey}"));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     private void WarnDropped()

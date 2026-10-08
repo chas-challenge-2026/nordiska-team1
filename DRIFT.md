@@ -25,7 +25,7 @@ Appen svarar sedan på http://localhost:PORT. Vilken port som gäller för ert c
 
 ## Så funkar deploy
 
-- Push till `develop` bygger om er stage-miljö, push till `main` bygger om prod. Adresserna står i README.
+- Push till `develop` bygger om er stage-miljö, push till `main` bygger om prod. Era adresser: stage https://nordiska-team1-dev.team.chas-challenge.comerit.se, prod https://nordiska-team1.team.chas-challenge.comerit.se
 - Grön bock eller rött X på committen i GitHub visar hur deployen gick. Vid rött X: klicka på markeringen och läs byggloggen.
 - **Ett misslyckat bygge sänker inte er miljö.** Senast fungerande version fortsätter köra tills ett nytt bygge går igenom.
 - Bygget tar några minuter. Vid deadline pushar alla team samtidigt och kön blir längre: pusha i god tid.

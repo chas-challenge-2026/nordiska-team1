@@ -14,7 +14,19 @@ public interface IInboxService
     Task<bool> MarkAsReadAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
     Task<bool> ArchiveThreadAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
     Task<bool> RestoreThreadAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
+    Task<bool> CloseThreadAsync(long customerId, long threadId, bool isStaff, CancellationToken cancellationToken = default);
+    Task<bool> ReopenThreadAsync(long customerId, long threadId, bool isStaff, CancellationToken cancellationToken = default);
     Task<MessageResponse?> AddStaffReplyAsync(long staffId, long threadId, StaffReplyRequest request, CancellationToken cancellationToken = default);
+
+    // Admin Threads & Broadcast
+    Task<PagedResult<AdminThreadSummaryResponse>> GetAdminThreadsAsync(AdminThreadQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<int> CreateAdminThreadAsync(CreateAdminThreadRequest request, CancellationToken cancellationToken = default);
+
+    // Notifications
+    Task<PagedResult<CustomerNotificationResponse>> GetNotificationsAsync(long customerId, NotificationQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<bool> MarkNotificationReadAsync(long customerId, long notificationId, CancellationToken cancellationToken = default);
+    Task<int> MarkAllNotificationsReadAsync(long customerId, CancellationToken cancellationToken = default);
+    Task CreateSavingsGoalCompletedNotificationAsync(long customerId, long savingsGoalId, string goalTitle, CancellationToken cancellationToken = default);
 
     // Digital Document Archive
     Task<PagedResult<DocumentResponse>> GetDocumentsAsync(long customerId, DocumentQueryParameters parameters, CancellationToken cancellationToken = default);

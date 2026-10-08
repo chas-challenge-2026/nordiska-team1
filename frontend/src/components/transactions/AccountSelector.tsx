@@ -94,13 +94,6 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                             <p className="py-4 text-center text-sm text-secondary">{t("transactions-route.no-account-match")}</p>
                         )}
                     </fieldset>
-
-                    <p className="text-xs text-secondary mt-4 mb-2">
-                        {t("transactions-route.tax-info")}
-                    </p>
-                    <button type="button" className="w-full border cursor-pointer border-gray-300 rounded-md text-sm py-2 hover:bg-nordiska-blue bg-primary-blue text-white font-semibold">
-                        {t("transactions-route.tax")}
-                    </button>
                 </>
             )}
         </div>

@@ -4,14 +4,27 @@
 #include <unistd.h>
 #include "signer_server.h"
 
-static volatile sig_atomic_t running = 1;
+static int shutdown_write_fd = -1;
 
 static void handle_signal(int signal) {
   (void)signal;
-  running = 0;
+
+  unsigned char byte = 1;
+  if (shutdown_write_fd >= 0) {
+    write(shutdown_write_fd, &byte, 1);
+  }
 }
 
 int main(void) {
+
+  int shutdown_pipe[2];
+  if (pipe(shutdown_pipe) != 0) {
+    perror("pipe");
+    return 1;
+  }
+
+  shutdown_write_fd = shutdown_pipe[1];
+
 
   signal(SIGINT, handle_signal);
   signal(SIGTERM, handle_signal);
@@ -24,13 +37,13 @@ int main(void) {
     fprintf(stderr, "Failed to create pdf signer\n");
     return 1;
   }
+  printf("PDF signer initialized\n");
 
-  if (signer_server_run(signer) != 0) {
+  if (signer_server_run(signer, shutdown_pipe[0]) != 0) {
     fprintf(stderr, "Failed to start signer server\n");
     return 1;
   }
 
-  printf("PDF signer initialized\n");
 
   pdf_signer_destroy(signer);
 

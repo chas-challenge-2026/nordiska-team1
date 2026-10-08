@@ -16,4 +16,8 @@ public interface ITransactionRepository
     Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
     Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
+    Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)
+        => Task.FromResult<LedgerEntry?>(null);
+    Task<IEnumerable<LedgerEntry>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<LedgerEntry>>(Array.Empty<LedgerEntry>());
 }

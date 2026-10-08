@@ -66,12 +66,6 @@ namespace Nordiska.Modules.Faq.Infrastructure.Db.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<int[]>("RelatedFaqIds")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer[]")
-                        .HasDefaultValue(new int[0]);
-
                     b.Property<Guid>("RelationId")
                         .HasColumnType("uuid");
 
@@ -83,6 +77,27 @@ namespace Nordiska.Modules.Faq.Infrastructure.Db.Migrations
                     b.HasIndex("RelationId");
 
                     b.ToTable("faq_entries", "faq");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Faq.Domain.FaqRelationship", b =>
+                {
+                    b.Property<Guid>("RelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("relation_id");
+
+                    b.Property<Guid>("RelatedRelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("related_relation_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("RelationId", "RelatedRelationId");
+
+                    b.HasIndex("RelatedRelationId");
+
+                    b.ToTable("faq_relationship", "faq");
                 });
 
             modelBuilder.Entity("Nordiska.Modules.Faq.Domain.FaqSearchLog", b =>
@@ -133,6 +148,38 @@ namespace Nordiska.Modules.Faq.Infrastructure.Db.Migrations
                     b.HasIndex("NormalizedQuery", "Language");
 
                     b.ToTable("faq_search_log", "faq");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Faq.Domain.FaqViewLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("FaqEntryId")
+                        .HasColumnType("integer")
+                        .HasColumnName("faq_entry_id");
+
+                    b.Property<string>("SessionHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("session_hash");
+
+                    b.Property<DateTime>("ViewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("viewed_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ViewedAt");
+
+                    b.HasIndex("FaqEntryId", "ViewedAt");
+
+                    b.ToTable("faq_view_log", "faq");
                 });
 #pragma warning restore 612, 618
         }

@@ -13,12 +13,14 @@ public sealed class InboxService(
     IInboxRepository repository,
     IValidator<CreateThreadRequest> createThreadValidator,
     IValidator<ReplyThreadRequest> replyThreadValidator,
-    IValidator<StaffReplyRequest> staffReplyValidator) : IInboxService
+    IValidator<StaffReplyRequest> staffReplyValidator,
+    IValidator<CreateAdminThreadRequest> createAdminThreadValidator) : IInboxService
 {
     private readonly IInboxRepository _repository = repository;
     private readonly IValidator<CreateThreadRequest> _createThreadValidator = createThreadValidator;
     private readonly IValidator<ReplyThreadRequest> _replyThreadValidator = replyThreadValidator;
     private readonly IValidator<StaffReplyRequest> _staffReplyValidator = staffReplyValidator;
+    private readonly IValidator<CreateAdminThreadRequest> _createAdminThreadValidator = createAdminThreadValidator;
 
     public async Task<PagedResult<ThreadSummaryResponse>> GetThreadsAsync(
         long customerId,
@@ -32,6 +34,7 @@ public sealed class InboxService(
         var pagedThreads = await _repository.GetThreadsByCustomerIdAsync(
             customerId,
             folder,
+            parameters.SearchTerm,
             page,
             pageSize,
             cancellationToken);
@@ -42,6 +45,8 @@ public sealed class InboxService(
         {
             var state = await _repository.GetThreadStateAsync(thread.Id, customerId, cancellationToken);
             var messages = await _repository.GetMessagesByThreadIdAsync(thread.Id, cancellationToken);
+            var lastMessage = messages.LastOrDefault();
+            var canReply = thread.Status == MessageThreadStatus.Open && (lastMessage is null || lastMessage.ReplyAllowed);
 
             summaries.Add(new ThreadSummaryResponse(
                 Id: thread.Id,
@@ -51,7 +56,10 @@ public sealed class InboxService(
                 LastMessageAt: thread.LastMessageAt,
                 IsRead: state?.IsRead ?? false,
                 Folder: (state?.Folder ?? MessageFolder.Inbox).ToString(),
-                MessageCount: messages.Count));
+                MessageCount: messages.Count,
+                IsInformationOnly: thread.IsInformationOnly,
+                CanReply: canReply,
+                Category: thread.Category));
         }
 
         return PagedResult<ThreadSummaryResponse>.Create(
@@ -100,6 +108,8 @@ public sealed class InboxService(
             IsRead: state.IsRead,
             Folder: state.Folder.ToString(),
             CanReply: canReply,
+            IsInformationOnly: thread.IsInformationOnly,
+            Category: thread.Category,
             Messages: messageResponses);
     }
 
@@ -110,18 +120,23 @@ public sealed class InboxService(
     {
         await _createThreadValidator.ValidateAndThrowAsync(request, cancellationToken);
 
+        var sanitizedSubject = SensitiveDataSanitizer.Sanitize(request.Subject);
+        var sanitizedBody = SensitiveDataSanitizer.Sanitize(request.Body);
+
         var subject = string.IsNullOrWhiteSpace(request.Category)
-            ? request.Subject
-            : request.Subject.StartsWith($"[{request.Category}]", StringComparison.OrdinalIgnoreCase)
-                ? request.Subject
-                : $"[{request.Category}] {request.Subject}";
+            ? sanitizedSubject
+            : sanitizedSubject.StartsWith($"[{request.Category}]", StringComparison.OrdinalIgnoreCase)
+                ? sanitizedSubject
+                : $"[{request.Category}] {sanitizedSubject}";
 
         var thread = await _repository.CreateThreadWithInitialMessageAsync(
             customerId,
             subject,
-            request.Body,
+            sanitizedBody,
             replyAllowed: true,
-            cancellationToken);
+            isInformationOnly: false,
+            category: request.Category,
+            cancellationToken: cancellationToken);
 
         var messages = await _repository.GetMessagesByThreadIdAsync(thread.Id, cancellationToken);
         var messageResponses = messages.Select(MapToResponse).ToList();
@@ -135,6 +150,8 @@ public sealed class InboxService(
             IsRead: true,
             Folder: MessageFolder.Inbox.ToString(),
             CanReply: true,
+            IsInformationOnly: false,
+            Category: request.Category,
             Messages: messageResponses);
     }
 
@@ -170,11 +187,13 @@ public sealed class InboxService(
             throw new InvalidOperationException("Svar är inte tillåtet på detta meddelande.");
         }
 
+        var sanitizedBody = SensitiveDataSanitizer.Sanitize(request.Body);
+
         var message = await _repository.AddMessageAsync(
             threadId,
             MessageSenderType.Customer,
             senderCustomerId: customerId,
-            body: request.Body,
+            body: sanitizedBody,
             replyAllowed: true,
             cancellationToken);
 
@@ -236,6 +255,190 @@ public sealed class InboxService(
         return true;
     }
 
+    public async Task<bool> CloseThreadAsync(
+        long customerId,
+        long threadId,
+        bool isStaff,
+        CancellationToken cancellationToken = default)
+    {
+        if (!isStaff)
+        {
+            var state = await _repository.GetThreadStateAsync(threadId, customerId, cancellationToken);
+            if (state is null)
+            {
+                return false;
+            }
+        }
+
+        return await _repository.CloseThreadAsync(threadId, cancellationToken);
+    }
+
+    public async Task<bool> ReopenThreadAsync(
+        long customerId,
+        long threadId,
+        bool isStaff,
+        CancellationToken cancellationToken = default)
+    {
+        if (!isStaff)
+        {
+            var state = await _repository.GetThreadStateAsync(threadId, customerId, cancellationToken);
+            if (state is null)
+            {
+                return false;
+            }
+        }
+
+        return await _repository.ReopenThreadAsync(threadId, cancellationToken);
+    }
+
+    public async Task<PagedResult<AdminThreadSummaryResponse>> GetAdminThreadsAsync(
+        AdminThreadQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _repository.GetAdminThreadsAsync(parameters, cancellationToken);
+        var mapped = result.Items.Select(item => new AdminThreadSummaryResponse(
+            Id: item.Thread.Id,
+            CustomerId: item.CustomerId,
+            CustomerName: $"Kund {item.CustomerId}",
+            Subject: item.Thread.Subject,
+            Status: item.Thread.Status.ToString(),
+            Category: item.Thread.Category,
+            IsInformationOnly: item.Thread.IsInformationOnly,
+            CanReply: item.Thread.Status == MessageThreadStatus.Open,
+            MessageCount: item.MessageCount,
+            CreatedAt: item.Thread.CreatedAt,
+            LastMessageAt: item.Thread.LastMessageAt
+        )).ToList();
+
+        return PagedResult<AdminThreadSummaryResponse>.Create(
+            mapped,
+            result.TotalCount,
+            result.Page,
+            result.PageSize);
+    }
+
+    public async Task<int> CreateAdminThreadAsync(
+        CreateAdminThreadRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await _createAdminThreadValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var targetCustomerIds = new List<long>();
+        if (request.BroadcastToAll)
+        {
+            var allIds = await _repository.GetAllCustomerIdsAsync(cancellationToken);
+            targetCustomerIds.AddRange(allIds);
+        }
+        else if (request.CustomerId.HasValue)
+        {
+            targetCustomerIds.Add(request.CustomerId.Value);
+        }
+
+        if (targetCustomerIds.Count == 0 && request.CustomerId.HasValue)
+        {
+            targetCustomerIds.Add(request.CustomerId.Value);
+        }
+
+        var sanitizedSubject = SensitiveDataSanitizer.Sanitize(request.Subject);
+        var sanitizedBody = SensitiveDataSanitizer.Sanitize(request.Body);
+
+        var createdCount = 0;
+        foreach (var custId in targetCustomerIds)
+        {
+            var thread = await _repository.CreateThreadWithInitialMessageAsync(
+                customerId: custId,
+                subject: sanitizedSubject,
+                initialMessageBody: sanitizedBody,
+                replyAllowed: request.ReplyAllowed,
+                isInformationOnly: request.IsInformationOnly,
+                category: request.Category,
+                cancellationToken: cancellationToken);
+
+            // Mark as unread for the customer
+            await _repository.MarkAsUnreadAsync(thread.Id, custId, cancellationToken);
+
+            // Add customer notification
+            await _repository.AddNotificationAsync(
+                customerId: custId,
+                type: request.IsInformationOnly ? "announcement" : "bank_message",
+                title: request.Subject,
+                body: request.Body.Length > 200 ? request.Body[..200] + "..." : request.Body,
+                priority: request.IsInformationOnly ? NotificationPriority.High : NotificationPriority.Normal,
+                targetType: NotificationTargetType.MessageThread,
+                targetId: thread.Id,
+                cancellationToken: cancellationToken);
+
+            createdCount++;
+        }
+
+        return createdCount;
+    }
+
+    public async Task<PagedResult<CustomerNotificationResponse>> GetNotificationsAsync(
+        long customerId,
+        NotificationQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _repository.GetCustomerNotificationsAsync(
+            customerId,
+            parameters.UnreadOnly,
+            parameters.Page,
+            parameters.PageSize,
+            cancellationToken);
+
+        var mapped = result.Items.Select(n => new CustomerNotificationResponse(
+            Id: n.Id,
+            CustomerId: n.CustomerId,
+            Type: n.Type,
+            Priority: n.Priority.ToString(),
+            Title: n.Title,
+            Body: n.Body,
+            TargetType: n.TargetType?.ToString(),
+            TargetId: n.TargetId,
+            IsRead: n.IsRead,
+            CreatedAt: n.CreatedAt,
+            ReadAt: n.ReadAt
+        )).ToList();
+
+        return PagedResult<CustomerNotificationResponse>.Create(
+            mapped,
+            result.TotalCount,
+            result.Page,
+            result.PageSize);
+    }
+
+    public async Task CreateSavingsGoalCompletedNotificationAsync(
+        long customerId,
+        long savingsGoalId,
+        string goalTitle,
+        CancellationToken cancellationToken = default)
+    {
+        await _repository.AddNotificationAsync(
+            customerId,
+            "savings_goal_completed",
+            "Du har nått ditt sparmål!",
+            $"Grattis! Sparmålet \"{goalTitle}\" är nu uppnått.",
+            NotificationPriority.Normal,
+            NotificationTargetType.SavingsGoal,
+            savingsGoalId,
+            cancellationToken);
+    }
+
+    public async Task<bool> MarkNotificationReadAsync(
+        long customerId,
+        long notificationId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _repository.MarkNotificationReadAsync(customerId, notificationId, cancellationToken);
+    }
+
+    public async Task<int> MarkAllNotificationsReadAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _repository.MarkAllNotificationsReadAsync(customerId, cancellationToken);
+    }
+
     public async Task<MessageResponse?> AddStaffReplyAsync(
         long staffId,
         long threadId,
@@ -250,11 +453,13 @@ public sealed class InboxService(
             return null;
         }
 
+        var sanitizedBody = SensitiveDataSanitizer.Sanitize(request.Body);
+
         var message = await _repository.AddMessageAsync(
             threadId,
             MessageSenderType.Bank,
             senderCustomerId: staffId,
-            body: request.Body,
+            body: sanitizedBody,
             replyAllowed: request.ReplyAllowed,
             cancellationToken);
 

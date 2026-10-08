@@ -28,6 +28,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      target: final
     restart: unless-stopped
     expose:
       - "8080"
@@ -47,6 +48,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # One-shot native PDF integration worker
+  reporting-worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: reporting-worker
+    restart: "no"
+    environment:
+      NORDISKA_PDF_ENABLE_SIGNING: "0"
+      PDF_OUTPUT_DIRECTORY: /output
+    volumes:
+      - ../output:/output
 
 volumes:
   postgres_v2_data:

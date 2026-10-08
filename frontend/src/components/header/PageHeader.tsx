@@ -1,5 +1,5 @@
 import PageLink from "../PageLink";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import LogoutButton from "./LogoutButton";
 import LanguageButton from "./LanguageBtn";
 import { useTranslation } from "react-i18next";
@@ -13,9 +13,14 @@ type pageHeaderProps = {
 }
 
 export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
-    // ----- USER UI -----
+    // ----- USER UX -----
     const user = useUserStore((state) => state.user);
     const username = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "user";
+
+    // close help and navigate back
+    const location = useLocation();
+    const navigate = useNavigate();
+    const isHelpPage = location.pathname === "/help";
 
     // ----- LANGUAGE ----- 
     const { t, i18n } = useTranslation();
@@ -42,7 +47,7 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
     // ----- STYLING -----
     const [menuOpen, setMenuOpen] = useState(false);
     const closeMenu = () => setMenuOpen(false);
-    let headerBackground = "bg-nordiska-blue"
+    let headerBackground = "bg-dark-navy"
     let dotColor = "text-nordiska-orange"
     let languageSelectBg = "bg-nordiska-blue"
 
@@ -55,9 +60,11 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
             languageSelectBg = ""
             break;
         
-        case "/settings":
-        case "/help":
-            headerBackground = "bg-dark-navy"
+        case "/welcome":
+        case "/inactive":
+        case "/logged-out":
+
+            headerBackground = "bg-nordiska-blue"
     }
 
     return (
@@ -115,7 +122,7 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
 
         ) : ( // ----- PROTECTED HEADER -----
         <>
-        <header className={`sticky top-0 z-[1001] w-screen h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
+        <header className={`fixed z-[1001] w-screen h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
 
             {/* ----- LOGO ----- */}
             <section>
@@ -126,16 +133,35 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
 
             {/* ----- HELP & MENU ----- */}
             <section className="flex -mr-1 mb-0.5">
-                <Link
-                    title = {t("page-header.help-center")}
-                    to="/help"
-                    onClick={closeMenu}
-                    aria-label={t("page-header.help-center")} 
-                    className="flex min-h-11 min-w-11 items-end justify-end text-white"
-                >
-                    <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert" />
-                </Link>
 
+                {/* HELP ICON */}
+                {!menuOpen && (
+                    isHelpPage
+                    ? (
+                        <button
+                            type="button"
+                            title={t("page-header.help-center")}
+                            onClick={() => navigate(-1)}
+                            aria-label={t("page-header.help-center")}
+                            className="flex min-h-11 min-w-11 items-end justify-end text-white cursor-pointer"
+                        >
+                            <img src="/icons/close.svg" alt="" aria-hidden="true" className="h-7 w-7 invert"/>
+                        </button>
+
+                    ):(     
+                        <Link
+                            title={t("page-header.help-center")}
+                            to="/help"
+                            onClick={closeMenu}
+                            aria-label={t("page-header.help-center")}
+                            className="flex min-h-11 min-w-11 items-end justify-end text-white"
+                        >
+                            <img src="/icons/help.svg" alt="" aria-hidden="true" className="h-7 w-7 invert"/>
+                        </Link>
+                    )
+                )}
+
+                {/* MENU BTN */}
                 <button
                     title={t("page-header.menu")}
                     type="button"
@@ -191,7 +217,7 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
                     <nav className="flex flex-1 flex-col items-center justify-center gap-8 font-montserrat text-xl font-semibold uppercase tracking-wider text-shadow-lg/80">
                         {menuItems.map((item) => (
                             <div key={item.route} onClick={closeMenu}>
-                                <PageLink route={item.route} title={item.title} header/>
+                                <PageLink route={item.route} title={item.title} hamburger/>
                             </div>
                         ))}
                     </nav>
@@ -203,7 +229,7 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
                             <span className="text-sm font-medium"> {username} </span>
                         </p>
 
-                        <div onClick={closeMenu} className="text-xl font-medium">
+                        <div onClick={closeMenu} className="text-lg font-medium">
                             <LogoutButton title={t("page-header.logout")}/>
                         </div>
                     </div>

@@ -18,12 +18,18 @@ public class TransactionService : ITransactionService
     private readonly ILogger<TransactionService> _logger;
     private readonly ITransactionRepository _txRepo;
     private readonly ISavingsAccountRepository _accRepo;
+    private readonly ISavingsGoalRepository? _goalRepo;
 
-    public TransactionService(ITransactionRepository txRepo, ISavingsAccountRepository accRepo, ILogger<TransactionService> logger)
+    public TransactionService(
+        ITransactionRepository txRepo,
+        ISavingsAccountRepository accRepo,
+        ILogger<TransactionService> logger,
+        ISavingsGoalRepository? goalRepo = null)
     {
         _txRepo = txRepo;
         _accRepo = accRepo;
         _logger = logger;
+        _goalRepo = goalRepo;
     }
 
     public async Task<IEnumerable<TransactionResponse>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
@@ -137,6 +143,7 @@ public class TransactionService : ITransactionService
         }
 
         var now = DateTime.UtcNow;
+        var correlationId = Guid.NewGuid();
 
         // 1. Withdrawal on source account
         var withdrawalEntry = new LedgerEntry
@@ -146,6 +153,7 @@ public class TransactionService : ITransactionService
             Amount = -request.Amount,
             Label = request.Label,
             TargetAccountId = request.TargetAccountId,
+            CorrelationId = correlationId,
             CreatedAt = now
         };
         var withdrawalId = await _txRepo.CreateAsync(withdrawalEntry, cancellationToken);
@@ -159,6 +167,7 @@ public class TransactionService : ITransactionService
             Amount = request.Amount,
             Label = request.Label,
             TargetAccountId = request.SourceAccountId,
+            CorrelationId = correlationId,
             CreatedAt = now
         };
         await _txRepo.CreateAsync(depositEntry, cancellationToken);
@@ -228,6 +237,38 @@ public class TransactionService : ITransactionService
             return null;
         }
 
+        SavingsGoal? savingsGoal = null;
+        if (entry.SavingsGoalId.HasValue && _goalRepo is not null)
+        {
+            savingsGoal = await _goalRepo.GetByIdAsync(entry.SavingsGoalId.Value, cancellationToken);
+            if (savingsGoal is not null && string.Equals(savingsGoal.Status, "paused", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Savings goal {GoalId} is paused. Skipping planned transfer for transaction {TxId}.", savingsGoal.Id, entry.Id);
+
+                // Advance recurring schedule to next period without transferring money
+                if (!string.IsNullOrWhiteSpace(entry.Repeating))
+                {
+                    var rep = entry.Repeating.Trim().ToLowerInvariant();
+                    var nextDate = rep switch
+                    {
+                        "week" => (entry.PlannedDate ?? DateTime.UtcNow).AddDays(7),
+                        "month" => (entry.PlannedDate ?? DateTime.UtcNow).AddMonths(1),
+                        "year" => (entry.PlannedDate ?? DateTime.UtcNow).AddYears(1),
+                        _ => (DateTime?)null
+                    };
+
+                    if (nextDate.HasValue)
+                    {
+                        entry.PlannedDate = nextDate.Value;
+                        await _txRepo.UpdateAsync(entry, cancellationToken);
+                        _logger.LogInformation("Advanced paused recurring planned transaction {TxId} to next date {NextDate}", entry.Id, nextDate.Value);
+                    }
+                }
+
+                return null;
+            }
+        }
+
         var isTransfer = string.Equals(entry.Type, "transfer", StringComparison.OrdinalIgnoreCase) || entry.TargetAccountId.HasValue;
         var isWithdrawal = string.Equals(entry.Type, "withdrawal", StringComparison.OrdinalIgnoreCase) || string.Equals(entry.Type, "withdraw", StringComparison.OrdinalIgnoreCase);
         var isDeposit = string.Equals(entry.Type, "deposit", StringComparison.OrdinalIgnoreCase);
@@ -271,6 +312,19 @@ public class TransactionService : ITransactionService
             throw;
         }
 
+        if (savingsGoal is not null)
+        {
+            savingsGoal.CurrentAmount += entry.Amount;
+            savingsGoal.UpdatedAt = DateTime.UtcNow;
+            if (savingsGoal.CurrentAmount >= savingsGoal.TargetAmount && !string.Equals(savingsGoal.Status, "completed", StringComparison.OrdinalIgnoreCase))
+            {
+                savingsGoal.Status = "completed";
+                _logger.LogInformation("Savings goal {GoalId} reached target amount {TargetAmount}. Status set to completed.", savingsGoal.Id, savingsGoal.TargetAmount);
+            }
+
+            await _goalRepo!.UpdateAsync(savingsGoal, cancellationToken);
+        }
+
         // Handle recurring or single-execution cleanup
         if (!string.IsNullOrWhiteSpace(entry.Repeating))
         {
@@ -299,6 +353,12 @@ public class TransactionService : ITransactionService
         return result;
     }
 
+    public async Task<IEnumerable<TransactionResponse>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        var entries = await _txRepo.GetByCorrelationIdAsync(correlationId, cancellationToken);
+        return entries.Select(ToResponse);
+    }
+
     private static TransactionResponse ToResponse(LedgerEntry l)
         => new(
             l.Id,
@@ -310,6 +370,7 @@ public class TransactionService : ITransactionService
             l.TargetAccountId,
             l.IsPlanned,
             l.PlannedDate,
-            l.Repeating
+            l.Repeating,
+            l.CorrelationId
         );
 }

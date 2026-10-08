@@ -1,157 +1,248 @@
-# Nordiska Native Document Generator
+# Nordiska Native PDF Generator
 
-A high-performance, standalone C++23 document generation engine. It renders PDF reports (such as annual tax summaries and account statements) using Libharu as its primary engine, exposed as an unmanaged C-compatible shared library for direct invocation from callers like .NET (C# P/Invoke).
-
-> **Warning / Status (Last updated: 2026-09-10):**  
-> **This README should be assumed to be out of date.** This component is under heavy and rapid development. Architecture, interfaces, and patterns are implicit in the codebase and evolve continuously. The code and tests are the authoritative source of truth; this document is provided solely as high-level context.
+C++23 module for generating customer PDF reports (account statements, annual summaries, and tax reports).
+Designed for direct FFI / P-Invoke integration from .NET services and standalone native CLI execution on Linux.
 
 ---
 
-## Current Architecture & Structure
 
-The codebase is organized under `include/nordiska/` and `src/`:
+## Architecture & Subsystems
 
-| Directory | Responsibility |
-| :--- | :--- |
-| `domain/` | Canonical business structs (`Report`, `Transaction`) and validation |
-| `application/` | `GenerateDocuments` pipeline coordinator and batch orchestration |
-| `ports/` | Abstract interfaces (renderers, output destinations, byte sinks) |
-| `adapters/input/` | JSON parsing and input validation via `nlohmann/json` |
-| `adapters/output/` | Output destinations (completion callbacks, memory buffers, files) |
-| `adapters/renderers/` | PDF renderer facade and private Libharu / Cairo rendering engines |
-| `composition/` | Dependency wiring and default engine selection |
-| `c_api/` | Public external C ABI exports (header under `delivery/c_api/`) |
-| `diagnostics/` | Performance metrics, timing, and benchmark instrumentation |
-| `cli/`, `benchmark/` | Standalone CLI tool and synthetic benchmarking harness |
-
-### Runtime Pipeline Flow
-
-1. **Invocation:** Caller invokes the C API once per customer, passing a UTF-8 JSON payload containing all report objects for that customer and a completion callback ([`document_c_api.h`](include/nordiska/delivery/c_api/document_c_api.h)). Scoping each call strictly to a single customer prevents mixing customer data across batches.
-2. **Input Parsing:** The input adapter parses and validates JSON into canonical `Report` objects.
-3. **Application Orchestration:** `GenerateDocuments` validates requests and schedules rendering across worker threads.
-4. **Layout & Pagination:** `PdfRenderer` calculates page layout, margins, headers, and transaction tables.
-5. **PDF Rendering:** The underlying engine (Libharu / Cairo) writes the binary `%PDF-1.3` document stream.
-6. **Delivery:** The output destination streams completed PDF bytes chunk-by-chunk directly into the caller's callback.
-
-### Swappable PDF Engines
-
-The rendering layer isolates low-level library specifics behind the `PdfRenderer` presentation facade:
-* **Libharu (`libharu`):** The primary production engine. It is significantly faster and has a minimal memory footprint, but supports fewer styling and advanced graphical options. Ideal for high-volume tabular statements and reports.
-* **Cairo (`cairo`):** An alternative engine with richer 2D vector graphics capabilities, but higher CPU and allocation overhead. Useful for complex layouts, benchmarks, and comparison.
-
-Engines can be swapped at the composition layer without affecting the domain model or the external C ABI.
-
-### Performance & SIMD JSON Roadmap
-
-* **Current Bottleneck:** Benchmarks show that overall generation latency is dominated by JSON deserialization (currently using `nlohmann/json`), rather than PDF rendering.
-* **Roadmap:** An input adapter interface will be introduced to allow swapping the parsing implementation to high-throughput parsers like **`simdjson`**, maximizing throughput under high-volume batch loads.
-
----
-
-## External C API Usage
-
-External callers (like the .NET `NativePdfGenerator` service) interact with the library through the C ABI declared in [`include/nordiska/delivery/c_api/document_c_api.h`](include/nordiska/delivery/c_api/document_c_api.h).
-
-### Function Signature
-
-```c
-NORDISKA_DOCUMENT_API int nordiska_document_generate_json(
-    const uint8_t* json_utf8,
-    size_t json_length,
-    nordiska_document_callback callback,
-    void* callback_context,
-    char* error_buffer,
-    size_t error_buffer_length
-);
+```text
+native/pdf_generator/
+├── include/nordiska/             # Public C++ interface headers
+│   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig)
+│   ├── c_api/                    # C89 ABI boundary (pdf_generator_c_api.h)
+│   ├── diagnostics/              # Timing, metrics, and benchmark structures
+│   ├── domain/                   # CustomerBatch, Document, PdfRenderingJob
+│   ├── ingestion/                # JSON ingestor interface & factory
+│   ├── layout/                   # Deterministic layout structures (DocumentLayout)
+│   ├── rendering/                # PDF rendering engine abstraction (PdfEngine)
+│   └── signing/                  # Digest signing interface & PDF preparation
+├── src/                          # Subsystem implementations
+│   ├── application/              # PdfGenerator pipeline driver
+│   ├── c_api/                    # C ABI implementation & boundary validation
+│   ├── ingestion/                # simdjson (default) & nlohmann JSON parsers
+│   ├── layout/                   # LayoutBuilder (typography, tables, flow)
+│   ├── rendering/                # Native (default), Haru (bump arena), Cairo
+│   └── signing/                  # C signer adapter, PDF preparation & hashing
+├── cli/                          # Standalone CLI binary (pdf_generator)
+├── src/benchmark/                # Multi-threaded performance harness
+├── tests/                        # CTest automated test suites
+├── tools/                        # Code formatters, synthetic data generator & OpenSSL setup
+└── docs/                         # Golden customer batch specification
 ```
 
-### Callback Signature
-
-When generation completes for each document, native code invokes the caller-provided callback:
-
-```c
-typedef int (*nordiska_document_callback)(
-    const uint8_t* bytes,          // Pointer to raw PDF byte stream
-    size_t length,                 // Number of bytes
-    size_t document_index,         // 0-based document index in batch
-    void* context                  // Caller-supplied passthrough pointer
-);
+### The Generation Pipeline
 ```
-* Return `0` from the callback to indicate success.
-* Return non-zero to abort generation; native code will halt and report `NORDISKA_DOCUMENT_CALLBACK_FAILED`.
-
-### Status Codes
-
-| Code | Name | Description |
-| :--- | :--- | :--- |
-| `0` | `NORDISKA_DOCUMENT_OK` | Generation succeeded |
-| `1` | `NORDISKA_DOCUMENT_INVALID_ARGUMENT` | Null pointer or invalid argument passed |
-| `2` | `NORDISKA_DOCUMENT_INVALID_INPUT` | Malformed JSON or schema validation failure |
-| `3` | `NORDISKA_DOCUMENT_CALLBACK_FAILED` | Caller callback returned non-zero |
-| `4` | `NORDISKA_DOCUMENT_INTERNAL_ERROR` | Unexpected engine or rendering exception |
+Raw JSON Buffer (UTF-8)
+         │
+         ▼  [1. Ingestion Stage]
+   JsonIngestor (simdjson / nlohmann)
+   - Validates envelope & versioning
+   - Zero-copy string borrows where possible
+         │
+         ▼
+   PdfRenderingJob (C++ domain model)
+         │
+         ▼  [2. Layout Stage]
+   LayoutBuilder
+   - Typography, column metrics & pagination
+   - Generates PositionedLine and PositionedText
+         │
+         ▼
+   DocumentLayout (deterministic coordinate geometry)
+         │
+         ▼  [3. Rendering Stage]
+   PdfEngine (Native / Libharu / Cairo)
+   - Compiles binary PDF 1.4 streams
+         │
+         ▼  [4. Optional Signing Stage]
+   PdfSigner (Stub / PKCS#7)
+   - Per-document signing dispatch
+   - Strict all-or-nothing failure guarantee
+         │
+         ▼
+GeneratedPdfs / C ABI Delivery Callback
+```
 
 ---
 
-## Building and Testing
+## Pluggable Engines & Ingestors
+
+### PDF Rendering Engines (`--renderer <engine>`)
+
+1. **`native` (`PdfEngineKind::Native`) — Default Recommended**:
+   - Zero-dependency direct PDF 1.4 compiler.
+   - Formats Core-14 PostScript Type 1 Helvetica and Helvetica-Bold font dictionaries, text matrices (`BT`, `Tf`, `Tm`, `Tj`, `ET`), and vector line paths.
+   - Zero-allocation numeric formatting via `<charconv>` (`std::to_chars`).
+   - Produces the smallest file size (1.67 KB compressed) and fastest throughput (>44k docs/s).
+2. **`haru` (`PdfEngineKind::Libharu`)**:
+   - Classical C library backend optimized with a thread-local bump arena (`HaruBumpArena` via `HPDF_NewEx`).
+   - Allocations are $\mathcal{O}(1)$ pointer bumps, eliminating libc `ptmalloc` lock contention.
+3. **`cairo` (`PdfEngineKind::Cairo`)**:
+   - Cairo 2D graphics engine with front-loaded font caching.
+   - Forces subset font embedding (larger files, slower throughput).
+
+### JSON Ingestors (`--ingestor <engine>`)
+
+1. **`simdjson` (`JsonIngestorKind::Simdjson`) — Default**:
+   - SIMD-accelerated JSON parser with single-pass dictionary scanning, thread-local scratch buffer reuse, and lazy error formatting.
+   - Parses banking payloads at >155,000 docs/second.
+2. **`nlohmann` (`JsonIngestorKind::Nlohmann`)**:
+   - Standard DOM-based JSON parser used for validation and compatibility.
+
+---
+
+## Build Instructions
 
 ### Prerequisites
-* CMake 3.28+
-* Ninja build system
-* C++23 compatible compiler (GCC 13+, Clang 17+, or MSVC 2022)
-* [vcpkg](https://vcpkg.io) installed with `VCPKG_ROOT` environment variable exported
+- Linux x86_64
+- C++23 capable compiler (GCC 13+ or Clang 17+)
+- CMake 3.25+
+- Ninja build system
+- Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
+- OpenSSL >= 3.2.0 (Required for CMS SignedData digest signing with `CMS_final_digest`)
+  - *Ubuntu / Debian LTS Notice*: Most LTS distributions ship OpenSSL 3.0.x by default. On Ubuntu 22.04/24.04 or Debian 12 developer workstations, run the provided local setup script to build and install OpenSSL 3.3.2 into `~/.local/openssl-3.3/` (isolated, non-root, no system changes):
+    ```bash
+    ./tools/setup-openssl-3.3.sh
+    ```
+    CMake automatically auto-detects this path when configuring.
+- Third-party libraries:
+  - ZLIB (system package: `zlib1g-dev`)
+  - Cairo 2D graphics (system package: `libcairo2-dev`)
+  - JSON parsers: `simdjson` and `nlohmann-json` (system packages or auto-fetched via CMake `FetchContent`)
+  - PDF backend: `libharu` (system package `libhpdf-dev` or auto-fetched via CMake `FetchContent`)
 
-### Build Commands
+### Build Presets (`CMakePresets.json`)
 
-From the `native/pdf_generator` directory:
+CMake presets provide reproducible configuration and compilation for both Debug and Release environments.
 
+#### Debug Build (Recommended for development & debugging)
+Outputs to `build/debug/` with full debug symbols:
 ```bash
-# Configure with CMake preset
-cmake --preset default
+# Configure
+cmake --preset debug
 
-# Compile all targets (libraries, executables, tests)
-cmake --build --preset default
-
-# Run all automated tests
-ctest --test-dir build --output-on-failure
+# Build all targets
+cmake --build --preset debug -j
 ```
 
-### Generated Artifacts
-* `libnordiska_document_c_api.so` (`.dll` on Windows): The shared library for external callers.
-* `pdf_generator`: Standalone CLI tool for generating PDFs from input files directly in terminal.
-* `pdf_generator_benchmark`: Benchmarking harness for measuring parsing, rendering, and throughput.
+#### Release Build (Recommended for benchmarking & production deployment)
+Outputs to `build/release/` with optimizations enabled:
+```bash
+# Configure
+cmake --preset release
+
+# Build all targets
+cmake --build --preset release -j
+```
+
+
+#### Manual CMake Invocation (Fallback without presets)
+```bash
+# Debug
+cmake -B build/debug -S . -DCMAKE_BUILD_TYPE=Debug -G Ninja
+cmake --build build/debug -j
+
+# Release
+cmake -B build/release -S . -DCMAKE_BUILD_TYPE=Release -G Ninja
+cmake --build build/release -j
+```
+
+### Build Artifacts
+Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/release/`):
+- `libnordiska_pdf_generator_c_api.so`: Exported C ABI shared library for .NET P/Invoke.
+- `pdf_generator`: Standalone CLI worker.
+- `pdf_generator_benchmark`: Multi-worker benchmarking tool.
+- `nordiska_*_tests`: CTest unit test executables.
 
 ---
 
-## Testing & Synthetic Benchmark Data
+## Integration Contracts
 
-* **Automated Unit & Integration Tests:** Run via `ctest --test-dir build --output-on-failure`. Tests cover JSON schema parsing, Haru rendering output, byte sinks, and C API boundary callbacks.
-* **Synthetic Data Generator:** A standalone Python tool in `tools/synthetic-input-generator/` creates deterministic, realistic test datasets (with accounts, transactions, and tax lines) for stress-testing and benchmarking:
-  ```bash
-  # Generate synthetic workload datasets (written to generated/)
-  ./tools/synthetic-input-generator/generate_all.sh
+### C ABI Public Interface (`pdf_generator_c_api.h`)
 
-  # Run benchmark against generated data
-  ./build/pdf_generator_benchmark ./tools/synthetic-input-generator/generated/realistic
-  ```
+Exported C functions for host interop:
 
-### Debugging the Library
+```c
+#include "nordiska/c_api/pdf_generator_c_api.h"
 
-Because `libnordiska_document_c_api` compiles as a shared library (`.so` / `.dll`), it has no standalone `main()` entrypoint. To step through library code in a debugger (GDB, LLDB, or your IDE of choice):
-* Launch an executable harness rather than attempting to launch the shared library:
-  * **Test Runner:** Run `./build/nordiska_document_c_api_tests` in your debugger. Breakpoints set inside `src/c_api/document_c_api.cpp` or test files will hit immediately.
-  * **CLI Runner:** Run `./build/pdf_generator sample-input.json output.pdf` in your debugger.
-* The default CMake preset builds in Debug mode with symbols (`-g -O0`) and no compiler inlining, ensuring clean step-through execution.
+// Synchronous generation for a single customer batch
+int nordiska_pdf_v1_generate_customer_batch(
+    const uint8_t* json_utf8,
+    size_t json_length,
+    nordiska_pdf_delivery_callback callback,
+    void* user_data);
+
+// Thread-local diagnostic retrieval
+const char* nordiska_pdf_v1_get_last_error(void);
+const char* nordiska_pdf_v1_status_name(int status_code);
+```
+
+#### Status Codes (`nordiska_pdf_status`):
+- `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
+- `1`: `NORDISKA_PDF_INVALID_ARGUMENT` — Null buffer, zero length, or null callback.
+- `2`: `NORDISKA_PDF_INVALID_INPUT` — JSON parse or domain validation error.
+- `3`: `NORDISKA_PDF_CALLBACK_FAILED` — Host callback rejected the completed batch.
+- `4`: `NORDISKA_PDF_INTERNAL_ERROR` — PDF rendering or layout construction failure.
+- `5`: `NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED` — Payload exceeds 32 MB limit.
+- `6`: `NORDISKA_PDF_OUT_OF_MEMORY` — Memory allocation failed.
+- `7`: `NORDISKA_PDF_SIGNING_FAILED` — Document signing failure (batch aborted, zero callbacks).
+
+#### Memory Contract:
+- **Synchronous execution**: Executes entirely on the caller's thread (zero thread hopping).
+- **Borrowed memory**: Input JSON buffer is borrowed; native code never retains pointers after return.
+- **Delivery callback**: Exactly once on batch completion. The callback borrows `nordiska_pdf_batch_view`. All PDF byte views are deallocated immediately upon callback return.
 
 ---
 
-## Formatting and Code Standards
-
-Before committing changes to native code, run the clang-format scripts:
+## CLI Usage
 
 ```bash
-# Auto-format all C++ source files
+./build/debug/pdf_generator [OPTIONS] [INPUT_JSON]
+# or for release:
+./build/release/pdf_generator [OPTIONS] [INPUT_JSON]
+```
+
+### Options:
+- `-i, --input <path>`: Path to input JSON payload (or `-` for stdin).
+- `-o, --output <path>`: Destination directory or file path.
+- `-r, --renderer <native|haru|cairo>`: Rendering engine (default: `haru`).
+- `-e, --ingestor <simdjson|nlohmann>`: JSON ingestor (default: `simdjson`).
+- `--no-compression`: Disable Flate stream compression for maximum rendering speed.
+- `--compression <bool>`: Enable or disable stream compression (default: `true`).
+- `--signing`: Call the C signer and embed its CMS hex in generated documents (default: `false`).
+- `-q, --quiet`: Suppress progress messages, only report errors.
+- `-v, --verbose`: Print detailed execution summary and elapsed timing.
+- `--json-summary`: Output machine-readable JSON summary to stdout.
+
+### Examples:
+
+```bash
+# Generate batch with dedicated Native engine (fastest)
+./build/release/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native --no-compression
+
+# Process piped payload from stdin with JSON output summary
+cat input.json | ./build/release/pdf_generator -o output/ --json-summary
+```
+
+---
+
+## 7. Testing & Code Quality
+
+```bash
+# 1. Format native C++ code
 ./tools/format-native.sh
 
-# Verify formatting compliance
+# 2. Verify formatting without modifications (CI check)
 ./tools/check-format.sh
+
+# 3. Run automated CTest test suite with presets
+ctest --preset debug
+ctest --preset release
+
+# Or run directly against specific build directory
+ctest --test-dir build/debug --output-on-failure
+ctest --test-dir build/release --output-on-failure
 ```

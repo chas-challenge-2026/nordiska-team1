@@ -34,8 +34,7 @@ internal static class ConsoleUi
         string text,
         bool outputIsRedirected)
     {
-        // Color is supplemental only. Tags such as [OK], [WARNING], and [ADVICE]
-        // remain in the text so redirected logs and non-color terminals stay readable.
+ 
         var normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
         var lines = normalized.Split('\n');
 
@@ -79,6 +78,7 @@ internal static class ConsoleUi
         // Failures first so they are impossible to miss.
         if (trimmed.StartsWith("[FATAL]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[ERROR]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[FEL]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[DATABASE AUTH]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[DATABASE PERMISSION]", StringComparison.Ordinal))
         {
@@ -86,16 +86,22 @@ internal static class ConsoleUi
         }
 
         if (trimmed.StartsWith("[WARNING]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[VARNING]", StringComparison.Ordinal) ||
             trimmed.StartsWith("WARNING:", StringComparison.Ordinal) ||
             trimmed.StartsWith("[CAUSE]", StringComparison.Ordinal))
         {
             return ConsoleColor.Yellow;
         }
 
-        // Actions the developer can safely take are deliberately green.
-        if (trimmed.StartsWith("[ADVICE]", StringComparison.Ordinal) ||
-            trimmed.StartsWith("[COMMAND]", StringComparison.Ordinal) ||
-            trimmed.StartsWith("[OK]", StringComparison.Ordinal) ||
+        if (trimmed.StartsWith("[GÖR SÅ HÄR]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[KÖR]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[ADVICE]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[COMMAND]", StringComparison.Ordinal))
+        {
+            return ConsoleColor.Magenta;
+        }
+
+        if (trimmed.StartsWith("[OK]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[SUCCESS]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[REUSE]", StringComparison.Ordinal) ||
             trimmed.Contains("[REUSE]", StringComparison.Ordinal) ||
@@ -107,7 +113,7 @@ internal static class ConsoleUi
         if (trimmed.StartsWith("[START]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[GENERATE]", StringComparison.Ordinal) ||
             trimmed.Contains("[GENERATE]", StringComparison.Ordinal) ||
-            trimmed.StartsWith("[PASSWORDS]", StringComparison.Ordinal) ||
+            trimmed.StartsWith("[SECRETS]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[ENV]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[CONNECTION STRINGS]", StringComparison.Ordinal) ||
             trimmed.StartsWith("[DATABASE TEST]", StringComparison.Ordinal) ||
@@ -147,6 +153,8 @@ internal static class Program
             Console.Error.WriteLine(
                 "Usage:\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root>\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> start-stack\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> repair-passwords\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> seed-transactions [customerId] [batchSize]\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> report-pressure-test [customerId] [accountId] [year] [batchSize] [delayMs]\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> direct-report-pressure-test [customerId] [accountId] [year] [batchSize] [delayMs] [baseUrl] [bearerToken]");
@@ -168,6 +176,24 @@ internal static class Program
             ConsoleUi.WriteLine("Nordiska local database setup");
             ConsoleUi.WriteLine($"Repository root: {root}");
             ConsoleUi.WriteLine("============================================================");
+
+            var repairPasswords = args.Length > 1 &&
+                string.Equals(args[1], "repair-passwords", StringComparison.OrdinalIgnoreCase);
+            var startStack = args.Length > 1 &&
+                string.Equals(args[1], "start-stack", StringComparison.OrdinalIgnoreCase);
+
+            if (repairPasswords && args.Length != 2)
+            {
+                throw new ArgumentException(
+                    "The repair-passwords mode accepts only the repository root and mode name.");
+            }
+
+            if (startStack && args.Length != 2)
+            {
+                throw new ArgumentException(
+                    "The start-stack mode accepts only the repository root and mode name.");
+            }
+
             if (args.Length > 1 &&
                 string.Equals(args[1], "seed-transactions", StringComparison.OrdinalIgnoreCase))
             {
@@ -203,33 +229,47 @@ internal static class Program
                 return 0;
             }
 
-            if (args.Length != 1)
+            if (args.Length != 1 && !repairPasswords && !startStack)
             {
                 Console.Error.WriteLine(
-                    "Pass the repository root as the first argument or use a dedicated dev mode such as seed-transactions or report-pressure-test.");
+                    "Pass the repository root as the first argument or use a dedicated dev mode such as start-stack, repair-passwords, seed-transactions, or report-pressure-test.");
 
                 return 1;
             }
 
             await DatabaseSetup.CheckDockerAsync(root);
+            if (!repairPasswords)
+                await DatabaseSetup.PreventSecretRegenerationForExistingVolumeAsync(root);
+
             await DatabaseSetup.RestoreToolsAsync(root);
 
-            // Keep existing generated passwords stable between setup runs.
-            // Only missing or empty password variables are generated.
-            PasswordGenerator.EnsureEnv(root);
+            // Keep existing generated secrets stable between setup runs.
+            // Only missing, empty, or placeholder values are generated.
+            SecretGenerator.EnsureEnv(root);
 
             var passwords = DatabaseSetup.ReadEnv(root);
 
             await DatabaseSetup.StartDatabaseAsync(root, passwords);
+
+            if (repairPasswords)
+                await DatabaseSetup.SynchronizeDatabasePasswordsAsync(root, passwords);
+
+            await DatabaseSetup.ValidateDatabaseCredentialsAsync(passwords);
             await DatabaseSetup.EnsureModuleSchemasAsync(root, passwords);
             await DatabaseSetup.ApplyMigrationsAsync(root, passwords);
             await DatabaseSetup.ApplyPermissionsAsync(root, passwords);
             await DatabaseSetup.ConfigureApiConnectionsAsync(root, passwords);
             await DatabaseSetup.TestDatabaseAsync(passwords);
 
+            if (startStack)
+                await DatabaseSetup.StartStackAsync(root, passwords);
+
             ConsoleUi.WriteLine();
             ConsoleUi.WriteLine("============================================================");
-            ConsoleUi.WriteLine("[SUCCESS] Local database setup completed.");
+            ConsoleUi.WriteLine(
+                startStack
+                    ? "[SUCCESS] Local database setup completed and Docker stack started."
+                    : "[SUCCESS] Local database setup completed.");
             ConsoleUi.WriteLine("============================================================");
             return 0;
         }
@@ -252,8 +292,64 @@ internal static class Program
             ConsoleUi.WriteErrorLine("Stack trace:");
             ConsoleUi.WriteErrorLine(exception.StackTrace ?? "<no stack trace available>");
             ConsoleUi.WriteErrorLine("============================================================");
+            WriteFinalFailureSummary(exception);
             return 1;
         }
+    }
+
+    private static void WriteFinalFailureSummary(Exception exception)
+    {
+        var messages = string.Join(
+            Environment.NewLine,
+            EnumerateExceptions(exception).Select(current => current.Message));
+
+        ConsoleUi.WriteErrorLine();
+        ConsoleUi.WriteErrorLine("==================== NÄSTA STEG ====================");
+
+        if (messages.Contains("28P01", StringComparison.OrdinalIgnoreCase) ||
+            messages.Contains("password authentication failed", StringComparison.OrdinalIgnoreCase) ||
+            messages.Contains("Password mismatch", StringComparison.OrdinalIgnoreCase) ||
+            messages.Contains("infra/v2/.env is missing", StringComparison.OrdinalIgnoreCase))
+        {
+            ConsoleUi.WriteErrorLine(
+                "[FEL] Lösenorden i infra/v2/.env matchar inte PostgreSQL-rollerna i den befintliga Docker-volymen.");
+            ConsoleUi.WriteErrorLine(
+                "[GÖR SÅ HÄR] Behåll databasen och synkronisera lösenorden genom att köra följande kommando från repositoryts rot:");
+            ConsoleUi.WriteErrorLine(
+                "[KÖR] Windows PowerShell: dotnet run --project .\\backend\\tools\\Nordiska.DevSetup\\Nordiska.DevSetup.csproj -- . repair-passwords");
+            ConsoleUi.WriteErrorLine(
+                "[KÖR] macOS/Linux: dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- . repair-passwords");
+            ConsoleUi.WriteErrorLine(
+                "[VARNING] Kommandot ändrar lösenorden i den delade nordiska-v2-volymen och kan påverka andra lokala checkouts som använder samma volym.");
+        }
+        else if (messages.Contains("42501", StringComparison.OrdinalIgnoreCase) ||
+                 messages.Contains("permission denied", StringComparison.OrdinalIgnoreCase))
+        {
+            ConsoleUi.WriteErrorLine(
+                "[FEL] PostgreSQL-rollen saknar behörighet för operationen som misslyckades.");
+            ConsoleUi.WriteErrorLine(
+                "[GÖR SÅ HÄR] Kontrollera rollen, schemat och GRANT/REVOKE-informationen i felutskriften ovan.");
+        }
+        else
+        {
+            var firstLine = exception.Message
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n')
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .FirstOrDefault() ?? "DevSetup misslyckades.";
+
+            ConsoleUi.WriteErrorLine($"[FEL] {firstLine}");
+            ConsoleUi.WriteErrorLine(
+                "[GÖR SÅ HÄR] Läs felinformationen och stack trace ovan för att se vilket steg som behöver åtgärdas.");
+        }
+
+        ConsoleUi.WriteErrorLine("====================================================");
+    }
+
+    private static IEnumerable<Exception> EnumerateExceptions(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+            yield return current;
     }
 
     private static async Task SeedTransactionsUntilStoppedAsync(string root, long customerId, int batchSize)
@@ -610,20 +706,22 @@ internal static class Program
     }
 }
 
-internal static class PasswordGenerator
+internal static class SecretGenerator
 {
-    private static readonly string[] PasswordVariables =
+    private static readonly string[] SecretVariables =
     [
         "POSTGRES_BOOTSTRAP_PASSWORD",
         "NORDISKA_MIGRATOR_PASSWORD",
         "NORDISKA_API_PASSWORD",
-        "NORDISKA_REPORTING_WORKER_PASSWORD"
+        "NORDISKA_REPORTING_WORKER_PASSWORD",
+        "NORDISKA_JWT_SECRET",
+        "NORDISKA_AUDIT_SIGNING_KEY"
     ];
 
-    private static readonly HashSet<string> PasswordVariableSet =
-        new(PasswordVariables, StringComparer.Ordinal);
+    private static readonly HashSet<string> SecretVariableSet =
+        new(SecretVariables, StringComparer.Ordinal);
 
-    public static IReadOnlyList<string> RequiredVariables => PasswordVariables;
+    public static IReadOnlyList<string> RequiredVariables => SecretVariables;
 
     public static string Generate()
     {
@@ -646,7 +744,7 @@ internal static class PasswordGenerator
         try
         {
             ConsoleUi.WriteLine();
-            ConsoleUi.WriteLine("[PASSWORDS] Checking generated password variables...");
+            ConsoleUi.WriteLine("[SECRETS] Checking required environment secrets...");
             ConsoleUi.WriteLine($".env path: {path}");
 
             var existingLines = File.Exists(path)
@@ -658,34 +756,36 @@ internal static class PasswordGenerator
             else
                 ConsoleUi.WriteLine("No .env file found. A new one will be created.");
 
-            var existingPasswords = ReadExistingGeneratedPasswords(existingLines);
-            var finalPasswords = new Dictionary<string, string>(StringComparer.Ordinal);
+            var existingSecrets = ReadExistingGeneratedSecrets(existingLines);
+            var finalSecrets = new Dictionary<string, string>(StringComparer.Ordinal);
             var generatedCount = 0;
             var reusedCount = 0;
 
-            foreach (var variable in PasswordVariables)
+            foreach (var variable in SecretVariables)
             {
-                if (existingPasswords.TryGetValue(variable, out var existingValue) &&
-                    !string.IsNullOrWhiteSpace(existingValue))
+                if (existingSecrets.TryGetValue(variable, out var existingValue) &&
+                    IsUsableSecret(existingValue))
                 {
-                    finalPasswords[variable] = existingValue;
+                    finalSecrets[variable] = existingValue;
                     reusedCount++;
                     ConsoleUi.WriteLine($"  [REUSE] {variable}");
                 }
                 else
                 {
-                    finalPasswords[variable] = Generate();
+                    finalSecrets[variable] = Generate();
                     generatedCount++;
 
-                    var reason = existingPasswords.ContainsKey(variable)
-                        ? "existing value was empty"
-                        : "variable was missing";
+                    var reason = !existingSecrets.TryGetValue(variable, out var invalidValue)
+                        ? "variable was missing"
+                        : string.IsNullOrWhiteSpace(invalidValue)
+                            ? "existing value was empty"
+                            : "existing value was a template placeholder";
 
                     ConsoleUi.WriteLine($"  [GENERATE] {variable} ({reason})");
                 }
             }
 
-            var updatedLines = MergeGeneratedVariables(existingLines, finalPasswords);
+            var updatedLines = MergeGeneratedSecrets(existingLines, finalSecrets);
 
             // Write to a temporary file first, then replace the destination.
             // This avoids leaving a half-written .env if writing fails.
@@ -703,47 +803,47 @@ internal static class PasswordGenerator
             }
 
             ConsoleUi.WriteLine(
-                $"[PASSWORDS] Complete. Reused {reusedCount} password(s); " +
-                $"generated {generatedCount} password(s).");
-            ConsoleUi.WriteLine("[PASSWORDS] Password values are intentionally not printed.");
+                $"[SECRETS] Complete. Reused {reusedCount} secret(s); " +
+                $"generated {generatedCount} secret(s).");
+            ConsoleUi.WriteLine("[SECRETS] Secret values are intentionally not printed.");
         }
         catch (Exception exception)
         {
             throw new InvalidOperationException(
-                $"Failed while checking or updating generated passwords in '{path}'. " +
+                $"Failed while checking or updating generated secrets in '{path}'. " +
                 $"{exception.GetType().Name}: {exception.Message}",
                 exception);
         }
     }
 
-    private static Dictionary<string, string> ReadExistingGeneratedPasswords(
+    private static Dictionary<string, string> ReadExistingGeneratedSecrets(
         IEnumerable<string> lines)
     {
-        var passwords = new Dictionary<string, string>(StringComparer.Ordinal);
+        var secrets = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var line in lines)
         {
             if (!TryReadVariable(line, out var variable, out var value) ||
-                !PasswordVariableSet.Contains(variable))
+                !SecretVariableSet.Contains(variable))
             {
                 continue;
             }
 
-            // Prefer the first non-empty value. This lets us safely clean up
-            // accidental duplicate generated entries without rotating a password.
-            if (!passwords.TryGetValue(variable, out var current) ||
-                string.IsNullOrWhiteSpace(current))
+            // Prefer the first usable value. This lets us clean up accidental
+            // duplicates without rotating an existing secret.
+            if (!secrets.TryGetValue(variable, out var current) ||
+                !IsUsableSecret(current))
             {
-                passwords[variable] = value;
+                secrets[variable] = value;
             }
         }
 
-        return passwords;
+        return secrets;
     }
 
-    private static List<string> MergeGeneratedVariables(
+    private static List<string> MergeGeneratedSecrets(
         IEnumerable<string> existingLines,
-        IReadOnlyDictionary<string, string> passwords)
+        IReadOnlyDictionary<string, string> secrets)
     {
         var result = new List<string>();
         var written = new HashSet<string>(StringComparer.Ordinal);
@@ -751,25 +851,48 @@ internal static class PasswordGenerator
         foreach (var line in existingLines)
         {
             if (!TryReadVariable(line, out var variable, out _) ||
-                !PasswordVariableSet.Contains(variable))
+                !SecretVariableSet.Contains(variable))
             {
                 result.Add(line);
                 continue;
             }
 
             // Normalize the first occurrence to the chosen value and remove
-            // accidental duplicates. Existing non-empty passwords are reused.
+            // accidental duplicates. Existing usable secrets are reused.
             if (written.Add(variable))
-                result.Add($"{variable}={passwords[variable]}");
+                result.Add($"{variable}={secrets[variable]}");
         }
 
-        foreach (var variable in PasswordVariables)
+        foreach (var variable in SecretVariables)
         {
             if (written.Add(variable))
-                result.Add($"{variable}={passwords[variable]}");
+                result.Add($"{variable}={secrets[variable]}");
         }
 
         return result;
+    }
+
+    private static bool IsUsableSecret(string value)
+    {
+        var normalized = value.Trim();
+
+        if (normalized.Length >= 2 &&
+            ((normalized[0] == '"' && normalized[^1] == '"') ||
+             (normalized[0] == '\'' && normalized[^1] == '\'')))
+        {
+            normalized = normalized[1..^1].Trim();
+        }
+
+        if (normalized.Length == 0)
+            return false;
+
+        return !string.Equals(
+                   normalized,
+                   "placeholder",
+                   StringComparison.OrdinalIgnoreCase) &&
+               !normalized.StartsWith(
+                   "replace-with-",
+                   StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryReadVariable(
@@ -798,6 +921,9 @@ internal static class PasswordGenerator
 
 internal static class DatabaseSetup
 {
+    private const string ComposeProjectName = "nordiska-v2";
+    private const string DatabaseVolumeName = "nordiska-v2_postgres_v2_data";
+
     private static readonly string[] Modules =
     [
         "Banking",
@@ -805,6 +931,123 @@ internal static class DatabaseSetup
         "Reporting",
         "Inbox"
     ];
+
+    private static readonly (string Username, string PasswordVariable)[] DatabaseRoles =
+    [
+        ("nordiska_bootstrap", "POSTGRES_BOOTSTRAP_PASSWORD"),
+        ("nordiska_migrator", "NORDISKA_MIGRATOR_PASSWORD"),
+        ("nordiska_api", "NORDISKA_API_PASSWORD"),
+        ("nordiska_reporting_worker", "NORDISKA_REPORTING_WORKER_PASSWORD")
+    ];
+
+    public static async Task PreventSecretRegenerationForExistingVolumeAsync(string root)
+    {
+        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        if (File.Exists(envPath))
+            return;
+
+        var result = await RunProcessAsync(
+            "Checking for an existing Nordiska PostgreSQL volume",
+            "docker",
+            root,
+            ["volume", "ls", "--quiet"],
+            showOutputOnSuccess: false);
+
+        var existingVolumes = result.StandardOutput
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (!existingVolumes.Contains(DatabaseVolumeName, StringComparer.Ordinal))
+            return;
+
+        throw new InvalidOperationException(
+            $"infra/v2/.env is missing, but the persistent Docker volume " +
+            $"'{DatabaseVolumeName}' already exists.{Environment.NewLine}" +
+            "DevSetup will not generate new passwords because they would not match the " +
+            $"PostgreSQL roles stored in that volume.{Environment.NewLine}" +
+            "The volume may have been created by another checkout that uses the same fixed " +
+            $"Compose project name '{ComposeProjectName}'.");
+    }
+
+    public static Task SynchronizeDatabasePasswordsAsync(
+        string root,
+        Dictionary<string, string> passwords)
+    {
+        const string command =
+            "psql --username \"$POSTGRES_USER\" --dbname \"$POSTGRES_DB\" " +
+            "--set=bootstrap_password=\"$POSTGRES_BOOTSTRAP_PASSWORD\" " +
+            "--set=migrator_password=\"$NORDISKA_MIGRATOR_PASSWORD\" " +
+            "--set=api_password=\"$NORDISKA_API_PASSWORD\" " +
+            "--set=worker_password=\"$NORDISKA_REPORTING_WORKER_PASSWORD\"";
+
+        const string sql = """
+            \set ON_ERROR_STOP on
+            ALTER ROLE nordiska_bootstrap PASSWORD :'bootstrap_password';
+            ALTER ROLE nordiska_migrator PASSWORD :'migrator_password';
+            ALTER ROLE nordiska_api PASSWORD :'api_password';
+            ALTER ROLE nordiska_reporting_worker PASSWORD :'worker_password';
+            """;
+
+        return RunComposeAsync(
+            root,
+            passwords,
+            "Synchronizing local PostgreSQL role passwords",
+            [
+                "exec", "-T",
+                "-e", "POSTGRES_BOOTSTRAP_PASSWORD",
+                "-e", "NORDISKA_MIGRATOR_PASSWORD",
+                "-e", "NORDISKA_API_PASSWORD",
+                "-e", "NORDISKA_REPORTING_WORKER_PASSWORD",
+                "db", "sh", "-ceu", command
+            ],
+            input: sql,
+            showOutputOnSuccess: false);
+    }
+
+    public static async Task ValidateDatabaseCredentialsAsync(
+        Dictionary<string, string> passwords)
+    {
+        ConsoleUi.WriteLine();
+        ConsoleUi.WriteLine("[DATABASE AUTH] Validating local PostgreSQL role passwords...");
+
+        foreach (var (username, passwordVariable) in DatabaseRoles)
+        {
+            var connectionString = CreateConnectionString(
+                username,
+                GetRequiredPassword(passwords, passwordVariable));
+
+            try
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand("SELECT 1;", connection);
+                await command.ExecuteScalarAsync();
+
+                ConsoleUi.WriteLine($"  [OK] {username}");
+            }
+            catch (PostgresException exception) when (exception.SqlState == "28P01")
+            {
+                throw new InvalidOperationException(
+                    $"[DATABASE AUTH] Password mismatch for PostgreSQL role '{username}'." +
+                    Environment.NewLine +
+                    "The current infra/v2/.env does not match the credentials stored in the " +
+                    $"persistent volume '{DatabaseVolumeName}'." + Environment.NewLine +
+                    "This commonly happens when .env was deleted or when another checkout reused " +
+                    $"the fixed Compose project '{ComposeProjectName}'.",
+                    exception);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException(
+                    $"Database credential validation failed for PostgreSQL role '{username}' " +
+                    "at Host=127.0.0.1;Port=5433;Database=nordiska_v2. " +
+                    $"{exception.GetType().Name}: {exception.Message}",
+                    exception);
+            }
+        }
+
+        ConsoleUi.WriteLine("[DATABASE AUTH] All local PostgreSQL role passwords are valid.");
+    }
 
     public static Dictionary<string, string> ReadEnv(string root)
     {
@@ -852,18 +1095,18 @@ internal static class DatabaseSetup
                 }
             }
 
-            foreach (var requiredVariable in PasswordGenerator.RequiredVariables)
+            foreach (var requiredVariable in SecretGenerator.RequiredVariables)
             {
                 if (!values.TryGetValue(requiredVariable, out var value))
                 {
                     throw new InvalidOperationException(
-                        $"Required generated password '{requiredVariable}' is missing from '{path}'.");
+                        $"Required generated secret '{requiredVariable}' is missing from '{path}'.");
                 }
 
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     throw new InvalidOperationException(
-                        $"Required generated password '{requiredVariable}' is empty in '{path}'.");
+                        $"Required generated secret '{requiredVariable}' is empty in '{path}'.");
                 }
             }
 
@@ -934,6 +1177,21 @@ internal static class DatabaseSetup
                 "--wait",
                 "--wait-timeout", "120",
                 "db"
+            ]);
+    }
+
+    public static Task StartStackAsync(
+        string root,
+        Dictionary<string, string> passwords)
+    {
+        return RunComposeAsync(
+            root,
+            passwords,
+            "Building and starting the complete Docker stack",
+            [
+                "up", "-d", "--build",
+                "--wait",
+                "--wait-timeout", "180"
             ]);
     }
 
@@ -1168,7 +1426,9 @@ internal static class DatabaseSetup
         string root,
         Dictionary<string, string> passwords,
         string description,
-        string[] arguments)
+        string[] arguments,
+        string? input = null,
+        bool showOutputOnSuccess = true)
     {
         var directory = Path.Combine(root, "infra", "v2");
 
@@ -1190,7 +1450,9 @@ internal static class DatabaseSetup
                 "-f", "docker-compose.override.yml",
                 .. arguments
             ],
-            passwords);
+            passwords,
+            input,
+            showOutputOnSuccess);
     }
 
     private static async Task RunAsync(
@@ -1415,14 +1677,6 @@ internal static class DatabaseSetup
                     $"{Environment.NewLine}" +
                     $"[CAUSE] A required module schema may be missing, while nordiska_migrator " +
                     $"does not have database-wide CREATE permission.{Environment.NewLine}" +
-                    $"{Environment.NewLine}" +
-                    $"[ADVICE] Nordiska.DevSetup normally fixes this before migrations by asking " +
-                    $"nordiska_bootstrap to ensure the approved schemas exist: banking, faq, " +
-                    $"reporting, and inbox.{Environment.NewLine}" +
-                    $"{Environment.NewLine}" +
-                    $"[ADVICE] If this message still appears, verify that the database was " +
-                    $"initialized with POSTGRES_USER=nordiska_bootstrap and that the bootstrap " +
-                    $"role still owns/controls nordiska_v2.{Environment.NewLine}" +
                     $"===================================================";
             }
 
@@ -1432,8 +1686,6 @@ internal static class DatabaseSetup
                 $"[DATABASE PERMISSION] PostgreSQL rejected an operation because the active " +
                 $"role lacks the required privilege.{Environment.NewLine}" +
                 $"[CAUSE] PostgreSQL SQLSTATE 42501 means insufficient privilege.{Environment.NewLine}" +
-                $"[ADVICE] Check the role, target schema/table, and GRANT/REVOKE rules shown " +
-                $"immediately above this diagnosis.{Environment.NewLine}" +
                 $"===================================================";
         }
 
@@ -1456,20 +1708,6 @@ internal static class DatabaseSetup
                 $"  - The .env file was recreated, restored, or previously regenerated.{Environment.NewLine}" +
                 $"  - The PostgreSQL Docker volume already existed with older role passwords.{Environment.NewLine}" +
                 $"  - Restarting the container does NOT update passwords of existing PostgreSQL roles.{Environment.NewLine}" +
-                $"{Environment.NewLine}" +
-                $"[ADVICE] If this is disposable LOCAL development data, reset the database volume " +
-                $"from the repository root:{Environment.NewLine}" +
-                $"{Environment.NewLine}" +
-                $"[COMMAND] docker compose --project-name nordiska-v2 --env-file infra/v2/.env " +
-                $"-f infra/v2/docker-compose.yml -f infra/v2/docker-compose.override.yml down -v{Environment.NewLine}" +
-                $"{Environment.NewLine}" +
-                $"[ADVICE] Then run the Nordiska.DevSetup command again. The existing .env passwords " +
-                $"will be reused when PostgreSQL is initialized.{Environment.NewLine}" +
-                $"{Environment.NewLine}" +
-                $"[WARNING] 'down -v' deletes the local PostgreSQL volume and its data.{Environment.NewLine}" +
-                $"[ADVICE] If the data must be kept, do NOT delete the volume. Instead, update the " +
-                $"PostgreSQL role password to match .env, or restore the .env credentials " +
-                $"that match the existing database.{Environment.NewLine}" +
                 $"===================================================";
         }
 
@@ -1509,7 +1747,7 @@ internal static class DatabaseSetup
         {
             foreach (var entry in environment)
             {
-                if (LooksSensitive(entry.Key) && !string.IsNullOrWhiteSpace(entry.Value))
+                if (!string.IsNullOrWhiteSpace(entry.Value))
                     valuesToRedact.Add(entry.Value);
             }
         }
@@ -1542,12 +1780,6 @@ internal static class DatabaseSetup
             redacted = redacted.Replace(value, "***REDACTED***", StringComparison.Ordinal);
 
         return redacted;
-    }
-
-    private static bool LooksSensitive(string key)
-    {
-        return key.Contains("PASSWORD", StringComparison.OrdinalIgnoreCase) ||
-               key.Contains("CONNECTIONSTRING", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatCommand(string executable, IEnumerable<string> arguments)

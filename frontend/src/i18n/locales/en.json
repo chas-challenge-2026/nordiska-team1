@@ -29,12 +29,18 @@
         "previous": "Previous",
         "page": "Page",
         "loading": "Loading...",
+        "help": "Help",
         "help-center": "Helpcenter",
-        "related-articles": "Related articles"
+        "related-articles": "Related articles",
+        "from-date": "From date",
+        "to-date": "To date",
+        "download": "Download",
+        "year": "Year"
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
-        "no-user": "Could not find user."
+        "no-user": "Could not find user.",
+        "report": "Could not create the report. Try again."
     },
     "aria-label": {
         "page-nav": "Main navigation",
@@ -42,7 +48,8 @@
         "mobile-menu-open": "Open menu",
         "mobile-nav": "Mobile navigation",
         "previous-page": "Previous page",
-        "next-page": "Next page"
+        "next-page": "Next page",
+        "open-help": "Open help"
     },
     "welcome-route": {
         "title": "Customer Portal",
@@ -144,7 +151,13 @@
             "new-account": "Create new account",
             "generate-full-report": "Generate tax statement",
             "account-action-buttons": "Manage account actions"
-        }
+        },
+        "generate-statement": "Generate statement",
+        "show-statement": "Show statement",
+        "generate-report": "Generate report",
+        "show-report": "Show report",
+        "tax-report-filename": "tax-report-{{year}}",
+        "account-statement-filename": "account-statement-{{from}}_{{to}}"
     },
     "overview-route": {
         "savings-title": "Savings goals",

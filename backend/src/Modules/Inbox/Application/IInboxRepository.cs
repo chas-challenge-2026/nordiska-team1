@@ -2,6 +2,7 @@ using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Agreements.Domain;
 using Nordiska.Modules.Communication.Domain;
 using Nordiska.Modules.Documents.Domain;
+using Nordiska.Modules.Inbox.Contracts.Requests;
 
 namespace Nordiska.Modules.Inbox.Application;
 
@@ -9,7 +10,13 @@ public interface IInboxRepository
 {
     Task<MessageBox?> GetMessageBoxByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default);
     Task<MessageBox> EnsureMessageBoxAsync(long customerId, CancellationToken cancellationToken = default);
-    Task<PagedResult<MessageThread>> GetThreadsByCustomerIdAsync(long customerId, MessageFolder folder, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<PagedResult<MessageThread>> GetThreadsByCustomerIdAsync(
+        long customerId,
+        MessageFolder folder,
+        string? searchTerm,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
     Task<int> GetUnreadCountAsync(long customerId, CancellationToken cancellationToken = default);
     Task<MessageThread?> GetThreadByIdAsync(long threadId, CancellationToken cancellationToken = default);
     Task<MessageThreadState?> GetThreadStateAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
@@ -20,6 +27,8 @@ public interface IInboxRepository
         string subject,
         string initialMessageBody,
         bool replyAllowed = true,
+        bool isInformationOnly = false,
+        string? category = null,
         CancellationToken cancellationToken = default);
     Task<Message> AddMessageAsync(
         long threadId,
@@ -32,6 +41,16 @@ public interface IInboxRepository
     Task MarkAsUnreadAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
     Task ArchiveThreadAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
     Task MoveToInboxAsync(long threadId, long customerId, CancellationToken cancellationToken = default);
+    Task<bool> CloseThreadAsync(long threadId, CancellationToken cancellationToken = default);
+    Task<bool> ReopenThreadAsync(long threadId, CancellationToken cancellationToken = default);
+
+    // Admin & Broadcast
+    Task<PagedResult<(MessageThread Thread, long CustomerId, int MessageCount)>> GetAdminThreadsAsync(
+        AdminThreadQueryParameters parameters,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<long>> GetAllCustomerIdsAsync(CancellationToken cancellationToken = default);
+
+    // Notifications
     Task<CustomerNotification> AddNotificationAsync(
         long customerId,
         string type,
@@ -40,6 +59,19 @@ public interface IInboxRepository
         NotificationPriority priority = NotificationPriority.Normal,
         NotificationTargetType? targetType = null,
         long? targetId = null,
+        CancellationToken cancellationToken = default);
+    Task<PagedResult<CustomerNotification>> GetCustomerNotificationsAsync(
+        long customerId,
+        bool unreadOnly,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+    Task<bool> MarkNotificationReadAsync(
+        long customerId,
+        long notificationId,
+        CancellationToken cancellationToken = default);
+    Task<int> MarkAllNotificationsReadAsync(
+        long customerId,
         CancellationToken cancellationToken = default);
 
     // Digital Document Archive

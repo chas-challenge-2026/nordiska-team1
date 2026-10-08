@@ -29,6 +29,7 @@ public class FaqIntegrationTests : IAsyncLifetime
     private readonly List<int> _createdFaqIds = new();
     private readonly List<long> _createdCustomerIds = new();
     private readonly List<string> _searchMarkers = new();
+    private readonly List<Guid> _createdRelationIds = new();
 
     public FaqIntegrationTests(PostgresAuthWebApplicationFactory factory)
     {
@@ -271,6 +272,209 @@ public class FaqIntegrationTests : IAsyncLifetime
         remaining.Should().ContainSingle().Which.Query.Should().StartWith("ny ");
     }
 
+    [PostgresFact]
+    public async Task GetByLanguageAndId_WithExplicitRelations_ReturnsThemInOrder()
+    {
+        var category = NewCategory();
+        var a = await SeedArticleAsync(category);
+        var b = await SeedArticleAsync(category);
+        var c = await SeedArticleAsync(category);
+
+        var admin = CreateFaqManageClient();
+        var put = await admin.PutAsJsonAsync($"/api/faq/relation/{a.RelationId}/related",
+            new SetRelatedFaqsRequest(new[] { c.RelationId, b.RelationId }));
+        put.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var client = _factory.CreateClient();
+        var entry = await client.GetFromJsonAsync<FaqEntryResponse>($"/api/faq/sv/{a.Id}");
+
+        entry!.RelatedFaqs.Should().NotBeNull();
+        entry.RelatedFaqs!.Select(r => r.Id).Should().Equal(c.Id, b.Id);
+        entry.RelatedFaqs![0].Category.Should().Be(category);
+
+        var stored = await admin.GetFromJsonAsync<List<Guid>>($"/api/faq/relation/{a.RelationId}/related");
+        stored.Should().Equal(c.RelationId, b.RelationId);
+    }
+
+    [PostgresFact]
+    public async Task GetByLanguageAndId_RelatedArticleWithoutThatLanguage_IsSkipped()
+    {
+        var category = NewCategory();
+        var a = await SeedArticleAsync(category);
+        var aEnglish = await SeedArticleAsync(category, "en", a.RelationId);
+        var onlySwedish = await SeedArticleAsync(category);
+        var both = await SeedArticleAsync(category);
+        var bothEnglish = await SeedArticleAsync(category, "en", both.RelationId);
+
+        var admin = CreateFaqManageClient();
+        await admin.PutAsJsonAsync($"/api/faq/relation/{a.RelationId}/related",
+            new SetRelatedFaqsRequest(new[] { onlySwedish.RelationId, both.RelationId }));
+
+        var client = _factory.CreateClient();
+        var english = await client.GetFromJsonAsync<FaqEntryResponse>($"/api/faq/en/{aEnglish.Id}");
+        var swedish = await client.GetFromJsonAsync<FaqEntryResponse>($"/api/faq/{a.Id}");
+
+        english!.RelatedFaqs!.Select(r => r.Id).Should().Equal(bothEnglish.Id);
+        swedish!.RelatedFaqs!.Select(r => r.Id).Should().Equal(onlySwedish.Id, both.Id);
+    }
+
+    [PostgresFact]
+    public async Task GetByLanguageAndId_OtherLanguage_Returns404NotFound()
+    {
+        var a = await SeedArticleAsync(NewCategory());
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/faq/en/{a.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [PostgresFact]
+    public async Task GetById_WithoutExplicitRelations_ReturnsMostViewedInSameCategory()
+    {
+        var category = NewCategory();
+        var a = await SeedArticleAsync(category);
+        var oneView = await SeedArticleAsync(category);
+        var twoViews = await SeedArticleAsync(category);
+        var oldViewsButHelpful = await SeedArticleAsync(category, helpful: 2);
+        var nothing = await SeedArticleAsync(category);
+        await SeedArticleAsync(NewCategory(), helpful: 10);
+
+        // Views older than 30 days don't count, so oldViewsButHelpful only gets ahead of nothing on helpful count
+        await SeedViewsAsync(
+            (oneView.Id, DateTime.UtcNow.AddDays(-1)),
+            (twoViews.Id, DateTime.UtcNow.AddDays(-1)),
+            (twoViews.Id, DateTime.UtcNow.AddDays(-2)),
+            (a.Id, DateTime.UtcNow.AddDays(-1)),
+            (oldViewsButHelpful.Id, DateTime.UtcNow.AddDays(-40)),
+            (oldViewsButHelpful.Id, DateTime.UtcNow.AddDays(-40)),
+            (oldViewsButHelpful.Id, DateTime.UtcNow.AddDays(-40)));
+
+        var client = _factory.CreateClient();
+        var entry = await client.GetFromJsonAsync<FaqEntryResponse>($"/api/faq/{a.Id}");
+
+        entry!.RelatedFaqs!.Select(r => r.Id).Should().Equal(twoViews.Id, oneView.Id, oldViewsButHelpful.Id);
+        entry.RelatedFaqs.Should().NotContain(r => r.Id == nothing.Id);
+    }
+
+    [PostgresFact]
+    public async Task GetById_WithoutCategory_ReturnsNoRelated()
+    {
+        var a = await SeedArticleAsync("");
+        await SeedArticleAsync("");
+
+        var client = _factory.CreateClient();
+        var entry = await client.GetFromJsonAsync<FaqEntryResponse>($"/api/faq/{a.Id}");
+
+        entry!.RelatedFaqs.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [PostgresFact]
+    public async Task SetRelated_InvalidRelatedArticles_Returns400BadRequest()
+    {
+        var category = NewCategory();
+        var a = await SeedArticleAsync(category);
+        var b = await SeedArticleAsync(category);
+        var admin = CreateFaqManageClient();
+        var url = $"/api/faq/relation/{a.RelationId}/related";
+
+        (await admin.PutAsJsonAsync(url, new SetRelatedFaqsRequest(new[] { a.RelationId })))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await admin.PutAsJsonAsync(url, new SetRelatedFaqsRequest(new[] { b.RelationId, b.RelationId })))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await admin.PutAsJsonAsync(url, new SetRelatedFaqsRequest(new[] { Guid.NewGuid() })))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await admin.PutAsJsonAsync(url, new SetRelatedFaqsRequest(Enumerable.Range(0, 6).Select(_ => Guid.NewGuid()).ToArray())))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var stored = await admin.GetFromJsonAsync<List<Guid>>(url);
+        stored.Should().BeEmpty();
+    }
+
+    [PostgresFact]
+    public async Task SetRelated_UnknownArticle_Returns404NotFound()
+    {
+        var b = await SeedArticleAsync(NewCategory());
+        var admin = CreateFaqManageClient();
+
+        var response = await admin.PutAsJsonAsync($"/api/faq/relation/{Guid.NewGuid()}/related",
+            new SetRelatedFaqsRequest(new[] { b.RelationId }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [PostgresFact]
+    public async Task SetRelated_WithoutFaqManagePermission_Returns403Forbidden()
+    {
+        var a = await SeedArticleAsync(NewCategory());
+        var client = await CreateLoggedInRegularCustomerClientAsync();
+
+        var response = await client.PutAsJsonAsync($"/api/faq/relation/{a.RelationId}/related",
+            new SetRelatedFaqsRequest(Array.Empty<Guid>()));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [PostgresFact]
+    public async Task Delete_LastLanguageVersion_RemovesItsRelations()
+    {
+        var category = NewCategory();
+        var a = await SeedArticleAsync(category);
+        var aEnglish = await SeedArticleAsync(category, "en", a.RelationId);
+        var b = await SeedArticleAsync(category);
+
+        var admin = CreateFaqManageClient();
+        await admin.PutAsJsonAsync($"/api/faq/relation/{a.RelationId}/related", new SetRelatedFaqsRequest(new[] { b.RelationId }));
+        await admin.PutAsJsonAsync($"/api/faq/relation/{b.RelationId}/related", new SetRelatedFaqsRequest(new[] { a.RelationId }));
+
+        await admin.DeleteAsync($"/api/faq/{a.Id}");
+        (await CountRelationshipsAsync(a.RelationId)).Should().Be(2);
+
+        await admin.DeleteAsync($"/api/faq/{aEnglish.Id}");
+        (await CountRelationshipsAsync(a.RelationId)).Should().Be(0);
+    }
+
+    [PostgresFact]
+    public async Task RegisterView_IsSavedOncePerSession()
+    {
+        var a = await SeedArticleAsync(NewCategory());
+        var client = _factory.CreateClient();
+
+        (await client.PostAsync($"/api/faq/{a.Id}/view", null)).StatusCode.Should().Be(HttpStatusCode.Accepted);
+        (await client.PostAsync($"/api/faq/{a.Id}/view", null)).StatusCode.Should().Be(HttpStatusCode.Accepted);
+
+        var views = await WaitForViewLogsAsync(a.Id);
+
+        views.Should().ContainSingle();
+        views[0].SessionHash.Should().HaveLength(64);
+    }
+
+    [PostgresFact]
+    public async Task RegisterView_UnknownId_Returns404NotFound()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/api/faq/999999999/view", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [PostgresFact]
+    public async Task DeleteOlderThan_RemovesOnlyViewsBeforeCutoff()
+    {
+        var a = await SeedArticleAsync(NewCategory());
+        await SeedViewsAsync((a.Id, DateTime.UtcNow.AddDays(-100)), (a.Id, DateTime.UtcNow.AddDays(-1)));
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var repository = scope.ServiceProvider.GetRequiredService<IFaqViewLogRepository>();
+            await repository.DeleteOlderThanAsync(DateTime.UtcNow.AddDays(-90));
+        }
+
+        var remaining = await GetViewLogsAsync(a.Id);
+        remaining.Should().ContainSingle().Which.ViewedAt.Should().BeAfter(DateTime.UtcNow.AddDays(-2));
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
 
     // Remove everything this test class created so the shared CI database stays clean
@@ -287,6 +491,11 @@ public class FaqIntegrationTests : IAsyncLifetime
         {
             await db.FaqSearchLogs.Where(l => l.NormalizedQuery.Contains(marker)).ExecuteDeleteAsync();
         }
+
+        await db.FaqViewLogs.Where(l => _createdFaqIds.Contains(l.FaqEntryId)).ExecuteDeleteAsync();
+        await db.FaqRelationships
+            .Where(r => _createdRelationIds.Contains(r.RelationId) || _createdRelationIds.Contains(r.RelatedRelationId))
+            .ExecuteDeleteAsync();
 
         await PostgresTestData.DeleteCustomersAsync(_factory.Services, _createdCustomerIds);
     }
@@ -321,6 +530,75 @@ public class FaqIntegrationTests : IAsyncLifetime
         }
 
         return new List<FaqSearchLog>();
+    }
+
+    // Unique category per test so the popular fallback only sees this test's articles
+    private static string NewCategory() => "nor287x" + Guid.NewGuid().ToString("N")[..8];
+
+    private async Task<(int Id, Guid RelationId)> SeedArticleAsync(string category, string language = "sv", Guid? relationId = null, int helpful = 0)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+
+        var entry = FaqEntry.Create($"Fråga {Guid.NewGuid():N}?", "Svar.", category, null, language, relationId);
+        for (var i = 0; i < helpful; i++)
+        {
+            entry.MarkHelpful();
+        }
+
+        db.FaqEntries.Add(entry);
+        await db.SaveChangesAsync();
+
+        _createdFaqIds.Add(entry.Id);
+        _createdRelationIds.Add(entry.RelationId);
+        return (entry.Id, entry.RelationId);
+    }
+
+    private async Task SeedViewsAsync(params (int FaqEntryId, DateTime ViewedAt)[] views)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+
+        db.FaqViewLogs.AddRange(views.Select(v => FaqViewLog.Create(v.FaqEntryId, new string('a', 64), v.ViewedAt)));
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<List<FaqViewLog>> GetViewLogsAsync(int faqEntryId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+        return await db.FaqViewLogs.AsNoTracking().Where(l => l.FaqEntryId == faqEntryId).ToListAsync();
+    }
+
+    // Views are saved by a background worker, same as searches
+    private async Task<List<FaqViewLog>> WaitForViewLogsAsync(int faqEntryId)
+    {
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            var logs = await GetViewLogsAsync(faqEntryId);
+            if (logs.Count > 0)
+            {
+                return logs;
+            }
+
+            await Task.Delay(100);
+        }
+
+        return new List<FaqViewLog>();
+    }
+
+    private async Task<int> CountRelationshipsAsync(Guid relationId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FaqDbContext>();
+        return await db.FaqRelationships.CountAsync(r => r.RelationId == relationId || r.RelatedRelationId == relationId);
+    }
+
+    private HttpClient CreateFaqManageClient()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateFaqManageToken());
+        return client;
     }
 
     private async Task<int> SeedFaqEntryAsync(string question, string answer, string? category, string? keywords)
