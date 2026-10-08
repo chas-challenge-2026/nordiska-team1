@@ -6,6 +6,7 @@ import Modal from "../components/modals/Modal";
 import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import HelpCard from "../components/faq/HelpCard";
 import ActionButton from "../components/accounts/ActionButton";
+import HelpCardBubble from "../components/faq/HelpCardBubble";
 
 /*
 id: 1
@@ -68,8 +69,8 @@ export default function AccountsPage() {
     }
 
     return (
-    <main className="min-h-screen w-full bg-light-gray/40 text-dark-navy">
-        <div className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-6 sm:py-8 lg:px-1 lg:py-10 ">
+    <main className="min-h-screen w-full text-dark-navy">
+        <div className="mx-auto w-full max-w-7xl px-2 sm:px-6 sm:py-8 lg:px-1 lg:py-10 ">
             {/* HEADER  */}
             <header className="mb-5">
                 <div className="mb-3 grid gap-5 items-end lg:border-b-2 lg:border-nordiska-orange lg:pb-2 lg:grid-cols-[minmax(220px,280px)_1fr] xl:grid-cols-[280px_1fr_240px]">
@@ -115,7 +116,7 @@ export default function AccountsPage() {
                 <nav aria-label={t("accounts-route.my-accounts")} className="min-w-0">
 
                     {/* MOBILE ACCOUNT SELECTOR */}
-                    <div className="lg:hidden overflow-hidden border border-primary-blue/40 bg-primary-blue/30 shadow-sm">
+                    <div className="lg:hidden overflow-hidden border border-primary-blue/40 bg-primary-blue/10 md:shadow-sm">
 
                         {/* COLLAPSIBLE HEADER */}
                         <button
@@ -196,7 +197,7 @@ export default function AccountsPage() {
                     </div>
 
                     {/* DESKTOP ACCOUNT NAVIGATION */}
-                    <div className="hidden lg:block overflow-hidden border border-gray-200 bg-white shadow-sm">
+                    <div className="hidden lg:block overflow-hidden border border-gray-200 bg-white md:shadow-sm">
 
                         {/* NAV HEADER */}
                         <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-dark-navy px-4 py-3">
@@ -250,7 +251,7 @@ export default function AccountsPage() {
                 {/* ACCOUNT INFORMATION */}
                 <section
                     aria-labelledby="account-details-heading"
-                    className="min-w-0 overflow-hidden border border-gray-200 bg-white shadow-sm"
+                    className="min-w-0 overflow-hidden md:border md:border-gray-200 bg-white md:shadow-sm"
                 >
                     {expandedAccount && (
                         <article>
@@ -376,7 +377,7 @@ export default function AccountsPage() {
                 </section>
 
                 {/* RELATERAT */}
-                <aside aria-label="Hjälp" className="min-w-0  border border-gray-200 bg-white shadow-sm">
+                <aside aria-label={t("generic.help")} className="hidden xl:block min-w-0 border border-nordiska-blue/50 md:border-gray-200 bg-white md:shadow-sm">
                     <div className=" bg-nordiska-blue min-h-22 items-center justify-between px-4 py-3 text-white">
                         <p className="truncate uppercase text-sm mt-2 text-right text-white/80">{t("generic.help-center")}</p>
                         <p className="mt-1 truncate text-md text-right font-semibold">{t("generic.related-articles")}</p>
@@ -385,6 +386,7 @@ export default function AccountsPage() {
                         <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={12}/>
                     </div>
                 </aside>
+
             </div>
 
 
@@ -428,7 +430,7 @@ export default function AccountsPage() {
                     </div>
                 </div>
             </Modal>
-
+            
             {/* CREATE ACCOUNT */}
             <CreateAccountModal
                 isModalOpen={isCreateAccountOpen}
@@ -437,6 +439,11 @@ export default function AccountsPage() {
                     setSelectedAccount(newAccount.id);
                     setIsCreateAccountOpen(false);
                 }}
+            />
+
+            <HelpCardBubble 
+                searchTerms={t("accounts-route.help-card-search")}
+                numOfHits={6}
             />
         </div>
     </main>

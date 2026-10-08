@@ -225,15 +225,76 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
             AccountId = 1,
             Title = "Konto 1 Mål",
             TargetAmount = 5000m,
+            CurrentAmount = 1250m,
+            Status = "active"
+        });
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 612,
+            CustomerId = 1,
+            AccountId = 2,
+            Title = "Konto 2 Mål",
+            TargetAmount = 10000m,
+            CurrentAmount = 2500m,
             Status = "active"
         });
 
         var response = await client.GetAsync("/api/savings-goals");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var list = await response.Content.ReadFromJsonAsync<List<SavingsGoalResponse>>();
-        list.Should().NotBeNull();
-        list.Should().Contain(g => g.Id == 601 && g.Title == "Konto 1 Mål");
+        var overview = await response.Content.ReadFromJsonAsync<SavingsGoalsOverviewResponse>();
+        overview.Should().NotBeNull();
+        overview!.Goals.Should().Contain(g => g.Id == 601 && g.Title == "Konto 1 Mål");
+        overview.Goals.Should().Contain(g => g.Id == 612 && g.Title == "Konto 2 Mål");
+        overview.Summary.TotalCurrentBalance.Should().Be(3750m);
+        overview.Summary.TotalTargetAmount.Should().Be(15000m);
+        overview.Summary.TotalProgressPercentage.Should().Be(25m);
+    }
+
+    [Fact]
+    public async Task GetGoals_ByAccount_ReturnsOnlyThatAccountsCustomerGoals()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 611,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Konto 1 Mål",
+            TargetAmount = 5000m,
+            Status = "active"
+        });
+
+        var response = await client.GetAsync("/api/accounts/1/savings-goals");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var goals = await response.Content.ReadFromJsonAsync<List<SavingsGoalResponse>>();
+        goals.Should().NotBeNull();
+        goals.Should().ContainSingle(goal => goal.Id == 611);
+    }
+
+    [Fact]
+    public async Task GetGoals_ByAnotherCustomersAccount_ReturnsEmptyList()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 613,
+            CustomerId = 2,
+            AccountId = 3,
+            Title = "Other customer's goal",
+            TargetAmount = 5000m,
+            Status = "active"
+        });
+
+        var response = await client.GetAsync("/api/accounts/3/savings-goals");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var goals = await response.Content.ReadFromJsonAsync<List<SavingsGoalResponse>>();
+        goals.Should().NotBeNull();
+        goals.Should().BeEmpty();
     }
 
     [Fact]

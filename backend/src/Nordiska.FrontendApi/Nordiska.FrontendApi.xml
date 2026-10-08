@@ -991,14 +991,16 @@
             API endpoints for managing and automating savings goals.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetGoals(System.Nullable{System.Int64},System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetGoals(System.Threading.CancellationToken)">
             <summary>
-            Retrieves savings goals for the authenticated customer, optionally filtered by account.
+            Retrieves all savings goals for the authenticated customer with aggregate totals.
             </summary>
-            <param name="accountId">Optional savings account identifier to filter by.</param>
             <param name="cancellationToken">Cancellation token.</param>
-            <response code="200">List of savings goals.</response>
+            <response code="200">Customer savings goals and aggregate summary.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetAccountGoals(System.Int64,System.Threading.CancellationToken)">
+            <summary>Retrieves the authenticated customer's goals for one savings account.</summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetById(System.Int64,System.Threading.CancellationToken)">
             <summary>

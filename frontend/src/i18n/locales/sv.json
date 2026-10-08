@@ -29,6 +29,7 @@
         "previous": "Föregående",
         "page": "Sida",
         "loading": "Laddar...",
+        "help": "Hjälp",
         "help-center": "Hjälpcenter",
         "related-articles": "Relaterade artiklar"
     },
@@ -42,7 +43,8 @@
         "mobile-menu-open": "Öppna meny",
         "mobile-nav": "Mobilnavigation",
         "previous-page": "Föregående sida",
-        "next-page": "Nästa sida"
+        "next-page": "Nästa sida",
+        "open-help": "Öppna hjälp"
     },
     "welcome-route": {
         "title": "Kundportalen",
