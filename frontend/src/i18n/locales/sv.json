@@ -340,7 +340,9 @@
             "heading": "Godkänn överföringen",
             "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
             "amount": "Belopp",
-            "approve": "Godkänn med BankID"
+            "waiting-for-app": "Godkänn överföringen i BankID-appen",
+            "user-cancel": "Signeringen avbröts.",
+            "wrong-user": "Överföringen måste signeras med ditt eget BankID."
         },
         "done": {
             "processing": "Överföringen behandlas...",

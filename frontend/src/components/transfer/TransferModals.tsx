@@ -106,6 +106,7 @@ export default function TransferModals({
                         toName={toAccount.name}
                         toMeta={toAccount.meta}
                         fromName={fromAccount ? fromAccount.name : ""}
+                        fromMeta={fromAccount ? fromAccount.meta : ""}
                         date={date}
                         onApprove={onApprove}
                         onCancel={onCancelBankId}

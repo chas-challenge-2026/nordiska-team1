@@ -344,7 +344,9 @@
             "heading": "Approve the transfer",
             "help-text": "The recipient is an external account. Sign with BankID to complete it.",
             "amount": "Amount",
-            "approve": "Approve with BankID"
+            "waiting-for-app": "Approve the transfer in the BankID app",
+            "user-cancel": "The signing was cancelled.",
+            "wrong-user": "The transfer must be signed with your own BankID."
         },
         "done": {
             "processing": "Processing the transfer...",
