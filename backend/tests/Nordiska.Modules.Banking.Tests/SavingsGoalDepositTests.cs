@@ -74,6 +74,6 @@ public sealed class SavingsGoalDepositTests
             new Mock<ISavingsAccountRepository>().Object,
             new Mock<ITransactionRepository>().Object,
             NullLogger<SavingsGoalService>.Instance,
-            depositRepository.Object);
+            new Mock<IInterestRateService>().Object);   
     }
 }
