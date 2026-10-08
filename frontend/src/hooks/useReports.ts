@@ -46,7 +46,10 @@ export function useReportStatus(jobId: number | undefined) {
 }
 
 export function useDownloadReport() {
-    return useMutation({ mutationFn: fetchTaxReportPdf });
+    return useMutation({
+        mutationFn: async (taxReportId: number) =>
+            URL.createObjectURL(await fetchTaxReportPdf(taxReportId)),
+    });
 }
 
 export function useInitiateAccountStatement() {
@@ -67,5 +70,8 @@ export function useAccountStatementStatus(jobId: number | undefined) {
 }
 
 export function useDownloadAccountStatement() {
-    return useMutation({ mutationFn: fetchAccountStatementPdf });
+    return useMutation({
+        mutationFn: async (accountStatementId: number) =>
+            URL.createObjectURL(await fetchAccountStatementPdf(accountStatementId)),
+    });
 }

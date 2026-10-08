@@ -29,7 +29,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
     const {
         mutate: startDownload,
         reset: resetDownload,
-        data: pdfBlob,
+        data: pdfUrl,
         isPending: isDownloading,
         isError: downloadFailed,
     } = useDownloadReport();
@@ -48,17 +48,12 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
         startDownload(taxReportId);
     }, [taxReportId, isReady, startDownload]);
 
-    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-
     useEffect(() => {
-        if (!pdfBlob) return;
-        const url = URL.createObjectURL(pdfBlob);
-        setPdfUrl(url);
+        if (!pdfUrl) return;
         return () => {
-            URL.revokeObjectURL(url);
-            setPdfUrl(null);
+            URL.revokeObjectURL(pdfUrl);
         };
-    }, [pdfBlob]);
+    }, [pdfUrl]);
 
     const handleClick = () => {
         if (accountId == null) return;
