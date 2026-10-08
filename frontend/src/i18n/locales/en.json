@@ -151,7 +151,11 @@
             "new-account": "Create new account",
             "generate-full-report": "Generate tax statement",
             "account-action-buttons": "Manage account actions"
-        }
+        },
+        "generate-statement": "Generate statement",
+        "show-statement": "Show statement",
+        "generate-report": "Generate report",
+        "show-report": "Show report"
     },
     "overview-route": {
         "savings-title": "Savings goals",

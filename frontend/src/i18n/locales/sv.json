@@ -151,7 +151,11 @@
             "new-account": "Skapa nytt konto",
             "generate-full-report": "Generera skatteunderlag",
             "account-action-buttons": "Hantera konto knappar"
-        }
+        },
+        "generate-statement": "Skapa kontoutdrag",
+        "show-statement": "Visa kontoutdrag",
+        "generate-report": "Skapa rapport",
+        "show-report": "Visa rapport"
     },
     "overview-route": {
         "savings-title": "Sparmål",
