@@ -258,6 +258,7 @@
     "table": {
         "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
+        "pending-transfers": "Kommande överföringar",
         "latest-transactions": "Senaste transaktioner"
     },
     "forms": {
@@ -298,9 +299,19 @@
         "amount-suffix": "sek",
         "amount-error": "Belopp överstiger saldo på {{account}}",
         "date-label": "Överföringsdatum",
-        "recurring-label": "Återkommande varje månad",
+        "recurring-label": "Återkommande",
+        "interval-label": "Intervall",
+        "custom-days-label": "Antal dagar mellan",
+        "custom-days-placeholder": "1–{{max}}",
+        "custom-days-suffix": "dagar",
+        "custom-days-error": "Ange 1–365 dagar",
         "repeating": {
-            "month": "Månadsvis"
+            "week": "Veckovis",
+            "month": "Månadsvis",
+            "year": "Årsvis",
+            "custom": "Eget intervall",
+            "days_one": "Varje dag",
+            "days_other": "Med {{count}} dagars intervall"
         },
         "cta-submit-internal": "Bekräfta överföring",
         "cta-submit-external": "Bekräfta med BankID",
@@ -309,23 +320,29 @@
         "add-account": {
             "heading": "Lägg till nytt konto",
             "help-text": "Kontot sparas bland dina mottagare och fylls i direkt i överföringen.",
+            "required-hint": "Fält markerade med * är obligatoriska.",
             "type-label": "Kontotyp",
-            "type-placeholder": "Bankkonto, Bankgiro eller Plusgiro",
+            "type-placeholder": "Välj kontotyp",
+            "type-personal": "Personkonto",
+            "type-bgpg": "Bankgiro/Plusgiro",
             "clearing-label": "Clearingnummer",
-            "clearing-placeholder": "4 siffror",
+            "clearing-placeholder": "4–5 siffror",
             "number-label": "Kontonummer",
-            "number-placeholder": "Utan bindestreck",
+            "number-placeholder": "7–10 siffror",
+            "bgpg-label": "Bankgiro-/Plusgironummer",
+            "bgpg-placeholder": "2–8 siffror",
             "name-label": "Namn på mottagaren",
             "name-placeholder": "T.ex. Olle Persson",
-            "default-type": "Bankkonto",
-            "default-name": "Nytt konto"
+            "error-required": "Obligatoriskt fält",
+            "error-clearing": "Ange 4–5 siffror",
+            "error-number": "Ange 7–10 siffror",
+            "error-bgpg": "Ange 2–8 siffror"
         },
         "modal": {
             "from-title": "Välj konto",
             "to-title": "Välj mottagare",
             "search-placeholder": "Sök på namn",
             "group-own": "Mina konton",
-            "group-favorites": "Favoriter",
             "group-bg": "BG/PG",
             "group-bank": "Bankkonto",
             "empty": "Inga konton matchar din sökning.",
@@ -337,30 +354,33 @@
             "heading": "Godkänn överföringen",
             "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
             "amount": "Belopp",
-            "approve": "Godkänn med BankID"
+            "waiting-for-app": "Godkänn överföringen i BankID-appen",
+            "user-cancel": "Signeringen avbröts.",
+            "wrong-user": "Överföringen måste signeras med ditt eget BankID."
         },
         "done": {
             "processing": "Överföringen behandlas...",
             "heading": "Överföringen är genomförd",
-            "summary": "{{amount}} sek till {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
             "new-transfer": "Ny överföring",
             "failure-heading": "Överföring misslyckades",
             "back-to-transfers": "Tillbaka till överföringar"
         },
+        "pending": {
+            "arrives": "Beräknas vara framme {{date}}",
+            "footnote": "Betalningar till andra banker och BG/PG tar normalt en bankdag."
+        },
         "planned": {
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
-            "note-to": "Till {{name}}",
-            "note-internal": "Mellan egna konton",
+            "unknown-account": "Okänt konto",
             "actions-label": "Fler alternativ",
             "actions-heading": "Planerad överföring",
             "action-edit": "Redigera",
             "action-delete": "Ta bort",
-            "edit-heading": "Ändra datum",
-            "edit-date-label": "Nytt datum",
+            "edit-heading": "Redigera överföring",
+            "edit-date-label": "Datum",
             "edit-save-loading": "Sparar...",
-            "edit-error": "Det gick inte att ändra datumet. Försök igen.",
-            "edit-cleanup-error": "Överföringen med det nya datumet skapades, men den gamla kunde inte tas bort. Ta bort den gamla manuellt i listan.",
+            "edit-error": "Det gick inte att spara ändringarna. Försök igen.",
+            "edit-cleanup-error": "Den ändrade överföringen skapades, men den gamla kunde inte tas bort. Ta bort den gamla manuellt i listan.",
             "delete-heading": "Ta bort planerad överföring",
             "delete-confirm-text": "Vill du ta bort \"{{name}}\"? Det går inte att ångra.",
             "delete-confirm": "Ja, ta bort",

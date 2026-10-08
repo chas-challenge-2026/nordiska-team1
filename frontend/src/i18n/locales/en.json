@@ -262,6 +262,7 @@
     "table": {
         "my-accounts": "My accounts",
         "planned-transactions": "Planned transfers",
+        "pending-transfers": "Upcoming transfers",
         "latest-transactions": "Latest transactions"
     },
     "forms": {
@@ -302,9 +303,19 @@
         "amount-suffix": "sek",
         "amount-error": "Amount exceeds the balance on {{account}}",
         "date-label": "Transfer date",
-        "recurring-label": "Recurring every month",
+        "recurring-label": "Recurring",
+        "interval-label": "Interval",
+        "custom-days-label": "Days between",
+        "custom-days-placeholder": "1–{{max}}",
+        "custom-days-suffix": "days",
+        "custom-days-error": "Enter 1–365 days",
         "repeating": {
-            "month": "Monthly"
+            "week": "Weekly",
+            "month": "Monthly",
+            "year": "Yearly",
+            "custom": "Custom interval",
+            "days_one": "Every day",
+            "days_other": "Every {{count}} days"
         },
         "cta-submit-internal": "Confirm transfer",
         "cta-submit-external": "Confirm with BankID",
@@ -313,23 +324,29 @@
         "add-account": {
             "heading": "Add new account",
             "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
+            "required-hint": "Fields marked with * are required.",
             "type-label": "Account type",
-            "type-placeholder": "Bank account, Bankgiro or Plusgiro",
+            "type-placeholder": "Select account type",
+            "type-personal": "Personal account",
+            "type-bgpg": "Bankgiro/Plusgiro",
             "clearing-label": "Clearing number",
-            "clearing-placeholder": "4 digits",
+            "clearing-placeholder": "4–5 digits",
             "number-label": "Account number",
-            "number-placeholder": "Without dashes",
+            "number-placeholder": "7–10 digits",
+            "bgpg-label": "Bankgiro/Plusgiro number",
+            "bgpg-placeholder": "2–8 digits",
             "name-label": "Recipient name",
             "name-placeholder": "E.g. Olle Persson",
-            "default-type": "Bank account",
-            "default-name": "New account"
+            "error-required": "Required field",
+            "error-clearing": "Enter 4–5 digits",
+            "error-number": "Enter 7–10 digits",
+            "error-bgpg": "Enter 2–8 digits"
         },
         "modal": {
             "from-title": "Choose Account",
             "to-title": "Choose recipient",
             "search-placeholder": "Search by name",
             "group-own": "My accounts",
-            "group-favorites": "Favorites",
             "group-bg": "BG/PG",
             "group-bank": "Bank account",
             "empty": "No accounts match your search.",
@@ -341,30 +358,33 @@
             "heading": "Approve the transfer",
             "help-text": "The recipient is an external account. Sign with BankID to complete it.",
             "amount": "Amount",
-            "approve": "Approve with BankID"
+            "waiting-for-app": "Approve the transfer in the BankID app",
+            "user-cancel": "The signing was cancelled.",
+            "wrong-user": "The transfer must be signed with your own BankID."
         },
         "done": {
             "processing": "Processing the transfer...",
             "heading": "The transfer is complete",
-            "summary": "{{amount}} sek to {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
             "new-transfer": "New transfer",
             "failure-heading": "Transfer failed",
             "back-to-transfers": "Back to transfers"
         },
+        "pending": {
+            "arrives": "Expected to arrive {{date}}",
+            "footnote": "Payments to other banks and BG/PG normally take one banking day."
+        },
         "planned": {
             "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
-            "note-to": "To {{name}}",
-            "note-internal": "Between your own accounts",
+            "unknown-account": "Unknown account",
             "actions-label": "More options",
             "actions-heading": "Planned transfer",
             "action-edit": "Edit",
             "action-delete": "Delete",
-            "edit-heading": "Change date",
-            "edit-date-label": "New date",
+            "edit-heading": "Edit transfer",
+            "edit-date-label": "Date",
             "edit-save-loading": "Saving...",
-            "edit-error": "Could not change the date. Please try again.",
-            "edit-cleanup-error": "The transfer with the new date was created, but the old one could not be removed. Please delete the old one manually from the list.",
+            "edit-error": "Could not save the changes. Please try again.",
+            "edit-cleanup-error": "The updated transfer was created, but the old one could not be removed. Please delete the old one manually from the list.",
             "delete-heading": "Delete planned transfer",
             "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
             "delete-confirm": "Yes, delete",
