@@ -20,6 +20,7 @@ public interface IInboxService
 
     // Admin Threads & Broadcast
     Task<PagedResult<AdminThreadSummaryResponse>> GetAdminThreadsAsync(AdminThreadQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<ThreadDetailResponse?> GetAdminThreadDetailsAsync(long threadId, CancellationToken cancellationToken = default);
     Task<int> CreateAdminThreadAsync(CreateAdminThreadRequest request, CancellationToken cancellationToken = default);
 
     // Notifications
@@ -29,10 +30,16 @@ public interface IInboxService
 
     // Digital Document Archive
     Task<PagedResult<DocumentResponse>> GetDocumentsAsync(long customerId, DocumentQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<GeneralDocumentResponse>> GetGeneralDocumentsAsync(CancellationToken cancellationToken = default);
     Task<DocumentDownloadResult?> DownloadDocumentAsync(long customerId, long documentId, CancellationToken cancellationToken = default);
 
     // Terms and Conditions Acceptance (NOR-254)
     Task<IReadOnlyList<PendingTermResponse>> GetPendingTermsAsync(long customerId, CancellationToken cancellationToken = default);
     Task<TermAcceptanceResult> AcceptTermAsync(long customerId, long termId, CancellationToken cancellationToken = default);
     Task<TermResponse> PublishTermAsync(PublishTermRequest request, CancellationToken cancellationToken = default);
+
+    // Overview & Unified Feed (UI Aggregation)
+    Task<InboxOverviewResponse> GetOverviewAsync(long customerId, CancellationToken cancellationToken = default);
+    Task<PagedResult<InboxFeedItemResponse>> GetFeedAsync(long customerId, FeedQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<MarkAllReadResponse> MarkAllAsReadAsync(long customerId, CancellationToken cancellationToken = default);
 }

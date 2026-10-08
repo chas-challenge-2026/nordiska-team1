@@ -4,7 +4,9 @@ using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Communication.Domain;
 using Nordiska.Modules.Inbox.Application;
 using Nordiska.Modules.Inbox.Contracts.Requests;
+using Nordiska.Modules.Inbox.Contracts.Responses;
 using Nordiska.Modules.Inbox.Contracts.Validators;
+using Nordiska.Modules.Documents.Domain;
 
 namespace Nordiska.Modules.Inbox.Tests;
 
@@ -642,6 +644,7 @@ public class InboxServiceTests
                 request.ReplyAllowed,
                 request.IsInformationOnly,
                 request.Category,
+                MessageSenderType.Bank,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdThread);
 
@@ -690,6 +693,7 @@ public class InboxServiceTests
                 request.ReplyAllowed,
                 request.IsInformationOnly,
                 request.Category,
+                MessageSenderType.Bank,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(thread1);
 
@@ -705,6 +709,7 @@ public class InboxServiceTests
             request.ReplyAllowed,
             request.IsInformationOnly,
             request.Category,
+            MessageSenderType.Bank,
             It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
@@ -773,6 +778,221 @@ public class InboxServiceTests
             true,
             false,
             "Allmänt",
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUnreadCount_WithSummaryCounts_ReturnsAggregatedBreakdown()
+    {
+        // Arrange
+        const long customerId = 101;
+        var summary = new InboxSummaryCounts(
+            TotalUnread: 7,
+            UnreadThreads: 3,
+            UnreadNotifications: 2,
+            UnopenedDocuments: 1,
+            PendingTerms: 1);
+
+        _repoMock.Setup(r => r.GetSummaryCountsAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(summary);
+
+        // Act
+        var result = await _service.GetUnreadCountAsync(customerId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(7, result.UnreadCount);
+        Assert.Equal(7, result.TotalUnread);
+        Assert.Equal(3, result.UnreadThreads);
+        Assert.Equal(2, result.UnreadNotifications);
+        Assert.Equal(1, result.UnopenedDocuments);
+        Assert.Equal(1, result.PendingTerms);
+    }
+
+    [Fact]
+    public async Task GetOverview_ReturnsCountsFeedAndPendingTerms()
+    {
+        // Arrange
+        const long customerId = 102;
+        var summary = new InboxSummaryCounts(5, 2, 2, 1, 0);
+        var feedItems = new List<InboxFeedItemResponse>
+        {
+            new("thread-1", "thread", 1, "Fråga om ränta", "Hej...", "Sparkonto", "Normal", false, false, DateTimeOffset.UtcNow, "/api/inbox/threads/1"),
+            new("notification-1", "notification", 1, "Ny insättning", "Konto krediterat", "transaction", "Normal", false, false, DateTimeOffset.UtcNow, null)
+        };
+        var pagedFeed = PagedResult<InboxFeedItemResponse>.Create(feedItems, 2, 1, 20);
+
+        _repoMock.Setup(r => r.GetSummaryCountsAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(summary);
+        _repoMock.Setup(r => r.GetUnifiedFeedAsync(customerId, It.IsAny<FeedQueryParameters>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pagedFeed);
+        _repoMock.Setup(r => r.GetPendingTermsAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var result = await _service.GetOverviewAsync(customerId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(5, result.Counts.TotalUnread);
+        Assert.Equal(2, result.Feed.Count);
+        Assert.Equal(2, result.UnreadFeed.Count);
+        Assert.Empty(result.PendingTerms);
+        _repoMock.Verify(r => r.AutoArchiveOldReadThreadsAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGeneralDocuments_ReturnsMappedGeneralDocuments()
+    {
+        // Arrange
+        var documents = new List<Document>
+        {
+            new("Agreement", "Allmänna villkor för inlåning", "villkor_2026.pdf", "application/pdf", "storage-path-1", 10240, "sha256hash", "Legal")
+        };
+
+        _repoMock.Setup(r => r.GetGeneralDocumentsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documents);
+
+        // Act
+        var result = await _service.GetGeneralDocumentsAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal("Agreement", result[0].DocumentType);
+        Assert.Equal("Allmänna villkor för inlåning", result[0].Title);
+        Assert.Equal("villkor_2026.pdf", result[0].FileName);
+        _repoMock.Verify(r => r.GetGeneralDocumentsAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetThreads_InvokesAutoArchiveOldReadThreads()
+    {
+        // Arrange
+        const long customerId = 105;
+        var query = new InboxQueryParameters(1, 20, "inbox", null);
+        var pagedThreads = PagedResult<MessageThread>.Create([], 0, 1, 20);
+
+        _repoMock.Setup(r => r.GetThreadsByCustomerIdAsync(customerId, MessageFolder.Inbox, query.SearchTerm, query.Page, query.PageSize, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pagedThreads);
+
+        // Act
+        var result = await _service.GetThreadsAsync(customerId, query);
+
+        // Assert
+        Assert.NotNull(result);
+        _repoMock.Verify(r => r.AutoArchiveOldReadThreadsAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetFeed_DelegatesToRepositoryWithParameters()
+    {
+        // Arrange
+        const long customerId = 103;
+        var query = new FeedQueryParameters(Type: "document", UnreadOnly: true, Page: 1, PageSize: 10);
+        var pagedResult = PagedResult<InboxFeedItemResponse>.Create([], 0, 1, 10);
+
+        _repoMock.Setup(r => r.GetUnifiedFeedAsync(customerId, query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _service.GetFeedAsync(customerId, query);
+
+        // Assert
+        Assert.NotNull(result);
+        _repoMock.Verify(r => r.GetUnifiedFeedAsync(customerId, query, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkAllAsRead_MarksBothThreadsAndNotifications()
+    {
+        // Arrange
+        const long customerId = 104;
+        _repoMock.Setup(r => r.MarkAllThreadsReadAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(3);
+        _repoMock.Setup(r => r.MarkAllNotificationsReadAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(2);
+
+        // Act
+        var result = await _service.MarkAllAsReadAsync(customerId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+        Assert.Equal(3, result.ThreadsMarkedAsRead);
+        Assert.Equal(2, result.NotificationsMarkedAsRead);
+        Assert.Equal(5, result.TotalMarkedAsRead);
+        _repoMock.Verify(r => r.MarkAllThreadsReadAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
+        _repoMock.Verify(r => r.MarkAllNotificationsReadAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAdminThreadDetails_ReturnsThreadDetailsWithAllMessages()
+    {
+        // Arrange
+        const long threadId = 50;
+        var thread = new MessageThread(1, "Kundfråga om lån");
+        var messages = new List<Message>
+        {
+            new(threadId, MessageSenderType.Customer, "Hej, hur ansöker jag?", true, 100),
+            new(threadId, MessageSenderType.Bank, "Hej! Du ansöker via Mina sidor.", true, null)
+        };
+
+        _repoMock.Setup(r => r.GetThreadByIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thread);
+        _repoMock.Setup(r => r.GetMessagesByThreadIdAsync(threadId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(messages);
+
+        // Act
+        var result = await _service.GetAdminThreadDetailsAsync(threadId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Kundfråga om lån", result.Subject);
+        Assert.Equal(2, result.Messages.Count);
+        Assert.Equal("Customer", result.Messages[0].SenderType);
+        Assert.Equal("Bank", result.Messages[1].SenderType);
+        _repoMock.Verify(r => r.GetThreadByIdAsync(threadId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAdminThread_CreatesThreadWithBankSenderType()
+    {
+        // Arrange
+        const long customerId = 200;
+        var request = new CreateAdminThreadRequest(
+            CustomerId: customerId,
+            BroadcastToAll: false,
+            Subject: "Viktig information om ditt konto",
+            Body: "Vi har uppdaterat våra villkor.",
+            Category: "Information");
+
+        var createdThread = new MessageThread(10, request.Subject);
+
+        _repoMock.Setup(r => r.CreateThreadWithInitialMessageAsync(
+                customerId,
+                request.Subject,
+                request.Body,
+                request.ReplyAllowed,
+                request.IsInformationOnly,
+                request.Category,
+                MessageSenderType.Bank,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(createdThread);
+
+        // Act
+        var result = await _service.CreateAdminThreadAsync(request);
+
+        // Assert
+        Assert.Equal(1, result);
+        _repoMock.Verify(r => r.CreateThreadWithInitialMessageAsync(
+            customerId,
+            request.Subject,
+            request.Body,
+            request.ReplyAllowed,
+            request.IsInformationOnly,
+            request.Category,
+            MessageSenderType.Bank,
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

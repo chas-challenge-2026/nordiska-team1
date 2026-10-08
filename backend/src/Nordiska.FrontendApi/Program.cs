@@ -81,11 +81,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // include XML comments so Scalar/Swagger can show summaries and parameter docs
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-    if (File.Exists(xmlPath))
+    foreach (var file in Directory.GetFiles(AppContext.BaseDirectory, "Nordiska.*.xml"))
     {
-        options.IncludeXmlComments(xmlPath);
+        options.IncludeXmlComments(file);
     }
 
     // Configure JWT Bearer authentication in Swagger / Scalar UI
