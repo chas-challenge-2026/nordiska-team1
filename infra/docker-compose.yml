@@ -8,10 +8,10 @@ services:
     environment:
       POSTGRES_DB: nordiska_v2
       POSTGRES_USER: nordiska_bootstrap
-      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD:-bootstrap_secret_123}
-      NORDISKA_MIGRATOR_PASSWORD: ${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
-      NORDISKA_API_PASSWORD: ${NORDISKA_API_PASSWORD:-api_secret_123}
-      NORDISKA_REPORTING_WORKER_PASSWORD: ${NORDISKA_REPORTING_WORKER_PASSWORD:-worker_secret_123}
+      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD:-nordiska_admin_2026}
+      NORDISKA_MIGRATOR_PASSWORD: ${NORDISKA_MIGRATOR_PASSWORD:-nordiska_migrator_2026}
+      NORDISKA_API_PASSWORD: ${NORDISKA_API_PASSWORD:-nordiska_api_2026}
+      NORDISKA_REPORTING_WORKER_PASSWORD: ${NORDISKA_REPORTING_WORKER_PASSWORD:-nordiska_worker_2026}
     volumes:
       - postgres_v2_data:/var/lib/postgresql/data
       - ./v2/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -22,6 +22,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Automated database schema migrator (runs once with nordiska_migrator before app starts)
+  migrator:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      - MIGRATION_CONNECTION_STRING=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-nordiska_migrator_2026}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
 
   # .NET 8 Web API + React SPA
   app:
@@ -35,19 +48,23 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__BankingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
-      - ConnectionStrings__FaqDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
-      - ConnectionStrings__ReportingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
-      - ConnectionStrings__InboxDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD:-migrator_secret_123}
+      - ConnectionStrings__BankingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD:-nordiska_api_2026}
+      - ConnectionStrings__FaqDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD:-nordiska_api_2026}
+      - ConnectionStrings__ReportingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD:-nordiska_api_2026}
+      - ConnectionStrings__InboxDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD:-nordiska_api_2026}
       - ActiveLogin__BankId__Environment=Test
-      - Jwt__SecretKey=SuperSecretKeyForNordiskaSparbankenDevelopmentJWTToken2026!
+      - Jwt__SecretKey=${NORDISKA_JWT_SECRET:-SuperSecretDefaultKeyForNordiska2026!}
       - Jwt__Issuer=NordiskaSparbanken
       - Jwt__Audience=NordiskaSparbankenPortal
       - Jwt__TokenLifetimeInMinutes=15
       - FaqSearchLog__Salt=${FAQ_SEARCH_LOG_SALT:-nordiska-faq-search-salt-dev}
+    volumes:
+      - ../output:/var/lib/nordiska/report-documents
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
 
   # One-shot native PDF integration worker
   reporting-worker:
@@ -57,10 +74,16 @@ services:
       target: reporting-worker
     restart: "no"
     environment:
-      NORDISKA_PDF_ENABLE_SIGNING: "0"
-      PDF_OUTPUT_DIRECTORY: /output
+      - NORDISKA_PDF_ENABLE_SIGNING=0
+      - PDF_OUTPUT_DIRECTORY=/output
+      - ConnectionStrings__ReportingDatabase=Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD:-nordiska_worker_2026}
     volumes:
       - ../output:/output
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
 
 volumes:
   postgres_v2_data:

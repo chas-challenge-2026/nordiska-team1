@@ -240,6 +240,27 @@ public class AuthService : IAuthService
 
         // UserManager looks up on the normalized columns, so this is already case-insensitive
         var login = request.Email.Trim();
+
+        // Check if user is an internal staff/admin member (RBAC)
+        var staffMember = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email.ToLower() == login.ToLower());
+        if (staffMember != null && staffMember.IsActive)
+        {
+            var passwordHasher = new PasswordHasher<StaffMember>();
+            var verifyResult = passwordHasher.VerifyHashedPassword(staffMember, staffMember.PasswordHash, request.Password);
+            if (verifyResult == PasswordVerificationResult.Failed)
+            {
+                return InvalidCredentials();
+            }
+
+            var staffToken = await _jwtProvider.Generate(staffMember);
+            response.AppendAuthCookie(staffToken, _jwtOptions.TokenLifetimeInMinutes);
+
+            var staffDto = new CustomerResponseDto(staffMember.Id, staffMember.Email, staffMember.FullName, staffToken);
+            var staffData = new BankIdCollectResponseDto("COMPLETE", null, staffDto);
+
+            return new AuthenticationResultDto(true, null, Token: staffToken, CollectData: staffData);
+        }
+
         var customer = await _userManager.FindByEmailAsync(login) ?? await _userManager.FindByNameAsync(login);
 
         if (customer == null)
@@ -280,6 +301,28 @@ public class AuthService : IAuthService
             return new AuthenticationResultDto(false, "Ogiltig session.");
         }
 
+        var normalized = customerIdOrEmail.Trim();
+
+        // Check if session belongs to a StaffMember (RBAC)
+        StaffMember? staff = null;
+        if (long.TryParse(normalized, out var staffId))
+        {
+            staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Id == staffId && s.IsActive);
+        }
+        if (staff == null)
+        {
+            staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email == normalized && s.IsActive);
+        }
+
+        if (staff != null)
+        {
+            var staffToken = await _jwtProvider.Generate(staff);
+            response.AppendAuthCookie(staffToken, _jwtOptions.TokenLifetimeInMinutes);
+
+            var staffDto = new CustomerResponseDto(staff.Id, staff.Email, staff.FullName, staffToken);
+            return new AuthenticationResultDto(true, null, Token: staffToken, Customer: staffDto);
+        }
+
         Customer? customer = null;
         if (long.TryParse(customerIdOrEmail, out var customerId))
         {
@@ -289,7 +332,6 @@ public class AuthService : IAuthService
 
         if (customer == null)
         {
-            var normalized = customerIdOrEmail.Trim();
             customer = await _userManager.FindByEmailAsync(normalized)
                        ?? await _userManager.FindByNameAsync(normalized)
                        ?? await _db.Customers.FirstOrDefaultAsync(c => c.Email == normalized);

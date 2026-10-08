@@ -76,4 +76,37 @@ public class JwtProvider : IJwtProvider
 
         return tokenHandler.WriteToken(token);
     }
+
+    /// <summary>
+    /// Generates a signed JWT for the provided staff/admin member.
+    /// </summary>
+    public Task<string> Generate(StaffMember staff)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
+            new Claim("staff_id", staff.Id.ToString()),
+            new Claim(ClaimTypes.Role, staff.Role)
+        };
+
+        var key = Encoding.UTF8.GetBytes(_options.SecretKey);
+        var signingCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(key),
+            SecurityAlgorithms.HmacSha256);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddMinutes(_options.TokenLifetimeInMinutes),
+            Issuer = _options.Issuer,
+            Audience = _options.Audience,
+            SigningCredentials = signingCredentials
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+
+        return Task.FromResult(tokenHandler.WriteToken(token));
+    }
 }

@@ -256,12 +256,22 @@ if (app.Environment.IsDevelopment())
     }).AllowAnonymous();
 }
 
-// Seed Test Customer 
+// Always ensure essential Identity roles and bootstrap administrator exist (both Development and Production)
+try
+{
+    await DbInitializer.EnsureAdminAndRolesAsync(app.Services, app.Configuration);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Could not ensure admin and roles at startup: {Message}", ex.Message);
+}
+
+// Seed demo customer and sample data in Development
 if (app.Environment.IsDevelopment())
 {
     try
     {
-        await DbInitializer.SeedAsync(app.Services);
+        await DbInitializer.SeedAsync(app.Services, app.Configuration);
     }
     catch (Exception ex)
     {
