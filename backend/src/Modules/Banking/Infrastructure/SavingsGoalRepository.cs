@@ -22,6 +22,7 @@ public sealed class SavingsGoalRepository(BankingDbContext db) : ISavingsGoalRep
     {
         return await db.SavingsGoals
             .AsNoTracking()
+            .Include(g => g.Account)
             .Where(g => g.CustomerId == customerId)
             .OrderBy(g => g.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -31,6 +32,7 @@ public sealed class SavingsGoalRepository(BankingDbContext db) : ISavingsGoalRep
     {
         return await db.SavingsGoals
             .AsNoTracking()
+            .Include(g => g.Account)
             .Where(g => g.AccountId == accountId)
             .OrderBy(g => g.CreatedAt)
             .ToListAsync(cancellationToken);

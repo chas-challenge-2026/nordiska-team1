@@ -46,5 +46,8 @@ public sealed class LedgerEntryConfiguration
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => x.SavingsGoalId);
+
+        builder.Property(x => x.CorrelationId);
+        builder.HasIndex(x => x.CorrelationId);
     }
 }

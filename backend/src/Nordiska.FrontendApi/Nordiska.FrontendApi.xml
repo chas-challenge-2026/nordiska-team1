@@ -294,8 +294,10 @@
             <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
             <param name="Page">1-based page index. Default: 1.</param>
             <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
+            <param name="CorrelationId">Filter by transaction correlation ID.</param>
+            <param name="GroupByDate">Whether to return transactions grouped by date.</param>
         </member>
-        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.Boolean},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32)">
+        <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.#ctor(System.Nullable{System.Int64},System.Collections.Generic.IReadOnlyList{System.Int64},System.String,System.Nullable{System.Boolean},System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Decimal},System.Nullable{System.Decimal},System.String,System.String,System.String,System.Int32,System.Int32,System.Nullable{System.Guid},System.Boolean)">
             <summary>
             Query parameters for filtering, searching and paginating transaction records.
             </summary>
@@ -312,6 +314,8 @@
             <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
             <param name="Page">1-based page index. Default: 1.</param>
             <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
+            <param name="CorrelationId">Filter by transaction correlation ID.</param>
+            <param name="GroupByDate">Whether to return transactions grouped by date.</param>
         </member>
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.AccountId">
             <summary>Filter by a single account ID.</summary>
@@ -351,6 +355,12 @@
         </member>
         <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.PageSize">
             <summary>Page size limit (1 to 100). Default: 20.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.CorrelationId">
+            <summary>Filter by transaction correlation ID.</summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.GroupByDate">
+            <summary>Whether to return transactions grouped by date.</summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.ToDomainParameters(System.Collections.Generic.IReadOnlyList{System.Int64})">
             <summary>
@@ -991,14 +1001,16 @@
             API endpoints for managing and automating savings goals.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetGoals(System.Nullable{System.Int64},System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetGoals(System.Threading.CancellationToken)">
             <summary>
-            Retrieves savings goals for the authenticated customer, optionally filtered by account.
+            Retrieves all savings goals for the authenticated customer with aggregate totals.
             </summary>
-            <param name="accountId">Optional savings account identifier to filter by.</param>
             <param name="cancellationToken">Cancellation token.</param>
-            <response code="200">List of savings goals.</response>
+            <response code="200">Customer savings goals and aggregate summary.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetAccountGoals(System.Int64,System.Threading.CancellationToken)">
+            <summary>Retrieves the authenticated customer's goals for one savings account.</summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.SavingsGoalsController.GetById(System.Int64,System.Threading.CancellationToken)">
             <summary>
@@ -1088,6 +1100,16 @@
             <param name="id">The unique identifier of the transaction.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">The transaction ledger details.</response>
+            <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+            <response code="404">Transaction with the specified ID was not found or belongs to another customer.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.TransactionsController.GetRelated(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves transactions related to a given transaction (e.g. the counterpart in a transfer via correlationId).
+            </summary>
+            <param name="id">The transaction identifier.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">The related counterpart transactions.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
             <response code="404">Transaction with the specified ID was not found or belongs to another customer.</response>
         </member>

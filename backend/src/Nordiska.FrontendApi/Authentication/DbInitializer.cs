@@ -305,10 +305,13 @@ public class DbInitializer
                 db.SavingsAccounts.AddRange(acc1, acc2);
                 await db.SaveChangesAsync();
 
+                var demoTransferCorrelationId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+
                 var annaTransactions = new List<LedgerEntry>
                 {
                     // Account NOR-100001 transactions (Sparkonto)
-                    new() { AccountId = acc1.Id, Type = "deposit", Amount = 90772.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc1.Id, Type = "deposit", Amount = 95772.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc1.Id, Type = "transfer", Amount = -5000.00m, Label = "Överföring till Lönekonto", TargetAccountId = acc2.Id, CorrelationId = demoTransferCorrelationId, CreatedAt = new DateTime(2026, 8, 25, 15, 20, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -412.00m, Label = "Restaurang Prego", CreatedAt = new DateTime(2026, 8, 26, 3, 12, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -412.00m, Label = "Kafé Espresso", CreatedAt = new DateTime(2026, 8, 26, 3, 12, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -540.00m, Label = "Bokia Bokhandel", CreatedAt = new DateTime(2026, 8, 18, 20, 15, 0, DateTimeKind.Utc) },
@@ -316,7 +319,8 @@ public class DbInitializer
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -399.00m, Label = "Friskis & Svettis", CreatedAt = new DateTime(2026, 8, 10, 17, 0, 0, DateTimeKind.Utc) },
 
                     // Account NOR-100002 transactions (Lönekonto)
-                    new() { AccountId = acc2.Id, Type = "deposit", Amount = 23057.08m, Label = "Överföring mellan konton", CreatedAt = new DateTime(2026, 8, 25, 15, 22, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc2.Id, Type = "transfer", Amount = 5000.00m, Label = "Överföring från Sparkonto", TargetAccountId = acc1.Id, CorrelationId = demoTransferCorrelationId, CreatedAt = new DateTime(2026, 8, 25, 15, 20, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc2.Id, Type = "deposit", Amount = 18057.08m, Label = "Månadsinsättning", CreatedAt = new DateTime(2026, 8, 25, 15, 22, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc2.Id, Type = "deposit", Amount = 23057.08m, Label = "Månadsinsättning", CreatedAt = new DateTime(2026, 8, 25, 15, 22, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc2.Id, Type = "withdrawal", Amount = -645.50m, Label = "ICA Kvantum", CreatedAt = new DateTime(2026, 8, 24, 12, 5, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc2.Id, Type = "withdrawal", Amount = -12500.00m, Label = "Hyra / Boende", CreatedAt = new DateTime(2026, 8, 24, 0, 1, 0, DateTimeKind.Utc) },

@@ -27,6 +27,7 @@ public interface IInboxService
     Task<PagedResult<CustomerNotificationResponse>> GetNotificationsAsync(long customerId, NotificationQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<bool> MarkNotificationReadAsync(long customerId, long notificationId, CancellationToken cancellationToken = default);
     Task<int> MarkAllNotificationsReadAsync(long customerId, CancellationToken cancellationToken = default);
+    Task CreateSavingsGoalCompletedNotificationAsync(long customerId, long savingsGoalId, string goalTitle, CancellationToken cancellationToken = default);
 
     // Digital Document Archive
     Task<PagedResult<DocumentResponse>> GetDocumentsAsync(long customerId, DocumentQueryParameters parameters, CancellationToken cancellationToken = default);

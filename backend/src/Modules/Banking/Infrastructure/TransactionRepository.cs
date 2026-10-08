@@ -72,6 +72,11 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
                                      || l.AccountId.ToString().Contains(term));
         }
 
+        if (parameters.CorrelationId.HasValue)
+        {
+            query = query.Where(l => l.CorrelationId == parameters.CorrelationId.Value);
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var isAsc = string.Equals(parameters.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
@@ -137,5 +142,14 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
     {
         return await db.LedgerEntries
             .FirstOrDefaultAsync(l => l.SavingsGoalId == savingsGoalId && l.IsPlanned, cancellationToken);
+    }
+
+    public async Task<IEnumerable<LedgerEntry>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        return await db.LedgerEntries
+            .AsNoTracking()
+            .Where(l => l.CorrelationId == correlationId)
+            .OrderBy(l => l.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 }

@@ -8,6 +8,7 @@ using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
+using Nordiska.Modules.Inbox.Application;
 
 namespace Nordiska.FrontendApi.Endpoints.Banking;
 
@@ -20,35 +21,49 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 public class SavingsGoalsController : ControllerBase
 {
     private readonly ISavingsGoalService _savingsGoalService;
+    private readonly IInboxService _inboxService;
+    private readonly ILogger<SavingsGoalsController> _logger;
 
-    public SavingsGoalsController(ISavingsGoalService savingsGoalService)
+    public SavingsGoalsController(
+        ISavingsGoalService savingsGoalService,
+        IInboxService inboxService,
+        ILogger<SavingsGoalsController> logger)
     {
         _savingsGoalService = savingsGoalService;
+        _inboxService = inboxService;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Retrieves savings goals for the authenticated customer, optionally filtered by account.
+    /// Retrieves all savings goals for the authenticated customer with aggregate totals.
     /// </summary>
-    /// <param name="accountId">Optional savings account identifier to filter by.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="200">List of savings goals.</response>
+    /// <response code="200">Customer savings goals and aggregate summary.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(List<SavingsGoalResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SavingsGoalsOverviewResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<SavingsGoalResponse>>> GetGoals(
-        [FromQuery] long? accountId,
+    public async Task<ActionResult<SavingsGoalsOverviewResponse>> GetGoals(
         CancellationToken cancellationToken)
     {
         var customerId = User.GetRequiredCustomerId();
-        var isAdmin = User.IsAdmin();
+        var overview = await _savingsGoalService.GetOverviewAsync(customerId, cancellationToken);
+        return Ok(overview);
+    }
 
+    /// <summary>Retrieves the authenticated customer's goals for one savings account.</summary>
+    [HttpGet("/api/accounts/{accountId:long}/savings-goals")]
+    [ProducesResponseType(typeof(List<SavingsGoalResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<SavingsGoalResponse>>> GetAccountGoals(
+        [FromRoute] long accountId,
+        CancellationToken cancellationToken)
+    {
+        var customerId = User.GetRequiredCustomerId();
         var goals = await _savingsGoalService.GetGoalsAsync(
             customerId,
             accountId,
-            isAdmin,
-            cancellationToken);
-
+            cancellationToken: cancellationToken);
         return Ok(goals);
     }
 
@@ -113,6 +128,49 @@ public class SavingsGoalsController : ControllerBase
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    [HttpPost("{id}/deposit")]
+    [ProducesResponseType(typeof(SavingsGoalDepositResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<SavingsGoalDepositResponse>> Deposit(
+        [FromRoute] long id,
+        [FromBody] DepositToSavingsGoalRequest request,
+        CancellationToken cancellationToken)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var isAdmin = User.IsAdmin();
+
+        var result = await _savingsGoalService.DepositAsync(
+            id,
+            request,
+            customerId,
+            isAdmin,
+            cancellationToken);
+
+        if (result.CompletedNow)
+        {
+            try
+            {
+                await _inboxService.CreateSavingsGoalCompletedNotificationAsync(
+                    customerId,
+                    result.SavingsGoalId,
+                    result.GoalTitle,
+                    cancellationToken);
+            }
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogError(
+                    exception,
+                    "Deposit succeeded but completion notification failed for savings goal {SavingsGoalId}",
+                    result.SavingsGoalId);
+            }
+        }
+
+        return Ok(result);
     }
 
     /// <summary>

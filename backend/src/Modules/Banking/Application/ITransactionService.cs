@@ -56,4 +56,9 @@ public interface ITransactionService
     /// Processes a pending planned transaction: executes the transaction, advances recurring schedules, or removes single plans.
     /// </summary>
     Task<TransactionResponse?> ProcessPlannedTransactionAsync(long ledgerEntryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all transactions matching a specific correlation identifier.
+    /// </summary>
+    Task<IEnumerable<TransactionResponse>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default);
 }

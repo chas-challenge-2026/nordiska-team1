@@ -14,6 +14,7 @@ public sealed class LedgerEntry
     public DateTime? PlannedDate { get; set; }
     public string? Repeating { get; set; }
     public long? SavingsGoalId { get; set; }
+    public Guid? CorrelationId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

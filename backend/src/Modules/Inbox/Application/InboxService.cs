@@ -452,6 +452,23 @@ public sealed class InboxService(
             result.PageSize);
     }
 
+    public async Task CreateSavingsGoalCompletedNotificationAsync(
+        long customerId,
+        long savingsGoalId,
+        string goalTitle,
+        CancellationToken cancellationToken = default)
+    {
+        await _repository.AddNotificationAsync(
+            customerId,
+            "savings_goal_completed",
+            "Du har nått ditt sparmål!",
+            $"Grattis! Sparmålet \"{goalTitle}\" är nu uppnått.",
+            NotificationPriority.Normal,
+            NotificationTargetType.SavingsGoal,
+            savingsGoalId,
+            cancellationToken);
+    }
+
     public async Task<bool> MarkNotificationReadAsync(
         long customerId,
         long notificationId,

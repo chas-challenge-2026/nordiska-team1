@@ -19,4 +19,4 @@ public sealed class CustomerNotification
     public void MarkAsRead()=>ReadAt ??= DateTimeOffset.UtcNow;
 }
 public enum NotificationPriority { Low=1, Normal=2, High=3, Critical=4 }
-public enum NotificationTargetType { Document=1, MessageThread=2, Term=3, Loan=4 }
+public enum NotificationTargetType { Document=1, MessageThread=2, Term=3, Loan=4, SavingsGoal=5 }
