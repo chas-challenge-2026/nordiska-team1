@@ -2,9 +2,26 @@ import { useTranslation } from "react-i18next";
 import OverviewCard from "./OverviewCard";
 import { toTimestamp } from "../../utils/date";
 import { useTransactions } from "../../hooks/useTransactions";
-import { LoadingState, ErrorState, NoPlannedState } from "../StatusMessage";
+import { LoadingState, ErrorState } from "../StatusMessage";
+import { useNavigate } from "react-router";
 
 const MAX_ROWS = 4;
+
+export function NoPlannedState() {
+    const {t} = useTranslation();
+    const navigate = useNavigate();
+
+    return (
+        <div className="flex h-screen flex-col items-center justify-center -mt-5">
+            <div className="flex w-28 items-center justify-center">
+                <span aria-hidden="true" className="block h-16 w-16 bg-nordiska-orange mask-[url('/icons/transfers.svg')] mask-contain mask-center mask-no-repeat"/>
+            </div>
+            <p className="xl:text-lg font-semibold mt-1 text-dark-navy/80"> {t("no-planned-state.title")} </p>
+            <p className="px-10 text-center text-sm mt-1 text-dark-navy/80"> {t("no-planned-state.description")}</p>
+            <p className="mt-4 text-[0.9em] xl:text-base font-semibold text-dark-navy/80 md:mt-6">{t("no-planned-state.action")} <span onClick={() => navigate("/transfer")} className="text-primary-blue cursor-pointer hover:text-nordiska-blue">{t("page-navigation.transfers")}</span></p>
+        </div>
+    );
+}
 
 export default function PlannedTransfersCard() {
     const { t } = useTranslation();

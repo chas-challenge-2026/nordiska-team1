@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import OverviewCard from "./OverviewCard";
 import { formatCurrency } from "../../utils/currency";
-import { NoSavingGoalState } from "../StatusMessage";
+import { useNavigate } from "react-router";
 
 type SavingsGoal = {
     id: string;
@@ -16,6 +16,22 @@ type SavingsOverview = {
     nextGoal: number;
     goals: SavingsGoal[];
 };
+
+function NoSavingGoalState() {
+    const {t} = useTranslation();
+    const navigate = useNavigate();
+
+    return (
+        <div className="flex h-screen flex-col items-center justify-center -mt-9">
+            <div className="flex w-28 items-center justify-center">
+                <span aria-hidden="true" className="block h-15 w-15 bg-nordiska-orange mask-[url('/icons/target.svg')] mask-contain mask-center mask-no-repeat"/>
+            </div>
+            <p className="xl:text-lg font-semibold mt-1 text-dark-navy/80">{t("no-saving-goal-state.title")}</p>
+            <p className="px-10 text-center text-sm mt-1 text-dark-navy/80"> {t("no-saving-goal-state.description")} </p>
+            <p className="mt-4 text-[0.9em] xl:text-base font-semibold text-center text-dark-navy/80 md:mt-6">{t("no-saving-goal-state.action")} <span onClick={() => navigate("/accounts")} className="inline-block text-primary-blue cursor-pointer hover:text-nordiska-blue">{t("page-navigation.accounts")}</span></p>
+        </div>
+    );
+}
 
 // Mock data. Replace with query hook later.
 const MOCK_SAVINGS: SavingsOverview = {
