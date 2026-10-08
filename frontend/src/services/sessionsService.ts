@@ -4,8 +4,15 @@ import type { User } from "../types/types";
 
 export async function checkSession(): Promise<User | null> {
     try {
-        const res = await axiosInstance.get<User>("/auth/me");
-        return res.data;
+        //Authenticate
+        const authRes = await axiosInstance.get<User>("/auth/me");
+        // Get customerinfo
+        const customerRes = await axiosInstance.get<User>(`/customers/${authRes.data.id}`);
+
+        return {
+            ...authRes.data,
+            ...customerRes.data,
+        };
     } catch {
         return null;
     }

@@ -24,7 +24,7 @@ export default function PageLink({ title, route, mobile, hamburger = false}: Pag
             {({ isActive }) => (
                 <span className={` 
                     ${hamburger ? "after:mt-1" : "after:mt-0"}
-                    ${hamburger ? "after:h-[2px]" : "after:h-[1.5px]"}
+                    ${hamburger ? "after:h-[2px]" : "after:h-[1px]"}
                     ${!mobile || hamburger 
                         ? `relative inline-block after:content-[''] after:absolute after:top-full  after:left-1/2 after:-translate-x-1/2  after:bg-nordiska-orange after:origin-center after:transition-all after:duration-200 after:ease-in-out
                             ${isActive

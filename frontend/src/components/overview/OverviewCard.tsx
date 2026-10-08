@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export default function OverviewCard({ children }: { children: ReactNode }) {
     return (
-        <section className="flex h-full min-w-0 flex-col overflow-x-clip rounded-xl shadow-md border border-secondary bg-white p-4 font-montserrat sm:p-6">
+        <section className="min-h-[320px] w-full min-w-0 overflow-x-clip rounded-3xl border border-gray-200 bg-white shadow-md aspect-square sm:min-h-0">
             {children}
         </section>
     );

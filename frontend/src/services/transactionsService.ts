@@ -3,7 +3,7 @@ import axiosInstance from "./axiosInstance";
 export interface Transaction {
     id: number;
     accountId: number;
-    type: "deposit" | "withdrawal";
+    type: "deposit" | "withdrawal" | "transfer";
     amount: number;
     createdAt: string;
     label?: string;
