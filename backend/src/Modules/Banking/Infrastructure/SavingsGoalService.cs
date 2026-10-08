@@ -26,15 +26,15 @@ public sealed class SavingsGoalService : ISavingsGoalService
         ISavingsAccountRepository accountRepo,
         ITransactionRepository txRepo,
         ILogger<SavingsGoalService> logger,
-        ISavingsGoalDepositRepository? depositRepo = null,
-        IInterestRateService? interestRateService = null)
+        IInterestRateService? interestRateService = null,
+        ISavingsGoalDepositRepository? depositRepo = null)
     {
         _goalRepo = goalRepo;
         _accountRepo = accountRepo;
         _txRepo = txRepo;
         _logger = logger;
-        _depositRepo = depositRepo;
         _interestRateService = interestRateService;
+        _depositRepo = depositRepo;
     }
 
     public async Task<SavingsGoalResponse?> GetByIdAsync(
