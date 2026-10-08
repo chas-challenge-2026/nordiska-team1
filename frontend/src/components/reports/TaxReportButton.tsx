@@ -61,6 +61,13 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
         initiate.mutate({ accountId, year: selectedYear });
     };
 
+    const handleClose = () => {
+        setIsOpen(false);
+        setSelectedYear(year ?? currentYear);
+        resetDownload();
+        initiate.reset();
+    };
+
     return (
         <>
             <button
@@ -75,7 +82,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
             </button>
             <Modal
                 isOpen={isOpen}
-                onClose={() => setIsOpen(false)}
+                onClose={handleClose}
                 title={t("accounts-route.full-report")}
             >
                 <div className="flex flex-col gap-4 p-5 sm:p-6">
@@ -103,7 +110,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => setIsOpen(false)}
+                            onClick={handleClose}
                             className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-dark-navy transition cursor-pointer hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
                         >
                             {t("generic.cancel")}

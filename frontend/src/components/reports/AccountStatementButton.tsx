@@ -61,6 +61,14 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
         initiate.mutate({ accountId, fromDate, toDate });
     };
 
+    const handleClose = () => {
+        setIsOpen(false);
+        setFromDate("");
+        setToDate("");
+        resetDownload();
+        initiate.reset();
+    };
+
     return (
         <>
             <ActionButton
@@ -72,7 +80,7 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
             />
             <Modal
                 isOpen={isOpen}
-                onClose={() => setIsOpen(false)}
+                onClose={handleClose}
                 title={t("accounts-route.account-report")}
             >
                 <div className="flex flex-col gap-4 p-5 sm:p-6 [direction:ltr]">
@@ -111,35 +119,43 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
                             {t("errors.report")}
                         </p>
                     )}
-                    {pdfUrl ? (
-                        <>
-                            <a
-                                href={pdfUrl}
-                                download={`${t("accounts-route.account-statement-filename", { from: fromDate, to: toDate })}.pdf`}
-                                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-primary-blue bg-white px-4 py-2.5 text-sm font-semibold text-primary-blue transition cursor-pointer hover:bg-primary-blue/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
-                            >
-                                {t("generic.download")}
-                            </a>
-                            <a
-                                href={pdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => setIsOpen(false)}
-                                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
-                            >
-                                <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
-                                {t("accounts-route.show-statement")}
-                            </a>
-                        </>
-                    ) : (
-                        <ActionButton
-                            onClick={handleClick}
-                            disabled={!isRangeValid}
-                            isPending={isBusy}
-                            prefixIcon="/icons/file-pdf.svg"
-                            title={isBusy ? t("generic.loading") : t("accounts-route.generate-statement")}
-                        />
-                    )}
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-dark-navy transition cursor-pointer hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                        >
+                            {t("generic.cancel")}
+                        </button>
+                        {pdfUrl ? (
+                            <>
+                                <a
+                                    href={pdfUrl}
+                                    download={`${t("accounts-route.account-statement-filename", { from: fromDate, to: toDate })}.pdf`}
+                                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-primary-blue bg-white px-4 py-2.5 text-sm font-semibold text-primary-blue transition cursor-pointer hover:bg-primary-blue/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                                >
+                                    {t("generic.download")}
+                                </a>
+                                <a
+                                    href={pdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                                >
+                                    <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
+                                    {t("accounts-route.show-statement")}
+                                </a>
+                            </>
+                        ) : (
+                            <ActionButton
+                                onClick={handleClick}
+                                disabled={!isRangeValid}
+                                isPending={isBusy}
+                                prefixIcon="/icons/file-pdf.svg"
+                                title={isBusy ? t("generic.loading") : t("accounts-route.generate-statement")}
+                            />
+                        )}
+                    </div>
                 </div>
             </Modal>
         </>
