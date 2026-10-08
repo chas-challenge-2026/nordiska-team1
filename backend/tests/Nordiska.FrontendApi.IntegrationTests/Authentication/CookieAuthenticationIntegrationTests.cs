@@ -41,7 +41,7 @@ public class TestAuthService : IAuthService
     {
         var anna = new Customer
         {
-            Id = 1,
+            Id = 101,
             Name = "Anna Smith",
             Email = "anna@exempel.se",
             PersonalNum = "198202116050",
@@ -49,7 +49,7 @@ public class TestAuthService : IAuthService
         };
         var erik = new Customer
         {
-            Id = 2,
+            Id = 102,
             Name = "Erik Svensson",
             Email = "erik@exempel.se",
             PersonalNum = "197903142380",
@@ -208,9 +208,9 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
 {
     private static readonly List<SavingsAccount> _store = new()
     {
-        new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "NOR-100001", AccountType = "saving", AccountName = "Sparkonto", Balance = 5000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
-        new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "NOR-100002", AccountType = "checking", AccountName = "Lönekonto", Balance = 10000m, InterestRate = 0.005m, CreatedAt = DateTime.UtcNow },
-        new SavingsAccount { Id = 3, CustomerId = 2, AccountNumber = "NOR-200001", AccountType = "saving", AccountName = "Eriks Spar", Balance = 3000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow }
+        new SavingsAccount { Id = 1, CustomerId = 101, AccountNumber = "NOR-100001", AccountType = "saving", AccountName = "Sparkonto", Balance = 5000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 2, CustomerId = 101, AccountNumber = "NOR-100002", AccountType = "checking", AccountName = "Lönekonto", Balance = 10000m, InterestRate = 0.005m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 3, CustomerId = 102, AccountNumber = "NOR-200001", AccountType = "saving", AccountName = "Eriks Spar", Balance = 3000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
     };
     private static long _next = 10;
 
@@ -475,10 +475,10 @@ public class TestCustomerService : ICustomerService
 
     static TestCustomerService()
     {
-        var anna = new Customer { Id = 1, Name = "Anna Smith", Email = "anna@exempel.se", PersonalNum = "198202116050", PhoneNumber = "+46701112233", CreatedAt = DateTime.UtcNow };
-        var erik = new Customer { Id = 2, Name = "Erik Svensson", Email = "erik@exempel.se", PersonalNum = "197903142380", PhoneNumber = "+46702223344", CreatedAt = DateTime.UtcNow };
-        _customers[1] = anna;
-        _customers[2] = erik;
+        var anna = new Customer { Id = 101, Name = "Anna Smith", Email = "anna@exempel.se", PersonalNum = "198202116050", PhoneNumber = "+46701112233", CreatedAt = DateTime.UtcNow };
+        var erik = new Customer { Id = 102, Name = "Erik Svensson", Email = "erik@exempel.se", PersonalNum = "197903142380", PhoneNumber = "+46702223344", CreatedAt = DateTime.UtcNow };
+        _customers[101] = anna;
+        _customers[102] = erik;
     }
 
     public Task<Customer> CreateAsync(string name, string email, string personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
@@ -648,8 +648,8 @@ public class TestLoanRepository : ILoanRepository
 {
     private static readonly List<Loan> _store = new()
     {
-        CreateLoan(1, 1, 50000m),
-        CreateLoan(2, 2, 80000m)
+        CreateLoan(1, 101, 50000m),
+        CreateLoan(2, 102, 80000m)
     };
 
     // Id has a private setter since EF is the one that normally sets it
