@@ -41,7 +41,7 @@ export default function ReorderableCard({ id, label, isEditing, onKeyboardMove, 
             value={id}
             dragListener={false}
             dragControls={controls}
-            className={`relative h-full min-w-0 list-none rounded-xl ${isEditing ? "ring-2 ring-light-blue-accent ring-offset-2" : ""}`}
+            className={`relative h-full min-w-0 list-none  ${isEditing ? "ring-2 ring-light-blue-accent ring-offset-2" : ""}`}
         >
             {isEditing && (
                 <button
