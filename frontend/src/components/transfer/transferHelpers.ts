@@ -79,6 +79,15 @@ export function addRepeatIso(dateStr: string, repeating: string) {
     return d.toISOString().slice(0, 10);
 }
 
+/** Nästa bankdag efter dateStr — lördag och söndag hoppas över. */
+export function nextBankDayIso(dateStr: string) {
+    const d = new Date(`${dateStr}T00:00:00Z`);
+    do {
+        d.setUTCDate(d.getUTCDate() + 1);
+    } while (d.getUTCDay() === 0 || d.getUTCDay() === 6);
+    return d.toISOString().slice(0, 10);
+}
+
 /** Text för ett repeating-värde, t.ex. "Månadsvis" eller "Med 14 dagars intervall". */
 export function repeatingLabel(repeating: string, t: TFunction) {
     if (repeating === "week" || repeating === "month" || repeating === "year") {

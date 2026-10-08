@@ -249,6 +249,7 @@
     "table": {
         "my-accounts": "My accounts",
         "planned-transactions": "Planned transfers",
+        "pending-transfers": "Upcoming transfers",
         "latest-transactions": "Latest transactions"
     },
     "forms": {
@@ -354,6 +355,10 @@
             "new-transfer": "New transfer",
             "failure-heading": "Transfer failed",
             "back-to-transfers": "Back to transfers"
+        },
+        "pending": {
+            "arrives": "Expected to arrive {{date}}",
+            "footnote": "Payments to other banks and BG/PG normally take one banking day."
         },
         "planned": {
             "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",

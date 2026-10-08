@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
+import PendingTransfersPanel from "../components/transfer/PendingTransfersPanel";
 import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase, TransferSummary } from "../components/TransferDone";
@@ -12,6 +13,7 @@ import {
     shouldSimulateFailure,
     toPlannedDateIso,
     addRepeatIso,
+    nextBankDayIso,
     repeatingLabel,
     toOwnAccount,
     SIMULATED_TRANSFER_DELAY_MS,
@@ -22,6 +24,7 @@ import { useTransferFunds } from "../hooks/useTransactions";
 import { usePlannedTransfers } from "../hooks/usePlannedTransfers";
 import { useAccountPicker } from "../hooks/useAccountPicker";
 import { useRecurrence } from "../hooks/useRecurrence";
+import { usePendingTransfers } from "../hooks/usePendingTransfers";
 
 type Step = "form" | "bankid" | "done";
 
@@ -38,6 +41,7 @@ export default function TransferPage() {
 
     const { addLocalPlanned, createPlanned, panelProps } =
         usePlannedTransfers(ownAccounts);
+    const { pendingTransfers, addPending } = usePendingTransfers();
 
     const [name, setName] = useState("");
     const [selectedFromId, setFromId] = useState<string | null>(null);
@@ -107,8 +111,19 @@ export default function TransferPage() {
                     setTransferPhase("failure");
                 } else {
                     // Planerade är bara för framtida eller återkommande
-                    // överföringar — en engångsbetalning idag hör inte hit.
-                    if (repeating || date !== todayIso()) commitLocalPlanned();
+                    // överföringar — en engångsbetalning idag är skickad och
+                    // visas som kommande tills den är framme nästa bankdag.
+                    if (repeating || date !== todayIso()) {
+                        commitLocalPlanned();
+                    } else {
+                        addPending({
+                            name: name.trim() || t("page-transfer.default-name"),
+                            fromName: fromAccount.name,
+                            toName: toAccount.name,
+                            sum: amountValue,
+                            arrivesAt: nextBankDayIso(date),
+                        });
+                    }
                     setTransferPhase("success");
                 }
             }, SIMULATED_TRANSFER_DELAY_MS);
@@ -227,11 +242,16 @@ export default function TransferPage() {
                     )}
                 </div>
 
-                <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
+                <div className="flex min-w-0 flex-col gap-5">
+                    <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
+                        <PlannedTransfersPanel {...panelProps} />
+                    </div>
 
-
-                <PlannedTransfersPanel {...panelProps} />
-
+                    {pendingTransfers.length > 0 && (
+                        <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
+                            <PendingTransfersPanel pendingTransfers={pendingTransfers} />
+                        </div>
+                    )}
                 </div>
             </div>
 

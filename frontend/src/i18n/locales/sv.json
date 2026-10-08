@@ -245,6 +245,7 @@
     "table": {
         "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
+        "pending-transfers": "Kommande överföringar",
         "latest-transactions": "Senaste transaktioner"
     },
     "forms": {
@@ -350,6 +351,10 @@
             "new-transfer": "Ny överföring",
             "failure-heading": "Överföring misslyckades",
             "back-to-transfers": "Tillbaka till överföringar"
+        },
+        "pending": {
+            "arrives": "Beräknas vara framme {{date}}",
+            "footnote": "Betalningar till andra banker och BG/PG tar normalt en bankdag."
         },
         "planned": {
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
