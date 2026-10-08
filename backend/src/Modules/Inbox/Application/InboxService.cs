@@ -27,6 +27,8 @@ public sealed class InboxService(
         InboxQueryParameters parameters,
         CancellationToken cancellationToken = default)
     {
+        await _repository.AutoArchiveOldReadThreadsAsync(customerId, cancellationToken);
+
         var folder = ParseFolder(parameters.Folder);
         var page = parameters.Page < 1 ? 1 : parameters.Page;
         var pageSize = parameters.PageSize is < 1 or > 100 ? 20 : parameters.PageSize;
@@ -221,8 +223,23 @@ public sealed class InboxService(
         long customerId,
         CancellationToken cancellationToken = default)
     {
-        var count = await _repository.GetUnreadCountAsync(customerId, cancellationToken);
-        return new UnreadCountResponse(count);
+        var counts = await _repository.GetSummaryCountsAsync(customerId, cancellationToken);
+        if (counts is null)
+        {
+            var fallbackCount = await _repository.GetUnreadCountAsync(customerId, cancellationToken);
+            return new UnreadCountResponse(fallbackCount, fallbackCount, fallbackCount, 0, 0, 0);
+        }
+
+        return new UnreadCountResponse(
+            UnreadCount: counts.TotalUnread,
+            TotalUnread: counts.TotalUnread,
+            UnreadThreads: counts.UnreadThreads,
+            UnreadNotifications: counts.UnreadNotifications,
+            UnopenedDocuments: counts.UnopenedDocuments,
+            PendingTerms: counts.PendingTerms,
+            UnreadDocuments: counts.UnreadDocuments,
+            UnreadTerms: counts.UnreadTerms,
+            ActionRequired: counts.ActionRequired);
     }
 
     public async Task<bool> ArchiveThreadAsync(
@@ -317,6 +334,36 @@ public sealed class InboxService(
             result.PageSize);
     }
 
+    public async Task<ThreadDetailResponse?> GetAdminThreadDetailsAsync(
+        long threadId,
+        CancellationToken cancellationToken = default)
+    {
+        var thread = await _repository.GetThreadByIdAsync(threadId, cancellationToken);
+        if (thread is null)
+        {
+            return null;
+        }
+
+        var messages = await _repository.GetMessagesByThreadIdAsync(threadId, cancellationToken);
+        var lastMessage = messages.LastOrDefault();
+        var canReply = thread.Status == MessageThreadStatus.Open && (lastMessage is null || lastMessage.ReplyAllowed);
+
+        var messageResponses = messages.Select(MapToResponse).ToList();
+
+        return new ThreadDetailResponse(
+            Id: thread.Id,
+            Subject: thread.Subject,
+            Status: thread.Status.ToString(),
+            CreatedAt: thread.CreatedAt,
+            LastMessageAt: thread.LastMessageAt,
+            IsRead: true,
+            Folder: MessageFolder.Inbox.ToString(),
+            CanReply: canReply,
+            IsInformationOnly: thread.IsInformationOnly,
+            Category: thread.Category,
+            Messages: messageResponses);
+    }
+
     public async Task<int> CreateAdminThreadAsync(
         CreateAdminThreadRequest request,
         CancellationToken cancellationToken = default)
@@ -352,6 +399,7 @@ public sealed class InboxService(
                 replyAllowed: request.ReplyAllowed,
                 isInformationOnly: request.IsInformationOnly,
                 category: request.Category,
+                senderType: MessageSenderType.Bank,
                 cancellationToken: cancellationToken);
 
             // Mark as unread for the customer
@@ -685,6 +733,90 @@ public sealed class InboxService(
             EffectiveFrom: term.EffectiveFrom,
             PublishedAt: term.PublishedAt,
             DownloadUrl: $"/api/inbox/documents/{term.DocumentId}/download");
+    }
+
+    public async Task<InboxOverviewResponse> GetOverviewAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        await _repository.AutoArchiveOldReadThreadsAsync(customerId, cancellationToken);
+
+        var counts = await _repository.GetSummaryCountsAsync(customerId, cancellationToken);
+        var feedResult = await _repository.GetUnifiedFeedAsync(
+            customerId,
+            new FeedQueryParameters(Page: 1, PageSize: 20),
+            cancellationToken);
+        var unreadFeedResult = await _repository.GetUnifiedFeedAsync(
+            customerId,
+            new FeedQueryParameters(UnreadOnly: true, Page: 1, PageSize: 20),
+            cancellationToken);
+        var pendingTerms = await GetPendingTermsAsync(customerId, cancellationToken);
+
+        return new InboxOverviewResponse(
+            Counts: counts,
+            Feed: feedResult.Items.ToList(),
+            UnreadFeed: unreadFeedResult.Items.ToList(),
+            PendingTerms: pendingTerms);
+    }
+
+    public async Task<IReadOnlyList<GeneralDocumentResponse>> GetGeneralDocumentsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var docs = await _repository.GetGeneralDocumentsAsync(cancellationToken);
+        return docs.Select(d => new GeneralDocumentResponse(
+            Id: d.Id,
+            DocumentType: d.DocumentType,
+            Title: d.Title,
+            FileName: d.FileName,
+            MimeType: d.MimeType,
+            FileSizeBytes: d.FileSizeBytes,
+            Sha256: d.Sha256,
+            PublishedAt: d.CreatedAt,
+            DownloadUrl: $"/api/inbox/documents/{d.Id}/download"
+        )).ToList();
+    }
+
+    public async Task<PagedResult<InboxFeedItemResponse>> GetFeedAsync(
+        long customerId,
+        FeedQueryParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        return await _repository.GetUnifiedFeedAsync(customerId, parameters, cancellationToken);
+    }
+
+    public async Task<bool> MarkFeedItemAsReadAsync(
+        long customerId,
+        string feedId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!FeedItemIdentity.TryParse(feedId, out var itemType, out var sourceId))
+        {
+            return false;
+        }
+
+        return await _repository.MarkFeedItemReadAsync(
+            customerId,
+            itemType,
+            sourceId,
+            cancellationToken);
+    }
+
+    public async Task<MarkAllReadResponse> MarkAllAsReadAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var counts = await _repository.MarkAllFeedItemsReadAsync(customerId, cancellationToken);
+
+        return new MarkAllReadResponse(
+            Success: true,
+            ThreadsMarkedAsRead: counts.Threads,
+            NotificationsMarkedAsRead: counts.Notifications,
+            TotalMarkedAsRead: counts.Total,
+            Message: counts.Total > 0
+                ? $"{counts.Total} objekt markerades som lästa."
+                : "Alla inboxobjekt är redan lästa.",
+            DocumentsMarkedAsRead: counts.Documents,
+            TermsMarkedAsRead: counts.Terms);
     }
 
     private static MessageFolder ParseFolder(string? folder)

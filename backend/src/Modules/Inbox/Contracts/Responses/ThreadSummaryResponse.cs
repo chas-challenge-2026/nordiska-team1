@@ -25,4 +25,7 @@ public sealed record ThreadSummaryResponse(
     int MessageCount,
     bool IsInformationOnly = false,
     bool CanReply = true,
-    string? Category = null);
+    string? Category = null)
+{
+    public string Title => Subject;
+}
