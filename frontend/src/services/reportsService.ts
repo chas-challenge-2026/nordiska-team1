@@ -38,7 +38,7 @@ export async function checkTaxReportStatus(jobId: number): Promise<TaxReportJobS
 
 export async function downloadTaxReport(taxReportId: number): Promise<void> {
     const res = await axiosInstance.get<Blob>(
-        `/reports/tax/jobs/${taxReportId}/pdf`,
+        `/reports/tax/${taxReportId}/pdf`,
         {
             responseType: "blob",
             headers: { Accept: "application/pdf" },
@@ -68,7 +68,7 @@ export async function checkAccountStatementStatus(jobId: number): Promise<Accoun
 
 export async function downloadAccountStatement(accountStatementId: number): Promise<void> {
     const res = await axiosInstance.get<Blob>(
-        `/reports/account-statements/jobs/${accountStatementId}/pdf`,
+        `/reports/account-statements/${accountStatementId}/pdf`,
         {
             responseType: "blob",
             headers: { Accept: "application/pdf" },
