@@ -4,7 +4,7 @@ import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
 import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
-import type { TransferPhase } from "../components/TransferDone";
+import type { TransferPhase, TransferSummary } from "../components/TransferDone";
 import {
     formatSek,
     parseAmount,
@@ -85,19 +85,15 @@ export default function TransferPage() {
 
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
-    const doneSummary = toAccount
-        ? t(
-            repeating
-                ? "page-transfer.done.summary-recurring"
-                : "page-transfer.done.summary",
-            {
-                amount: formatSek(amountValue),
-                name: toAccount.name,
-                date,
-                interval: repeating ? repeatingLabel(repeating, t) : "",
-            },
-        )
-        : "";
+    const doneSummary: TransferSummary = {
+        amount: formatSek(amountValue),
+        fromName: fromAccount?.name ?? "",
+        fromMeta: fromAccount?.meta ?? "",
+        toName: toAccount?.name ?? "",
+        toMeta: toAccount?.meta ?? "",
+        date,
+        interval: repeating ? repeatingLabel(repeating, t) : undefined,
+    };
 
     const commitLocalPlanned = () => {
         if (!toAccount) return;
@@ -243,9 +239,7 @@ export default function TransferPage() {
                     {step === "done" && (
                         <TransferDone
                             phase={transferPhase}
-                            summaryLine={doneSummary}
-                            fromName={fromAccount ? fromAccount.name : ""}
-                            toName={toAccount ? toAccount.name : ""}
+                            summary={doneSummary}
                             onReset={handleReset}
                         />
                     )}

@@ -349,8 +349,6 @@
         "done": {
             "processing": "Processing the transfer...",
             "heading": "The transfer is complete",
-            "summary": "{{amount}} sek to {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · {{interval}}",
             "new-transfer": "New transfer",
             "failure-heading": "Transfer failed",
             "back-to-transfers": "Back to transfers"
