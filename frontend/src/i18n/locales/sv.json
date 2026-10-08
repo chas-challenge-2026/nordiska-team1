@@ -149,28 +149,77 @@
         }
     },
     "overview-route": {
-        "savings-title": "Sparmål",
+        "edit-moved": "{{card}} flyttades till plats {{position}} av {{total}}.",
+        "card-accounts": "Mina konton",
+        "card-savings": "Sparmål",
+        "card-planned": "Planerade överföringar",
+        "card-transactions": "Senaste transaktioner",
+        "edit-reset-done": "Kortens ordning har återställts.",
+        "edit-instructions": "Dra ett kort i handtaget, eller fokusera handtaget och flytta kortet med piltangenterna.",
+        "viewing-instruction":"Här visas information från dina sparmål och favoritmarkerade konton",
+        "edit-reset": "Återställ ordning",
+        "edit-done": "Klar",
+        "edit-start": "Redigera layout",
+
+        "account-card":{
+            "title": "Saldo",
+            "description": "Här visas aktuella saldon för dina konton",
+            "pending": "Laddar dina konton",
+            "error": "Det gick inte att ladda dina konton",
+            "total-balance": "Totalt saldo",
+            "hover-title": "Öppna konto"
+        },
+
+        "transactions-card": {
+            "closed-account": "stängt konto",
+            "title": "Senaste transaktioner",
+            "description": "Här är dina senaste transaktioner från alla konton",
+            "pending": "Laddar transaktioner",
+            "error": "Det gick inte att ladda dina transaktioner",
+            "transfer-type-transfer": "Överföring",
+            "transfer-type-transfer-group": "Överföring",
+            "transfer-type-deposit": "Insättning",
+            "transfer-type-withdrawl": "Uttag",
+            "transfer-type-interest": "Ränteutbetalning",
+            "transfer-type-tax": "Skatt"
+        },
+
+        "planned-card": {
+            "title": "Planerade överföringar",
+            "description": "Visar dina planerade överföringar",
+            "pending": "Laddar planerade överföringar",
+            "error": "Det gick inte att ladda planerade överföringar"
+        },
+
+        "savings-card": {
+            "title": "Sparmål",
+            "description": "Här ser du dina valda sparmål"
+        },
+
+        "savings-eta": "Uppnås om {{time}}",
         "savings-total": "Totalt sparat",
         "savings-next-goal": "Nästa mål:",
-        "savings-eta": "Uppnås om {{time}}",
         "savings-progress-label": "{{percent}} % av nästa mål uppnått",
+
+        "edit-handle-label": "Flytta {{card}}",
+        "savings-title": "Sparmål",
         "loading-planned": "Laddar planerade överföringar...",
         "planned-error": "Det gick inte att ladda planerade överföringar",
         "no-planned": "Inga kommande överföringar.",
         "planned-unnamed": "Namnlös överföring",
-        "no-transactions": "Inga transaktioner än.",
-        "edit-start": "Redigera layout",
-        "edit-done": "Klar",
-        "edit-reset": "Återställ ordning",
-        "edit-reset-done": "Kortens ordning har återställts.",
-        "edit-instructions": "Dra ett kort i handtaget, eller fokusera handtaget och flytta kortet med piltangenterna.",
-        "edit-moved": "{{card}} flyttades till plats {{position}} av {{total}}.",
-        "edit-handle-label": "Flytta {{card}}",
-        "card-accounts": "Mina konton",
-        "card-savings": "Sparmål",
-        "card-planned": "Planerade överföringar",
-        "card-transactions": "Senaste transaktioner"
+        "no-transactions": "Inga transaktioner än."
     },
+    "no-planned-state" : {
+        "title" : "Det finns inga planerade överföringar",
+        "description" : "Skapa automatiska, återkommande överföringar. Perfekt för regelbundet sparande eller fasta betalningar.",
+        "action": "Hantera dina"
+    },
+    "no-saving-goal-state" : {
+        "title" : "Sätt ett sparmål och följ ditt sparande",
+        "description" : "Skapa ett övergripande sparmål för hur mycket du vill spara totalt, eller sätt ett eget mål för ett specifikt konto.",
+        "action": "Du kan skapa sparmål under"
+    },
+
     "register-route": {
         "title": "Bli kund",
         "paragraph": "Fyll i dina uppgifter så skapar vi ditt kundkonto hos Nordiska.",

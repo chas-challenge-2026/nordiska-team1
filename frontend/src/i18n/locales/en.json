@@ -148,33 +148,80 @@
             "account-action-buttons": "Manage account actions"
         }
     },
-    "overview-route": {
-        "savings-title": "Savings goals",
-        "savings-total": "Total saved",
-        "savings-next-goal": "Next goal:",
-        "savings-eta": "Reached in {{time}}",
-        "savings-progress-label": "{{percent}}% of next goal reached",
+"overview-route": {
+    "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
+    "card-accounts": "My accounts",
+    "card-savings": "Savings goals",
+    "card-planned": "Planned transfers",
+    "card-transactions": "Recent transactions",
+    "edit-reset-done": "Card order reset.",
+    "edit-instructions": "Drag a card by its handle, or focus the handle and use the arrow keys to move it.",
+    "viewing-instruction": "Here you can see information about your savings goals and favorite accounts.",
+    "edit-reset": "Reset order",
+    "edit-done": "Done",
+    "edit-start": "Edit layout",
 
-        "loading-planned": "Loading planned transfers...",
-        "planned-error": "There was an issue loading planned transfers",
-        "no-planned": "No upcoming transfers.",
-        "planned-unnamed": "Unnamed transfer",
-
-        "no-transactions": "No transactions yet.",
-
-        "edit-start": "Edit layout",
-        "edit-done": "Done",
-        "edit-reset": "Reset order",
-        "edit-reset-done": "Card order reset.",
-        "edit-instructions": "Drag a card by its handle, or focus the handle and use the arrow keys to move it.",
-        "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
-        "edit-handle-label": "Move {{card}}",
-
-        "card-accounts": "My accounts",
-        "card-savings": "Savings goals",
-        "card-planned": "Planned transfers",
-        "card-transactions": "Latest transactions"
+    "account-card": {
+        "title": "Balance",
+        "description": "Here you can see the current balances of your accounts",
+        "pending": "Loading your accounts",
+        "error": "Oops... Something went wrong",
+        "total-balance": "Total balance",
+        "hover-title": "Open account"
     },
+
+    "transactions-card": {
+        "closed-account": "closed account",
+        "title": "Recent transactions",
+        "description": "Here are your latest transactions from all accounts",
+        "pending": "Loading transactions",
+        "error": "Oops... Something went wrong",
+        "transfer-type-transfer": "Transfer",
+        "transfer-type-transfer-group": "Transfer",
+        "transfer-type-deposit": "Deposit",
+        "transfer-type-withdrawl": "Withdrawal",
+        "transfer-type-interest": "Interest payment",
+        "transfer-type-tax": "Tax"
+    },
+
+    "planned-card": {
+        "title": "Planned transfers",
+        "description": "Shows your planned transfers",
+        "pending": "Loading planned transfers",
+        "error": "Oops... Something went wrong"
+    },
+
+    "savings-card": {
+        "title": "Savings goals",
+        "description": "Here are your selected savings goals"
+    },
+
+    "savings-eta": "Reached in {{time}}",
+    "savings-total": "Total saved",
+    "savings-next-goal": "Next goal:",
+    "savings-progress-label": "{{percent}}% of next goal reached",
+
+    "edit-handle-label": "Move {{card}}",
+    "savings-title": "Savings goals",
+    "loading-planned": "Loading planned transfers...",
+    "planned-error": "There was an issue loading planned transfers",
+    "no-planned": "No upcoming transfers.",
+    "planned-unnamed": "Unnamed transfer",
+    "no-transactions": "No transactions yet."
+},
+
+"no-planned-state": {
+    "title": "There are no planned transfers",
+    "description": "Create automatic, recurring transfers. Perfect for regular saving or fixed payments.",
+    "action": "Manage your"
+},
+
+"no-saving-goal-state": {
+    "title": "Set a savings goal and track your progress",
+    "description": "Create an overall savings goal for how much you want to save in total, or set a goal for a specific account.",
+    "action": "You can create savings goals under"
+},
+
     "register-route": {
         "title": "Become a customer",
         "paragraph": "Fill in your details and we will create your customer account at Nordiska.",
