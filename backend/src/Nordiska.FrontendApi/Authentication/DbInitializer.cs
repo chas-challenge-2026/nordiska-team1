@@ -5,6 +5,7 @@ using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Nordiska.Modules.Faq.Domain;
 using Nordiska.Modules.Faq.Infrastructure.Db;
+using Nordiska.Modules.CustomerCenter.Domain;
 
 namespace Nordiska.FrontendApi.Authentication;
 
@@ -669,6 +670,10 @@ public class DbInitializer
             var cd3 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc3.Id, customerId);
 
             inboxDb.CustomerDocuments.AddRange(cd1, cd2, cd3);
+            inboxDb.FeedItems.AddRange(
+                new FeedItem(customerId, FeedItemType.Document, doc1.Id, doc1.Title, doc1.FileName, FeedPriority.Normal, false, cd1.PublishedAt),
+                new FeedItem(customerId, FeedItemType.Document, doc2.Id, doc2.Title, doc2.FileName, FeedPriority.Normal, false, cd2.PublishedAt),
+                new FeedItem(customerId, FeedItemType.Document, doc3.Id, doc3.Title, doc3.FileName, FeedPriority.Normal, false, cd3.PublishedAt));
             await inboxDb.SaveChangesAsync();
 
             if (!await inboxDb.Terms.AnyAsync())
@@ -686,6 +691,15 @@ public class DbInitializer
 
                 var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term2026.Id, customerId);
                 inboxDb.TermAcceptances.Add(acceptance);
+                inboxDb.FeedItems.Add(new FeedItem(
+                    customerId,
+                    FeedItemType.Terms,
+                    term2026.Id,
+                    term2026.Title,
+                    $"Version {term2026.Version}. Inväntar digital acceptans.",
+                    FeedPriority.Important,
+                    true,
+                    term2026.PublishedAt));
                 await inboxDb.SaveChangesAsync();
             }
         }
