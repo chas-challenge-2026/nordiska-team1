@@ -2,6 +2,7 @@ using FluentValidation;
 using Moq;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Communication.Domain;
+using Nordiska.Modules.CustomerCenter.Domain;
 using Nordiska.Modules.Inbox.Application;
 using Nordiska.Modules.Inbox.Contracts.Requests;
 using Nordiska.Modules.Inbox.Contracts.Responses;
@@ -904,26 +905,58 @@ public class InboxServiceTests
     }
 
     [Fact]
-    public async Task MarkAllAsRead_MarksBothThreadsAndNotifications()
+    public async Task MarkAllAsRead_MapsAllFeedTypesFromSingleRepositoryOperation()
     {
-        // Arrange
         const long customerId = 104;
-        _repoMock.Setup(r => r.MarkAllThreadsReadAsync(customerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(3);
-        _repoMock.Setup(r => r.MarkAllNotificationsReadAsync(customerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(2);
+        _repoMock.Setup(r => r.MarkAllFeedItemsReadAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FeedReadCounts(Threads: 3, Notifications: 2, Documents: 4, Terms: 1));
 
-        // Act
         var result = await _service.MarkAllAsReadAsync(customerId);
 
-        // Assert
         Assert.NotNull(result);
         Assert.True(result.Success);
         Assert.Equal(3, result.ThreadsMarkedAsRead);
         Assert.Equal(2, result.NotificationsMarkedAsRead);
-        Assert.Equal(5, result.TotalMarkedAsRead);
-        _repoMock.Verify(r => r.MarkAllThreadsReadAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
-        _repoMock.Verify(r => r.MarkAllNotificationsReadAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(4, result.DocumentsMarkedAsRead);
+        Assert.Equal(1, result.TermsMarkedAsRead);
+        Assert.Equal(10, result.TotalMarkedAsRead);
+        _repoMock.Verify(r => r.MarkAllFeedItemsReadAsync(customerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("thread-42", FeedItemType.Message, 42)]
+    [InlineData("notification-7", FeedItemType.Notification, 7)]
+    [InlineData("document-19", FeedItemType.Document, 19)]
+    [InlineData("term-3", FeedItemType.Terms, 3)]
+    public async Task MarkFeedItemAsRead_ValidIdentity_DelegatesParsedIdentity(
+        string feedId,
+        FeedItemType expectedType,
+        long expectedSourceId)
+    {
+        const long customerId = 104;
+        _repoMock.Setup(r => r.MarkFeedItemReadAsync(customerId, expectedType, expectedSourceId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await _service.MarkFeedItemAsReadAsync(customerId, feedId);
+
+        Assert.True(result);
+        _repoMock.Verify(r => r.MarkFeedItemReadAsync(customerId, expectedType, expectedSourceId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("invalid")]
+    [InlineData("thread-0")]
+    [InlineData("loan-1")]
+    public async Task MarkFeedItemAsRead_InvalidIdentity_ReturnsFalseWithoutRepositoryCall(string feedId)
+    {
+        var result = await _service.MarkFeedItemAsReadAsync(104, feedId);
+
+        Assert.False(result);
+        _repoMock.Verify(r => r.MarkFeedItemReadAsync(
+            It.IsAny<long>(),
+            It.IsAny<FeedItemType>(),
+            It.IsAny<long>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

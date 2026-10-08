@@ -42,5 +42,6 @@ public interface IInboxService
     // Overview & Unified Feed (UI Aggregation)
     Task<InboxOverviewResponse> GetOverviewAsync(long customerId, CancellationToken cancellationToken = default);
     Task<PagedResult<InboxFeedItemResponse>> GetFeedAsync(long customerId, FeedQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<bool> MarkFeedItemAsReadAsync(long customerId, string feedId, CancellationToken cancellationToken = default);
     Task<MarkAllReadResponse> MarkAllAsReadAsync(long customerId, CancellationToken cancellationToken = default);
 }

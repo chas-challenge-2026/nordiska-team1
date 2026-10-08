@@ -1,6 +1,7 @@
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Agreements.Domain;
 using Nordiska.Modules.Communication.Domain;
+using Nordiska.Modules.CustomerCenter.Domain;
 using Nordiska.Modules.Documents.Domain;
 using Nordiska.Modules.Inbox.Contracts.Requests;
 using Nordiska.Modules.Inbox.Contracts.Responses;
@@ -127,6 +128,8 @@ public interface IInboxRepository
     Task<InboxSummaryCounts> GetSummaryCountsAsync(long customerId, CancellationToken cancellationToken = default);
     Task<PagedResult<InboxFeedItemResponse>> GetUnifiedFeedAsync(long customerId, FeedQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<int> MarkAllThreadsReadAsync(long customerId, CancellationToken cancellationToken = default);
+    Task<bool> MarkFeedItemReadAsync(long customerId, FeedItemType itemType, long sourceId, CancellationToken cancellationToken = default);
+    Task<FeedReadCounts> MarkAllFeedItemsReadAsync(long customerId, CancellationToken cancellationToken = default);
 
     // General Documents & Auto-Archiving
     Task<IReadOnlyList<Document>> GetGeneralDocumentsAsync(CancellationToken cancellationToken = default);

@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.Modules.Agreements.Domain;
@@ -146,6 +147,10 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         MessageSenderType senderType,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var messageBox = await EnsureMessageBoxAsync(customerId, cancellationToken);
 
         var thread = new MessageThread(messageBox.Id, subject, isInformationOnly, category);
@@ -171,7 +176,26 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         }
         _dbContext.MessageThreadStates.Add(threadState);
 
+        var feedItem = new FeedItem(
+            customerId,
+            FeedItemType.Message,
+            thread.Id,
+            thread.Subject,
+            Truncate(initialMessageBody, 1_000),
+            FeedPriority.Normal,
+            actionRequired: false,
+            thread.LastMessageAt);
+        if (senderType == MessageSenderType.Customer)
+        {
+            feedItem.MarkAsRead();
+        }
+        _dbContext.FeedItems.Add(feedItem);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return thread;
     }
 
@@ -194,7 +218,33 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
             senderCustomerId);
 
         _dbContext.Messages.Add(message);
-        thread.RegisterMessage(DateTimeOffset.UtcNow);
+        thread.RegisterMessage(message.SentAt);
+
+        var states = await _dbContext.MessageThreadStates
+            .Where(s => s.ThreadId == threadId)
+            .ToListAsync(cancellationToken);
+        foreach (var state in states)
+        {
+            var feedItem = await UpsertFeedItemAsync(
+                state.CustomerId,
+                FeedItemType.Message,
+                thread.Id,
+                thread.Subject,
+                Truncate(body, 1_000),
+                FeedPriority.Normal,
+                actionRequired: false,
+                message.SentAt,
+                cancellationToken);
+
+            if (senderType == MessageSenderType.Customer && senderCustomerId == state.CustomerId)
+            {
+                feedItem.MarkAsRead();
+            }
+            else
+            {
+                feedItem.MarkAsUnread();
+            }
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return message;
@@ -205,9 +255,17 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         var state = await _dbContext.MessageThreadStates
             .FirstOrDefaultAsync(s => s.ThreadId == threadId && s.CustomerId == customerId, cancellationToken);
 
-        if (state is not null && !state.IsRead)
+        if (state is not null)
         {
-            state.MarkAsRead();
+            if (!state.IsRead)
+            {
+                state.MarkAsRead();
+            }
+
+            var feedItem = await _dbContext.FeedItems.FirstOrDefaultAsync(
+                x => x.CustomerId == customerId && x.ItemType == FeedItemType.Message && x.SourceId == threadId,
+                cancellationToken);
+            feedItem?.MarkAsRead();
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
@@ -217,9 +275,17 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         var state = await _dbContext.MessageThreadStates
             .FirstOrDefaultAsync(s => s.ThreadId == threadId && s.CustomerId == customerId, cancellationToken);
 
-        if (state is not null && state.IsRead)
+        if (state is not null)
         {
-            state.MarkAsUnread();
+            if (state.IsRead)
+            {
+                state.MarkAsUnread();
+            }
+
+            var feedItem = await _dbContext.FeedItems.FirstOrDefaultAsync(
+                x => x.CustomerId == customerId && x.ItemType == FeedItemType.Message && x.SourceId == threadId,
+                cancellationToken);
+            feedItem?.MarkAsUnread();
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
@@ -346,6 +412,10 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         long? targetId = null,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var notification = new CustomerNotification(
             customerId,
             type,
@@ -357,6 +427,33 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
 
         _dbContext.CustomerNotifications.Add(notification);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (targetType != NotificationTargetType.MessageThread)
+        {
+            var feedPriority = priority switch
+            {
+                NotificationPriority.Critical => FeedPriority.Critical,
+                NotificationPriority.High => FeedPriority.Important,
+                _ => FeedPriority.Normal
+            };
+            await UpsertFeedItemAsync(
+                customerId,
+                FeedItemType.Notification,
+                notification.Id,
+                title,
+                Truncate(body, 1_000),
+                feedPriority,
+                actionRequired: priority == NotificationPriority.Critical,
+                notification.CreatedAt,
+                cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
         return notification;
     }
 
@@ -405,8 +502,13 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         if (!notification.IsRead)
         {
             notification.MarkAsRead();
-            await _dbContext.SaveChangesAsync(cancellationToken);
         }
+
+        var feedItem = await _dbContext.FeedItems.FirstOrDefaultAsync(
+            x => x.CustomerId == customerId && x.ItemType == FeedItemType.Notification && x.SourceId == notificationId,
+            cancellationToken);
+        feedItem?.MarkAsRead();
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return true;
     }
@@ -427,6 +529,15 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         foreach (var n in unread)
         {
             n.MarkAsRead();
+        }
+
+        var notificationIds = unread.Select(n => n.Id).ToList();
+        var feedItems = await _dbContext.FeedItems
+            .Where(x => x.CustomerId == customerId && x.ItemType == FeedItemType.Notification && notificationIds.Contains(x.SourceId))
+            .ToListAsync(cancellationToken);
+        foreach (var feedItem in feedItems)
+        {
+            feedItem.MarkAsRead();
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -501,6 +612,14 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         if (customerDoc is not null && !customerDoc.HasBeenOpened)
         {
             customerDoc.MarkOpened();
+        }
+
+        if (customerDoc is not null)
+        {
+            var feedItem = await _dbContext.FeedItems.FirstOrDefaultAsync(
+                x => x.CustomerId == customerDoc.CustomerId && x.ItemType == FeedItemType.Document && x.SourceId == customerDoc.DocumentId,
+                cancellationToken);
+            feedItem?.MarkAsRead();
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
@@ -539,6 +658,26 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
     {
         acceptance.Accept();
         _dbContext.TermAcceptances.Update(acceptance);
+
+        var termVersion = await _dbContext.Terms
+            .Where(x => x.Id == acceptance.TermId)
+            .Select(x => x.Version)
+            .SingleAsync(cancellationToken);
+
+        var feedItem = await _dbContext.FeedItems.FirstOrDefaultAsync(
+            x => x.CustomerId == acceptance.CustomerId && x.ItemType == FeedItemType.Terms && x.SourceId == acceptance.TermId,
+            cancellationToken);
+        if (feedItem is not null)
+        {
+            feedItem.Update(
+                feedItem.Title,
+                $"Version {termVersion}. Godkänd.",
+                FeedPriority.Normal,
+                actionRequired: false,
+                feedItem.OccurredAt);
+            feedItem.MarkAsRead();
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return acceptance;
     }
@@ -552,6 +691,10 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         IEnumerable<long>? targetCustomerIds = null,
         CancellationToken cancellationToken = default)
     {
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var term = new Term(code, version, title, documentId, effectiveFrom);
         _dbContext.Terms.Add(term);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -569,7 +712,24 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         if (acceptances.Count > 0)
         {
             _dbContext.TermAcceptances.AddRange(acceptances);
+            foreach (var acceptance in acceptances)
+            {
+                _dbContext.FeedItems.Add(new FeedItem(
+                    acceptance.CustomerId,
+                    FeedItemType.Terms,
+                    term.Id,
+                    term.Title,
+                    $"Version {term.Version}. Inväntar digital acceptans.",
+                    FeedPriority.Important,
+                    actionRequired: true,
+                    term.PublishedAt));
+            }
             await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
         }
 
         return term;
@@ -577,13 +737,17 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
 
     public async Task<InboxSummaryCounts> GetSummaryCountsAsync(long customerId, CancellationToken cancellationToken = default)
     {
-        var unreadThreads = await _dbContext.MessageThreadStates
+        var unreadFeed = _dbContext.FeedItems
             .AsNoTracking()
-            .CountAsync(s => s.CustomerId == customerId && s.Folder == MessageFolder.Inbox && s.ReadAt == null, cancellationToken);
+            .Where(x => x.CustomerId == customerId && x.ReadAt == null);
 
-        var unreadNotifications = await _dbContext.CustomerNotifications
+        var unreadThreads = await unreadFeed.CountAsync(x => x.ItemType == FeedItemType.Message, cancellationToken);
+        var unreadNotifications = await unreadFeed.CountAsync(x => x.ItemType == FeedItemType.Notification, cancellationToken);
+        var unreadDocuments = await unreadFeed.CountAsync(x => x.ItemType == FeedItemType.Document, cancellationToken);
+        var unreadTerms = await unreadFeed.CountAsync(x => x.ItemType == FeedItemType.Terms, cancellationToken);
+        var actionRequired = await _dbContext.FeedItems
             .AsNoTracking()
-            .CountAsync(n => n.CustomerId == customerId && n.ReadAt == null, cancellationToken);
+            .CountAsync(x => x.CustomerId == customerId && x.ActionRequired, cancellationToken);
 
         var unopenedDocuments = await (from cd in _dbContext.CustomerDocuments
                                        join d in _dbContext.Documents on cd.DocumentId equals d.Id
@@ -599,14 +763,17 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
             .AsNoTracking()
             .CountAsync(cancellationToken);
 
-        var totalUnread = unreadThreads + unreadNotifications + unopenedDocuments + pendingTerms;
+        var totalUnread = unreadThreads + unreadNotifications + unreadDocuments + unreadTerms;
 
         return new InboxSummaryCounts(
             TotalUnread: totalUnread,
             UnreadThreads: unreadThreads,
             UnreadNotifications: unreadNotifications,
             UnopenedDocuments: unopenedDocuments,
-            PendingTerms: pendingTerms);
+            PendingTerms: pendingTerms,
+            UnreadDocuments: unreadDocuments,
+            UnreadTerms: unreadTerms,
+            ActionRequired: actionRequired);
     }
 
     public async Task<PagedResult<InboxFeedItemResponse>> GetUnifiedFeedAsync(
@@ -614,170 +781,99 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         FeedQueryParameters parameters,
         CancellationToken cancellationToken = default)
     {
-        var items = new List<InboxFeedItemResponse>();
-        var filterType = parameters.Type?.Trim().ToLowerInvariant();
-
-        // 1. Threads
-        if (string.IsNullOrEmpty(filterType) || filterType is "thread" or "threads" or "message")
-        {
-            var states = await _dbContext.MessageThreadStates
-                .AsNoTracking()
-                .Where(s => s.CustomerId == customerId)
-                .ToListAsync(cancellationToken);
-
-            var threadIds = states.Select(s => s.ThreadId).ToList();
-
-            var threadsList = await _dbContext.MessageThreads
-                .AsNoTracking()
-                .Where(t => threadIds.Contains(t.Id))
-                .OrderByDescending(t => t.LastMessageAt)
-                .Take(100)
-                .ToListAsync(cancellationToken);
-
-            var stateByThreadId = states.ToDictionary(s => s.ThreadId);
-
-            foreach (var thread in threadsList)
-            {
-                var state = stateByThreadId.GetValueOrDefault(thread.Id);
-                var isRead = state?.IsRead ?? false;
-
-                var lastMsg = await _dbContext.Messages
-                    .AsNoTracking()
-                    .Where(m => m.ThreadId == thread.Id && m.RevokedAt == null)
-                    .OrderByDescending(m => m.SentAt)
-                    .Select(m => m.Body)
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                var preview = lastMsg is not null && lastMsg.Length > 120
-                    ? string.Concat(lastMsg.AsSpan(0, 120), "...")
-                    : lastMsg;
-
-                items.Add(new InboxFeedItemResponse(
-                    Id: $"thread-{thread.Id}",
-                    Type: "thread",
-                    SourceId: thread.Id,
-                    Title: thread.Subject,
-                    Preview: preview,
-                    Category: thread.Category ?? "Meddelande",
-                    Priority: "Normal",
-                    IsRead: isRead,
-                    ActionRequired: false,
-                    OccurredAt: thread.LastMessageAt,
-                    TargetUrl: $"/api/inbox/threads/{thread.Id}"));
-            }
-        }
-
-        // 2. Notifications
-        if (string.IsNullOrEmpty(filterType) || filterType is "notification" or "notifications")
-        {
-            var notifs = await _dbContext.CustomerNotifications
-                .AsNoTracking()
-                .Where(n => n.CustomerId == customerId)
-                .OrderByDescending(n => n.CreatedAt)
-                .Take(100)
-                .ToListAsync(cancellationToken);
-
-            foreach (var n in notifs)
-            {
-                var priorityStr = n.Priority switch
-                {
-                    NotificationPriority.Critical => "Critical",
-                    NotificationPriority.High => "Important",
-                    _ => "Normal"
-                };
-
-                items.Add(new InboxFeedItemResponse(
-                    Id: $"notification-{n.Id}",
-                    Type: "notification",
-                    SourceId: n.Id,
-                    Title: n.Title,
-                    Preview: n.Body,
-                    Category: n.Type,
-                    Priority: priorityStr,
-                    IsRead: n.IsRead,
-                    ActionRequired: n.Priority == NotificationPriority.Critical,
-                    OccurredAt: n.CreatedAt,
-                    TargetUrl: n.TargetType == NotificationTargetType.MessageThread && n.TargetId.HasValue
-                        ? $"/api/inbox/threads/{n.TargetId}"
-                        : null));
-            }
-        }
-
-        // 3. Documents
-        if (string.IsNullOrEmpty(filterType) || filterType is "document" or "documents")
-        {
-            var docs = await (from cd in _dbContext.CustomerDocuments
-                              join d in _dbContext.Documents on cd.DocumentId equals d.Id
-                              where cd.CustomerId == customerId && d.Status != DocumentStatus.Deleted
-                              orderby cd.PublishedAt descending
-                              select new { CustomerDoc = cd, Doc = d })
-                .AsNoTracking()
-                .Take(100)
-                .ToListAsync(cancellationToken);
-
-            foreach (var d in docs)
-            {
-                items.Add(new InboxFeedItemResponse(
-                    Id: $"document-{d.Doc.Id}",
-                    Type: "document",
-                    SourceId: d.Doc.Id,
-                    Title: d.Doc.Title,
-                    Preview: $"{d.Doc.DocumentType} • {d.Doc.FileName}",
-                    Category: d.Doc.DocumentType,
-                    Priority: "Normal",
-                    IsRead: d.CustomerDoc.HasBeenOpened,
-                    ActionRequired: false,
-                    OccurredAt: d.CustomerDoc.PublishedAt,
-                    TargetUrl: $"/api/inbox/documents/{d.Doc.Id}/download"));
-            }
-        }
-
-        // 4. Terms
-        if (string.IsNullOrEmpty(filterType) || filterType is "term" or "terms")
-        {
-            var terms = await (from a in _dbContext.TermAcceptances
-                               join t in _dbContext.Terms on a.TermId equals t.Id
-                               where a.CustomerId == customerId && t.Status == TermStatus.Published
-                               orderby t.PublishedAt descending
-                               select new { Acceptance = a, Term = t })
-                .AsNoTracking()
-                .Take(50)
-                .ToListAsync(cancellationToken);
-
-            foreach (var t in terms)
-            {
-                var isAccepted = t.Acceptance.Status == TermAcceptanceStatus.Accepted;
-                items.Add(new InboxFeedItemResponse(
-                    Id: $"term-{t.Term.Id}",
-                    Type: "term",
-                    SourceId: t.Term.Id,
-                    Title: t.Term.Title,
-                    Preview: $"Version {t.Term.Version}. {(isAccepted ? "Godkänd." : "Inväntar digital acceptans.")}",
-                    Category: "Villkor",
-                    Priority: isAccepted ? "Normal" : "Important",
-                    IsRead: isAccepted,
-                    ActionRequired: !isAccepted,
-                    OccurredAt: t.Term.PublishedAt,
-                    TargetUrl: $"/api/inbox/terms/{t.Term.Id}/accept"));
-            }
-        }
-
-        // Filter unread if requested
-        IEnumerable<InboxFeedItemResponse> filtered = items;
-        if (parameters.UnreadOnly)
-        {
-            filtered = filtered.Where(x => !x.IsRead || x.ActionRequired);
-        }
-
-        var sorted = filtered.OrderByDescending(x => x.OccurredAt).ToList();
-        var totalCount = sorted.Count;
+        var filterType = ParseFeedItemTypeFilter(parameters.Type);
         var page = parameters.Page < 1 ? 1 : parameters.Page;
         var pageSize = parameters.PageSize is < 1 or > 100 ? 20 : parameters.PageSize;
 
-        var pagedItems = sorted
+        var supportedTypes = new[]
+        {
+            FeedItemType.Message,
+            FeedItemType.Notification,
+            FeedItemType.Document,
+            FeedItemType.Terms
+        };
+        var query = _dbContext.FeedItems
+            .AsNoTracking()
+            .Where(x => x.CustomerId == customerId && supportedTypes.Contains(x.ItemType));
+
+        if (filterType.HasValue)
+        {
+            query = query.Where(x => x.ItemType == filterType.Value);
+        }
+
+        if (parameters.UnreadOnly)
+        {
+            query = query.Where(x => x.ReadAt == null);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var feedItems = await query
+            .OrderByDescending(x => x.OccurredAt)
+            .ThenBy(x => x.ItemType)
+            .ThenByDescending(x => x.SourceId)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToList();
+            .ToListAsync(cancellationToken);
+
+        var threadIds = feedItems.Where(x => x.ItemType == FeedItemType.Message).Select(x => x.SourceId).ToList();
+        var notificationIds = feedItems.Where(x => x.ItemType == FeedItemType.Notification).Select(x => x.SourceId).ToList();
+        var documentIds = feedItems.Where(x => x.ItemType == FeedItemType.Document).Select(x => x.SourceId).ToList();
+
+        var threadCategories = await _dbContext.MessageThreads
+            .AsNoTracking()
+            .Where(x => threadIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Category, cancellationToken);
+        var notificationMetadata = await _dbContext.CustomerNotifications
+            .AsNoTracking()
+            .Where(x => notificationIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.Type, x.TargetType, x.TargetId })
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+        var documentTypes = await _dbContext.Documents
+            .AsNoTracking()
+            .Where(x => documentIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.DocumentType, cancellationToken);
+
+        var pagedItems = feedItems.Select(item =>
+        {
+            var type = MapFeedItemType(item.ItemType);
+            string? category = item.ItemType switch
+            {
+                FeedItemType.Message => threadCategories.GetValueOrDefault(item.SourceId) ?? "Meddelande",
+                FeedItemType.Notification => notificationMetadata.GetValueOrDefault(item.SourceId)?.Type,
+                FeedItemType.Document => documentTypes.GetValueOrDefault(item.SourceId),
+                FeedItemType.Terms => "Villkor",
+                _ => null
+            };
+            string? targetUrl = item.ItemType switch
+            {
+                FeedItemType.Message => $"/api/inbox/threads/{item.SourceId}",
+                FeedItemType.Notification => notificationMetadata.GetValueOrDefault(item.SourceId) is { } notification && notification.TargetId.HasValue
+                    ? notification.TargetType switch
+                    {
+                        NotificationTargetType.MessageThread => $"/api/inbox/threads/{notification.TargetId.Value}",
+                        NotificationTargetType.Document => $"/api/inbox/documents/{notification.TargetId.Value}/download",
+                        NotificationTargetType.Term => $"/api/inbox/terms/{notification.TargetId.Value}/accept",
+                        _ => null
+                    }
+                    : null,
+                FeedItemType.Document => $"/api/inbox/documents/{item.SourceId}/download",
+                FeedItemType.Terms => $"/api/inbox/terms/{item.SourceId}/accept",
+                _ => null
+            };
+
+            return new InboxFeedItemResponse(
+                Id: FeedItemIdentity.Format(item.ItemType, item.SourceId),
+                Type: type,
+                SourceId: item.SourceId,
+                Title: item.Title,
+                Preview: item.Preview,
+                Category: category,
+                Priority: item.Priority.ToString(),
+                IsRead: item.IsRead,
+                ActionRequired: item.ActionRequired,
+                OccurredAt: item.OccurredAt,
+                TargetUrl: targetUrl);
+        }).ToList();
 
         return PagedResult<InboxFeedItemResponse>.Create(pagedItems, totalCount, page, pageSize);
     }
@@ -798,8 +894,110 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
             state.MarkAsRead();
         }
 
+        var threadIds = unreadStates.Select(s => s.ThreadId).ToList();
+        var feedItems = await _dbContext.FeedItems
+            .Where(x => x.CustomerId == customerId && x.ItemType == FeedItemType.Message && threadIds.Contains(x.SourceId))
+            .ToListAsync(cancellationToken);
+        foreach (var feedItem in feedItems)
+        {
+            feedItem.MarkAsRead();
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return unreadStates.Count;
+    }
+
+    public async Task<bool> MarkFeedItemReadAsync(
+        long customerId,
+        FeedItemType itemType,
+        long sourceId,
+        CancellationToken cancellationToken = default)
+    {
+        var feedItem = await _dbContext.FeedItems.FirstOrDefaultAsync(
+            x => x.CustomerId == customerId && x.ItemType == itemType && x.SourceId == sourceId,
+            cancellationToken);
+        if (feedItem is null)
+        {
+            return false;
+        }
+
+        feedItem.MarkAsRead();
+
+        if (itemType == FeedItemType.Message)
+        {
+            var state = await _dbContext.MessageThreadStates.FirstOrDefaultAsync(
+                x => x.CustomerId == customerId && x.ThreadId == sourceId,
+                cancellationToken);
+            state?.MarkAsRead();
+        }
+        else if (itemType == FeedItemType.Notification)
+        {
+            var notification = await _dbContext.CustomerNotifications.FirstOrDefaultAsync(
+                x => x.CustomerId == customerId && x.Id == sourceId,
+                cancellationToken);
+            notification?.MarkAsRead();
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<FeedReadCounts> MarkAllFeedItemsReadAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var unreadItems = await _dbContext.FeedItems
+            .Where(x => x.CustomerId == customerId &&
+                        x.ReadAt == null &&
+                        (x.ItemType == FeedItemType.Message ||
+                         x.ItemType == FeedItemType.Notification ||
+                         x.ItemType == FeedItemType.Document ||
+                         x.ItemType == FeedItemType.Terms))
+            .ToListAsync(cancellationToken);
+
+        var counts = new FeedReadCounts(
+            Threads: unreadItems.Count(x => x.ItemType == FeedItemType.Message),
+            Notifications: unreadItems.Count(x => x.ItemType == FeedItemType.Notification),
+            Documents: unreadItems.Count(x => x.ItemType == FeedItemType.Document),
+            Terms: unreadItems.Count(x => x.ItemType == FeedItemType.Terms));
+
+        if (unreadItems.Count == 0)
+        {
+            return counts;
+        }
+
+        foreach (var item in unreadItems)
+        {
+            item.MarkAsRead();
+        }
+
+        var threadIds = unreadItems
+            .Where(x => x.ItemType == FeedItemType.Message)
+            .Select(x => x.SourceId)
+            .ToList();
+        var notificationIds = unreadItems
+            .Where(x => x.ItemType == FeedItemType.Notification)
+            .Select(x => x.SourceId)
+            .ToList();
+
+        var threadStates = await _dbContext.MessageThreadStates
+            .Where(x => x.CustomerId == customerId && threadIds.Contains(x.ThreadId))
+            .ToListAsync(cancellationToken);
+        foreach (var state in threadStates)
+        {
+            state.MarkAsRead();
+        }
+
+        var notifications = await _dbContext.CustomerNotifications
+            .Where(x => x.CustomerId == customerId && notificationIds.Contains(x.Id))
+            .ToListAsync(cancellationToken);
+        foreach (var notification in notifications)
+        {
+            notification.MarkAsRead();
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return counts;
     }
 
     public async Task<IReadOnlyList<Document>> GetGeneralDocumentsAsync(CancellationToken cancellationToken = default)
@@ -851,4 +1049,69 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
         return oldReadStates.Count;
     }
+
+    private async Task<FeedItem> UpsertFeedItemAsync(
+        long customerId,
+        FeedItemType itemType,
+        long sourceId,
+        string title,
+        string? preview,
+        FeedPriority priority,
+        bool actionRequired,
+        DateTimeOffset occurredAt,
+        CancellationToken cancellationToken)
+    {
+        var item = await _dbContext.FeedItems.FirstOrDefaultAsync(
+            x => x.CustomerId == customerId && x.ItemType == itemType && x.SourceId == sourceId,
+            cancellationToken);
+
+        if (item is null)
+        {
+            item = new FeedItem(
+                customerId,
+                itemType,
+                sourceId,
+                title,
+                preview,
+                priority,
+                actionRequired,
+                occurredAt);
+            _dbContext.FeedItems.Add(item);
+        }
+        else
+        {
+            item.Update(title, preview, priority, actionRequired, occurredAt);
+        }
+
+        return item;
+    }
+
+    private static string? Truncate(string? value, int maxLength)
+        => value is null || value.Length <= maxLength ? value : value[..maxLength];
+
+    private static FeedItemType? ParseFeedItemTypeFilter(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "thread" or "threads" or "message" => FeedItemType.Message,
+            "notification" or "notifications" => FeedItemType.Notification,
+            "document" or "documents" => FeedItemType.Document,
+            "term" or "terms" => FeedItemType.Terms,
+            _ => throw new ValidationException($"Okänd inbox-typ: '{value}'.")
+        };
+    }
+
+    private static string MapFeedItemType(FeedItemType itemType) => itemType switch
+    {
+        FeedItemType.Message => "thread",
+        FeedItemType.Notification => "notification",
+        FeedItemType.Document => "document",
+        FeedItemType.Terms => "term",
+        _ => throw new ArgumentOutOfRangeException(nameof(itemType), itemType, "Unsupported feed item type.")
+    };
 }

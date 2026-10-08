@@ -1,13 +1,12 @@
 namespace Nordiska.Modules.Inbox.Contracts.Responses;
 
 /// <summary>
-/// Comprehensive inbox dashboard response designed for the primary Inbox UI view.
-/// Provides unread summary counts, a unified chronological feed of recent events, dedicated unread feed, and urgent pending terms.
+/// Convenience payload for the first render of the primary Inbox UI.
 /// </summary>
-/// <param name="Counts">Summary of unread counts across all inbox categories.</param>
-/// <param name="Feed">Recent items in the unified chronological feed (both read and unread).</param>
-/// <param name="UnreadFeed">Items in the unified feed requiring customer attention or marked unread.</param>
-/// <param name="PendingTerms">Terms and conditions awaiting customer acceptance.</param>
+/// <param name="Counts">Unread and domain-action counts. See <see cref="InboxSummaryCounts"/> for the exact semantics.</param>
+/// <param name="Feed">Up to 20 newest unified feed items, including both read and unread items. Use <c>GET /api/inbox/feed</c> for pagination.</param>
+/// <param name="UnreadFeed">Up to 20 newest feed items whose inbox read timestamp is null. This is not an action-required filter.</param>
+/// <param name="PendingTerms">All terms still awaiting customer acceptance, regardless of whether their feed item has been read.</param>
 public sealed record InboxOverviewResponse(
     InboxSummaryCounts Counts,
     IReadOnlyList<InboxFeedItemResponse> Feed,

@@ -11,7 +11,7 @@ namespace Nordiska.Modules.Inbox.Contracts.Responses;
 /// <param name="DocumentId">Associated PDF document ID in the document hub.</param>
 /// <param name="EffectiveFrom">Date and time from which these terms become legally effective.</param>
 /// <param name="PublishedAt">Timestamp when the terms were published.</param>
-/// <param name="Status">Current acceptance status: 'Pending', 'Accepted', or 'Rejected'.</param>
+/// <param name="Status">Always <c>Pending</c> in this response because the endpoint returns only terms awaiting acceptance.</param>
 /// <param name="CreatedAt">Timestamp when this acceptance requirement was created for the customer.</param>
 /// <param name="DownloadUrl">API path to download and review the full terms document.</param>
 public sealed record PendingTermResponse(
@@ -28,6 +28,13 @@ public sealed record PendingTermResponse(
     string DownloadUrl
 )
 {
+    /// <summary>
+    /// Always <c>false</c> in the pending-terms domain list. Use the matching unified feed item's <c>isRead</c> for inbox read state.
+    /// </summary>
     public bool IsRead => false;
+
+    /// <summary>
+    /// Constant display category <c>Terms</c>.
+    /// </summary>
     public string Category => "Terms";
 }

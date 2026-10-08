@@ -236,7 +236,10 @@ public sealed class InboxService(
             UnreadThreads: counts.UnreadThreads,
             UnreadNotifications: counts.UnreadNotifications,
             UnopenedDocuments: counts.UnopenedDocuments,
-            PendingTerms: counts.PendingTerms);
+            PendingTerms: counts.PendingTerms,
+            UnreadDocuments: counts.UnreadDocuments,
+            UnreadTerms: counts.UnreadTerms,
+            ActionRequired: counts.ActionRequired);
     }
 
     public async Task<bool> ArchiveThreadAsync(
@@ -781,22 +784,39 @@ public sealed class InboxService(
         return await _repository.GetUnifiedFeedAsync(customerId, parameters, cancellationToken);
     }
 
+    public async Task<bool> MarkFeedItemAsReadAsync(
+        long customerId,
+        string feedId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!FeedItemIdentity.TryParse(feedId, out var itemType, out var sourceId))
+        {
+            return false;
+        }
+
+        return await _repository.MarkFeedItemReadAsync(
+            customerId,
+            itemType,
+            sourceId,
+            cancellationToken);
+    }
+
     public async Task<MarkAllReadResponse> MarkAllAsReadAsync(
         long customerId,
         CancellationToken cancellationToken = default)
     {
-        var threadsMarked = await _repository.MarkAllThreadsReadAsync(customerId, cancellationToken);
-        var notifsMarked = await _repository.MarkAllNotificationsReadAsync(customerId, cancellationToken);
-        var total = threadsMarked + notifsMarked;
+        var counts = await _repository.MarkAllFeedItemsReadAsync(customerId, cancellationToken);
 
         return new MarkAllReadResponse(
             Success: true,
-            ThreadsMarkedAsRead: threadsMarked,
-            NotificationsMarkedAsRead: notifsMarked,
-            TotalMarkedAsRead: total,
-            Message: total > 0
-                ? $"{total} objekt markerades som lästa ({threadsMarked} trådar, {notifsMarked} aviseringar)."
-                : "Alla meddelanden och aviseringar är redan lästa.");
+            ThreadsMarkedAsRead: counts.Threads,
+            NotificationsMarkedAsRead: counts.Notifications,
+            TotalMarkedAsRead: counts.Total,
+            Message: counts.Total > 0
+                ? $"{counts.Total} objekt markerades som lästa."
+                : "Alla inboxobjekt är redan lästa.",
+            DocumentsMarkedAsRead: counts.Documents,
+            TermsMarkedAsRead: counts.Terms);
     }
 
     private static MessageFolder ParseFolder(string? folder)

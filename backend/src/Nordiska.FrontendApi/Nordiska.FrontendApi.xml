@@ -1182,8 +1182,26 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetUnreadCount(System.Threading.CancellationToken)">
             <summary>
-            Retrieves total count of unread items across all categories (threads, notifications, unopened documents, pending terms) for customer inbox badges.
+            Returns every count needed by the inbox badges and filters.
             </summary>
+            <remarks>
+            <para><c>unreadCount</c> is a backwards-compatible alias of <c>totalUnread</c>.</para>
+            <para><c>totalUnread</c> is the sum of <c>unreadThreads</c>, <c>unreadNotifications</c>, <c>unreadDocuments</c>, and <c>unreadTerms</c>.</para>
+            <para><c>unopenedDocuments</c>, <c>pendingTerms</c>, and <c>actionRequired</c> describe domain state, not read state. They can remain greater than zero after an item has been marked as read.</para>
+            <code>
+            {
+              "unreadCount": 6,
+              "totalUnread": 6,
+              "unreadThreads": 2,
+              "unreadNotifications": 1,
+              "unopenedDocuments": 3,
+              "pendingTerms": 1,
+              "unreadDocuments": 2,
+              "unreadTerms": 1,
+              "actionRequired": 1
+            }
+            </code>
+            </remarks>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Unread count response including total unread and category breakdowns.</response>
             <response code="401">Unauthorized.</response>
@@ -1199,23 +1217,84 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetFeed(System.String,System.Boolean,System.Int32,System.Int32,System.Threading.CancellationToken)">
             <summary>
-            Retrieves a paginated and filterable unified timeline feed of customer inbox events.
-            Aggregates support threads, system notifications, archived documents, and terms.
+            Returns the authenticated customer's unified inbox feed, newest item first.
             </summary>
-            <param name="type">Optional filter by event type ('thread', 'notification', 'document', 'term').</param>
-            <param name="unreadOnly">Filter to only unread, unopened, or action-required items.</param>
+            <remarks>
+            <para>The response combines message threads, standalone notifications, customer documents, and terms in one paginated collection.</para>
+            <para>Use the opaque <c>id</c> returned for an item when calling <c>PATCH /api/inbox/feed/{id}/read</c>. Do not construct it from the feed_items primary key.</para>
+            <para>A notification that only announces a message thread is not returned as a second feed item; the thread is the canonical item.</para>
+            <code>
+            GET /api/inbox/feed?type=term&amp;unreadOnly=true&amp;page=1&amp;pageSize=20
+            {
+              "items": [{
+                "id": "term-78",
+                "type": "term",
+                "sourceId": 78,
+                "title": "Allmänna villkor",
+                "preview": "Version 2. Inväntar digital acceptans.",
+                "category": "Villkor",
+                "priority": "Important",
+                "isRead": false,
+                "actionRequired": true,
+                "occurredAt": "2026-10-08T12:00:00+00:00",
+                "targetUrl": "/api/inbox/terms/78/accept",
+                "createdAt": "2026-10-08T12:00:00+00:00"
+              }],
+              "totalCount": 1,
+              "page": 1,
+              "pageSize": 20,
+              "totalPages": 1,
+              "hasNextPage": false,
+              "hasPreviousPage": false
+            }
+            </code>
+            </remarks>
+            <param name="type">Optional type filter. Frontend should send the canonical singular values <c>thread</c>, <c>notification</c>, <c>document</c>, or <c>term</c>. Backwards-compatible aliases are <c>threads</c>, <c>message</c>, <c>notifications</c>, <c>documents</c>, and <c>terms</c>. Omit to include all types. Unsupported values return 400.</param>
+            <param name="unreadOnly"><c>true</c> returns only items whose inbox read timestamp is null. This does not mean that a required business action is still pending. Default: <c>false</c>.</param>
             <param name="page">Page number (1-based, default 1).</param>
             <param name="pageSize">Page size (1-100, default 20).</param>
             <param name="cancellationToken">Cancellation token.</param>
-            <response code="200">Paginated list of feed items.</response>
+            <response code="200">A page containing <c>items</c> and pagination metadata.</response>
+            <response code="400">Invalid type, page, or pageSize.</response>
             <response code="401">Unauthorized.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.MarkFeedItemAsRead(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Marks one unified inbox item as read.
+            </summary>
+            <remarks>
+            <para>The ID must be copied exactly from the feed response. Its format is a lowercase type prefix, one hyphen, and a positive integer:</para>
+            <code>thread-12 | notification-34 | document-56 | term-78</code>
+            <para>The operation is idempotent: calling it again for an already-read item still returns 204.</para>
+            <para>This endpoint only acknowledges the inbox item. For a document it does not record that the PDF was opened. For a term it does not accept the term or clear <c>actionRequired</c>.</para>
+            </remarks>
+            <param name="id">Opaque feed ID matching <c>^(thread|notification|document|term)-[1-9][0-9]*$</c>. It is case-sensitive and is not a plain numeric source ID.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="204">Feed item marked as read.</response>
+            <response code="404">The ID is malformed, unsupported, unknown, or belongs to another customer. These cases intentionally return the same response.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.MarkAllAsRead(System.Threading.CancellationToken)">
             <summary>
-            Marks all customer message threads and all notifications as read in a single operation.
+            Marks every unread thread, notification, document, and term feed item as read.
             </summary>
+            <remarks>
+            <para><c>POST</c> and <c>PATCH</c> are equivalent aliases. One call replaces four separate read-all calls.</para>
+            <para>The operation is idempotent. If everything is already read, all returned counts are zero and <c>success</c> is still true.</para>
+            <para>Document-open state and term-acceptance state are not changed. Consequently, <c>unopenedDocuments</c>, <c>pendingTerms</c>, and <c>actionRequired</c> may remain non-zero.</para>
+            <code>
+            {
+              "success": true,
+              "threadsMarkedAsRead": 2,
+              "notificationsMarkedAsRead": 1,
+              "totalMarkedAsRead": 5,
+              "message": "5 objekt markerades som lästa.",
+              "documentsMarkedAsRead": 1,
+              "termsMarkedAsRead": 1
+            }
+            </code>
+            </remarks>
             <param name="cancellationToken">Cancellation token.</param>
-            <response code="200">Result confirming how many items were marked as read.</response>
+            <response code="200">Per-type and total counts for items changed from unread to read.</response>
             <response code="401">Unauthorized.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.GetThreads(System.String,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
