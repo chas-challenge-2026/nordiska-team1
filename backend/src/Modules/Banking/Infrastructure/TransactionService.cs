@@ -143,6 +143,7 @@ public class TransactionService : ITransactionService
         }
 
         var now = DateTime.UtcNow;
+        var correlationId = Guid.NewGuid();
 
         // 1. Withdrawal on source account
         var withdrawalEntry = new LedgerEntry
@@ -152,6 +153,7 @@ public class TransactionService : ITransactionService
             Amount = -request.Amount,
             Label = request.Label,
             TargetAccountId = request.TargetAccountId,
+            CorrelationId = correlationId,
             CreatedAt = now
         };
         var withdrawalId = await _txRepo.CreateAsync(withdrawalEntry, cancellationToken);
@@ -165,6 +167,7 @@ public class TransactionService : ITransactionService
             Amount = request.Amount,
             Label = request.Label,
             TargetAccountId = request.SourceAccountId,
+            CorrelationId = correlationId,
             CreatedAt = now
         };
         await _txRepo.CreateAsync(depositEntry, cancellationToken);
@@ -350,6 +353,12 @@ public class TransactionService : ITransactionService
         return result;
     }
 
+    public async Task<IEnumerable<TransactionResponse>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        var entries = await _txRepo.GetByCorrelationIdAsync(correlationId, cancellationToken);
+        return entries.Select(ToResponse);
+    }
+
     private static TransactionResponse ToResponse(LedgerEntry l)
         => new(
             l.Id,
@@ -361,6 +370,7 @@ public class TransactionService : ITransactionService
             l.TargetAccountId,
             l.IsPlanned,
             l.PlannedDate,
-            l.Repeating
+            l.Repeating,
+            l.CorrelationId
         );
 }

@@ -21,6 +21,8 @@ namespace Nordiska.FrontendApi.Contracts.Requests;
 /// <param name="SortOrder">Sort direction ('asc' or 'desc'). Default: 'desc'.</param>
 /// <param name="Page">1-based page index. Default: 1.</param>
 /// <param name="PageSize">Page size limit (1 to 100). Default: 20.</param>
+/// <param name="CorrelationId">Filter by transaction correlation ID.</param>
+/// <param name="GroupByDate">Whether to return transactions grouped by date.</param>
 public record TransactionQueryRequest(
     long? AccountId = null,
     IReadOnlyList<long>? AccountIds = null,
@@ -37,7 +39,9 @@ public record TransactionQueryRequest(
     [Range(1, int.MaxValue)]
     int Page = 1,
     [Range(1, 100)]
-    int PageSize = 20)
+    int PageSize = 20,
+    Guid? CorrelationId = null,
+    bool GroupByDate = false)
 {
     /// <summary>
     /// Converts to domain query parameters with consolidated account IDs.
@@ -57,7 +61,9 @@ public record TransactionQueryRequest(
             SortBy: SortBy,
             SortOrder: SortOrder,
             Page: Page,
-            PageSize: PageSize);
+            PageSize: PageSize,
+            CorrelationId: CorrelationId,
+            GroupByDate: GroupByDate);
     }
 
     /// <summary>

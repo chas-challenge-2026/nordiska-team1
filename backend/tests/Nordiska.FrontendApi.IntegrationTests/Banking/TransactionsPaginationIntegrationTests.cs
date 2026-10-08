@@ -72,4 +72,22 @@ public class TransactionsPaginationIntegrationTests : IClassFixture<CustomAuthWe
         var response = await client.GetAsync("/api/transactions?accountId=999999");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task GetAll_WithGroupByDateTrue_Returns_GroupedTransactionsPagedResult()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.GetAsync("/api/transactions?groupByDate=true&page=1&pageSize=10");
+        var content = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: content);
+
+        using var doc = JsonDocument.Parse(content);
+        doc.RootElement.TryGetProperty("groups", out var groupsElement).Should().BeTrue();
+        doc.RootElement.TryGetProperty("items", out var itemsElement).Should().BeTrue();
+        doc.RootElement.TryGetProperty("totalCount", out var totalCountElement).Should().BeTrue();
+        doc.RootElement.TryGetProperty("page", out var pageElement).Should().BeTrue();
+
+        groupsElement.ValueKind.Should().Be(JsonValueKind.Array);
+    }
 }
