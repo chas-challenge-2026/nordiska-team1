@@ -8,6 +8,7 @@ using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
+using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure;
 using Xunit;
@@ -136,9 +137,24 @@ public class SavingsGoalManagementTests
             => Task.FromResult(Store.FirstOrDefault(e => e.SavingsGoalId == savingsGoalId && e.IsPlanned));
     }
 
+    private sealed class TestInterestRateService : IInterestRateService
+    {
+        public List<AccountTypeConfigResponse> Rates { get; } = new();
+
+        public Task<IEnumerable<AccountTypeConfigResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IEnumerable<AccountTypeConfigResponse>>(Rates);
+
+        public Task<IReadOnlyList<AccountTypeRateHistoryResponse>> GetRateHistoryAsync(
+            string accountType,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<AccountTypeRateHistoryResponse>>(
+                Array.Empty<AccountTypeRateHistoryResponse>());
+    }
+
     private readonly InMemoryGoalRepo _goalRepo = new();
     private readonly InMemorySavingsAccountRepo _accountRepo = new();
     private readonly InMemoryTxRepo _txRepo = new();
+    private readonly TestInterestRateService _interestRateService = new();
     private readonly SavingsGoalService _service;
 
     public SavingsGoalManagementTests()
@@ -147,7 +163,8 @@ public class SavingsGoalManagementTests
             _goalRepo,
             _accountRepo,
             _txRepo,
-            NullLogger<SavingsGoalService>.Instance);
+            NullLogger<SavingsGoalService>.Instance,
+            _interestRateService);
 
         _accountRepo.Store.Add(new SavingsAccount
         {
@@ -285,6 +302,114 @@ public class SavingsGoalManagementTests
         var goal = await _service.GetByIdAsync(1, customerId: 1);
 
         Assert.Null(goal);
+    }
+
+    [Fact]
+    public async Task GetGoalsAsync_CalculatesProgressAndEtaUsingAccountRateAndPlannedContribution()
+    {
+        _interestRateService.Rates.Add(new AccountTypeConfigResponse(
+            "flex", 0.04m, "Flexible savings"));
+        _goalRepo.Store.Add(new SavingsGoal
+        {
+            Id = 11,
+            CustomerId = 1,
+            AccountId = 10,
+            Title = "Emergency fund",
+            CurrentAmount = 500m,
+            TargetAmount = 1000m,
+            Status = "active"
+        });
+        _txRepo.Store.Add(new LedgerEntry
+        {
+            Id = 101,
+            SavingsGoalId = 11,
+            IsPlanned = true,
+            Amount = 100m
+        });
+
+        var goals = await _service.GetGoalsAsync(customerId: 1);
+
+        var goal = Assert.Single(goals);
+        Assert.Equal(50m, goal.ProgressPercentage);
+        Assert.Equal("Approx. 5 months left", goal.EtaLabel);
+        Assert.NotNull(goal.EstimatedCompletionDate);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_AggregatesBalancesTargetsAndProgress()
+    {
+        _goalRepo.Store.Add(new SavingsGoal
+        {
+            Id = 21,
+            CustomerId = 1,
+            AccountId = 10,
+            Title = "Emergency fund",
+            CurrentAmount = 500m,
+            TargetAmount = 1000m,
+            Status = "active"
+        });
+        _goalRepo.Store.Add(new SavingsGoal
+        {
+            Id = 22,
+            CustomerId = 1,
+            AccountId = 10,
+            Title = "Holiday",
+            CurrentAmount = 1500m,
+            TargetAmount = 2000m,
+            Status = "active"
+        });
+
+        var overview = await _service.GetOverviewAsync(customerId: 1);
+
+        Assert.Equal(2, overview.Goals.Count);
+        Assert.Equal(2000m, overview.Summary.TotalCurrentBalance);
+        Assert.Equal(3000m, overview.Summary.TotalTargetAmount);
+        Assert.Equal(66.67m, overview.Summary.TotalProgressPercentage);
+    }
+
+    [Fact]
+    public async Task GetGoalsAsync_WhenGoalHasNoContributionAndZeroInterest_ReturnsNoEta()
+    {
+        _interestRateService.Rates.Add(new AccountTypeConfigResponse(
+            "flex", 0m, "Flexible savings"));
+        _goalRepo.Store.Add(new SavingsGoal
+        {
+            Id = 31,
+            CustomerId = 1,
+            AccountId = 10,
+            Title = "Long-term goal",
+            CurrentAmount = 100m,
+            TargetAmount = 1000m,
+            Status = "active"
+        });
+
+        var goals = await _service.GetGoalsAsync(customerId: 1);
+
+        var goal = Assert.Single(goals);
+        Assert.Equal("No ETA", goal.EtaLabel);
+        Assert.Null(goal.EstimatedCompletionDate);
+    }
+
+    [Fact]
+    public async Task GetGoalsAsync_WhenGoalIsAlreadyComplete_ReturnsCompletedEtaAndFullProgress()
+    {
+        _goalRepo.Store.Add(new SavingsGoal
+        {
+            Id = 41,
+            CustomerId = 1,
+            AccountId = 10,
+            Title = "Completed goal",
+            CurrentAmount = 1200m,
+            TargetAmount = 1000m,
+            Status = "completed"
+        });
+
+        var goals = await _service.GetGoalsAsync(customerId: 1);
+
+        var goal = Assert.Single(goals);
+        Assert.Equal(100m, goal.ProgressPercentage);
+        Assert.Equal("Completed", goal.EtaLabel);
+        Assert.NotNull(goal.EstimatedCompletionDate);
     }
 
     [Fact]

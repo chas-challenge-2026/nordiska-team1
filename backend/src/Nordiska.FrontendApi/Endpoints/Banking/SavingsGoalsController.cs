@@ -27,28 +27,35 @@ public class SavingsGoalsController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves savings goals for the authenticated customer, optionally filtered by account.
+    /// Retrieves all savings goals for the authenticated customer with aggregate totals.
     /// </summary>
-    /// <param name="accountId">Optional savings account identifier to filter by.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="200">List of savings goals.</response>
+    /// <response code="200">Customer savings goals and aggregate summary.</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(List<SavingsGoalResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SavingsGoalsOverviewResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<SavingsGoalResponse>>> GetGoals(
-        [FromQuery] long? accountId,
+    public async Task<ActionResult<SavingsGoalsOverviewResponse>> GetGoals(
         CancellationToken cancellationToken)
     {
         var customerId = User.GetRequiredCustomerId();
-        var isAdmin = User.IsAdmin();
+        var overview = await _savingsGoalService.GetOverviewAsync(customerId, cancellationToken);
+        return Ok(overview);
+    }
 
+    /// <summary>Retrieves the authenticated customer's goals for one savings account.</summary>
+    [HttpGet("/api/accounts/{accountId:long}/savings-goals")]
+    [ProducesResponseType(typeof(List<SavingsGoalResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<SavingsGoalResponse>>> GetAccountGoals(
+        [FromRoute] long accountId,
+        CancellationToken cancellationToken)
+    {
+        var customerId = User.GetRequiredCustomerId();
         var goals = await _savingsGoalService.GetGoalsAsync(
             customerId,
             accountId,
-            isAdmin,
-            cancellationToken);
-
+            cancellationToken: cancellationToken);
         return Ok(goals);
     }
 

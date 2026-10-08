@@ -16,5 +16,7 @@ public sealed record SavingsGoalResponse(
     string Status,
     decimal ProgressPercentage,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    string? EtaLabel = null,
+    DateTimeOffset? EstimatedCompletionDate = null
 );
