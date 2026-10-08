@@ -18,6 +18,7 @@ public sealed class SavingsGoalService : ISavingsGoalService
     private readonly ISavingsAccountRepository _accountRepo;
     private readonly ITransactionRepository _txRepo;
     private readonly ILogger<SavingsGoalService> _logger;
+    private readonly ISavingsGoalDepositRepository? _depositRepo;
     private readonly IInterestRateService? _interestRateService;
 
     public SavingsGoalService(
@@ -25,13 +26,15 @@ public sealed class SavingsGoalService : ISavingsGoalService
         ISavingsAccountRepository accountRepo,
         ITransactionRepository txRepo,
         ILogger<SavingsGoalService> logger,
-        IInterestRateService? interestRateService = null)
+        IInterestRateService? interestRateService = null,
+        ISavingsGoalDepositRepository? depositRepo = null)
     {
         _goalRepo = goalRepo;
         _accountRepo = accountRepo;
         _txRepo = txRepo;
         _logger = logger;
         _interestRateService = interestRateService;
+        _depositRepo = depositRepo;
     }
 
     public async Task<SavingsGoalResponse?> GetByIdAsync(
@@ -361,6 +364,53 @@ public sealed class SavingsGoalService : ISavingsGoalService
         }
 
         return true;
+    }
+
+    public async Task<SavingsGoalDepositResponse> DepositAsync(
+        long goalId,
+        DepositToSavingsGoalRequest request,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.Amount <= 0)
+        {
+            throw new ValidationException("Insättningsbeloppet måste vara större än 0 kr.");
+        }
+
+        var depositRepo = _depositRepo
+            ?? throw new InvalidOperationException("Savings goal deposit repository is not registered.");
+
+        var result = await depositRepo.DepositAsync(
+            goalId,
+            request.SourceAccountId,
+            request.Amount,
+            customerId,
+            isAdmin,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Deposited {Amount} from account {SourceAccountId} to savings goal {SavingsGoalId}. CompletedNow={CompletedNow}",
+            result.Amount,
+            result.SourceAccountId,
+            result.SavingsGoalId,
+            result.CompletedNow);
+
+        return new SavingsGoalDepositResponse(
+            result.SavingsGoalId,
+            result.GoalTitle,
+            result.SourceAccountId,
+            result.TargetAccountId,
+            result.Amount,
+            result.SourceAccountBalance,
+            result.TargetAccountBalance,
+            result.CurrentAmount,
+            result.TargetAmount,
+            result.Status,
+            result.CompletedNow,
+            result.DepositedAt);
     }
 
     public static DateTime CalculateNextExecutionDate(int dayOfMonth, DateTime asOfUtc)

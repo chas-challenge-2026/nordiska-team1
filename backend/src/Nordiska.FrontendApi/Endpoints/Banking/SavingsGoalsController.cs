@@ -8,6 +8,7 @@ using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
+using Nordiska.Modules.Inbox.Application;
 
 namespace Nordiska.FrontendApi.Endpoints.Banking;
 
@@ -20,10 +21,17 @@ namespace Nordiska.FrontendApi.Endpoints.Banking;
 public class SavingsGoalsController : ControllerBase
 {
     private readonly ISavingsGoalService _savingsGoalService;
+    private readonly IInboxService _inboxService;
+    private readonly ILogger<SavingsGoalsController> _logger;
 
-    public SavingsGoalsController(ISavingsGoalService savingsGoalService)
+    public SavingsGoalsController(
+        ISavingsGoalService savingsGoalService,
+        IInboxService inboxService,
+        ILogger<SavingsGoalsController> logger)
     {
         _savingsGoalService = savingsGoalService;
+        _inboxService = inboxService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -120,6 +128,49 @@ public class SavingsGoalsController : ControllerBase
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    [HttpPost("{id}/deposit")]
+    [ProducesResponseType(typeof(SavingsGoalDepositResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<SavingsGoalDepositResponse>> Deposit(
+        [FromRoute] long id,
+        [FromBody] DepositToSavingsGoalRequest request,
+        CancellationToken cancellationToken)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var isAdmin = User.IsAdmin();
+
+        var result = await _savingsGoalService.DepositAsync(
+            id,
+            request,
+            customerId,
+            isAdmin,
+            cancellationToken);
+
+        if (result.CompletedNow)
+        {
+            try
+            {
+                await _inboxService.CreateSavingsGoalCompletedNotificationAsync(
+                    customerId,
+                    result.SavingsGoalId,
+                    result.GoalTitle,
+                    cancellationToken);
+            }
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogError(
+                    exception,
+                    "Deposit succeeded but completion notification failed for savings goal {SavingsGoalId}",
+                    result.SavingsGoalId);
+            }
+        }
+
+        return Ok(result);
     }
 
     /// <summary>

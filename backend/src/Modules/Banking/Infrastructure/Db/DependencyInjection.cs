@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISavingsGoalRepository, SavingsGoalRepository>();
+        services.AddScoped<ISavingsGoalDepositRepository, SavingsGoalDepositRepository>();
         services.AddScoped<ISavingsAccountService, SavingsAccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ISavingsGoalService, SavingsGoalService>();

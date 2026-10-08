@@ -23,6 +23,8 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
     {
         _factory = factory;
         TestSavingsGoalRepository.Reset();
+        _factory.Notifications.Clear();
+        _factory.NotificationFailure = null;
     }
 
     private async Task<HttpClient> CreateAuthenticatedClientAsync(string email = "anna@exempel.se")
@@ -70,6 +72,131 @@ public class SavingsGoalsControllerIntegrationTests : IClassFixture<CustomAuthWe
         body.CurrentAmount.Should().Be(0m);
         body.Status.Should().Be("active");
         body.AccountId.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Deposit_ValidRequest_Returns200AndUpdatesGoal()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 700,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Semester",
+            TargetAmount = 5000m,
+            CurrentAmount = 1000m,
+            Status = "active",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var response = await client.PostAsJsonAsync(
+            "/api/savings-goals/700/deposit",
+            new { SourceAccountId = 2, Amount = 1500m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<SavingsGoalDepositResponse>();
+        result.Should().NotBeNull();
+        result!.CurrentAmount.Should().Be(2500m);
+        result.Status.Should().Be("active");
+        result.CompletedNow.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Deposit_WithoutAuthentication_Returns401Unauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/savings-goals/700/deposit",
+            new { SourceAccountId = 2, Amount = 500m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Deposit_WithInsufficientBalance_Returns409Conflict()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 703,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Kontantinsats",
+            TargetAmount = 100000m,
+            CurrentAmount = 0m,
+            Status = "active",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var response = await client.PostAsJsonAsync(
+            "/api/savings-goals/703/deposit",
+            new { SourceAccountId = 2, Amount = 20000m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Deposit_WhenGoalIsReached_CreatesInboxNotification()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 701,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Ny cykel",
+            TargetAmount = 5000m,
+            CurrentAmount = 4500m,
+            Status = "active",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var response = await client.PostAsJsonAsync(
+            "/api/savings-goals/701/deposit",
+            new { SourceAccountId = 2, Amount = 500m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        _factory.Notifications.Should().ContainSingle(notification =>
+            notification.CustomerId == 1 &&
+            notification.Type == "savings_goal_completed" &&
+            notification.TargetId == 701);
+    }
+
+    [Fact]
+    public async Task Deposit_WhenNotificationFails_StillReturnsSuccessfulDeposit()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        TestSavingsGoalRepository.Seed(new SavingsGoal
+        {
+            Id = 702,
+            CustomerId = 1,
+            AccountId = 1,
+            Title = "Buffert",
+            TargetAmount = 1000m,
+            CurrentAmount = 900m,
+            Status = "active",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        _factory.NotificationFailure = new InvalidOperationException("Inbox unavailable");
+
+        var response = await client.PostAsJsonAsync(
+            "/api/savings-goals/702/deposit",
+            new { SourceAccountId = 2, Amount = 100m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<SavingsGoalDepositResponse>();
+        result.Should().NotBeNull();
+        result!.Status.Should().Be("completed");
+        result.CompletedNow.Should().BeTrue();
     }
 
     [Fact]
