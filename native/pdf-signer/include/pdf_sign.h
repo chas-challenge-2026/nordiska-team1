@@ -26,6 +26,7 @@ typedef enum
   PDF_SIGN_DIGEST_SHA256 = 0,
 } pdf_sign_digest_algorithm_t;
 
+/* Digest supplied by the PDF generator. */
 typedef struct
 {
   pdf_sign_digest_algorithm_t digest_algorithm;
@@ -33,20 +34,35 @@ typedef struct
   size_t                      digest_len;
 } pdf_sign_request_t;
 
+
+/*
+ * Uppercase hexadecimal CMS value for the PDF /Contents field.
+ *
+ * Release with pdf_sign_result_dispose().
+ */
 typedef struct
 {
   char*  contents_hex;
   size_t contents_hex_len;
 } pdf_sign_result_t;
 
+/* Creates a long-lived signer and loads its key and certificate. */
 pdf_sign_status_t pdf_signer_create(pdf_signer_t** out);
+
+/* Creates a detached CMS/CAdES signature from a precomputed digest. */
 pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t* req,
                                   pdf_sign_result_t* result);
+
+/* Creates a CMS/CAdES signature with an RFC 3161 timestamp token. */
 pdf_sign_status_t pdf_signer_sign_with_timestamp(pdf_signer_t*             signer,
                                                  const pdf_sign_request_t* req,
                                                  pdf_sign_result_t*        result);
-void              pdf_sign_result_dispose(pdf_sign_result_t* result);
-void              pdf_signer_destroy(pdf_signer_t* signer);
+
+/* Releases output allocated by a signing operation. */
+void pdf_sign_result_dispose(pdf_sign_result_t* result);
+
+/* Releases the signer, certificate, key, and provider state. */
+void pdf_signer_destroy(pdf_signer_t* signer);
 
 #ifdef __cplusplus
 }
