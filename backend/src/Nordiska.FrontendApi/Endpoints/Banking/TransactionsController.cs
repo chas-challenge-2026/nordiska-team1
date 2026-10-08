@@ -46,6 +46,7 @@ public class TransactionsController : ControllerBase
     /// <response code="404">Account filter contains an account that was not found or does not belong to the user.</response>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<TransactionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GroupedTransactionsPagedResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(IEnumerable<TransactionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -59,7 +60,7 @@ public class TransactionsController : ControllerBase
         {
             var adminParams = query.ToDomainParameters(requestedAccountIds);
             var adminResult = await _service.QueryPagedAsync(adminParams, cancellationToken);
-            return FormatResult(adminResult);
+            return FormatResult(adminResult, query.GroupByDate);
         }
 
         var userAccounts = (await _savingsAccountService.GetByCustomerIdAsync(User.GetRequiredCustomerId(), cancellationToken))
@@ -75,7 +76,7 @@ public class TransactionsController : ControllerBase
 
             var userParams = query.ToDomainParameters(requestedAccountIds);
             var result = await _service.QueryPagedAsync(userParams, cancellationToken);
-            return FormatResult(result);
+            return FormatResult(result, query.GroupByDate);
         }
 
         if (userAccounts.Count == 0)
@@ -85,22 +86,44 @@ public class TransactionsController : ControllerBase
                 0,
                 query.Page,
                 query.PageSize);
-            return FormatResult(emptyResult);
+            return FormatResult(emptyResult, query.GroupByDate);
         }
 
         var allAccountsParams = query.ToDomainParameters(userAccounts.ToList());
         var pagedResult = await _service.QueryPagedAsync(allAccountsParams, cancellationToken);
-        return FormatResult(pagedResult);
+        return FormatResult(pagedResult, query.GroupByDate);
     }
 
-    private IActionResult FormatResult(PagedResult<TransactionResponse> result)
+    private IActionResult FormatResult(PagedResult<TransactionResponse> result, bool groupByDate = false)
     {
+        if (groupByDate)
+        {
+            var groups = GroupByDate(result.Items);
+            return Ok(new GroupedTransactionsPagedResult(
+                groups,
+                result.Items,
+                result.TotalCount,
+                result.Page,
+                result.PageSize,
+                result.TotalPages,
+                result.HasNextPage,
+                result.HasPreviousPage));
+        }
+
         if (HasExplicitPagination())
         {
             return Ok(result);
         }
 
         return Ok(result.Items);
+    }
+
+    private static List<TransactionDateGroup> GroupByDate(IEnumerable<TransactionResponse> items)
+    {
+        return items
+            .GroupBy(tx => tx.CreatedAt.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))
+            .Select(g => new TransactionDateGroup(g.Key, g.ToList()))
+            .ToList();
     }
 
     private bool HasExplicitPagination()
@@ -134,6 +157,46 @@ public class TransactionsController : ControllerBase
         }
 
         return Ok(tx);
+    }
+
+    /// <summary>
+    /// Retrieves transactions related to a given transaction (e.g. the counterpart in a transfer via correlationId).
+    /// </summary>
+    /// <param name="id">The transaction identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">The related counterpart transactions.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    /// <response code="404">Transaction with the specified ID was not found or belongs to another customer.</response>
+    [HttpGet("{id}/related", Name = "GetRelatedTransactions")]
+    [ProducesResponseType(typeof(IEnumerable<TransactionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<TransactionResponse>>> GetRelated(long id, CancellationToken cancellationToken)
+    {
+        var tx = await _service.GetByIdAsync(id, cancellationToken);
+        if (tx is null || !await IsAuthorizedForAccountAsync(tx.AccountId, cancellationToken))
+        {
+            return NotFound(new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Transaction not found." });
+        }
+
+        if (!tx.CorrelationId.HasValue)
+        {
+            return Ok(Array.Empty<TransactionResponse>());
+        }
+
+        var related = await _service.GetByCorrelationIdAsync(tx.CorrelationId.Value, cancellationToken);
+        var counterparts = related.Where(r => r.Id != id);
+
+        if (!User.IsAdmin())
+        {
+            var userAccounts = (await _savingsAccountService.GetByCustomerIdAsync(User.GetRequiredCustomerId(), cancellationToken))
+                .Select(a => a.Id)
+                .ToHashSet();
+
+            counterparts = counterparts.Where(r => userAccounts.Contains(r.AccountId));
+        }
+
+        return Ok(counterparts);
     }
 
     /// <summary>

@@ -18,7 +18,9 @@ public record TransactionQueryParameters(
     string? SortBy = "createdAt",
     string? SortOrder = "desc",
     int Page = 1,
-    int PageSize = 20)
+    int PageSize = 20,
+    Guid? CorrelationId = null,
+    bool GroupByDate = false)
 {
     /// <summary>
     /// Gets sanitized page number (minimum 1).
