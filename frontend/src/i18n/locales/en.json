@@ -155,7 +155,9 @@
         "generate-statement": "Generate statement",
         "show-statement": "Show statement",
         "generate-report": "Generate report",
-        "show-report": "Show report"
+        "show-report": "Show report",
+        "tax-report-filename": "tax-report-{{year}}",
+        "account-statement-filename": "account-statement-{{from}}_{{to}}"
     },
     "overview-route": {
         "savings-title": "Savings goals",

@@ -109,16 +109,25 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
                             {t("generic.cancel")}
                         </button>
                         {pdfUrl ? (
-                            <a
-                                href={pdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => setIsOpen(false)}
-                                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
-                            >
-                                <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
-                                {t("accounts-route.show-report")}
-                            </a>
+                            <>
+                                <a
+                                    href={pdfUrl}
+                                    download={`${t("accounts-route.tax-report-filename", { year: selectedYear })}.pdf`}
+                                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-primary-blue bg-white px-4 py-2.5 text-sm font-semibold text-primary-blue transition cursor-pointer hover:bg-primary-blue/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                                >
+                                    {t("generic.download")}
+                                </a>
+                                <a
+                                    href={pdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => setIsOpen(false)}
+                                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                                >
+                                    <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
+                                    {t("accounts-route.show-report")}
+                                </a>
+                            </>
                         ) : (
                             <ActionButton
                                 onClick={handleClick}

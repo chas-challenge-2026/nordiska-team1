@@ -155,7 +155,9 @@
         "generate-statement": "Skapa kontoutdrag",
         "show-statement": "Visa kontoutdrag",
         "generate-report": "Skapa rapport",
-        "show-report": "Visa rapport"
+        "show-report": "Visa rapport",
+        "tax-report-filename": "skatterapport-{{year}}",
+        "account-statement-filename": "kontoutdrag-{{from}}_{{to}}"
     },
     "overview-route": {
         "savings-title": "Sparmål",
