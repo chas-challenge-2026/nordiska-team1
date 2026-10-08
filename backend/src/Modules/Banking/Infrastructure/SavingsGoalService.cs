@@ -18,17 +18,20 @@ public sealed class SavingsGoalService : ISavingsGoalService
     private readonly ISavingsAccountRepository _accountRepo;
     private readonly ITransactionRepository _txRepo;
     private readonly ILogger<SavingsGoalService> _logger;
+    private readonly IInterestRateService? _interestRateService;
 
     public SavingsGoalService(
         ISavingsGoalRepository goalRepo,
         ISavingsAccountRepository accountRepo,
         ITransactionRepository txRepo,
-        ILogger<SavingsGoalService> logger)
+        ILogger<SavingsGoalService> logger,
+        IInterestRateService? interestRateService = null)
     {
         _goalRepo = goalRepo;
         _accountRepo = accountRepo;
         _txRepo = txRepo;
         _logger = logger;
+        _interestRateService = interestRateService;
     }
 
     public async Task<SavingsGoalResponse?> GetByIdAsync(
@@ -48,7 +51,8 @@ public sealed class SavingsGoalService : ISavingsGoalService
             return null;
         }
 
-        return MapToResponse(goal);
+        var rates = await GetInterestRatesAsync(cancellationToken);
+        return await MapToResponseAsync(goal, rates, cancellationToken);
     }
 
     public async Task<List<SavingsGoalResponse>> GetGoalsAsync(
@@ -74,7 +78,33 @@ public sealed class SavingsGoalService : ISavingsGoalService
             goals = await _goalRepo.GetByCustomerIdAsync(customerId, cancellationToken);
         }
 
-        return goals.Select(MapToResponse).ToList();
+        var rates = await GetInterestRatesAsync(cancellationToken);
+        var responses = new List<SavingsGoalResponse>(goals.Count);
+        foreach (var goal in goals)
+        {
+            responses.Add(await MapToResponseAsync(goal, rates, cancellationToken));
+        }
+
+        return responses;
+    }
+
+    public async Task<SavingsGoalsOverviewResponse> GetOverviewAsync(
+        long customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var goals = await GetGoalsAsync(customerId, cancellationToken: cancellationToken);
+        var totalCurrentBalance = goals.Sum(goal => goal.CurrentAmount);
+        var totalTargetAmount = goals.Sum(goal => goal.TargetAmount);
+        var totalProgress = totalTargetAmount <= 0m
+            ? 0m
+            : Math.Min(Math.Round(totalCurrentBalance / totalTargetAmount * 100m, 2), 100m);
+
+        return new SavingsGoalsOverviewResponse(
+            goals,
+            new SavingsGoalsSummaryDto(
+                totalCurrentBalance,
+                totalTargetAmount,
+                totalProgress));
     }
 
     public async Task<SavingsGoalResponse> CreateAsync(
@@ -126,7 +156,8 @@ public sealed class SavingsGoalService : ISavingsGoalService
         _logger.LogInformation("Created savings goal {GoalId} '{Title}' for customer {CustomerId} on account {AccountId}",
             goal.Id, goal.Title, goal.CustomerId, goal.AccountId);
 
-        return MapToResponse(goal);
+        var rates = await GetInterestRatesAsync(cancellationToken);
+        return await MapToResponseAsync(goal, rates, cancellationToken);
     }
 
     public async Task<SavingsGoalResponse> UpdateAsync(
@@ -188,7 +219,8 @@ public sealed class SavingsGoalService : ISavingsGoalService
         await _goalRepo.UpdateAsync(goal, cancellationToken);
         _logger.LogInformation("Updated savings goal {GoalId}", goal.Id);
 
-        return MapToResponse(goal);
+        var rates = await GetInterestRatesAsync(cancellationToken);
+        return await MapToResponseAsync(goal, rates, cancellationToken);
     }
 
     public async Task<bool> DeleteAsync(
@@ -355,11 +387,49 @@ public sealed class SavingsGoalService : ISavingsGoalService
         return new DateTime(nextMonthDate.Year, nextMonthDate.Month, targetDayNextMonth, 0, 0, 0, DateTimeKind.Utc);
     }
 
-    private static SavingsGoalResponse MapToResponse(SavingsGoal goal)
+    private async Task<IReadOnlyDictionary<string, decimal>> GetInterestRatesAsync(
+        CancellationToken cancellationToken)
     {
-        var progress = goal.TargetAmount > 0
-            ? Math.Round(Math.Min(100m, (goal.CurrentAmount / goal.TargetAmount) * 100m), 1)
+        if (_interestRateService is null)
+        {
+            return new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var rates = await _interestRateService.GetAllAsync(cancellationToken);
+        return rates.ToDictionary(
+            rate => rate.AccountType,
+            rate => rate.InterestRate,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task<SavingsGoalResponse> MapToResponseAsync(
+        SavingsGoal goal,
+        IReadOnlyDictionary<string, decimal> interestRates,
+        CancellationToken cancellationToken)
+    {
+        var account = goal.Account
+            ?? await _accountRepo.GetByIdAsync(goal.AccountId, cancellationToken);
+        var annualInterestRate = account is not null
+            && interestRates.TryGetValue(account.AccountType, out var configuredRate)
+                ? configuredRate
+                : account?.InterestRate ?? 0m;
+
+        var plannedTransfer = await _txRepo.GetPlannedTransactionByGoalIdAsync(
+            goal.Id,
+            cancellationToken);
+        var monthlyContribution = plannedTransfer is null
+            ? 0m
+            : Math.Abs(plannedTransfer.Amount);
+
+        var progress = goal.TargetAmount > 0m
+            ? Math.Min(Math.Round(goal.CurrentAmount / goal.TargetAmount * 100m, 2), 100m)
             : 0m;
+        var (etaLabel, estimatedCompletionDate) = CalculateEta(
+            goal.CurrentAmount,
+            goal.TargetAmount,
+            annualInterestRate,
+            monthlyContribution,
+            DateTime.UtcNow);
 
         return new SavingsGoalResponse(
             Id: goal.Id,
@@ -372,7 +442,50 @@ public sealed class SavingsGoalService : ISavingsGoalService
             Status: goal.Status,
             ProgressPercentage: progress,
             CreatedAt: goal.CreatedAt,
-            UpdatedAt: goal.UpdatedAt
-        );
+            UpdatedAt: goal.UpdatedAt,
+            EtaLabel: etaLabel,
+            EstimatedCompletionDate: estimatedCompletionDate);
+    }
+
+    private static (string EtaLabel, DateTimeOffset? CompletionDate) CalculateEta(
+        decimal currentAmount,
+        decimal targetAmount,
+        decimal annualInterestRate,
+        decimal monthlyContribution,
+        DateTime asOfUtc)
+    {
+        if (targetAmount <= 0m || currentAmount >= targetAmount)
+        {
+            return ("Completed", new DateTimeOffset(DateTime.SpecifyKind(asOfUtc, DateTimeKind.Utc)));
+        }
+
+        if (annualInterestRate <= -1m)
+        {
+            return ("No ETA", null);
+        }
+
+        var monthlyRate = (decimal)Math.Pow(
+            (double)(1m + annualInterestRate),
+            1d / 12d) - 1m;
+        var projectedAmount = currentAmount;
+
+        for (var month = 1; month <= 1_200; month++)
+        {
+            projectedAmount = decimal.Round(
+                projectedAmount * (1m + monthlyRate),
+                2,
+                MidpointRounding.ToEven);
+            projectedAmount += monthlyContribution;
+
+            if (projectedAmount >= targetAmount)
+            {
+                var label = month == 1
+                    ? "Approx. 1 month left"
+                    : $"Approx. {month} months left";
+                return (label, new DateTimeOffset(DateTime.SpecifyKind(asOfUtc, DateTimeKind.Utc)).AddMonths(month));
+            }
+        }
+
+        return ("No ETA", null);
     }
 }
