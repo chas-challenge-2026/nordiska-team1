@@ -10,8 +10,104 @@ namespace Nordiska.FrontendApi.Authentication;
 
 public class DbInitializer
 {
-    public static async Task SeedAsync(IServiceProvider serviceProvider)
+    /// <summary>
+    /// Ensures that essential Identity roles and a bootstrap administrator exist.
+    /// This method is safe to run in all environments (Development, Staging, Production).
+    /// If an administrator already exists, their existing password and settings are preserved.
+    /// </summary>
+    public static async Task EnsureAdminAndRolesAsync(IServiceProvider serviceProvider, Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
     {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Customer>>();
+        var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole<long>>>();
+
+        if (!await db.Database.CanConnectAsync() || roleManager == null)
+        {
+            return;
+        }
+
+        string[] requiredRoles = ["Admin", "Customer", "BankStaff", "Staff"];
+        foreach (var role in requiredRoles)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                await roleManager.CreateAsync(new IdentityRole<long>(role));
+            }
+        }
+
+        var adminEmail = configuration?["AdminUser:Email"] ?? "admin@nordiska.se";
+        var adminName = configuration?["AdminUser:Name"] ?? "Jesper Adminsson";
+        var adminPersonalNum = configuration?["AdminUser:PersonalNum"] ?? "200505032383";
+        
+        var adminPassword = configuration?["AdminUser:Password"] ?? "password123";
+
+        // 1. Ensure StaffMember table contains bootstrap administrator (RBAC)
+        var existingStaff = await db.StaffMembers.FirstOrDefaultAsync(s => s.Email == adminEmail);
+        if (existingStaff == null)
+        {
+            var adminStaff = new StaffMember
+            {
+                Email = adminEmail,
+                FullName = adminName,
+                Role = "Admin",
+                Department = "IT Operations",
+                EmployeeNumber = "ADM-001",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            var passwordHasher = new PasswordHasher<StaffMember>();
+            adminStaff.PasswordHash = passwordHasher.HashPassword(adminStaff, adminPassword);
+            db.StaffMembers.Add(adminStaff);
+            await db.SaveChangesAsync();
+        }
+
+        // 2. Legacy customer fallback for backwards compatibility
+        var adminCustomer = await userManager.FindByEmailAsync(adminEmail)
+            ?? await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == adminPersonalNum || c.Email == adminEmail || c.UserName == adminEmail);
+
+        if (adminCustomer == null)
+        {
+            adminCustomer = new Customer
+            {
+                UserName = adminEmail,
+                Name = adminName,
+                PersonalNum = adminPersonalNum,
+                Email = adminEmail,
+                PhoneNumber = "+46700999999",
+                CreatedAt = DateTime.UtcNow
+            };
+            var createResult = await userManager.CreateAsync(adminCustomer, adminPassword);
+            if (!createResult.Succeeded)
+            {
+                await userManager.CreateAsync(adminCustomer);
+                await userManager.AddPasswordAsync(adminCustomer, adminPassword);
+            }
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(adminCustomer.PasswordHash))
+            {
+                await userManager.AddPasswordAsync(adminCustomer, adminPassword);
+            }
+        }
+
+        if (!await userManager.IsInRoleAsync(adminCustomer, "Admin"))
+        {
+            await userManager.AddToRoleAsync(adminCustomer, "Admin");
+        }
+
+        var anna = await userManager.FindByEmailAsync("anna@example.com");
+        if (anna != null && await userManager.IsInRoleAsync(anna, "Admin"))
+        {
+            await userManager.RemoveFromRoleAsync(anna, "Admin");
+        }
+    }
+
+    public static async Task SeedAsync(IServiceProvider serviceProvider, Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
+    {
+        await EnsureAdminAndRolesAsync(serviceProvider, configuration);
+
         // Skapa ett temporärt DI-scope för att hämta Scoped-tjänster (som UserManager)
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
@@ -80,94 +176,43 @@ public class DbInitializer
             await db.SaveChangesAsync();
         }
 
-        var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole<long>>>();
-        if (roleManager != null)
-        {
-            if (!await roleManager.RoleExistsAsync("Admin"))
-            {
-                await roleManager.CreateAsync(new IdentityRole<long>("Admin"));
-            }
-            if (!await roleManager.RoleExistsAsync("Customer"))
-            {
-                await roleManager.CreateAsync(new IdentityRole<long>("Customer"));
-            }
-
-            var adminPersonalNum = "200505032383";
-            var adminEmail = "admin@nordiska.se";
-            var adminCustomer = await db.Customers.FirstOrDefaultAsync(c => 
-                c.PersonalNum == adminPersonalNum || c.Email == adminEmail || c.UserName == adminEmail);
-
-            if (adminCustomer == null)
-            {
-                adminCustomer = new Customer
-                {
-                    UserName = adminEmail,
-                    Name = "Jesper Adminsson",
-                    PersonalNum = adminPersonalNum,
-                    Email = adminEmail,
-                    PhoneNumber = "+46700999999",
-                    CreatedAt = DateTime.UtcNow
-                };
-                await userManager.CreateAsync(adminCustomer);
-            }
-            else
-            {
-                adminCustomer.PersonalNum = adminPersonalNum;
-                adminCustomer.Name = "Jesper Adminsson";
-                adminCustomer.Email = adminEmail;
-                adminCustomer.UserName = adminEmail;
-                adminCustomer.NormalizedEmail = adminEmail.ToUpperInvariant();
-                adminCustomer.NormalizedUserName = adminEmail.ToUpperInvariant();
-                await db.SaveChangesAsync();
-            }
-
-            if (!await userManager.IsInRoleAsync(adminCustomer, "Admin"))
-            {
-                await userManager.AddToRoleAsync(adminCustomer, "Admin");
-            }
-
-            var anna = await userManager.FindByEmailAsync("anna@example.com");
-            if (anna != null && await userManager.IsInRoleAsync(anna, "Admin"))
-            {
-                await userManager.RemoveFromRoleAsync(anna, "Admin");
-            }
-        }
+        var logger = scope.ServiceProvider.GetService<Microsoft.Extensions.Logging.ILogger<DbInitializer>>();
 
         try
         {
             await SeedAccountsAndTransactionsAsync(db);
         }
-        catch { }
+        catch (Exception ex) { logger?.LogWarning(ex, "SeedAccountsAndTransactionsAsync failed"); }
 
         try
         {
             await SeedLoansAsync(db);
         }
-        catch { }
+        catch (Exception ex) { logger?.LogWarning(ex, "SeedLoansAsync failed"); }
 
         try
         {
             await SeedNotificationsAsync(db);
         }
-        catch { }
+        catch (Exception ex) { logger?.LogWarning(ex, "SeedNotificationsAsync failed"); }
 
         try
         {
             await SeedOperationalMessagesAsync(db);
         }
-        catch { }
+        catch (Exception ex) { logger?.LogWarning(ex, "SeedOperationalMessagesAsync failed"); }
 
         try
         {
             await SeedFaqAsync(scope.ServiceProvider);
         }
-        catch { }
+        catch (Exception ex) { logger?.LogWarning(ex, "SeedFaqAsync failed"); }
 
         try
         {
             await SeedDocumentsAsync(scope.ServiceProvider);
         }
-        catch { }
+        catch (Exception ex) { logger?.LogWarning(ex, "SeedDocumentsAsync failed"); }
     }
 
     private static async Task SeedLoansAsync(BankingDbContext db)

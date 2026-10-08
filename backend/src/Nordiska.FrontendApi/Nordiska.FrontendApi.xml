@@ -65,6 +65,13 @@
             True if the logged in user is the given customer, or an admin.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.DbInitializer.EnsureAdminAndRolesAsync(System.IServiceProvider,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Ensures that essential Identity roles and a bootstrap administrator exist.
+            This method is safe to run in all environments (Development, Staging, Production).
+            If an administrator already exists, their existing password and settings are preserved.
+            </summary>
+        </member>
         <member name="P:Nordiska.FrontendApi.Authentication.Jwt.JwtOptions.SecretKey">
             <summary>
             Secret key used to sign JWT tokens. Keep this secure.
@@ -97,6 +104,11 @@
             <param name="customer">Customer to generate token for.</param>
             <returns>JWT as a string.</returns>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Jwt.JwtProvider.Generate(Nordiska.Modules.Banking.Domain.StaffMember)">
+            <summary>
+            Generates a signed JWT for the provided staff/admin member.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.BackgroundWorkers.FaqSearchLogBackgroundWorker">
             <summary>
             Saves queued FAQ searches to the database in batches.
@@ -115,6 +127,71 @@
         <member name="T:Nordiska.FrontendApi.BackgroundWorkers.PlannedTransactionsBackgroundWorker">
             <summary>
             Background worker that periodically polls and executes pending planned and recurring transactions.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest">
+            <summary>
+            Request payload for creating a new administrator or bank staff user.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest.Email">
+            <summary>
+            Email address for login. Must be unique.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest.Name">
+            <summary>
+            Full display name of the user.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest.Password">
+            <summary>
+            Initial password for login (minimum 6 characters).
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest.Role">
+            <summary>
+            Role to assign: "Admin", "BankStaff", or "Staff". Defaults to "Admin".
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest.PhoneNumber">
+            <summary>
+            Optional contact phone number.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest.PersonalNum">
+            <summary>
+            Optional 12-digit personal identity number. If omitted, an internal administrative identifier will be generated.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Contracts.Requests.UpdateAdminUserRequest">
+            <summary>
+            Request payload for updating administrative user properties.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.UpdateAdminUserRequest.Name">
+            <summary>
+            Updated display name.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.UpdateAdminUserRequest.PhoneNumber">
+            <summary>
+            Updated phone number.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.UpdateAdminUserRequest.Role">
+            <summary>
+            Updated role: "Admin", "BankStaff", or "Staff".
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Contracts.Requests.ChangeAdminPasswordRequest">
+            <summary>
+            Request payload for updating an administrator's password.
+            </summary>
+        </member>
+        <member name="P:Nordiska.FrontendApi.Contracts.Requests.ChangeAdminPasswordRequest.NewPassword">
+            <summary>
+            New password (minimum 6 characters).
             </summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Contracts.Requests.UpdateCustomerRequest">
@@ -371,6 +448,16 @@
         <member name="M:Nordiska.FrontendApi.Contracts.Requests.TransactionQueryRequest.GetRequestedAccountIds">
             <summary>
             Extracts all requested account IDs from both single AccountId and AccountIds list.
+            </summary>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Contracts.Responses.AdminUserResponse">
+            <summary>
+            Detailed response model for administrative and staff users.
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Contracts.Responses.AdminUserResponse.#ctor(System.Int64,System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.DateTime,System.Boolean)">
+            <summary>
+            Detailed response model for administrative and staff users.
             </summary>
         </member>
         <member name="T:Nordiska.FrontendApi.Controllers.AuthController">
@@ -658,6 +745,67 @@
             Returns information extracted from the authenticated user's JWT claims.
             </summary>
             <returns>Basic user info and all claims.</returns>
+        </member>
+        <member name="T:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController">
+            <summary>
+            Administrative endpoints for managing internal staff and administrator accounts (RBAC).
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController.GetAll(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Lists all administrative and staff users in the system.
+            </summary>
+            <param name="role">Optional filter by specific role (e.g. "Admin", "BankStaff", "Staff").</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <response code="200">List of administrative users.</response>
+            <response code="401">Unauthorized.</response>
+            <response code="403">Forbidden if the user is not an Administrator.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController.GetById(System.Int64)">
+            <summary>
+            Retrieves a specific administrative or staff user by identifier.
+            </summary>
+            <param name="id">User identifier.</param>
+            <response code="200">The administrative user.</response>
+            <response code="404">User not found or is inactive.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController.Create(Nordiska.FrontendApi.Contracts.Requests.CreateAdminUserRequest)">
+            <summary>
+            Creates a new administrator or staff member in the staff directory.
+            </summary>
+            <param name="request">Creation parameters including email, name, role and password.</param>
+            <response code="201">Created administrative user.</response>
+            <response code="400">Invalid input parameters.</response>
+            <response code="409">Email is already registered.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController.Update(System.Int64,Nordiska.FrontendApi.Contracts.Requests.UpdateAdminUserRequest)">
+            <summary>
+            Updates details of an administrative user (name, phone, role).
+            </summary>
+            <param name="id">User identifier.</param>
+            <param name="request">Properties to update.</param>
+            <response code="200">Updated administrative user.</response>
+            <response code="400">Invalid parameters or attempting to demote the last remaining administrator.</response>
+            <response code="404">User not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController.ChangePassword(System.Int64,Nordiska.FrontendApi.Contracts.Requests.ChangeAdminPasswordRequest)">
+            <summary>
+            Changes the password for an administrative user.
+            </summary>
+            <param name="id">User identifier.</param>
+            <param name="request">New password payload.</param>
+            <response code="200">Password updated successfully.</response>
+            <response code="400">Password too short or invalid.</response>
+            <response code="404">User not found.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Admin.AdminUsersController.Delete(System.Int64)">
+            <summary>
+            Deactivates / removes an administrative or staff user.
+            </summary>
+            <param name="id">User identifier to delete.</param>
+            <response code="204">User successfully deactivated.</response>
+            <response code="400">Attempting to delete current user or the last administrator.</response>
+            <response code="404">User not found.</response>
         </member>
         <member name="T:Nordiska.FrontendApi.Endpoints.Banking.AccountsController">
             <summary>
