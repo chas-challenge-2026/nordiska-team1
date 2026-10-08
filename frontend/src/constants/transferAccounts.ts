@@ -28,6 +28,8 @@ export type PlannedTransfer = {
     name: string;
     note: string;
     sum: number;
+    fromName?: string;
+    toName?: string;
     accountId?: number;
     targetAccountId?: number;
     type?: string;

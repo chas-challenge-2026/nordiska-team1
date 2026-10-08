@@ -357,8 +357,7 @@
         },
         "planned": {
             "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
-            "note-to": "To {{name}}",
-            "note-internal": "Between your own accounts",
+            "unknown-account": "Unknown account",
             "actions-label": "More options",
             "actions-heading": "Planned transfer",
             "action-edit": "Edit",

@@ -353,8 +353,7 @@
         },
         "planned": {
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
-            "note-to": "Till {{name}}",
-            "note-internal": "Mellan egna konton",
+            "unknown-account": "Okänt konto",
             "actions-label": "Fler alternativ",
             "actions-heading": "Planerad överföring",
             "action-edit": "Redigera",

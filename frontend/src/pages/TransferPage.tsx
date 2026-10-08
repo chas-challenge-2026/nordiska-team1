@@ -32,12 +32,14 @@ export default function TransferPage() {
 
     const { data: accountsData } = useGetAccounts("active");
     const transferFundsMutation = useTransferFunds();
-    const { addLocalPlanned, createPlanned, panelProps } = usePlannedTransfers();
 
     const ownAccounts: OwnAccount[] = useMemo(
         () => (accountsData ?? []).map(toOwnAccount),
         [accountsData],
     );
+
+    const { addLocalPlanned, createPlanned, panelProps } =
+        usePlannedTransfers(ownAccounts);
 
     const [name, setName] = useState("");
     const [selectedFromId, setFromId] = useState<string | null>(null);
@@ -96,15 +98,14 @@ export default function TransferPage() {
     };
 
     const commitLocalPlanned = () => {
-        if (!toAccount) return;
-        const note = repeating
-            ? repeatingLabel(repeating, t)
-            : t("page-transfer.planned.note-to", { name: toAccount.name });
+        if (!fromAccount || !toAccount) return;
         addLocalPlanned({
             date,
             name: name.trim() || t("page-transfer.default-name"),
-            note,
+            note: repeating ? repeatingLabel(repeating, t) : "",
             sum: amountValue,
+            fromName: fromAccount.name,
+            toName: toAccount.name,
         });
     };
 
@@ -120,7 +121,9 @@ export default function TransferPage() {
                 if (willFail) {
                     setTransferPhase("failure");
                 } else {
-                    commitLocalPlanned();
+                    // Planerade är bara för framtida eller återkommande
+                    // överföringar — en engångsbetalning idag hör inte hit.
+                    if (repeating || date !== todayIso()) commitLocalPlanned();
                     setTransferPhase("success");
                 }
             }, SIMULATED_TRANSFER_DELAY_MS);

@@ -58,6 +58,11 @@ export default function PlannedTransfersPanel({
                             rowType="planned"
                             plannedDate={planned.date}
                             plannedName={planned.name}
+                            plannedAccounts={
+                                planned.fromName && planned.toName
+                                    ? `${planned.fromName} → ${planned.toName}`
+                                    : undefined
+                            }
                             plannedNote={planned.note}
                             plannedSum={planned.sum}
                             plannedActionsLabel={t("page-transfer.planned.actions-label")}
@@ -66,7 +71,7 @@ export default function PlannedTransfersPanel({
                     ))}
                 </div>
             </Table>
-            <p className="-mt-3 max-w-[42ch] text-sm text-secondary">
+            <p className="mt-3 max-w-[42ch] text-sm text-secondary">
                 {t("page-transfer.planned.footnote")}
             </p>
 
