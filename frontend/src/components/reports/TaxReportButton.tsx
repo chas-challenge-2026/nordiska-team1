@@ -29,6 +29,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
     const {
         mutate: startDownload,
         reset: resetDownload,
+        data: pdfBlob,
         isPending: isDownloading,
         isError: downloadFailed,
     } = useDownloadReport();
@@ -44,8 +45,20 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
     useEffect(() => {
         if (taxReportId === undefined || !isReady || downloadedReportId.current === taxReportId) return;
         downloadedReportId.current = taxReportId;
-        startDownload(taxReportId, { onSuccess: () => setIsOpen(false) });
+        startDownload(taxReportId);
     }, [taxReportId, isReady, startDownload]);
+
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!pdfBlob) return;
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+        return () => {
+            URL.revokeObjectURL(url);
+            setPdfUrl(null);
+        };
+    }, [pdfBlob]);
 
     const handleClick = () => {
         if (accountId == null) return;
@@ -75,7 +88,11 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
                         {t("generic.year")}
                         <select
                             value={selectedYear}
-                            onChange={(e) => setSelectedYear(Number(e.target.value))}
+                            onChange={(e) => {
+                                setSelectedYear(Number(e.target.value));
+                                resetDownload();
+                                initiate.reset();
+                            }}
                             disabled={isBusy}
                             className="min-h-11 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal text-dark-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue disabled:cursor-not-allowed disabled:opacity-50">
                             {years.map((y) => (
@@ -96,12 +113,25 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
                         >
                             {t("generic.cancel")}
                         </button>
-                        <ActionButton
-                            onClick={handleClick}
-                            isPending={isBusy}
-                            prefixIcon="/icons/file-pdf.svg"
-                            title={isBusy ? t("generic.loading") : t("generic.download")}
-                        />
+                        {pdfUrl ? (
+                            <a
+                                href={pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setIsOpen(false)}
+                                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                            >
+                                <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
+                                {t("accounts-route.show-report")}
+                            </a>
+                        ) : (
+                            <ActionButton
+                                onClick={handleClick}
+                                isPending={isBusy}
+                                prefixIcon="/icons/file-pdf.svg"
+                                title={isBusy ? t("generic.loading") : t("accounts-route.generate-report")}
+                            />
+                        )}
                     </div>
                 </div>
             </Modal>

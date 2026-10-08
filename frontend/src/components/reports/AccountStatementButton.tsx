@@ -27,6 +27,7 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
     const {
         mutate: startDownload,
         reset: resetDownload,
+        data: pdfBlob,
         isPending: isDownloading,
         isError: downloadFailed,
     } = useDownloadAccountStatement();
@@ -43,8 +44,20 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
     useEffect(() => {
         if (accountStatementId === undefined || !isReady || downloadedStatementId.current === accountStatementId) return;
         downloadedStatementId.current = accountStatementId;
-        startDownload(accountStatementId, { onSuccess: () => setIsOpen(false) });
+        startDownload(accountStatementId);
     }, [accountStatementId, isReady, startDownload]);
+
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!pdfBlob) return;
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+        return () => {
+            URL.revokeObjectURL(url);
+            setPdfUrl(null);
+        };
+    }, [pdfBlob]);
 
     const handleClick = () => {
         if (accountId == null || !isRangeValid) return;
@@ -74,7 +87,11 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
                                 type="date"
                                 value={fromDate}
                                 max={toDate || undefined}
-                                onChange={(e) => setFromDate(e.target.value)}
+                                onChange={(e) => {
+                                    setFromDate(e.target.value);
+                                    resetDownload();
+                                    initiate.reset();
+                                }}
                                 disabled={isBusy}
                                 className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal text-dark-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue disabled:cursor-not-allowed disabled:opacity-50" />
                         </label>
@@ -84,7 +101,11 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
                                 type="date"
                                 value={toDate}
                                 min={fromDate || undefined}
-                                onChange={(e) => setToDate(e.target.value)}
+                                onChange={(e) => {
+                                    setToDate(e.target.value);
+                                    resetDownload();
+                                    initiate.reset();
+                                }}
                                 disabled={isBusy}
                                 className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal text-dark-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue disabled:cursor-not-allowed disabled:opacity-50" />
                         </label>
@@ -94,22 +115,26 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
                             {t("errors.report")}
                         </p>
                     )}
-                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                        <button
-                            type="button"
+                    {pdfUrl ? (
+                        <a
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             onClick={() => setIsOpen(false)}
-                            className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-dark-navy transition cursor-pointer hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
                         >
-                            {t("generic.cancel")}
-                        </button>
+                            <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
+                            {t("accounts-route.show-statement")}
+                        </a>
+                    ) : (
                         <ActionButton
                             onClick={handleClick}
                             disabled={!isRangeValid}
                             isPending={isBusy}
                             prefixIcon="/icons/file-pdf.svg"
-                            title={isBusy ? t("generic.loading") : t("generic.download")}
+                            title={isBusy ? t("generic.loading") : t("accounts-route.generate-statement")}
                         />
-                    </div>
+                    )}
                 </div>
             </Modal>
         </>
