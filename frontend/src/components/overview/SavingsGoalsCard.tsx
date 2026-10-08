@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import OverviewCard from "./OverviewCard";
-import Table from "../Table";
 import { formatCurrency } from "../../utils/currency";
+import { NoSavingGoalState } from "../StatusMessage";
 
 type SavingsGoal = {
     id: string;
@@ -40,12 +40,12 @@ function SavingsDonut({ percent, label }: { percent: number; label: string }) {
         <div
             role="img"
             aria-label={label}
-            className="relative size-24 shrink-0 rounded-full"
+            className="relative size-18 shrink-0 rounded-full sm:size-22"
             style={{ background: `conic-gradient(var(--color-nordiska-orange) ${percent}%, var(--color-light-gray) 0)` }}
         >
             <span
                 aria-hidden="true"
-                className="absolute inset-2.5 flex items-center justify-center rounded-full bg-white text-base font-semibold"
+                className="absolute inset-2 flex items-center justify-center rounded-full bg-white text-sm font-semibold sm:inset-2.5 sm:text-base"
             >
                 {text}
             </span>
@@ -57,11 +57,11 @@ function GoalProgress({ goal }: { goal: SavingsGoal }) {
     const { t } = useTranslation();
 
     return (
-        <li className="min-w-0 border-b border-light-gray py-3 first:pt-0 last:border-b-0 last:pb-0 sm:py-4">
+        <li className="min-w-0 border-b border-light-gray py-2 first:pt-0 last:border-b-0 last:pb-0 sm:py-2">
             {/* flex-wrap: amounts drop below name when row too narrow. */}
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                <span className="min-w-0 wrap-break-word text-sm font-semibold sm:text-base">{goal.name}</span>
-                <span className="text-xs text-secondary sm:text-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 sm:gap-x-3">
+                <span className="min-w-0 wrap-break-word text-xs font-semibold sm:text-base">{goal.name}</span>
+                <span className="text-[10px] text-secondary sm:text-sm">
                     <span className="whitespace-nowrap font-semibold text-dark-navy">{formatCurrency(goal.saved)}</span>
                     {" / "}
                     <span className="whitespace-nowrap">{formatCurrency(goal.target)}</span>
@@ -73,7 +73,7 @@ function GoalProgress({ goal }: { goal: SavingsGoal }) {
                 aria-label={goal.name}
                 className="mt-2 block h-1.5 w-full appearance-none overflow-hidden rounded-full border-0 bg-light-gray [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-nordiska-orange [&::-webkit-progress-bar]:bg-light-gray [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-nordiska-orange"
             />
-            <p className="mt-1 text-[10px] text-secondary sm:text-xs">
+            <p className="mt-1 text-[9px] text-secondary sm:text-xs">
                 {t("overview-route.savings-eta", { time: goal.etaLabel })}
             </p>
         </li>
@@ -84,27 +84,72 @@ export default function SavingsGoalsCard() {
     const { t } = useTranslation();
     const { totalSaved, nextGoal, goals } = MOCK_SAVINGS;
     const percent = toPercent(totalSaved, nextGoal);
+    const displayNone = true;
 
     return (
-        <OverviewCard>
-            <Table tableType="savings">
-                <div className="flex items-center justify-between gap-3 sm:gap-4">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-xs text-secondary sm:text-sm">{t("overview-route.savings-total")}</p>
-                        <p className="wrap-break-word text-xl font-semibold sm:text-2xl">{formatCurrency(totalSaved)}</p>
-                        <p className="mt-2 wrap-break-word text-xs text-secondary sm:mt-3 sm:text-sm">
-                            {t("overview-route.savings-next-goal")}{" "}
-                            <span className="whitespace-nowrap font-semibold text-dark-navy">{formatCurrency(nextGoal)}</span>
-                        </p>
+    <OverviewCard>
+        <div className="flex h-full flex-col">
+
+            {/* CARD HEADER  */}
+            <div className="h-22 rounded-t-3xl bg-dark-navy pl-2 pt-1.5 text-white sm:pl-3">
+                <div className="flex flex-col items-start p-3 sm:p-4">
+                    <h2 className="text-xl font-semibold tracking-wide sm:text-2xl">{t("overview-route.savings-card.title")}</h2>
+                    <p className="text-[0.65em] uppercase text-white/80 sm:text-[0.70em]"> {t("overview-route.savings-card.description")}  </p>
+               </div>
+            </div>
+
+            {/* USER FEEDBACK */}
+            {/* 
+            {isPending && ( <LoadingState title={ SKRIV WHEN DONE } />)}
+            {isError && ( <ErrorState title={ SKRIV WHEN DONE } />)} 
+            */}
+            {displayNone && ( <NoSavingGoalState />)} 
+
+            {!displayNone && (
+                <section className="flex flex-1 flex-col p-2 sm:p-3">
+                <div className="flex flex-1 flex-col rounded-b-xl overflow-hidden">
+
+                    <div className="flex h-full flex-col justify-between px-1 pb-2 sm:px-2">
+                        <div className="flex items-center justify-center gap-2 border-b border-primary-blue px-2 pb-2.5 sm:gap-6 sm:px-5">
+                            <div className="min-w-0">
+                                <p className="text-[10px] text-secondary sm:text-sm">{t("overview-route.savings-total")}</p>
+                                <p className="wrap-break-word text-lg font-semibold sm:text-2xl">{formatCurrency(totalSaved)}</p>
+                                <p className="mt-2 wrap-break-word text-[10px] text-secondary sm:mt-3 sm:text-sm">
+                                    {t("overview-route.savings-next-goal")}{" "}
+                                    <span className="whitespace-nowrap font-semibold text-dark-navy">{formatCurrency(nextGoal)}</span>
+                                </p>
+                            </div>
+                            <SavingsDonut percent={percent} label={t("overview-route.savings-progress-label", { percent })} />
+                        </div>
+                        <ul className="min-w-0">
+                            {goals.map((goal) => (
+                                <GoalProgress key={goal.id} goal={goal} />
+                            ))}
+                        </ul>
                     </div>
-                    <SavingsDonut percent={percent} label={t("overview-route.savings-progress-label", { percent })} />
                 </div>
-                <ul className="min-w-0">
-                    {goals.map((goal) => (
-                        <GoalProgress key={goal.id} goal={goal} />
-                    ))}
-                </ul>
-            </Table>
-        </OverviewCard>
+                </section>
+            )}
+        </div>
+    </OverviewCard>
     );
 }
+
+{/* <Table tableType="savings">
+    <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+            <p className="text-xs text-secondary sm:text-sm">{t("overview-route.savings-total")}</p>
+            <p className="wrap-break-word text-xl font-semibold sm:text-2xl">{formatCurrency(totalSaved)}</p>
+            <p className="mt-2 wrap-break-word text-xs text-secondary sm:mt-3 sm:text-sm">
+                {t("overview-route.savings-next-goal")}{" "}
+                <span className="whitespace-nowrap font-semibold text-dark-navy">{formatCurrency(nextGoal)}</span>
+            </p>
+        </div>
+        <SavingsDonut percent={percent} label={t("overview-route.savings-progress-label", { percent })} />
+    </div>
+    <ul className="min-w-0">
+        {goals.map((goal) => (
+            <GoalProgress key={goal.id} goal={goal} />
+        ))}
+    </ul>
+</Table> */}
