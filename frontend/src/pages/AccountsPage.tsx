@@ -8,6 +8,8 @@ import HelpCard from "../components/faq/HelpCard";
 import ActionButton from "../components/accounts/ActionButton";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
 import { useSearchParams } from "react-router";
+import AccountStatementBtn from "../components/reports/AccountStatementButton";
+import TaxReportBtn from "../components/reports/TaxReportButton";
 
 /*
 id: 1
@@ -103,13 +105,7 @@ export default function AccountsPage() {
                                 {t("accounts-route.new-account")}
                             </button>
 
-                            <button
-                                aria-label={t("accounts-route.aria-label.generate-full-report")}
-                                className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-nordiska-blue sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm"
-                            >
-                                <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5"/>
-                                {t("accounts-route.full-report")}
-                            </button>
+                        <TaxReportBtn key={selectedAccountId} accountId={selectedAccountId} />
                         </div>
                     </div>
                 </div>
@@ -347,11 +343,9 @@ export default function AccountsPage() {
                                             title={t("accounts-route.create-savingsgoal")}
                                         />
                                         {/* KONTOUTDRAG */}
-                                        <ActionButton
-                                            onClick={() => {}}
-                                            ariaLabel={t("accounts-route.account-report")}
-                                            prefixIcon="/icons/file-pdf.svg"
-                                            title={t("accounts-route.account-report")}
+                                        <AccountStatementBtn
+                                            key={expandedAccount.id}
+                                            accountId={expandedAccount.id}
                                         />
                                         {/* FAVORIT */}
                                         <ActionButton
