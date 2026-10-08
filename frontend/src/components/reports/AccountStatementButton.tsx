@@ -4,9 +4,9 @@ import {
     useInitiateAccountStatement,
     useAccountStatementStatus,
     useDownloadAccountStatement,
-} from "../hooks/useReports";
-import Modal from "./modals/Modal";
-import ActionButton from "./accounts/ActionButton";
+} from "../../hooks/useReports";
+import Modal from "../modals/Modal";
+import ActionButton from "../accounts/ActionButton";
 
 type AccountStatementBtnProps = {
     accountId?: number;

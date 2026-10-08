@@ -4,9 +4,9 @@ import {
     useInitiateTaxReport,
     useReportStatus,
     useDownloadReport,
-} from "../hooks/useReports";
-import Modal from "./modals/Modal";
-import ActionButton from "./accounts/ActionButton";
+} from "../../hooks/useReports";
+import Modal from "../modals/Modal";
+import ActionButton from "../accounts/ActionButton";
 
 type TaxReportBtnProps = {
     accountId?: number;
