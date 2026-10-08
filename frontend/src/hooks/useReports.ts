@@ -2,10 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
     initiateTaxReport,
     checkTaxReportStatus,
-    downloadTaxReport,
+    fetchTaxReportPdf,
     initiateAccountStatement,
     checkAccountStatementStatus,
-    downloadAccountStatement,
+    fetchAccountStatementPdf,
     type ReportStatus,
 } from "../services/reportsService";
 
@@ -46,7 +46,7 @@ export function useReportStatus(jobId: number | undefined) {
 }
 
 export function useDownloadReport() {
-    return useMutation({ mutationFn: downloadTaxReport });
+    return useMutation({ mutationFn: fetchTaxReportPdf });
 }
 
 export function useInitiateAccountStatement() {
@@ -67,5 +67,5 @@ export function useAccountStatementStatus(jobId: number | undefined) {
 }
 
 export function useDownloadAccountStatement() {
-    return useMutation({ mutationFn: downloadAccountStatement });
+    return useMutation({ mutationFn: fetchAccountStatementPdf });
 }

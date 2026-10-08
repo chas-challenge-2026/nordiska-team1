@@ -26,6 +26,15 @@ interface AccountStatementJobStatus extends AccountStatementResponse {
     error: string | null;
 }
 
+async function fetchPdf(path: string): Promise<Blob> {
+    const res = await axiosInstance.get<Blob>(path, {
+        responseType: "blob",
+        headers: { Accept: "application/pdf" },
+        timeout: 60000,
+    });
+    return res.data;
+}
+
 export async function initiateTaxReport(accountId: number, taxYear?: number): Promise<TaxReportResponse> {
     const res = await axiosInstance.post("/reports/tax", { accountId, taxYear });
     return res.data;
@@ -36,28 +45,12 @@ export async function checkTaxReportStatus(jobId: number): Promise<TaxReportJobS
     return res.data;
 }
 
-export async function downloadTaxReport(taxReportId: number): Promise<void> {
-    const res = await axiosInstance.get<Blob>(
-        `/reports/tax/${taxReportId}/pdf`,
-        {
-            responseType: "blob",
-            headers: { Accept: "application/pdf" },
-            timeout: 60000,
-        }
-    );
-
-    const url = URL.createObjectURL(res.data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `tax-report-${taxReportId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+export function fetchTaxReportPdf(taxReportId: number): Promise<Blob> {
+    return fetchPdf(`/reports/tax/${taxReportId}/pdf`);
 }
 
 export async function initiateAccountStatement(accountId: number, fromDate: string, toDate: string): Promise<AccountStatementResponse> {
-    const res = await axiosInstance.post("/reports/account-statements", {accountId, fromDate, toDate});
+    const res = await axiosInstance.post("/reports/account-statements", { accountId, fromDate, toDate });
     return res.data;
 }
 
@@ -66,22 +59,6 @@ export async function checkAccountStatementStatus(jobId: number): Promise<Accoun
     return res.data;
 }
 
-export async function downloadAccountStatement(accountStatementId: number): Promise<void> {
-    const res = await axiosInstance.get<Blob>(
-        `/reports/account-statements/${accountStatementId}/pdf`,
-        {
-            responseType: "blob",
-            headers: { Accept: "application/pdf" },
-            timeout: 60000,
-        }
-    );
-
-    const url = URL.createObjectURL(res.data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `account-statement-${accountStatementId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+export async function fetchAccountStatementPdf(accountStatementId: number): Promise<Blob> {
+    return fetchPdf(`/reports/account-statements/${accountStatementId}/pdf`);
 }
