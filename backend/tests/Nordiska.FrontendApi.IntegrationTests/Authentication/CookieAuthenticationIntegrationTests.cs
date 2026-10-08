@@ -14,6 +14,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Moq;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
@@ -41,7 +46,7 @@ public class TestAuthService : IAuthService
     {
         var anna = new Customer
         {
-            Id = 101,
+            Id = 1,
             Name = "Anna Smith",
             Email = "anna@exempel.se",
             PersonalNum = "198202116050",
@@ -49,7 +54,7 @@ public class TestAuthService : IAuthService
         };
         var erik = new Customer
         {
-            Id = 102,
+            Id = 2,
             Name = "Erik Svensson",
             Email = "erik@exempel.se",
             PersonalNum = "197903142380",
@@ -204,13 +209,62 @@ public class TestAuthService : IAuthService
     }
 }
 
+public class TestJwtProvider : IJwtProvider
+{
+    private readonly JwtOptions _options;
+
+    public TestJwtProvider(IOptions<JwtOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    public Task<string> Generate(Customer customer)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, customer.Email ?? string.Empty),
+            new Claim("customer_id", customer.Id.ToString()),
+            new Claim(ClaimTypes.Role, "Customer")
+        };
+        return Task.FromResult(GenerateToken(claims));
+    }
+
+    public Task<string> Generate(StaffMember staff)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, staff.Role)
+        };
+        return Task.FromResult(GenerateToken(claims));
+    }
+
+    private string GenerateToken(IEnumerable<Claim> claims)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(_options.TokenLifetimeInMinutes),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
+
 public class TestSavingsAccountRepository : ISavingsAccountRepository
 {
     private static readonly List<SavingsAccount> _store = new()
     {
-        new SavingsAccount { Id = 1, CustomerId = 101, AccountNumber = "NOR-100001", AccountType = "saving", AccountName = "Sparkonto", Balance = 5000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
-        new SavingsAccount { Id = 2, CustomerId = 101, AccountNumber = "NOR-100002", AccountType = "checking", AccountName = "Lönekonto", Balance = 10000m, InterestRate = 0.005m, CreatedAt = DateTime.UtcNow },
-        new SavingsAccount { Id = 3, CustomerId = 102, AccountNumber = "NOR-200001", AccountType = "saving", AccountName = "Eriks Spar", Balance = 3000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "NOR-100001", AccountType = "saving", AccountName = "Sparkonto", Balance = 5000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "NOR-100002", AccountType = "checking", AccountName = "Lönekonto", Balance = 10000m, InterestRate = 0.005m, CreatedAt = DateTime.UtcNow },
+        new SavingsAccount { Id = 3, CustomerId = 2, AccountNumber = "NOR-200001", AccountType = "saving", AccountName = "Eriks Spar", Balance = 3000m, InterestRate = 0.025m, CreatedAt = DateTime.UtcNow }
     };
     private static long _next = 10;
 
@@ -475,10 +529,10 @@ public class TestCustomerService : ICustomerService
 
     static TestCustomerService()
     {
-        var anna = new Customer { Id = 101, Name = "Anna Smith", Email = "anna@exempel.se", PersonalNum = "198202116050", PhoneNumber = "+46701112233", CreatedAt = DateTime.UtcNow };
-        var erik = new Customer { Id = 102, Name = "Erik Svensson", Email = "erik@exempel.se", PersonalNum = "197903142380", PhoneNumber = "+46702223344", CreatedAt = DateTime.UtcNow };
-        _customers[101] = anna;
-        _customers[102] = erik;
+        var anna = new Customer { Id = 1, Name = "Anna Smith", Email = "anna@exempel.se", PersonalNum = "198202116050", PhoneNumber = "+46701112233", CreatedAt = DateTime.UtcNow };
+        var erik = new Customer { Id = 2, Name = "Erik Svensson", Email = "erik@exempel.se", PersonalNum = "197903142380", PhoneNumber = "+46702223344", CreatedAt = DateTime.UtcNow };
+        _customers[1] = anna;
+        _customers[2] = erik;
     }
 
     public Task<Customer> CreateAsync(string name, string email, string personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
@@ -648,8 +702,8 @@ public class TestLoanRepository : ILoanRepository
 {
     private static readonly List<Loan> _store = new()
     {
-        CreateLoan(1, 101, 50000m),
-        CreateLoan(2, 102, 80000m)
+        CreateLoan(1, 1, 50000m),
+        CreateLoan(2, 2, 80000m)
     };
 
     // Id has a private setter since EF is the one that normally sets it
@@ -695,6 +749,9 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IJwtProvider>();
+            services.AddScoped<IJwtProvider, TestJwtProvider>();
+
             services.RemoveAll<IAuthService>();
             services.AddScoped<IAuthService, TestAuthService>();
 
