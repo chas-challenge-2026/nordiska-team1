@@ -16,9 +16,19 @@ SIGNER_CLIENT_BIN = test_signer_client
 TSA_SERVER_BIN = test_tsa_server
 TSA_SERVICE_BIN = tsa_server_service
 TSA_STRESS_BIN = test_tsa_stress
+SIGNER_CONCURRENCY_BIN = test_signer_concurrency
+SIGNER_STRESS_BIN = test_signer_stress
 
-.PHONY: all services test test-key-load test-cert-load test-pdf-sign test-pkcs11 test-tsa-client test-docker test-signer-service test-tsa-server test-tsa-stress test-tsa-stress-docker clean 
-all: $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN) $(TSA_CLIENT_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN) $(TSA_SERVER_BIN) $(TSA_SERVICE_BIN)
+.PHONY: all services test test-key-load test-cert-load test-pdf-sign \
+	test-pkcs11 test-tsa-client test-docker test-docker-debug \
+	test-signer-service test-tsa-server test-tsa-stress \
+	test-tsa-stress-docker test-signer-concurrency \
+	test-signer-stress test-signer-stress-docker clean
+
+all: $(KEY_LOAD_BIN) $(PKCS11_BIN) $(CERT_LOAD_BIN) $(PDF_SIGN_BIN) \
+	$(TSA_CLIENT_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CLIENT_BIN) \
+	$(TSA_SERVER_BIN) $(TSA_SERVICE_BIN) $(TSA_STRESS_BIN) \
+	$(SIGNER_CONCURRENCY_BIN) $(SIGNER_STRESS_BIN)
 
 $(KEY_LOAD_BIN): src/key_load.c src/debug_log.c tests/test_key_load.c
 	$(CC) $(CFLAGS) $(SAN_FLAGS) $^ -o $@ $(SAN_FLAGS) $(LDLIBS)
@@ -49,6 +59,12 @@ $(TSA_SERVER_BIN): src/tsa_server.c src/key_load.c src/cert_load.c src/debug_log
 
 $(TSA_SERVICE_BIN): src/tsa_main.c src/tsa_http_server.c src/tsa_server.c src/key_load.c src/cert_load.c src/debug_log.c src/runtime_config.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+
+$(SIGNER_CONCURRENCY_BIN): tests/test_signer_concurrency.c
+	$(CC) $(CFLAGS) -pthread $^ -o $@
+
+$(SIGNER_STRESS_BIN): tests/test_signer_stress.c
+	$(CC) $(CFLAGS) -pthread $^ -o $@
 
 services: $(SIGNER_SERVICE_BIN) $(TSA_SERVICE_BIN)
 
@@ -142,6 +158,58 @@ test-tsa-stress: $(TSA_SERVICE_BIN) $(TSA_STRESS_BIN)
 	kill -TERM $$service_pid; \
 	wait $$service_pid; \
 	trap - EXIT
+
+test-signer-concurrency: $(TSA_SERVICE_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_CONCURRENCY_BIN)
+	@set -e; \
+	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(TSA_SERVICE_BIN) & \
+	tsa_pid=$$!; \
+	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(SIGNER_SERVICE_BIN) & \
+	signer_pid=$$!; \
+	trap 'kill -TERM $$signer_pid $$tsa_pid 2>/dev/null || true; wait $$signer_pid 2>/dev/null || true; wait $$tsa_pid 2>/dev/null || true' EXIT; \
+	i=0; \
+	while [ ! -S /tmp/pdf-signer.sock ]; do \
+		i=$$((i + 1)); \
+		if [ $$i -ge 50 ]; then \
+			echo "Signer service socket was not created"; \
+			exit 1; \
+		fi; \
+		sleep 0.1; \
+	done; \
+	./$(SIGNER_CONCURRENCY_BIN); \
+	kill -TERM $$signer_pid $$tsa_pid; \
+	wait $$signer_pid; \
+	wait $$tsa_pid; \
+	trap - EXIT
+
+test-signer-stress: $(TSA_SERVICE_BIN) $(SIGNER_SERVICE_BIN) $(SIGNER_STRESS_BIN)
+	@set -e; \
+	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(TSA_SERVICE_BIN) & \
+	tsa_pid=$$!; \
+	SOFTHSM2_CONF=$(CURDIR)/.dev/softhsm/softhsm2.conf ./$(SIGNER_SERVICE_BIN) & \
+	signer_pid=$$!; \
+	trap 'kill -TERM $$signer_pid $$tsa_pid 2>/dev/null || true; wait $$signer_pid 2>/dev/null || true; wait $$tsa_pid 2>/dev/null || true' EXIT; \
+	i=0; \
+	while [ ! -S /tmp/pdf-signer.sock ]; do \
+		i=$$((i + 1)); \
+		if [ $$i -ge 50 ]; then \
+			echo "Signer service socket was not created"; \
+			exit 1; \
+		fi; \
+		sleep 0.1; \
+	done; \
+	./$(SIGNER_STRESS_BIN); \
+	kill -TERM $$signer_pid $$tsa_pid; \
+	wait $$signer_pid; \
+	wait $$tsa_pid; \
+	trap - EXIT
+
+test-signer-stress-docker:
+	docker build -f docker/Dockerfile.test -t pdf-signer-test .
+	docker run --rm -e PDF_SIGNER_DEBUG=1 pdf-signer-test make test-signer-stress
+
+test-signer-concurrency-docker:
+	docker build -f docker/Dockerfile.test -t pdf-signer-test .
+	docker run --rm -e PDF_SIGNER_DEBUG=1 pdf-signer-test make test-signer-concurrency
 
 test-tsa-stress-docker:
 	docker build -f docker/Dockerfile.test -t pdf-signer-test .

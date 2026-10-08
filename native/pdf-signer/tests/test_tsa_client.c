@@ -3,7 +3,6 @@
 #include <openssl/pkcs7.h>
 
 #include <stdio.h>
-#include <string.h>
 
 #define CHECK(cond)                                                                                \
   do {                                                                                             \
@@ -14,12 +13,7 @@
   } while (0)
 
 static const tsa_config_t test_config = {
-    .url        = "http://timestamp.digicert.com",
-    .timeout_ms = 5000,
-};
-
-tsa_config_t config = {
-    .url        = "http://127.0.0.1:8080/",
+    .url        = "http://127.0.0.1:8081/",
     .timeout_ms = 5000,
 };
 

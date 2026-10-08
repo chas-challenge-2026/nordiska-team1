@@ -56,7 +56,7 @@ static int test_sign_request_mode(uint32_t sign_mode) {
   struct sockaddr_un addr = {0};
   addr.sun_family         = AF_UNIX;
 
-  strncpy(addr.sun_path, "/tmp/pdf-signer.sock", sizeof(addr.sun_path) - 1);
+  strncpy(addr.sun_path, "/run/pdf-signer/pdf-signer.sock", sizeof(addr.sun_path) - 1);
 
   CHECK(connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 
@@ -118,7 +118,7 @@ static int test_unsupported_version(void) {
   struct sockaddr_un addr = {0};
   addr.sun_family         = AF_UNIX;
 
-  strncpy(addr.sun_path, "/tmp/pdf-signer.sock", sizeof(addr.sun_path) - 1);
+  strncpy(addr.sun_path, "/run/pdf-signer/pdf-signer.sock", sizeof(addr.sun_path) - 1);
 
   CHECK(connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 
@@ -160,7 +160,7 @@ static int test_unsupported_algorithm(void) {
   struct sockaddr_un addr = {0};
   addr.sun_family         = AF_UNIX;
 
-  strncpy(addr.sun_path, "/tmp/pdf-signer.sock", sizeof(addr.sun_path) - 1);
+  strncpy(addr.sun_path, "/run/pdf-signer/pdf-signer.sock", sizeof(addr.sun_path) - 1);
 
   CHECK(connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 
@@ -203,7 +203,7 @@ static int test_invalid_digest_length(void) {
   struct sockaddr_un addr = {0};
   addr.sun_family         = AF_UNIX;
 
-  strncpy(addr.sun_path, "/tmp/pdf-signer.sock", sizeof(addr.sun_path) - 1);
+  strncpy(addr.sun_path, "/run/pdf-signer/pdf-signer.sock", sizeof(addr.sun_path) - 1);
 
   CHECK(connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0);
 
