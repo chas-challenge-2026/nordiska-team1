@@ -104,6 +104,7 @@
         "select-account": "Select at least one account to see transactions.",
         "no-transactions": "No transactions found.",
         "show-closed": "Show closed accounts",
+        "help-card-search": "transactions deposit withdrawal transfer",
         "closed": "Closed"
     },
     "accounts-route": {

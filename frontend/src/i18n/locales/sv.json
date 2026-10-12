@@ -104,6 +104,7 @@
         "select-account": "Välj minst ett konto för att se transaktioner.",
         "no-transactions": "Inga transaktioner hittades.",
         "show-closed": "Visa stängda konton",
+        "help-card-search": "transaktioner insättning uttag överföring",
         "closed": "Stängt"
     },
     "accounts-route": {

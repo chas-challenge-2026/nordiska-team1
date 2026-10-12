@@ -9,6 +9,8 @@ import type { TransactionParams } from '../services/transactionsService';
 import { useGetAccounts } from '../hooks/useAccounts';
 import { useTranslation } from 'react-i18next';
 import { useIsDesktop } from '../hooks/useIsDesktop';
+import HelpCard from '../components/faq/HelpCard';
+import HelpCardBubble from '../components/faq/HelpCardBubble';
 
 const initialFilters: TransactionFilters = {
     search: '',
@@ -192,7 +194,7 @@ export default function TransactionsPage() {
                 isError={transactionsError}
             />
 
-            <div className='hidden md:block'>
+            <div className='hidden md:flex flex-col gap-2'>
                 <AccountSelector
                     accounts={accounts ?? []}
                     selectedIds={effectiveSelectedIds}
@@ -202,6 +204,11 @@ export default function TransactionsPage() {
                     showClosed={showClosed}
                     onShowClosedChange={handleShowClosedChange}
                 />
+
+                {/* RELATERAT */}
+                <aside aria-label={t("generic.help")} className='hidden xl:block w-64 bg-white p-4 rounded-xl shadow-md border border-secondary'>
+                    <HelpCard searchTerms={t("transactions-route.help-card-search")} numOfHits={5} />
+                </aside>
             </div>
 
             <Modal
@@ -262,6 +269,11 @@ export default function TransactionsPage() {
                     variant='sheet'
                 />
             </Modal>
+
+            <HelpCardBubble
+                searchTerms={t("transactions-route.help-card-search")}
+                numOfHits={6}
+            />
         </div>
     );
 }
