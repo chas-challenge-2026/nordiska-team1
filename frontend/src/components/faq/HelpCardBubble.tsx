@@ -95,6 +95,7 @@ type HelpCardBubbleProps = {
     numOfHits?: number;
 };
 
+
 export default function HelpCardBubble({
     heading,
     removeHeading = false,
@@ -109,6 +110,7 @@ export default function HelpCardBubble({
     const isDragging = useRef(false);
     const hasMoved = useRef(false);
     const dragOffset = useRef({ x: 0, y: 0 });
+    const RESERVED_RATIO = 0.08;
 
     const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
         isDragging.current = true;
@@ -127,11 +129,13 @@ export default function HelpCardBubble({
 
         if (Math.abs(newX - position.x) > 3 || Math.abs(newY - position.y) > 3) {hasMoved.current = true;}
 
-        const size = 56;
+        const size = e.currentTarget.offsetHeight;
+        const minY = window.innerHeight * RESERVED_RATIO;
+        const maxY = window.innerHeight * (1 - RESERVED_RATIO) - size;
 
         updatePosition({
             x: Math.max(0, Math.min(newX, window.innerWidth - size)),
-            y: Math.max(0, Math.min(newY, window.innerHeight - size)),
+            y: Math.max(minY, Math.min(newY, maxY)),
         });
     };
 
@@ -163,7 +167,7 @@ export default function HelpCardBubble({
                         : {}),
                     touchAction: "none",
                 }}
-                className="xl:hidden fixed z-[1100] h-12 w-12 rounded-full bg-primary-blue text-white shadow-lg flex items-center justify-center text-xl font-semibold cursor-grab active:cursor-grabbing select-none"
+                className="xl:hidden fixed z-[1100] h-12 w-12 rounded-full bg-dark-navy text-white shadow-lg flex items-center justify-center text-xl font-semibold cursor-grab active:cursor-grabbing select-none"
             >
                 ?
             </button>
