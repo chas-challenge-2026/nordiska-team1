@@ -35,7 +35,15 @@
         "from-date": "From date",
         "to-date": "To date",
         "download": "Download",
-        "year": "Year"
+        "year": "Year",
+        "information": "Information",
+        "try-again": "Try again",
+        "send": "Send",
+        "sending": "Sending...",
+        "downloading": "Downloading...",
+        "back": "Back",
+        "error-load": "Could not load content.",
+        "error-action": "Something went wrong. Try again."
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
@@ -420,6 +428,9 @@
         "select-message": "Select a message",
         "select-prompt": "Select a message to read it.",
         "open-inbox": "Open inbox",
+        "action-required": "Action required",
+        "feed-type": { "thread": "Message", "notification": "Notification", "document": "Document", "term": "Terms" },
+        "status": { "open": "Open", "closed": "Closed" },
         "empty": {
             "messages": "No messages.",
             "notifications": "No notifications.",
@@ -441,7 +452,9 @@
         },
         "documents-tab": {
             "year": "Year",
-            "all-years": "All years"
+            "all-years": "All years",
+            "general": "General documents",
+            "personal": "Your documents"
         },
         "terms-tab": {
             "to-accept": "To accept",

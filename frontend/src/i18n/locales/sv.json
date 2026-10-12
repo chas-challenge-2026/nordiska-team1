@@ -35,7 +35,15 @@
         "from-date": "Från datum",
         "to-date": "Till datum",
         "download": "Ladda ner",
-        "year": "År"
+        "year": "År",
+        "information": "Information",
+        "try-again": "Försök igen",
+        "send": "Skicka",
+        "sending": "Skickar...",
+        "downloading": "Laddar ner...",
+        "back": "Tillbaka",
+        "error-load": "Det gick inte att hämta innehållet.",
+        "error-action": "Något gick fel. Försök igen."
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -393,8 +401,6 @@
         "archive": "Arkiv",
         "unread": "Olästa",
         "subject": "Ämne",
-        "loading": "Laddar...",
-        "try-again": "Försök igen",
         "no-subject": "(inget ämne)",
         "untitled": "(namnlös)",
         "unread-prefix": "Oläst: ",
@@ -403,20 +409,18 @@
         "message-count_other": "{{count}} meddelanden",
         "unread-count": "{{count}} olästa",
         "aria-label-unread": "Inkorg, {{count}} olästa",
-        "send": "Skicka",
-        "sending": "Skickar...",
         "mark-read": "Markera som läst",
         "mark-read-aria": "Markera som läst: {{title}}",
         "mark-all-read": "Markera alla som lästa",
-        "download": "Ladda ner",
         "download-aria": "Ladda ner {{name}}",
-        "downloading": "Laddar ner...",
-        "back": "Tillbaka",
         "folders-label": "Mappar",
         "view-message": "Visa meddelande",
         "select-message": "Välj ett meddelande",
         "select-prompt": "Välj ett meddelande för att läsa det.",
         "open-inbox": "Öppna inkorgen",
+        "action-required": "Åtgärd krävs",
+        "feed-type": { "thread": "Meddelande", "notification": "Avisering", "document": "Dokument", "term": "Villkor" },
+        "status": { "open": "Öppen", "closed": "Stängd" },
         "empty": {
             "messages": "Inga meddelanden.",
             "notifications": "Inga aviseringar.",
@@ -437,8 +441,9 @@
             "unread-only": "Endast olästa"
         },
         "documents-tab": {
-            "year": "År",
-            "all-years": "Alla år"
+            "all-years": "Alla år",
+            "general": "Allmänna dokument",
+            "personal": "Dina dokument"
         },
         "terms-tab": {
             "to-accept": "Att godkänna",
@@ -453,15 +458,11 @@
             "category": "Kategori",
             "select-category": "Välj kategori",
             "message": "Meddelande",
-            "cancel": "Avbryt",
-            "close": "Stäng",
             "received-heading": "Vi har tagit emot ditt meddelande",
             "received-body": "Vi svarar inom {{time}}. Du hittar svaret i din inkorg.",
             "reply-time": "2 arbetsdagar"
         },
         "error": {
-            "load": "Det gick inte att hämta innehållet.",
-            "action": "Något gick fel. Försök igen.",
             "required-fields": "Fyll i ämne, kategori och meddelande."
         }
     },
