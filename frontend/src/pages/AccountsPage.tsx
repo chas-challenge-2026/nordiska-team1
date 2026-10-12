@@ -43,8 +43,6 @@ export default function AccountsPage() {
 
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
 
-    (console.log("existing", existingSavingGoal));
-
     const sortedAccounts = accounts
         ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {
             if (a.isFavorite && !b.isFavorite) return -1;
