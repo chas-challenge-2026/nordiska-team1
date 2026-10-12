@@ -1,136 +1,30 @@
 import axiosInstance from "./axiosInstance";
+import type {
+    AcceptedTerm,
+    DocumentsResponse,
+    Folders,
+    Message,
+    NotificationsResponse,
+    PublishedTerm,
+    SupportThreadsResponse,
+    SupportTicketThread,
+    Term,
+    UnifiedOverview,
+    UnifiedFeed,
+    FeedCounts,
+    FeedItemTypes,
+    MarkAllReadResponse,
+    AdminThreadsResponse,
+    GeneralDocument,
+} from "../types/inbox";
 
-interface SupportThreadsResponse {
-    items: Thread[];
-    totalCount: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
+export async function getUnreadCount(): Promise<FeedCounts> {
+    const res = await axiosInstance.get("/inbox/unread-count");
+    return res.data;
 }
 
-export type Thread = {
-    id: number;
-    subject: string | null;
-    status: string | null;
-    createdAt: string;
-    lastMessageAt: string;
-    isRead: boolean;
-    folder: Folders | null;
-    messageCount: number;
-}
-
-export type Message = {
-    id: number;
-    threadId: number;
-    senderType: string | null;
-    senderName: string | null;
-    senderCustomerId: number | null;
-    body: string | null;
-    replyAllowed: boolean;
-    sentAt: string
-}
-
-export interface SupportTicketThread extends Thread {
-    canReply: boolean;
-    messages: Message[];
-}
-
-export interface DocumentsResponse {
-    items: InboxDocument[];
-    totalCount: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-}
-
-export type InboxDocument = {
-    id: number;
-    documentId: number;
-    documentType: string | null;
-    title: string | null;
-    fileName: string | null;
-    mimeType: string | null;
-    fileSizeBytes: number;
-    sha256: string | null;
-    status: string | null;
-    publishedAt: string;
-    firstOpenedAt: string | null;
-    hasBeenOpened: boolean;
-}
-
-export type Folders = "inbox" | "sent" | "archive";
-
-export type Notification = {
-    id: number;
-    customerId: number;
-    type: string | null;
-    priority: number | null;
-    title: string | null;
-    body: string | null;
-    targetType: string | null;
-    targetId: number | null;
-    isRead: boolean;
-    createdAt: string;
-    readAt: string | null;
-}
-
-export interface NotificationsResponse {
-    items: Notification[];
-    totalCount: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-}
-
-export interface Term {
-    acceptanceId: number;
-    termId: number;
-    code: string | null;
-    version: number;
-    title: string | null;
-    documentId: number;
-    effectiveFrom: string;
-    publishedAt: string;
-    status: string | null;
-    createdAt: string | null;
-    downloadUrl: string | null;
-}
-
-export interface AcceptedTerm {
-    acceptanceId: number;
-    termId: number;
-    customerId: number;
-    status: string | null;
-    acceptedAt: string | null;
-    success: boolean;
-    message: string | null;
-}
-
-export interface PublishedTerm {
-    id: number;
-    code: string | null;
-    version: number;
-    title: string | null;
-    documentId: number;
-    status: string | null;
-    effectiveFrom: string;
-    publishedAt: string;
-    downloadUrl: string | null;
-}
-
-export async function getUnreadCount(): Promise<number> {
-    const res = await axiosInstance.get<{ unreadCount: number }>("/inbox/unread-count");
-    return res.data.unreadCount;
-}
-
-export async function getAllSupportThreads(folder: Folders, page: number, pageSize: number): Promise<SupportThreadsResponse> {
-    const res = await axiosInstance.get("/inbox/threads", { params: { folder, page, pageSize } });
+export async function getAllSupportThreads(page: number, pageSize: number, searchTerm?: string, folder?: Folders): Promise<SupportThreadsResponse> {
+    const res = await axiosInstance.get("/inbox/threads", { params: { folder, page, pageSize, searchTerm } });
     return res.data;
 }
 
@@ -149,7 +43,7 @@ export async function customerSendReply(id: number, body: string): Promise<Messa
     return res.data;
 }
 
-export async function markAllAsRead(id: number): Promise<void> {
+export async function markOneThreadAsRead(id: number): Promise<void> {
     await axiosInstance.patch(`/inbox/threads/${id}/read`);
 }
 
@@ -169,8 +63,15 @@ export async function reopenThread(id: number): Promise<void> {
     await axiosInstance.patch(`/inbox/threads/${id}/reopen`);
 }
 
-export async function staffGetAllThreads(Page: number, PageSize: number, CustomerId?: number, Status?: string, SearchTerm?: string): Promise<SupportThreadsResponse> {
+//Admin
+
+export async function staffGetAllThreads(Page: number, PageSize: number, CustomerId?: number, Status?: "Open" | "Closed", SearchTerm?: string): Promise<AdminThreadsResponse> {
     const res = await axiosInstance.get("/inbox/admin/threads", { params: { Page, PageSize, CustomerId, Status, SearchTerm } });
+    return res.data;
+}
+
+export async function staffGetThread(id: number): Promise<SupportTicketThread> {
+    const res = await axiosInstance.get(`/inbox/admin/threads/${id}`);
     return res.data;
 }
 
@@ -191,8 +92,10 @@ export async function createBroadcastMessage(
     await axiosInstance.post("/inbox/admin/threads", { body, broadcastToAll, category, customerId, isInformationOnly, replyAllowed, subject });
 }
 
+//end admin
+
 export async function getAllNotifications(unreadOnly: boolean, page: number, pageSize: number): Promise<NotificationsResponse> {
-    const res = await axiosInstance.get("/inbox/notifications", { params: { unreadOnly, page, pageSize } })
+    const res = await axiosInstance.get("/inbox/notifications", { params: { unreadOnly, page, pageSize } });
     return res.data;
 }
 
@@ -229,6 +132,11 @@ export async function downloadInboxDocument(id: number): Promise<void> {
     URL.revokeObjectURL(url);
 }
 
+export async function getAllGeneralDocuments(): Promise<GeneralDocument[]> {
+    const res = await axiosInstance.get("/inbox/documents/general");
+    return res.data;
+}
+
 export async function getAllPendingTerms(): Promise<Term[]> {
     const res = await axiosInstance.get("/inbox/terms/pending");
     return res.data;
@@ -241,5 +149,24 @@ export async function acceptPendingTerm(termId: number): Promise<AcceptedTerm> {
 
 export async function publishNewTerms(code: string, documentId: number, effectiveFrom: string, title: string, version: number): Promise<PublishedTerm> {
     const res = await axiosInstance.post("/inbox/terms/publish", { code, documentId, effectiveFrom, title, version });
+    return res.data;
+}
+
+export async function getUnifiedOverview(): Promise<UnifiedOverview> {
+    const res = await axiosInstance.get("/inbox/overview");
+    return res.data;
+}
+
+export async function getUnifiedInbox(page: number, pageSize: number, type?: FeedItemTypes, unreadOnly?: boolean): Promise<UnifiedFeed> {
+    const res = await axiosInstance.get("/inbox/feed", { params: { page, pageSize, type, unreadOnly } });
+    return res.data;
+}
+
+export async function markOneUnifiedAsRead(id: string): Promise<void> {
+    await axiosInstance.patch(`/inbox/feed/${id}/read`)
+}
+
+export async function markAllItemsAsRead(): Promise<MarkAllReadResponse> {
+    const res = await axiosInstance.post("/inbox/read-all");
     return res.data;
 }
