@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import axios from "axios";
@@ -34,8 +34,16 @@ export default function AccountsPage() {
     const [isSavingGoalOpen, setIsSavingGoalOpen] = useState(false);
     const [newGoal, setNewGoal] = useState(false);
     const [favoriteError, setFavoriteError] = useState("");
+    const favoriteErrorTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const selectedAccountId = selectedAccount ?? accounts?.[0]?.id;
+    useEffect(() => {
+    return () => {
+        if (favoriteErrorTimeout.current) {
+            clearTimeout(favoriteErrorTimeout.current);
+        }
+    };
+}, []);
+
     const expandedAccount = accounts?.find((account) => account.id === selectedAccountId);
     const isFavorite = expandedAccount?.isFavorite ?? false;
     const totalBalance = accounts?.reduce((sum, account) => sum + account.balance, 0) ?? 0;
@@ -50,6 +58,8 @@ export default function AccountsPage() {
             return 0;
         })
         : [];
+
+    const selectedAccountId = selectedAccount ?? sortedAccounts?.[0]?.id;
 
     function handleOpenConfirm() {
         reset();
@@ -77,14 +87,19 @@ export default function AccountsPage() {
             { id: accountId, isFavorite },
             {
                 onError: (error) => {
+                    if (favoriteErrorTimeout.current) {
+                        clearTimeout(favoriteErrorTimeout.current);
+                    }
+
                     if (axios.isAxiosError(error) && error.response?.status === 400) {
                         setFavoriteError(t("accounts-route.favorite-error"));
                     } else {
                         setFavoriteError(t("generic.errors.generic"));
                     }
 
-                    setTimeout(() => {
+                    favoriteErrorTimeout.current = setTimeout(() => {
                         setFavoriteError("");
+                        favoriteErrorTimeout.current = null;
                     }, 3000);
                 },
             },
