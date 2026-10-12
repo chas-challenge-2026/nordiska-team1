@@ -38,6 +38,11 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
             query = query.Where(l => l.Type.ToLower() == typeLower);
         }
 
+        if (parameters.IsPlanned.HasValue)
+        {
+            query = query.Where(l => l.IsPlanned == parameters.IsPlanned.Value);
+        }
+
         if (parameters.FromDate.HasValue)
         {
             query = query.Where(l => l.CreatedAt >= parameters.FromDate.Value);
@@ -65,6 +70,11 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
                                      || (l.Label != null && l.Label.ToLower().Contains(term))
                                      || l.Id.ToString().Contains(term) 
                                      || l.AccountId.ToString().Contains(term));
+        }
+
+        if (parameters.CorrelationId.HasValue)
+        {
+            query = query.Where(l => l.CorrelationId == parameters.CorrelationId.Value);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -126,5 +136,20 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
         db.LedgerEntries.Remove(item);
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)
+    {
+        return await db.LedgerEntries
+            .FirstOrDefaultAsync(l => l.SavingsGoalId == savingsGoalId && l.IsPlanned, cancellationToken);
+    }
+
+    public async Task<IEnumerable<LedgerEntry>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        return await db.LedgerEntries
+            .AsNoTracking()
+            .Where(l => l.CorrelationId == correlationId)
+            .OrderBy(l => l.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 }

@@ -7,6 +7,13 @@ namespace Nordiska.BuildingBlocks.Database;
 /// Generic container for offset-paginated query results.
 /// </summary>
 /// <typeparam name="T">The item type.</typeparam>
+/// <param name="Items">Items on the requested page. Empty when no items match or the page is beyond the result set.</param>
+/// <param name="TotalCount">Total number of matching items across every page.</param>
+/// <param name="Page">Current one-based page number.</param>
+/// <param name="PageSize">Requested maximum number of items per page.</param>
+/// <param name="TotalPages">Total number of pages. Zero when <c>TotalCount</c> is zero.</param>
+/// <param name="HasNextPage"><c>true</c> when a later page exists.</param>
+/// <param name="HasPreviousPage"><c>true</c> when an earlier non-empty page exists.</param>
 public record PagedResult<T>(
     IReadOnlyCollection<T> Items,
     int TotalCount,

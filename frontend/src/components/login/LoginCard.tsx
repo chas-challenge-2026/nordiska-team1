@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { isAxiosError } from "axios";
 import { useBankIdCollect, useBankIdInitate, useLogin } from "../../hooks/useLogin";
-import type { BankIdInitRes } from "../../services/authService";
+import {type BankIdInitRes } from "../../services/authService";
 import BankIdQrCode from "../auth/BankIdQrCode";
 import { BankIdLogo } from "../icons/BankIdIcons";
 import { autoStartUrl } from "../../utils/bankId";
 import BankIdChooser from "./BankIdChooser";
 import ManualLoginForm from "./ManualLoginForm";
+import { useUserStore } from "../../store/userStore";
+import { useLogout } from "../../hooks/useLogout";
 
 type Step = "choose" | "otherDevice" | "thisDevice" | "manual";
 
@@ -30,11 +32,14 @@ export default function LoginCard() {
     const [personalNum, setPersonalNum] = useState<string>();
     const [emailError, setEmailError] = useState<string>();
 
-    const { mutate: initiate, isPending: initPending, error: initError, reset: resetInit } = useBankIdInitate();
+    const { mutate: initiate, error: initError, reset: resetInit } = useBankIdInitate();
     const collect = useBankIdCollect(orderRef);
     const status = collect.data?.status;
     const hintCode = collect.data?.hintCode?.toLowerCase();
     const { mutate: login, isPending: loginPending } = useLogin();
+    const clearUser = useUserStore((state) => state.logout);
+    const {mutate: logout} = useLogout();
+    const setUser = useUserStore((state) => state.setUser);
 
     useEffect(() => {
         if (status === "COMPLETE") {
@@ -94,7 +99,6 @@ export default function LoginCard() {
     }
 
     const error = bankIdError();
-    const bankIdPending = initPending || (!!orderRef && !error && status !== "COMPLETE");
     // BankID-appen har öppnats och väntar på att användaren godkänner
     const waitingForApp = status === "PENDING" && (hintCode === "started" || hintCode === "usersign");
 
@@ -103,7 +107,19 @@ export default function LoginCard() {
         login(
             { email, password },
             {
-                onSuccess: () => navigate("/"),
+                onSuccess: (user) => {
+                    if (user?.role === "Admin") {
+                        logout(undefined, {
+                            onSuccess: () => {
+                                clearUser("notAuthorized");
+                                setEmailError("Admin kan inte logga in här.");
+                            }
+                        })
+                        return;
+                    } 
+                    setUser(user);
+                    navigate("/")
+                },
                 onError: (err) => {
                     const code = isAxiosError(err) ? err.response?.status : undefined;
                     if (code === 401) setEmailError(t("login-route.invalid-credentials"));
@@ -183,9 +199,6 @@ export default function LoginCard() {
     if (step === "manual") {
         return (
             <ManualLoginForm
-                onBankIdSubmit={(pnr) => startBankId("manual", pnr)}
-                bankIdPending={bankIdPending}
-                bankIdError={error}
                 onEmailSubmit={handleEmailLogin}
                 emailPending={loginPending}
                 emailError={emailError}

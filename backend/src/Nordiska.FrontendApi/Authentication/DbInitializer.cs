@@ -5,6 +5,7 @@ using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Nordiska.Modules.Faq.Domain;
 using Nordiska.Modules.Faq.Infrastructure.Db;
+using Nordiska.Modules.CustomerCenter.Domain;
 
 namespace Nordiska.FrontendApi.Authentication;
 
@@ -50,6 +51,7 @@ public class DbInitializer
             existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
             existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
             await db.SaveChangesAsync();
+
         }
 
         var erikPersonalNum = "197903142380";
@@ -140,6 +142,12 @@ public class DbInitializer
 
         try
         {
+            await SeedLoansAsync(db);
+        }
+        catch { }
+
+        try
+        {
             await SeedNotificationsAsync(db);
         }
         catch { }
@@ -155,6 +163,28 @@ public class DbInitializer
             await SeedFaqAsync(scope.ServiceProvider);
         }
         catch { }
+
+        try
+        {
+            await SeedDocumentsAsync(scope.ServiceProvider);
+        }
+        catch { }
+    }
+
+    private static async Task SeedLoansAsync(BankingDbContext db)
+    {
+        var anna = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198202116050");
+        if (anna is null || await db.Loans.AnyAsync(l => l.CustomerId == anna.Id))
+        {
+            return;
+        }
+
+        // Fixed loan numbers and rates so the demo data looks the same every time the database is recreated
+        db.Loans.AddRange(
+            new Loan(anna.Id, "LN-DEMO-PERSONAL-0001", LoanType.Personal, 120000m, 0.0675m, new DateOnly(2026, 8, 1), new DateOnly(2031, 8, 1)),
+            new Loan(anna.Id, "LN-DEMO-MORTGAGE-0001", LoanType.Mortgage, 2450000m, 0.0325m, new DateOnly(2026, 6, 1), new DateOnly(2076, 6, 1)));
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task SeedAccountsAndTransactionsAsync(BankingDbContext db)
@@ -276,10 +306,13 @@ public class DbInitializer
                 db.SavingsAccounts.AddRange(acc1, acc2);
                 await db.SaveChangesAsync();
 
+                var demoTransferCorrelationId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+
                 var annaTransactions = new List<LedgerEntry>
                 {
                     // Account NOR-100001 transactions (Sparkonto)
-                    new() { AccountId = acc1.Id, Type = "deposit", Amount = 90772.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc1.Id, Type = "deposit", Amount = 95772.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc1.Id, Type = "transfer", Amount = -5000.00m, Label = "Överföring till Lönekonto", TargetAccountId = acc2.Id, CorrelationId = demoTransferCorrelationId, CreatedAt = new DateTime(2026, 8, 25, 15, 20, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -412.00m, Label = "Restaurang Prego", CreatedAt = new DateTime(2026, 8, 26, 3, 12, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -412.00m, Label = "Kafé Espresso", CreatedAt = new DateTime(2026, 8, 26, 3, 12, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -540.00m, Label = "Bokia Bokhandel", CreatedAt = new DateTime(2026, 8, 18, 20, 15, 0, DateTimeKind.Utc) },
@@ -287,7 +320,8 @@ public class DbInitializer
                     new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -399.00m, Label = "Friskis & Svettis", CreatedAt = new DateTime(2026, 8, 10, 17, 0, 0, DateTimeKind.Utc) },
 
                     // Account NOR-100002 transactions (Lönekonto)
-                    new() { AccountId = acc2.Id, Type = "deposit", Amount = 23057.08m, Label = "Överföring mellan konton", CreatedAt = new DateTime(2026, 8, 25, 15, 22, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc2.Id, Type = "transfer", Amount = 5000.00m, Label = "Överföring från Sparkonto", TargetAccountId = acc1.Id, CorrelationId = demoTransferCorrelationId, CreatedAt = new DateTime(2026, 8, 25, 15, 20, 0, DateTimeKind.Utc) },
+                    new() { AccountId = acc2.Id, Type = "deposit", Amount = 18057.08m, Label = "Månadsinsättning", CreatedAt = new DateTime(2026, 8, 25, 15, 22, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc2.Id, Type = "deposit", Amount = 23057.08m, Label = "Månadsinsättning", CreatedAt = new DateTime(2026, 8, 25, 15, 22, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc2.Id, Type = "withdrawal", Amount = -645.50m, Label = "ICA Kvantum", CreatedAt = new DateTime(2026, 8, 24, 12, 5, 0, DateTimeKind.Utc) },
                     new() { AccountId = acc2.Id, Type = "withdrawal", Amount = -12500.00m, Label = "Hyra / Boende", CreatedAt = new DateTime(2026, 8, 24, 0, 1, 0, DateTimeKind.Utc) },
@@ -312,6 +346,43 @@ public class DbInitializer
                     acc.Status = "active";
                 }
             }
+            await db.SaveChangesAsync();
+
+            var annaReportAccounts = await db.SavingsAccounts
+                .Where(a => a.CustomerId == anna.Id)
+                .ToListAsync();
+
+            var annaTaxReportTransactions = new[]
+            {
+                new { AccountNumber = "NOR-100001", Type = "interest", Amount = 1250.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100001", Type = "tax", Amount = -375.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "interest", Amount = 300.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "tax", Amount = -90.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) }
+            };
+
+            foreach (var transaction in annaTaxReportTransactions)
+            {
+                var account = annaReportAccounts.Single(a =>
+                    a.AccountNumber == transaction.AccountNumber);
+
+                var alreadyExists = await db.LedgerEntries.AnyAsync(entry =>
+                    entry.AccountId == account.Id &&
+                    entry.Type == transaction.Type &&
+                    entry.Label == transaction.Label);
+
+                if (!alreadyExists)
+                {
+                    db.LedgerEntries.Add(new LedgerEntry
+                    {
+                        AccountId = account.Id,
+                        Type = transaction.Type,
+                        Amount = transaction.Amount,
+                        Label = transaction.Label,
+                        CreatedAt = transaction.CreatedAt
+                    });
+                }
+            }
+
             await db.SaveChangesAsync();
         }
 
@@ -464,164 +535,10 @@ public class DbInitializer
         }
     }
 
-    private static async Task SeedFaqAsync(IServiceProvider serviceProvider)
+    private static Task SeedFaqAsync(IServiceProvider serviceProvider)
     {
-        var faqDb = serviceProvider.GetService<FaqDbContext>();
-        if (faqDb == null || !await faqDb.Database.CanConnectAsync())
-        {
-            return;
-        }
-
-        var hasSwedish = await faqDb.FaqEntries.AnyAsync(e => e.Language == "sv");
-        var hasEnglish = await faqDb.FaqEntries.AnyAsync(e => e.Language == "en");
-
-        var itemsToAdd = new List<FaqEntry>();
-
-        if (!hasSwedish)
-        {
-            itemsToAdd.AddRange(new[]
-            {
-                FaqEntry.Create(
-                    "När betalas räntan ut?",
-                    "Räntan beräknas dagligen och betalas ut den 31 december varje år.",
-                    "Ränta",
-                    "ränta, räntan, räntesats, procent, utbetalning",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Hur beräknas räntan på mitt sparkonto?",
-                    "Räntan beräknas per dag baserat på hur mycket pengar du har på kontot varje enskild dag. Om du sätter in eller tar ut pengar under året räknas räntan exakt för de dagar pengarna har funnits på kontot. Den totala upplupna räntan betalas ut till ditt konto vid årsskiftet den 31 december.",
-                    "Ränta",
-                    "ränta, ränteberäkning, beräkning, dagsränta, insättning, uttag, 31 december, årsskifte, avkastning",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Hur gör jag en insättning?",
-                    "Logga in och välj Insättning / Uttag i menyn. Ange belopp och bekräfta. Pengarna syns direkt på kontot.",
-                    "Insättning",
-                    "insättning, insättningar, sätta, pengar, överföring",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Hur gör jag ett uttag?",
-                    "Logga in och välj Insättning / Uttag i menyn, välj Uttag som typ. Max 50 000 kr per transaktion.",
-                    "Uttag",
-                    "uttag, uttaget, ta, gräns",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Var hittar jag mitt årsbesked?",
-                    "Årsbeskedet ingår i skatteunderlaget. Välj Skatteunderlag i menyn och ladda ner filen för det år du vill se.",
-                    "Rapporter",
-                    "årsbesked, årsbeskedet, skatt, deklaration, deklarationen",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Hur får jag ett kontoutdrag?",
-                    "Dina senaste transaktioner visas på Mitt konto. Fullständigt kontoutdrag ingår i skatteunderlaget.",
-                    "Rapporter",
-                    "kontoutdrag, utdrag, transaktioner, historik",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Var hittar jag villkoren för mitt sparkonto?",
-                    "Villkoren finns på sidan Insättning / Uttag under Information. Fullständiga avtalsvillkor skickas per post.",
-                    "Villkor",
-                    "villkor, villkoren, avtal, regler",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Hur öppnar jag ett nytt sparkonto?",
-                    "Kontakta kundtjänst på 08-123 456 78 så hjälper vi dig att öppna ett nytt sparkonto.",
-                    "Konto",
-                    "öppna, öppnar, nytt, konto, skapa",
-                    "sv"
-                ),
-                FaqEntry.Create(
-                    "Hur avslutar jag mitt sparkonto?",
-                    "Ta ut hela saldot och kontakta sedan kundtjänst på 08-123 456 78 för att avsluta kontot.",
-                    "Konto",
-                    "avsluta, avslutar, stänga, säga, upp",
-                    "sv"
-                )
-            });
-        }
-
-        if (!hasEnglish)
-        {
-            itemsToAdd.AddRange(new[]
-            {
-                FaqEntry.Create(
-                    "When is interest paid?",
-                    "Interest is calculated daily and paid on December 31st each year.",
-                    "Interest",
-                    "interest, rate, payment, percentage, yield",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "How is interest calculated on my savings account?",
-                    "Interest is calculated on a daily basis based on your account balance each day. If you deposit or withdraw funds during the year, interest is earned strictly for the exact days the money was in your account. The total accrued interest is paid out at year-end on December 31st.",
-                    "Interest",
-                    "interest, calculation, daily interest, deposit, withdrawal, december 31, year end, yield, rate",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "How do I make a deposit?",
-                    "Log in and choose Deposit / Withdrawal in the menu. Enter amount and confirm. The funds appear immediately.",
-                    "Deposit",
-                    "deposit, deposits, put, money, transfer",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "How do I make a withdrawal?",
-                    "Log in and choose Deposit / Withdrawal in the menu, select Withdrawal. Maximum 50,000 SEK per transaction.",
-                    "Withdrawal",
-                    "withdrawal, withdraw, limit, transfer",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "Where can I find my annual statement?",
-                    "The annual statement is included in the tax documents. Choose Tax Documents in the menu and download the file for the desired year.",
-                    "Reports",
-                    "annual statement, tax, statement, tax return, report",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "How do I get an account statement?",
-                    "Your latest transactions are shown under My Account. Complete statements are included in the tax documents.",
-                    "Reports",
-                    "statement, account statement, transactions, history",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "Where can I find the terms for my savings account?",
-                    "Terms can be found on the Deposit / Withdrawal page under Information. Full agreement terms are sent by post.",
-                    "Terms",
-                    "terms, agreement, rules, conditions, policy",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "How do I open a new savings account?",
-                    "Contact customer support at 08-123 456 78 and we will help you open a new savings account.",
-                    "Account",
-                    "open, new, account, create, savings",
-                    "en"
-                ),
-                FaqEntry.Create(
-                    "How do I close my savings account?",
-                    "Withdraw your full balance and then contact customer support at 08-123 456 78 to close the account.",
-                    "Account",
-                    "close, closing, terminate, cancel, delete",
-                    "en"
-                )
-            });
-        }
-
-        if (itemsToAdd.Count > 0)
-        {
-            faqDb.FaqEntries.AddRange(itemsToAdd);
-            await faqDb.SaveChangesAsync();
-        }
+        // FAQ startar tom så att administratörer kan lägga in alla frågor och svar via Admin-gränssnittet.
+        return Task.CompletedTask;
     }
 
     private static async Task SeedOperationalMessagesAsync(BankingDbContext db)
@@ -648,6 +565,98 @@ public class DbInitializer
 
             db.OperationalMessages.AddRange(messages);
             await db.SaveChangesAsync();
+        }
+    }
+
+    private static async Task SeedDocumentsAsync(IServiceProvider serviceProvider)
+    {
+        var inboxDb = serviceProvider.GetService<Nordiska.Modules.Inbox.Infrastructure.Db.InboxDbContext>();
+        if (inboxDb == null || !await inboxDb.Database.CanConnectAsync())
+        {
+            return;
+        }
+
+        if (!await inboxDb.Documents.AnyAsync())
+        {
+            var bankingDb = serviceProvider.GetService<BankingDbContext>();
+            var customer = bankingDb != null 
+                ? await bankingDb.Customers.FirstOrDefaultAsync(c => c.Email == "anna@example.com" || c.PersonalNum == "198505051234")
+                : null;
+            var customerId = customer?.Id ?? 1L;
+
+            var doc1 = new Nordiska.Modules.Documents.Domain.Document(
+                documentType: "TaxReport",
+                title: "Skatteunderlag 2025",
+                fileName: "skatteunderlag-2025.pdf",
+                mimeType: "application/pdf",
+                storageKey: "documents/skatteunderlag-2025.pdf",
+                fileSizeBytes: 245760,
+                sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                sourceType: "ReportingModule"
+            );
+
+            var doc2 = new Nordiska.Modules.Documents.Domain.Document(
+                documentType: "AnnualStatement",
+                title: "Årsbesked 2025",
+                fileName: "arsbesked-2025.pdf",
+                mimeType: "application/pdf",
+                storageKey: "documents/arsbesked-2025.pdf",
+                fileSizeBytes: 184320,
+                sha256: "ca978112ca1bbdcafac231b39a23dc4da786081951026bc70a39e2ae3f5002a6",
+                sourceType: "ReportingModule"
+            );
+
+            var doc3 = new Nordiska.Modules.Documents.Domain.Document(
+                documentType: "Agreement",
+                title: "Allmänna kontovillkor 2026",
+                fileName: "allmanna-kontovillkor-2026.pdf",
+                mimeType: "application/pdf",
+                storageKey: "documents/allmanna-kontovillkor-2026.pdf",
+                fileSizeBytes: 312000,
+                sha256: "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03",
+                sourceType: "Legal"
+            );
+
+            inboxDb.Documents.AddRange(doc1, doc2, doc3);
+            await inboxDb.SaveChangesAsync();
+
+            var cd1 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc1.Id, customerId);
+            var cd2 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc2.Id, customerId);
+            var cd3 = new Nordiska.Modules.Documents.Domain.CustomerDocument(doc3.Id, customerId);
+
+            inboxDb.CustomerDocuments.AddRange(cd1, cd2, cd3);
+            inboxDb.FeedItems.AddRange(
+                new FeedItem(customerId, FeedItemType.Document, doc1.Id, doc1.Title, doc1.FileName, FeedPriority.Normal, false, cd1.PublishedAt),
+                new FeedItem(customerId, FeedItemType.Document, doc2.Id, doc2.Title, doc2.FileName, FeedPriority.Normal, false, cd2.PublishedAt),
+                new FeedItem(customerId, FeedItemType.Document, doc3.Id, doc3.Title, doc3.FileName, FeedPriority.Normal, false, cd3.PublishedAt));
+            await inboxDb.SaveChangesAsync();
+
+            if (!await inboxDb.Terms.AnyAsync())
+            {
+                var term2026 = new Nordiska.Modules.Agreements.Domain.Term(
+                    code: "ALLMANNA_VILLKOR_2026",
+                    version: 2,
+                    title: "Allmänna kontovillkor 2026",
+                    documentId: doc3.Id,
+                    effectiveFrom: DateTimeOffset.UtcNow
+                );
+
+                inboxDb.Terms.Add(term2026);
+                await inboxDb.SaveChangesAsync();
+
+                var acceptance = new Nordiska.Modules.Agreements.Domain.TermAcceptance(term2026.Id, customerId);
+                inboxDb.TermAcceptances.Add(acceptance);
+                inboxDb.FeedItems.Add(new FeedItem(
+                    customerId,
+                    FeedItemType.Terms,
+                    term2026.Id,
+                    term2026.Title,
+                    $"Version {term2026.Version}. Inväntar digital acceptans.",
+                    FeedPriority.Important,
+                    true,
+                    term2026.PublishedAt));
+                await inboxDb.SaveChangesAsync();
+            }
         }
     }
 }

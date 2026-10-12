@@ -1,126 +1,93 @@
-import { useState } from "react";
 import { Link } from "react-router";
-import LanguageButton from "../header/LanguageBtn";
 import { useTranslation } from "react-i18next";
+import HelpCard from "./HelpCard";
 
-type RelatedView = "updateInfo" | "changeLanguage" | "";
+type FaqSidebarProps = {onLanguageChange: () => void;};
 
-type FaqSidebarProps = {
-    onLanguageChange: () => void;
-};
+export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
+    const {t, i18n} = useTranslation();
 
+    const toggleLanguage = () => {
+        i18n.changeLanguage(i18n.language === "sv" ? "en" : "sv");
+        onLanguageChange?.();
+    };
 
-const FaqSidebar = ({onLanguageChange}: FaqSidebarProps) => {
-    const [showRelated, setShowRelated] =
-        useState<RelatedView>("");
-    const {t} = useTranslation();
+    const helpfulArticles = {
+        changeLanguage: {
+            title: t("faq.faq-sidebar.question.change-language"),
+            answer: t("faq.faq-sidebar.answer.change-language"),
+            action: <button
+                        type="button"
+                        title={i18n.language === "sv" ? "Switch to english" : "Växla till svenska"}
+                        onClick={toggleLanguage}
+                        className="text-primary-blue text-xs font-semibold cursor-pointer hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
+    >
+                            {t("faq.faq-sidebar.answer.change-language-action")}
+                    </button>,
+        },
+        updateInfo: {
+            title: t("faq.faq-sidebar.question.update-info"),
+            answer: t("faq.faq-sidebar.answer.update-info"),
+            action: <Link
+                        to="/settings"
+                        className="text-primary-blue text-xs text-center font-semibold hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
+                    >
+                        {t("faq.faq-sidebar.answer.update-info-action")}
+                    </Link>,
+        },
+        terms: {
+            title: t("faq.faq-sidebar.question.terms"),
+            answer: t("faq.faq-sidebar.answer.terms"),
+            action: null,
+        },
+        gdpr: {
+            title: t("faq.faq-sidebar.question.gdpr"),
+            answer: t("faq.faq-sidebar.answer.gdpr"),
+            action: null,
+        }
+    }
 
     return (
-        <div className="w-full lg:flex-1 flex flex-col gap-5">
+        <div className="w-full lg:flex-1 flex flex-col gap-5 ml-5">
 
-            <article className="bg-white shadow-md p-4 sm:p-5 min-h-[280px]">
-
-    <div className="border-b border-nordiska-orange pb-1 mb-3">
-        <h2 className="font-semibold text-lg text-nordiska-blue">
-            {t("faq.faq-sidebar.related-title")}
-        </h2>
-    </div>
-
-    {showRelated ? (
-        <>
-            <div className="flex items-center justify-between gap-4">
-                <h3 className="w-full text-left text-sm text-nordiska-blue font-medium ">
-
-                    {showRelated === "updateInfo"
-                        ? t("faq.faq-sidebar.question.update-info")
-                        : t("faq.faq-sidebar.question.change-language")}
-                </h3>
-
-                <button
-                    type="button"
-                    onClick={() => setShowRelated("")}
-                    aria-label={t("faq.faq-sidebar.close-btn-aria-label")}
-                    className="shrink-0 w-7 h-7 flex items-center justify-center cursor-pointer rounded-md text-black hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
-                >
-                    <span
-                        aria-hidden="true"
-                        className="text-3xl leading-none text-primary-blue hover:text-nordiska-blue"
-                    >
-                        ×
-                    </span>
-                </button>
-            </div>
-
-            <div className="mt-5">
-                {showRelated === "updateInfo" && (
-                    <div className="flex flex-col gap-4">
-                        <p className="text-sm leading-6">
-                            {t("faq.faq-sidebar.answer.update-info")}
-                        </p>
-
-                        <Link
-                            to="/settings"
-                            className="text-primary-blue text-xs font-semibold hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
-                        >
-                            {t("faq.faq-sidebar.answer.update-info-action")}
-                        </Link>
-                    </div>
-                )}
-
-                {showRelated === "changeLanguage" && (
-                    <div className="flex flex-col gap-4">
-                        <p className="text-sm leading-6">
-                           {t("faq.faq-sidebar.answer.change-language")}
-                        </p>
-
-                        <div className="flex items-center invert">
-                            <LanguageButton onLanguageChange={onLanguageChange} />
-                        </div>
-                    </div>
-                )}
-            </div>
-        </>
-    ) : (
-        <ul className="flex flex-col gap-1">
-            <li>
-                <button
-                    type="button"
-                    onClick={() => setShowRelated("updateInfo")}
-                    className="w-full text-left rounded-md cursor-pointer text-sm text-primary-blue font-medium hover:bg-gray-50 hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 transition-colors"
-                >
-                    {t("faq.faq-sidebar.question.update-info")}
-                </button>
-            </li>
-
-            <li>
-                <button
-                    type="button"
-                    onClick={() => setShowRelated("changeLanguage")}
-                    className="w-full text-left  rounded-md cursor-pointer text-sm text-primary-blue font-medium hover:bg-gray-50 hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 transition-colors"
-                >
-                   
-                    {t("faq.faq-sidebar.question.change-language")}
-                </button>
-            </li>
-        </ul>
-    )}
-</article>
-
-            <article className="bg-dark-navy shadow-md p-4 sm:p-5 flex-1">
-                <div className="border-b border-nordiska-orange pb-2 mb-2">
-                    <h2 className="font-semibold text-lg text-white">
-                        {t("faq.faq-sidebar.no-answer-title")}
-
-                    </h2>
-                </div>
-
-                <p className="text-white">
-                    {t("faq.faq-sidebar.contact-us")}
-                </p>
+            {/* ----- HELPFUL ----- */}
+            {/* ------------------- */}
+            <article className="bg-white shadow-md p-4 sm:p-5 max-h-[280px] min-h-[260px]">
+                <HelpCard
+                    items={helpfulArticles}
+                />
             </article>
 
+            {/* ----- KONTAKT ----- */}
+            {/* ------------------- */}
+            <article className="bg-white shadow-md p-4 sm:p-5 max-h-[280px] min-h-[260px]">
+                <div className="border-b border-nordiska-orange pb-1 mb-3">
+                    <h2 className="font-semibold text-lg text-nordiska-blue">{t("faq.faq-sidebar.no-answer-title")}</h2>
+                </div>
+
+                <p className="text-sm text-dark-navy font-medium whitespace-pre-line mb-5">{t("faq.faq-sidebar.contact-us")}</p>
+
+                <div className="flex flex-col gap-3 text-dark-navy">
+                    <div>
+                        <a href="tel:0771123456" className="group flex items-center">
+                            <img className="h-5 w-5 mr-2 bg-primary-blue mask-[url('/icons/phone.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-nordiska-blue"/>
+                            <span className="font-semibold text-md cursor-pointer text-primary-blue group-hover:text-nordiska-blue">
+                                0771-123 456
+                            </span>
+                        </a>
+                        <p className="text-sm ml-7">{t("faq.faq-sidebar.phone-specs")}</p>
+                    </div>
+                    <div>
+                        <a href="mailto:support@nordiska.se" className="group flex items-center">
+                            <img className="h-5 w-5 mr-2 bg-primary-blue mask-[url('/icons/envelope.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-nordiska-blue"/>
+                            <span className="font-semibold text-md cursor-pointer text-primary-blue group-hover:text-nordiska-blue">
+                                support@nordiska.se
+                            </span>
+                        </a>
+                        <p className="text-sm ml-7">{t("faq.faq-sidebar.mail-specs")}</p>
+                    </div>
+                </div>
+            </article>
         </div>
     );
 };
-
-export default FaqSidebar;

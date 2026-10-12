@@ -16,6 +16,11 @@ public sealed class FaqEntryConfiguration
         builder.Property(x => x.Id)
             .ValueGeneratedOnAdd();
 
+        builder.Property(x => x.RelationId)
+            .IsRequired();
+
+        builder.HasIndex(x => x.RelationId);
+
         builder.Property(x => x.Language)
             .IsRequired()
             .HasMaxLength(10)

@@ -39,6 +39,9 @@ public class PlannedTransactionExecutionTests
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(Store.FirstOrDefault(s => s.Id == id));
 
+        public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
         public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
             entity.Id = _next++;

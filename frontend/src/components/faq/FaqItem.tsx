@@ -29,8 +29,7 @@ const FaqItem = ({
         >
             {() => (
                 <>
-                    <p>{faq.answer}</p>
-
+                    <p className="whitespace-pre-line">{faq.answer}</p>
                     <FaqFeedback
                         value={feedback}
                         onChange={onFeedback}

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { login, register, checkSession, bankIdInitiate, bankIdCollect } from "../services/authService";
-import type { RegisterCustomerRequest } from "../services/authService";
+import { login, bankIdInitiate, bankIdCollect } from "../services/authService";
+import { checkSession } from "../services/sessionsService";
+import { register, type RegisterCustomerRequest } from "../services/customerService";
 import { createAccount } from "../services/accountsService";
 import { accountKey } from "./useAccounts";
 import { useUserStore } from "../store/userStore";
@@ -14,14 +15,12 @@ const DEFAULT_ACCOUNT_TYPE = "standard";
 
 
 export function useLogin() {
-    const setUser = useUserStore((state) => state.setUser);
 
     return useMutation({
-        mutationFn: ({ email, password }: { email: string; password: string }) =>
-            login(email, password),
-        onSuccess: async () => {
+        mutationFn: async ({ email, password }: { email: string; password: string }) => {
+            await login(email, password)
             const user = await checkSession();
-            setUser(user);
+            return user;
         },
     });
 }

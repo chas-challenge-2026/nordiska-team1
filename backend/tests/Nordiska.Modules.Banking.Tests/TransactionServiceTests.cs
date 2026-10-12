@@ -40,6 +40,9 @@ public class TransactionServiceTests
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
 
+        public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
         public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
             entity.Id = _next++;
@@ -91,6 +94,11 @@ public class TransactionServiceTests
                 q = q.Where(l => l.Type.ToLowerInvariant() == typeLower);
             }
 
+            if (parameters.IsPlanned.HasValue)
+            {
+                q = q.Where(l => l.IsPlanned == parameters.IsPlanned.Value);
+            }
+
             if (parameters.FromDate.HasValue)
             {
                 q = q.Where(l => l.CreatedAt >= parameters.FromDate.Value);
@@ -117,6 +125,11 @@ public class TransactionServiceTests
                 q = q.Where(l => l.Type.ToLowerInvariant().Contains(term) 
                                  || l.Id.ToString().Contains(term) 
                                  || l.AccountId.ToString().Contains(term));
+            }
+
+            if (parameters.CorrelationId.HasValue)
+            {
+                q = q.Where(l => l.CorrelationId == parameters.CorrelationId.Value);
             }
 
             var totalCount = q.Count();
@@ -177,6 +190,12 @@ public class TransactionServiceTests
                 return Task.FromResult(true);
             }
             return Task.FromResult(false);
+        }
+
+        public Task<IEnumerable<LedgerEntry>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+        {
+            var entries = _store.Where(l => l.CorrelationId == correlationId).ToList();
+            return Task.FromResult<IEnumerable<LedgerEntry>>(entries);
         }
 
         public int Count => _store.Count;
@@ -258,6 +277,36 @@ public class TransactionServiceTests
         Assert.Single(res.Items);
         Assert.Equal(3, res.Items.First().Id);
         Assert.Equal(200, res.Items.First().Amount);
+    }
+
+    [Fact]
+    public async Task QueryPaged_WithIsPlannedFilter_FiltersPlannedAndExecutedTransactionsCorrectly()
+    {
+        var seed = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100, IsPlanned = false, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 2, AccountId = 1, Type = "withdrawal", Amount = -50, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(5), CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 3, AccountId = 1, Type = "deposit", Amount = 500, IsPlanned = false, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 4, AccountId = 1, Type = "withdrawal", Amount = -200, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(10), CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seed);
+        var accRepo = new FakeSavingsRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        // 1. Filter only planned transactions
+        var plannedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: true));
+        Assert.Equal(2, plannedResult.Items.Count);
+        Assert.All(plannedResult.Items, item => Assert.True(item.IsPlanned));
+
+        // 2. Filter only executed (non-planned) transactions
+        var executedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: false));
+        Assert.Equal(2, executedResult.Items.Count);
+        Assert.All(executedResult.Items, item => Assert.False(item.IsPlanned));
+
+        // 3. Filter without isPlanned parameter (returns all)
+        var allResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }));
+        Assert.Equal(4, allResult.Items.Count);
     }
 
     [Fact]
@@ -667,5 +716,36 @@ public class TransactionServiceTests
         await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(5));
 
         Assert.NotNull(await svc.GetByIdAsync(5));
+    }
+
+    [Fact]
+    public async Task TransferAsync_AssignsSameCorrelationId_ToBothEntries()
+    {
+        var sourceAcc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "SRC", Balance = 1000m };
+        var targetAcc = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "TGT", Balance = 100m };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 1000m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seedTx);
+        var accRepo = new FakeSavingsRepo(new[] { sourceAcc, targetAcc });
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var result = await svc.TransferAsync(new TransferRequest(1, 2, 250m, "Överföring buffert"));
+
+        Assert.NotNull(result.CorrelationId);
+        Assert.NotEqual(Guid.Empty, result.CorrelationId.Value);
+
+        var related = (await svc.GetByCorrelationIdAsync(result.CorrelationId.Value)).ToList();
+        Assert.Equal(2, related.Count);
+
+        var withdrawal = related.Single(t => t.AccountId == 1);
+        var deposit = related.Single(t => t.AccountId == 2);
+
+        Assert.Equal(-250m, withdrawal.Amount);
+        Assert.Equal(250m, deposit.Amount);
+        Assert.Equal(result.CorrelationId, withdrawal.CorrelationId);
+        Assert.Equal(result.CorrelationId, deposit.CorrelationId);
     }
 }

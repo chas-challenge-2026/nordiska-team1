@@ -8,6 +8,9 @@ public sealed class FaqDbContext(
     : DbContext(options)
 {
     public DbSet<FaqEntry> FaqEntries => Set<FaqEntry>();
+    public DbSet<FaqSearchLog> FaqSearchLogs => Set<FaqSearchLog>();
+    public DbSet<FaqRelationship> FaqRelationships => Set<FaqRelationship>();
+    public DbSet<FaqViewLog> FaqViewLogs => Set<FaqViewLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

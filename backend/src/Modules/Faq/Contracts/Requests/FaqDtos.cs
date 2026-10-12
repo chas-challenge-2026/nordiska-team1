@@ -26,7 +26,9 @@ public record CreateFaqRequest(
     string? Keywords = null,
 
     [StringLength(10)]
-    string? Lang = "sv"
+    string? Lang = "sv",
+
+    Guid? RelationId = null
 );
 
 /// <summary>
@@ -56,22 +58,22 @@ public record UpdateFaqRequest(
 /// Payload for partially updating an FAQ entry (PATCH).
 /// </summary>
 public record PatchFaqRequest(
-    [property: StringLength(500, MinimumLength = 5)]
+    [param: StringLength(500, MinimumLength = 5)]
     string? Title = null,
 
-    [property: StringLength(500, MinimumLength = 5)]
+    [param: StringLength(500, MinimumLength = 5)]
     string? Question = null,
 
-    [property: StringLength(2000, MinimumLength = 1)]
+    [param: StringLength(2000, MinimumLength = 1)]
     string? Answer = null,
 
-    [property: StringLength(200)]
+    [param: StringLength(200)]
     string? Category = null,
 
-    [property: StringLength(500)]
+    [param: StringLength(500)]
     string? Keywords = null,
 
-    [property: StringLength(10)]
+    [param: StringLength(10)]
     string? Lang = null
 );
 
@@ -101,3 +103,11 @@ public record FaqQueryParameters(
     string? Lang = null
 );
 
+/// <summary>
+/// Payload for setting the related articles of an FAQ article. Replaces the current list.
+/// </summary>
+/// <param name="RelatedRelationIds">RelationIds of the related articles, in the order they should be shown (max 5).</param>
+public record SetRelatedFaqsRequest(
+    [Required]
+    Guid[] RelatedRelationIds
+);

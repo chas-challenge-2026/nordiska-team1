@@ -25,7 +25,7 @@ using Nordiska.Modules.Banking.Infrastructure;
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.FrontendApi.BackgroundWorkers;
-
+using Nordiska.Modules.Inbox.Infrastructure.Db;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
@@ -81,11 +81,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // include XML comments so Scalar/Swagger can show summaries and parameter docs
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-    if (File.Exists(xmlPath))
+    foreach (var file in Directory.GetFiles(AppContext.BaseDirectory, "Nordiska.*.xml"))
     {
-        options.IncludeXmlComments(xmlPath);
+        options.IncludeXmlComments(file);
     }
 
     // Configure JWT Bearer authentication in Swagger / Scalar UI
@@ -114,9 +112,12 @@ builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
-
+builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
 // Background worker for scheduled & recurring transactions
 builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
+builder.Services.AddHostedService<FaqSearchLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqViewLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqSearchLogCleanupWorker>();
  
 builder.Services
     .AddIdentityCore<Customer>(options =>
@@ -201,42 +202,6 @@ builder.Services.AddErrorHandling();
 builder.Services.AddRateLimitingPolicies(builder.Configuration);
 
 var app = builder.Build();
-
-// Automatic database migrations on startup (Banking, FAQ, Reporting)
-using (var migrationScope = app.Services.CreateScope())
-{
-    var services = migrationScope.ServiceProvider;
-
-    try
-    {
-        var bankingDb = services.GetRequiredService<BankingDbContext>();
-        await bankingDb.Database.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Automatic Banking database migration could not be completed: {Message}", ex.Message);
-    }
-
-    try
-    {
-        var faqDb = services.GetRequiredService<FaqDbContext>();
-        await faqDb.Database.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Automatic FAQ database migration could not be completed: {Message}", ex.Message);
-    }
-
-    try
-    {
-        var reportingDb = services.GetRequiredService<ReportingDbContext>();
-        await reportingDb.Database.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Automatic Reporting database migration could not be completed: {Message}", ex.Message);
-    }
-}
 
 //look out for the order of middleware, it matters.
 app.UseExceptionHandler();

@@ -51,7 +51,7 @@ public sealed class ReportsController : ControllerBase
 
         try
         {
-            var job = await _reportService.CreateJobAsync(currentUserId, request.AccountId, request.Year, cancellationToken);
+            var job = await _reportService.CreateJobAsync(currentUserId, request.AccountId, request.TaxYear, cancellationToken);
             return Accepted(job.DownloadUrl ?? $"/api/reports/jobs/{job.JobId}", job);
         }
         catch (AuthenticationException)

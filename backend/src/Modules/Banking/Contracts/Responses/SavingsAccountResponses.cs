@@ -15,6 +15,9 @@ namespace Nordiska.Modules.Banking.Contracts.Responses;
 /// <param name="AccountName">Optional user-friendly nickname for the account.</param>
 /// <param name="UpdatedAt">Optional timestamp when the account details were last modified (UTC).</param>
 /// <param name="Status">The account status ("active" or "closed").</param>
+/// <param name="CurrencyCode">The account currency as a three-letter ISO 4217 code.</param>
+/// <param name="AccruedInterestYtd">Interest accrued during the current year.</param>
+/// <param name="EstimatedYearEndInterest">Estimated interest at the end of the current year.</param>
 public record SavingsAccountResponse(
     long Id,
     long CustomerId,
@@ -26,8 +29,10 @@ public record SavingsAccountResponse(
     string? AccountName = null,
     DateTime? UpdatedAt = null,
     string Status = "active",
+    string CurrencyCode = "SEK",
     decimal AccruedInterestYtd = 0m,
-    decimal EstimatedYearEndInterest = 0m
+    decimal EstimatedYearEndInterest = 0m,
+    bool IsFavorite = false
 )
 {
     /// <summary>

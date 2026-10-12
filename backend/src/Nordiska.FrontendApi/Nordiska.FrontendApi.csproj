@@ -17,6 +17,7 @@
     <ProjectReference Include="..\Modules\Banking\Nordiska.Modules.Banking.csproj" />
     <ProjectReference Include="..\Modules\Faq\Nordiska.Modules.Faq.csproj" />
     <ProjectReference Include="..\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
+    <ProjectReference Include="..\Modules\Inbox\Nordiska.Modules.Inbox.csproj" />
   </ItemGroup>
 
   <ItemGroup>

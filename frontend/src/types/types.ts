@@ -13,6 +13,13 @@ export type Faq = {
     category: string | null;
     helpfulCount: number;
     keywords: string[] | null;
+    relationId: string;
+    lang: "sv" | "en";
+};
+
+export type FaqGroup = {
+    relationId: string;
+    faqs: Faq[];
 };
 
 export type FaqResponse = {

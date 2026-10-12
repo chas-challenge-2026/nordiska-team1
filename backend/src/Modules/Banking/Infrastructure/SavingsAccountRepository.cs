@@ -22,6 +22,11 @@ public sealed class SavingsAccountRepository(BankingDbContext db) : ISavingsAcco
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => db.SavingsAccounts.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
+    public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => db.SavingsAccounts
+            .Where(a => a.CustomerId == customerId && a.IsFavorite && a.Status == "active")
+            .CountAsync(cancellationToken);
+
     public async Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);

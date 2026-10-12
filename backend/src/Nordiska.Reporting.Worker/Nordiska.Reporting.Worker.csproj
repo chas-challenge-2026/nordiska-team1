@@ -3,16 +3,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UserSecretsId>dotnet-Nordiska.Reporting.Worker-b45cfeb9-b601-4420-acf7-12164ebf31ee</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Npgsql" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <None Update="sample-input-huge.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modules\Reporting\Nordiska.Modules.Reporting.csproj" />
     <ProjectReference Include="..\BuildingBlocks\Database\Nordiska.BuildingBlocks.Database.csproj" />
+    <InternalsVisibleTo Include="Nordiska.Reporting.Worker.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

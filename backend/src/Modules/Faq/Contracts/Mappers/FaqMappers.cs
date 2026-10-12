@@ -13,7 +13,8 @@ public static class FaqMappers
             req.Answer,
             req.Category,
             req.Keywords,
-            req.Lang ?? "sv");
+            req.Lang ?? "sv",
+            req.RelationId);
     }
 
     public static void ApplyUpdate(this FaqEntry target, UpdateFaqRequest req)
@@ -59,6 +60,7 @@ public static class FaqMappers
             e.Category,
             e.HelpfulCount,
             keywordsList,
+            e.RelationId,
             e.Language,
             e.CreatedAt,
             e.UpdatedAt);

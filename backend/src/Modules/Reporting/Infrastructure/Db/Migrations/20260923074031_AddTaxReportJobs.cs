@@ -12,7 +12,7 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "tax_report_jobs",
+                name: "legacy_tax_report_jobs",
                 schema: "reporting",
                 columns: table => new
                 {
@@ -31,43 +31,34 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_tax_report_jobs", x => x.Id);
+                    table.PrimaryKey("PK_legacy_tax_report_jobs", x => x.Id);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_audit_entries_Action",
-                schema: "reporting",
-                table: "audit_entries",
-                column: "Action");
+            migrationBuilder.Sql("""
+                CREATE INDEX IF NOT EXISTS "IX_audit_entries_Action"
+                    ON reporting.audit_entries ("Action");
+                CREATE INDEX IF NOT EXISTS "IX_audit_entries_CreatedAt"
+                    ON reporting.audit_entries ("CreatedAt");
+                CREATE INDEX IF NOT EXISTS "IX_audit_entries_UserId_CreatedAt"
+                    ON reporting.audit_entries ("UserId", "CreatedAt");
+                """);
 
             migrationBuilder.CreateIndex(
-                name: "IX_audit_entries_CreatedAt",
+                name: "IX_legacy_tax_report_jobs_AccountId_Year",
                 schema: "reporting",
-                table: "audit_entries",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_audit_entries_UserId_CreatedAt",
-                schema: "reporting",
-                table: "audit_entries",
-                columns: new[] { "UserId", "CreatedAt" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_tax_report_jobs_AccountId_Year",
-                schema: "reporting",
-                table: "tax_report_jobs",
+                table: "legacy_tax_report_jobs",
                 columns: new[] { "AccountId", "Year" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_tax_report_jobs_CustomerId_CreatedAt",
+                name: "IX_legacy_tax_report_jobs_CustomerId_CreatedAt",
                 schema: "reporting",
-                table: "tax_report_jobs",
+                table: "legacy_tax_report_jobs",
                 columns: new[] { "CustomerId", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_tax_report_jobs_Status_CreatedAt",
+                name: "IX_legacy_tax_report_jobs_Status_CreatedAt",
                 schema: "reporting",
-                table: "tax_report_jobs",
+                table: "legacy_tax_report_jobs",
                 columns: new[] { "Status", "CreatedAt" });
         }
 

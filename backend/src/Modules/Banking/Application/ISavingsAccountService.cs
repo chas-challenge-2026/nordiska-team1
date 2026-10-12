@@ -14,10 +14,24 @@ public interface ISavingsAccountService
     Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves all savings accounts, optionally filtered by favorite status.
+    /// </summary>
+    Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(bool? isFavorite, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retrieves all savings accounts owned by a customer.
     /// </summary>
     /// <param name="customerId">Customer id.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all savings accounts owned by a customer, optionally filtered by favorite status.
+    /// </summary>
+    /// <param name="customerId">Customer id.</param>
+    /// <param name="isFavorite">Optional filter for favorite accounts.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, bool? isFavorite, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a savings account by id.
@@ -30,6 +44,15 @@ public interface ISavingsAccountService
     /// </summary>
     /// <param name="request">Open savings account request.</param>
     Task<SavingsAccountResponse> CreateAsync(OpenSavingsAccountRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets or unsets the favorite status of an account (maximum 4 favorite accounts per customer).
+    /// </summary>
+    /// <param name="id">Account id.</param>
+    /// <param name="customerId">Customer id owning the account.</param>
+    /// <param name="isFavorite">True to mark as favorite, false to unmark.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<SavingsAccountResponse> SetFavoriteAsync(long id, long customerId, bool isFavorite, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Closes an account if balance is zero.
