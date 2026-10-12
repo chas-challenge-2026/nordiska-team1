@@ -11,6 +11,7 @@ import {
 import type { Folders, SupportTicketThread } from "../../types/inbox";
 import { formatDate, formatTime } from "../../utils/date";
 import { useUserStore } from "../../store/userStore";
+import InboxButton from "./InboxButton";
 
 type ThreadDetailProps = {
     id: number;
@@ -18,7 +19,6 @@ type ThreadDetailProps = {
     folder: Folders;
 };
 
-const btn = "cursor-pointer rounded bg-primary-blue px-4 py-2 font-semibold text-white disabled:cursor-default disabled:opacity-40";
 
 export default function ThreadDetail({ id, search, folder }: ThreadDetailProps) {
     const { t } = useTranslation();
@@ -65,9 +65,7 @@ export default function ThreadDetail({ id, search, folder }: ThreadDetailProps) 
         return (
             <div className="flex items-center justify-between bg-white px-4 py-3 shadow-card">
                 <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                <button type="button" onClick={() => thread.refetch()} className="cursor-pointer text-primary-blue underline">
-                    {t("generic.try-again")}
-                </button>
+                <InboxButton variant="link" onClick={() => thread.refetch()}>{t("generic.try-again")}</InboxButton>
             </div>
         );
     }
@@ -105,14 +103,12 @@ export default function ThreadDetail({ id, search, folder }: ThreadDetailProps) 
             )}
 
             <div className="flex flex-col gap-2 border-t border-light-blue-accent/50 p-4 md:flex-row md:items-center">
-                <button
-                    type="button"
-                    className={btn}
+                <InboxButton
                     disabled={move.isPending}
                     onClick={() => move.mutate(id, { onSuccess: () => navigate({ pathname: "/inbox", search }) })}
                 >
                     {isArchived ? t("inbox.thread.restore") : t("inbox.thread.archive")}
-                </button>
+                </InboxButton>
                 {move.isError && <span role="alert" className="text-error">{t("generic.error-action")}</span>}
             </div>
         </div>
@@ -191,9 +187,9 @@ function ReplyForm({ threadId }: { threadId: number }) {
             />
             <p role="status" className="sr-only">{sent ? t("inbox.thread.reply-sent") : ""}</p>
             {sendReply.isError && <span role="alert" className="text-error">{t("generic.error-action")}</span>}
-            <button type="submit" className={`${btn} md:self-end`} disabled={sendReply.isPending}>
+            <InboxButton type="submit" className="md:self-end" disabled={sendReply.isPending}>
                 {sendReply.isPending ? t("generic.sending") : t("generic.send")}
-            </button>
+            </InboxButton>
         </form>
     );
 }

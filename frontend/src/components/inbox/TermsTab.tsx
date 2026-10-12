@@ -2,8 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useAcceptPendingTerm, usePendingTerms } from "../../hooks/inbox/useTerms";
 import { useDownloadInboxDocument } from "../../hooks/inbox/useDocuments";
 import { formatDate } from "../../utils/date";
-
-const btn = "cursor-pointer rounded bg-primary-blue px-4 py-2 font-semibold text-white disabled:cursor-default disabled:opacity-40";
+import InboxButton from "./InboxButton";
 
 export default function TermsTab() {
     const { t } = useTranslation();
@@ -29,9 +28,7 @@ export default function TermsTab() {
             {terms.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
                     <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                    <button type="button" onClick={() => terms.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("generic.try-again")}
-                    </button>
+                    <InboxButton variant="link" onClick={() => terms.refetch()}>{t("generic.try-again")}</InboxButton>
                 </div>
             )}
 
@@ -59,24 +56,22 @@ export default function TermsTab() {
                                     <span className="block break-words font-bold">{title}</span>
                                 </span>
                                 <span className="flex flex-wrap items-center gap-2">
-                                    <button
-                                        type="button"
-                                        className="cursor-pointer px-2 py-2 text-primary-blue underline disabled:cursor-default disabled:opacity-40"
+                                    <InboxButton
+                                        variant="link"
+                                        className="px-2 py-2"
                                         disabled={download.isPending}
                                         aria-label={t("inbox.download-aria", { name: title })}
                                         onClick={() => download.mutate(term.documentId)}
                                     >
                                         {t("generic.download")}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={btn}
+                                    </InboxButton>
+                                    <InboxButton
                                         disabled={accept.isPending}
                                         aria-label={t("inbox.terms-tab.accept-aria", { title })}
                                         onClick={() => accept.mutate(term.termId)}
                                     >
                                         {accepting ? t("inbox.terms-tab.accepting") : t("inbox.terms-tab.accept")}
-                                    </button>
+                                    </InboxButton>
                                 </span>
                             </li>
                         );

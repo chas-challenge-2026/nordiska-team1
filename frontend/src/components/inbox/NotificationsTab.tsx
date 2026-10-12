@@ -7,13 +7,12 @@ import {
 } from "../../hooks/inbox/useNotifications";
 import { formatWhen } from "../../utils/date";
 import PagePagination from "../PagePagination";
+import InboxButton from "./InboxButton";
 
 type NotificationsTabProps = {
     page: number;
     onPageChange: (page: number) => void;
 };
-
-const headBtn = "cursor-pointer rounded border border-white px-3 py-1 text-xs font-semibold text-white disabled:cursor-default disabled:opacity-40";
 
 export default function NotificationsTab({ page, onPageChange }: NotificationsTabProps) {
     const { t } = useTranslation();
@@ -33,14 +32,9 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
                     <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.title")}</span>
                     <h2 className="font-bold">{t("inbox.notifications")}</h2>
                 </div>
-                <button
-                    type="button"
-                    className={headBtn}
-                    disabled={!hasUnread || markAll.isPending}
-                    onClick={() => markAll.mutate()}
-                >
+                <InboxButton variant="outline-light" disabled={!hasUnread || markAll.isPending} onClick={() => markAll.mutate()}>
                     {t("inbox.mark-all-read")}
-                </button>
+                </InboxButton>
             </div>
 
             <div className="flex items-center gap-2 p-4">
@@ -65,9 +59,7 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
             {notifications.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
                     <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                    <button type="button" onClick={() => notifications.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("generic.try-again")}
-                    </button>
+                    <InboxButton variant="link" onClick={() => notifications.refetch()}>{t("generic.try-again")}</InboxButton>
                 </div>
             )}
 
@@ -95,15 +87,14 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
                                     {body && <p className="whitespace-pre-wrap break-words">{body}</p>}
                                 </div>
                                 {!item.isRead && (
-                                    <button
-                                        type="button"
-                                        className="cursor-pointer text-primary-blue underline disabled:cursor-default disabled:opacity-40"
+                                    <InboxButton
+                                        variant="link"
                                         disabled={markOne.isPending}
                                         aria-label={t("inbox.mark-read-aria", { title })}
                                         onClick={() => markOne.mutate(item.id)}
                                     >
                                         {t("inbox.mark-read")}
-                                    </button>
+                                    </InboxButton>
                                 )}
                             </li>
                         );

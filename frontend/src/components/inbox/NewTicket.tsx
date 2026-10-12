@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import Modal from "../modals/Modal";
 import { useCreateSupportTicket } from "../../hooks/inbox/useThreads";
 import type { Categories } from "../../types/inbox";
+import InboxButton from "./InboxButton";
 
 type NewTicketButtonProps = {
     /** Optional: called with new thread id after ticket is created. */
@@ -11,21 +12,20 @@ type NewTicketButtonProps = {
     className?: string;
 };
 
-const btn = "cursor-pointer rounded bg-primary-blue px-4 py-2 font-semibold text-white disabled:cursor-default disabled:opacity-40";
 const field = "w-full border border-secondary p-2";
 const label = "text-xs font-semibold uppercase text-secondary";
 
 const CATEGORIES: Categories[] = ["Sparkonto", "Sparmål", "Skatteunderlag", "Allmänt"];
 
-export default function NewTicketButton({ onCreated, className = btn }: NewTicketButtonProps) {
+export default function NewTicketButton({ onCreated, className }: NewTicketButtonProps) {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
 
     return (
         <>
-            <button type="button" className={className} onClick={() => setIsOpen(true)}>
+            <InboxButton className={className} onClick={() => setIsOpen(true)}>
                 <span aria-hidden="true">+ </span>{t("inbox.ticket.new")}
-            </button>
+            </InboxButton>
 
             <Modal
                 isOpen={isOpen}
@@ -92,9 +92,7 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
                     >
                         {t("inbox.view-message")}
                     </Link>
-                    <button type="button" onClick={onClose} className={btn}>
-                        {t("generic.close")}
-                    </button>
+                    <InboxButton onClick={onClose}>{t("generic.close")}</InboxButton>
                 </div>
             </div>
         );
@@ -145,12 +143,12 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
             {create.isError && <span role="alert" className="text-error">{t("generic.error-action")}</span>}
 
             <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={onClose} className="cursor-pointer px-4 py-2 text-primary-blue underline">
+                <InboxButton variant="link" className="px-4 py-2" onClick={onClose}>
                     {t("generic.cancel")}
-                </button>
-                <button type="submit" className={btn} disabled={create.isPending}>
+                </InboxButton>
+                <InboxButton type="submit" disabled={create.isPending}>
                     {create.isPending ? t("generic.sending") : t("generic.send")}
-                </button>
+                </InboxButton>
             </div>
         </form>
     );

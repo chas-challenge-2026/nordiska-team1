@@ -4,6 +4,7 @@ import { useSupportThreads, usePrefetchSupportThread } from "../../hooks/inbox/u
 import type { Folders } from "../../types/inbox";
 import { formatWhen } from "../../utils/date";
 import PagePagination from "../PagePagination";
+import InboxButton from "./InboxButton";
 
 type ThreadListProps = {
     folder: Folders;
@@ -31,9 +32,7 @@ export default function ThreadList({ folder, page, search, selectedId, onPageCha
             {threads.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
                     <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                    <button type="button" onClick={() => threads.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("generic.try-again")}
-                    </button>
+                    <InboxButton variant="link" onClick={() => threads.refetch()}>{t("generic.try-again")}</InboxButton>
                 </div>
             )}
 

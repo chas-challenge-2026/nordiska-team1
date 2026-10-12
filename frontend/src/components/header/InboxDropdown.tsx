@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useInboxOverview, useUnreadCount } from "../../hooks/inbox/useInboxSummary";
 import type { FeedItem } from "../../types/inbox";
 import { formatWhen } from "../../utils/date";
+import InboxButton from "../inbox/InboxButton";
 
 type InboxDropdownProps = {
     open: boolean;
@@ -117,13 +118,7 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                             {overview.isError && (
                                 <div className="flex items-center justify-between px-4 py-3">
                                     <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => overview.refetch()}
-                                        className="cursor-pointer text-primary-blue underline"
-                                    >
-                                        {t("generic.try-again")}
-                                    </button>
+                                    <InboxButton variant="link" onClick={() => overview.refetch()}>{t("generic.try-again")}</InboxButton>
                                 </div>
                             )}
 

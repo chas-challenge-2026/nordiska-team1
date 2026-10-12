@@ -8,13 +8,13 @@ import {
 import type { InboxDocument, GeneralDocument } from "../../types/inbox";
 import { formatDate } from "../../utils/date";
 import PagePagination from "../PagePagination";
+import InboxButton from "./InboxButton";
 
 type DocumentsTabProps = {
     page: number;
     onPageChange: (page: number) => void;
 };
 
-const btn = "cursor-pointer rounded bg-primary-blue px-4 py-2 font-semibold text-white disabled:cursor-default disabled:opacity-40";
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -27,7 +27,6 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
     const data = documents.data;
     const generalItems = general.data ?? [];
     // Personal endpoint also returns general documents; show each only once.
-    // Assumes personal documentId equals general id (same underlying document).
     const generalIds = new Set(generalItems.map((doc) => doc.id));
     const personalItems = (data?.items ?? []).filter((doc) => !generalIds.has(doc.documentId));
 
@@ -40,7 +39,6 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
 
             {download.isError && <p role="alert" className="px-4 py-2 text-error">{t("generic.error-action")}</p>}
 
-            {/* ----- PERSONAL ----- */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
                 <h3 id="docs-personal" className="text-xs font-semibold uppercase text-secondary">
                     {t("inbox.documents-tab.personal")}
@@ -69,9 +67,7 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
             {documents.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
                     <span role="alert" className="text-error">{t("inbox.error.load")}</span>
-                    <button type="button" onClick={() => documents.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("generic.try-again")}
-                    </button>
+                    <InboxButton variant="link" onClick={() => documents.refetch()}>{t("generic.try-again")}</InboxButton>
                 </div>
             )}
 
@@ -102,7 +98,6 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
                 </div>
             )}
 
-            {/* ----- GENERAL ----- */}
             <h3 id="docs-general" className="mt-4 border-t-2 border-light-blue-accent/50 px-4 pt-4 text-xs font-semibold uppercase text-secondary">
                 {t("inbox.documents-tab.general")}
             </h3>
@@ -112,9 +107,7 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
             {general.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
                     <span role="alert" className="text-error">{t("inbox.error.load")}</span>
-                    <button type="button" onClick={() => general.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("generic.try-again")}
-                    </button>
+                    <InboxButton variant="link" onClick={() => general.refetch()}>{t("generic.try-again")}</InboxButton>
                 </div>
             )}
 
@@ -157,15 +150,13 @@ function DocumentRow({ doc, downloadId, download }: DocumentRowProps) {
                     {name}
                 </span>
             </span>
-            <button
-                type="button"
-                className={btn}
+            <InboxButton
                 disabled={download.isPending}
                 aria-label={t("inbox.download-aria", { name })}
                 onClick={() => download.mutate(downloadId)}
             >
                 {downloading ? t("generic.downloading") : t("generic.download")}
-            </button>
+            </InboxButton>
         </li>
     );
 }

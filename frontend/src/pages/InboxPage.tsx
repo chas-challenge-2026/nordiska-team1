@@ -7,6 +7,7 @@ import ThreadDetail from "../components/inbox/ThreadDetail";
 import ThreadList from "../components/inbox/ThreadList";
 import { useInboxCounts, useMarkAllItemsAsRead } from "../hooks/inbox/useInboxSummary";
 import type { FeedCounts, Folders } from "../types/inbox";
+import InboxButton from "../components/inbox/InboxButton";
 
 type Tab = Folders | "notifications" | "documents" | "terms";
 
@@ -18,8 +19,6 @@ const TABS: { key: Tab; labelKey: string; count?: keyof FeedCounts }[] = [
     { key: "documents", labelKey: "inbox.documents", count: "unreadDocuments" },
     { key: "terms", labelKey: "inbox.terms", count: "unreadTerms" },
 ];
-
-const headBtn = "cursor-pointer rounded border border-primary-blue px-3 py-1 text-xs font-semibold text-primary-blue disabled:cursor-default disabled:opacity-40";
 
 export default function InboxPage() {
     const { t } = useTranslation();
@@ -57,14 +56,9 @@ export default function InboxPage() {
                     <span className="text-xs uppercase text-primary-blue">
                         {t("inbox.unread")} <strong className="ml-1 text-base text-dark-navy">{unreadCount}</strong>
                     </span>
-                    <button
-                        type="button"
-                        className={headBtn}
-                        disabled={unreadCount === 0 || markAll.isPending}
-                        onClick={() => markAll.mutate()}
-                    >
+                    <InboxButton variant="outline" disabled={unreadCount === 0 || markAll.isPending} onClick={() => markAll.mutate()}>
                         {t("inbox.mark-all-read")}
-                    </button>
+                    </InboxButton>
                 </div>
             </div>
             {markAll.isError && <p role="alert" className="mt-2 text-error">{t("generic.error-action")}</p>}
