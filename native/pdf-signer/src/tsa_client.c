@@ -3,6 +3,7 @@
 #include <openssl/ts.h>
 #include <curl/curl.h>
 #include <openssl/asn1.h>
+#include <openssl/err.h>
 
 /*-------------------INTERNAL----------------------------------*/
 typedef struct
@@ -335,6 +336,7 @@ tsa_status_t tsa_request_timestamp(const tsa_config_t* config, const unsigned ch
   }
 
   if (TS_RESP_verify_response(verify_ctx, ts_response) != 1) {
+    ERR_print_errors_fp(stderr);
     free(tsa_resp);
     TS_RESP_free(ts_response);
     TS_REQ_free(req);

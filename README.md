@@ -78,6 +78,18 @@ erDiagram
         datetime updated_at "Senast uppdaterad"
     }
 
+    StaffMember {
+        bigint id PK
+        string email UK "E-postadress för inloggning"
+        string full_name "Administratörens namn"
+        string role "Systemroll (ex. Admin)"
+        string employee_number "Anställningsnummer"
+        string password_hash "Lösenordshash"
+        boolean is_active "Mjuk radering"
+        datetime created_at "Skapad tidpunkt"
+        datetime updated_at "Senast uppdaterad"
+    }
+
     AccountTypeConfig {
         string account_type PK "saving checking flex"
         decimal interest_rate "Räntesats"

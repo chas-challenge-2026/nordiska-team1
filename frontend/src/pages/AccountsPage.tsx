@@ -17,6 +17,7 @@ import SavingsGoalSection from "../components/accounts/SavingsGoalSection";
 
 import HelpCard from "../components/faq/HelpCard";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
+import { useSearchParams } from "react-router";
 import AccountStatementBtn from "../components/reports/AccountStatementButton";
 
 export default function AccountsPage() {
@@ -27,8 +28,10 @@ export default function AccountsPage() {
     const { data: goals } = useGetAllSavingsGoals();
     const updateFavorite = useUpdateFavoriteAccount();
     const { mutate: closeAccount, error: closeAccountError, isPending, reset } = useCloseAccount();
-
+    const [searchParams] = useSearchParams();
+    const accountIdFromUrl = Number(searchParams.get("account"));
     const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isSavingGoalOpen, setIsSavingGoalOpen] = useState(false);
@@ -37,31 +40,31 @@ export default function AccountsPage() {
     const favoriteErrorTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-    return () => {
-        if (favoriteErrorTimeout.current) {
-            clearTimeout(favoriteErrorTimeout.current);
-        }
-    };
-}, []);
+        return () => {
+            if (favoriteErrorTimeout.current) {
+                clearTimeout(favoriteErrorTimeout.current);
+            }
+        };
+    }, []);
+
     const sortedAccounts = accounts
-            ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {
-                if (a.isFavorite && !b.isFavorite) return -1;
-                if (!a.isFavorite && b.isFavorite) return 1;
-                return 0;
-            })
-            : [];
-    const selectedAccountId = selectedAccount ?? sortedAccounts?.[0]?.id;
+        ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {
+            if (a.isFavorite && !b.isFavorite) return -1;
+            if (!a.isFavorite && b.isFavorite) return 1;
+            return 0;
+        })
+        : [];
+
+    const selectedAccountId = 
+        selectedAccount ?? (sortedAccounts?.some((account) => account.id === accountIdFromUrl)
+            ? accountIdFromUrl
+            : sortedAccounts?.[0]?.id);
 
     const expandedAccount = accounts?.find((account) => account.id === selectedAccountId);
     const isFavorite = expandedAccount?.isFavorite ?? false;
     const totalBalance = accounts?.reduce((sum, account) => sum + account.balance, 0) ?? 0;
     const canClose = expandedAccount?.balance === 0;
-
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
-
-    
-
-
 
     function handleOpenConfirm() {
         reset();

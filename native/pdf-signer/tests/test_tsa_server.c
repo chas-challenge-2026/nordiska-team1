@@ -3,11 +3,11 @@
 #include <openssl/ts.h>
 #include <openssl/evp.h>
 #include <openssl/asn1.h>
+#include <openssl/err.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openssl/err.h>
 
 #define CHECK(condition)                                                                           \
   do {                                                                                             \
@@ -109,6 +109,7 @@ static int test_create_response(void) {
   tsa_server_t* server = NULL;
 
   tsa_server_status_t status = tsa_server_create(&server);
+
   if (status != TSA_SERVER_OK) {
     fprintf(stderr, "tsa_server_create failed with status %d\n", status);
     ERR_print_errors_fp(stderr);
@@ -129,7 +130,7 @@ static int test_create_response(void) {
 
   tsa_server_result_t result = {0};
 
-  status = tsa_server_create_response(server, request_der, request_der_len, &result);
+  status = tsa_server_create_response(server, 0, request_der, request_der_len, &result);
 
   CHECK(status == TSA_SERVER_OK);
   CHECK(result.response_der != NULL);
@@ -170,17 +171,41 @@ static int test_create_response(void) {
 static int test_invalid_arguments(void) {
   tsa_server_result_t result = {0};
 
-  CHECK(tsa_server_create_response(NULL, (const unsigned char*)"x", 1, &result) ==
+  CHECK(tsa_server_create_response(NULL, 0, (const unsigned char*)"x", 1, &result) ==
         TSA_SERVER_INVALID_ARGUMENT);
 
-  CHECK(tsa_server_create_response((tsa_server_t*)1, NULL, 1, &result) ==
+  tsa_server_t* server = NULL;
+
+  CHECK(tsa_server_create(&server) == TSA_SERVER_OK);
+  CHECK(server != NULL);
+
+  CHECK(tsa_server_create_response(server, 0, NULL, 1, &result) == TSA_SERVER_INVALID_ARGUMENT);
+
+  CHECK(tsa_server_create_response(server, 0, (const unsigned char*)"x", 0, &result) ==
         TSA_SERVER_INVALID_ARGUMENT);
 
-  CHECK(tsa_server_create_response((tsa_server_t*)1, (const unsigned char*)"x", 0, &result) ==
+  CHECK(tsa_server_create_response(server, 0, (const unsigned char*)"x", 1, NULL) ==
         TSA_SERVER_INVALID_ARGUMENT);
 
-  CHECK(tsa_server_create_response((tsa_server_t*)1, (const unsigned char*)"x", 1, NULL) ==
+  tsa_server_destroy(server);
+
+  return 0;
+}
+
+static int test_invalid_worker_index(void) {
+  tsa_server_t* server = NULL;
+
+  tsa_server_status_t status = tsa_server_create(&server);
+
+  CHECK(status == TSA_SERVER_OK);
+  CHECK(server != NULL);
+
+  tsa_server_result_t result = {0};
+
+  CHECK(tsa_server_create_response(server, 999, (const unsigned char*)"x", 1, &result) ==
         TSA_SERVER_INVALID_ARGUMENT);
+
+  tsa_server_destroy(server);
 
   return 0;
 }
@@ -209,6 +234,7 @@ int main(void) {
 
   failed += test_create_response();
   failed += test_invalid_arguments();
+  failed += test_invalid_worker_index();
   failed += test_result_dispose();
 
   if (failed == 0) {

@@ -1,8 +1,11 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/rendering/pdf_engine.hpp"
+#include "nordiska/signing/pdf_signer.hpp"
 #include "nordiska/signing/signature_slot_appender.hpp"
 
 #include <algorithm>
+#include <arpa/inet.h>
+#include <atomic>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -13,9 +16,14 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/x509.h>
-#include <pdf_sign.h>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <thread>
+#include <unistd.h>
+#include <vector>
 
 namespace {
 
@@ -25,92 +33,168 @@ void require(bool condition, const char* message) {
     }
 }
 
-enum class Reply { Normal, Empty, Odd, NonHex, TooLarge, Failure };
-Reply reply = Reply::Normal;
-bool fail_create = false;
-int creations = 0;
-int destructions = 0;
-int sign_calls = 0;
-int disposals = 0;
-std::vector<nordiska::Sha256Digest> seen_digests;
-
-} // namespace
-
-// This executable supplies only the C boundary double. Production links the
-// unmodified developer implementation from the separate static archive.
-struct pdf_signer {
-    int marker = 123;
+enum class MockSignerReply {
+    Normal,
+    Empty,
+    Odd,
+    NonHex,
+    TooLarge,
+    Failure,
+    ProtocolVersionMismatch,
+    UnsupportedAlgorithm
 };
 
-extern "C" pdf_sign_status_t pdf_signer_create(pdf_signer_t** out) {
-    ++creations;
-    *out = nullptr;
-    if (fail_create) {
-        return PDF_SIGN_CRYPTO_ERROR;
-    }
-    *out = new pdf_signer;
-    return PDF_SIGN_OK;
-}
+class MockUnixSignerServer {
+  public:
+    explicit MockUnixSignerServer(std::string socket_path) : socket_path_(std::move(socket_path)) {
+        ::unlink(socket_path_.c_str());
+        server_fd_ = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        require(server_fd_ >= 0, "mock server: socket failed");
 
-extern "C" void pdf_signer_destroy(pdf_signer_t* signer) {
-    if (signer) {
-        ++destructions;
-        delete signer;
-    }
-}
+        struct sockaddr_un addr {};
+        addr.sun_family = AF_UNIX;
+        std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
+        require(::bind(server_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == 0,
+                "mock server: bind failed");
+        require(::listen(server_fd_, 16) == 0, "mock server: listen failed");
 
-extern "C" pdf_sign_status_t pdf_signer_sign(pdf_signer_t* signer, const pdf_sign_request_t* request,
-                                             pdf_sign_result_t* result) {
-    ++sign_calls;
-    if (!signer || signer->marker != 123 || !request || !request->digest || request->digest_len != 32 ||
-        request->digest_algorithm != PDF_SIGN_DIGEST_SHA256) {
-        return PDF_SIGN_INVALID_ARGUMENT;
+        running_ = true;
+        server_thread_ = std::thread([this]() { run(); });
     }
-    nordiska::Sha256Digest digest;
-    std::copy_n(request->digest, digest.size(), digest.begin());
-    seen_digests.push_back(digest);
-    std::string value;
-    switch (reply) {
-    case Reply::Normal:
-        for (size_t i = 0; i < 8192; ++i) {
-            value += "0123456789ABCDEF"[i % 16];
+
+    ~MockUnixSignerServer() {
+        stop();
+    }
+
+    void stop() {
+        if (running_) {
+            running_ = false;
+            // Connect to unblock accept if waiting
+            int dummy_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+            if (dummy_fd >= 0) {
+                struct sockaddr_un addr {};
+                addr.sun_family = AF_UNIX;
+                std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
+                ::connect(dummy_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
+                ::close(dummy_fd);
+            }
+            if (server_thread_.joinable()) {
+                server_thread_.join();
+            }
+            if (server_fd_ >= 0) {
+                ::close(server_fd_);
+                server_fd_ = -1;
+            }
+            ::unlink(socket_path_.c_str());
         }
-        break;
-    case Reply::Empty:
-        break;
-    case Reply::Odd:
-        value = "123";
-        break;
-    case Reply::NonHex:
-        value = "zz";
-        break;
-    case Reply::TooLarge:
-        value.assign(8194, 'A');
-        break;
-    case Reply::Failure:
-        value = "3000";
-        break;
     }
-    result->contents_hex = nullptr;
-    result->contents_hex_len = value.size();
-    if (!value.empty()) {
-        // Deliberately no terminator: adapter must honor the explicit length.
-        result->contents_hex = static_cast<char*>(std::malloc(value.size()));
-        if (!result->contents_hex) {
-            return PDF_SIGN_INTERNAL_ERROR;
+
+    void set_reply(MockSignerReply reply) {
+        reply_ = reply;
+    }
+
+    size_t request_count() const {
+        return request_count_.load();
+    }
+
+    const std::vector<nordiska::Sha256Digest>& seen_digests() const {
+        return seen_digests_;
+    }
+
+    void clear_digests() {
+        seen_digests_.clear();
+    }
+
+  private:
+    void run() {
+        while (running_) {
+            int client_fd = ::accept(server_fd_, nullptr, nullptr);
+            if (client_fd < 0) {
+                if (!running_) {
+                    break;
+                }
+                continue;
+            }
+            if (!running_) {
+                ::close(client_fd);
+                break;
+            }
+            handle_client(client_fd);
+            ::close(client_fd);
         }
-        std::memcpy(result->contents_hex, value.data(), value.size());
     }
-    return reply == Reply::Failure ? PDF_SIGN_CRYPTO_ERROR : PDF_SIGN_OK;
-}
 
-extern "C" void pdf_sign_result_dispose(pdf_sign_result_t* result) {
-    ++disposals;
-    std::free(result->contents_hex);
-    *result = {};
-}
+    void handle_client(int fd) {
+        uint8_t req[48];
+        size_t total = 0;
+        while (total < sizeof(req)) {
+            ssize_t n = ::read(fd, req + total, sizeof(req) - total);
+            if (n <= 0) {
+                return;
+            }
+            total += static_cast<size_t>(n);
+        }
 
-namespace {
+        uint32_t version_net, algo_net, len_net, mode_net;
+        std::memcpy(&version_net, req, 4);
+        std::memcpy(&algo_net, req + 4, 4);
+        std::memcpy(&len_net, req + 8, 4);
+        std::memcpy(&mode_net, req + 12, 4);
+
+        nordiska::Sha256Digest digest;
+        std::memcpy(digest.data(), req + 16, 32);
+        seen_digests_.push_back(digest);
+        request_count_++;
+
+        MockSignerReply rep = reply_.load();
+        uint32_t status = 0;
+        std::string hex;
+
+        if (rep == MockSignerReply::Normal) {
+            status = 0;
+            for (size_t i = 0; i < 8192; ++i) {
+                hex += "0123456789ABCDEF"[i % 16];
+            }
+        } else if (rep == MockSignerReply::Empty) {
+            status = 0;
+        } else if (rep == MockSignerReply::Odd) {
+            status = 0;
+            hex = "123";
+        } else if (rep == MockSignerReply::NonHex) {
+            status = 0;
+            hex = "zz";
+        } else if (rep == MockSignerReply::TooLarge) {
+            status = 0;
+            hex.assign(70000, 'A');
+        } else if (rep == MockSignerReply::Failure) {
+            status = 4; // SIGNER_STATUS_SIGNING_ERROR
+        } else if (rep == MockSignerReply::ProtocolVersionMismatch) {
+            status = 2; // SIGNER_STATUS_UNSUPPORTED_VERSION
+        } else if (rep == MockSignerReply::UnsupportedAlgorithm) {
+            status = 3; // SIGNER_STATUS_UNSUPPORTED_ALGORITHM
+        }
+
+        uint32_t status_net = htonl(status);
+        uint32_t hex_len_net = htonl(static_cast<uint32_t>(hex.size()));
+        uint8_t resp_hdr[8];
+        std::memcpy(resp_hdr, &status_net, 4);
+        std::memcpy(resp_hdr + 4, &hex_len_net, 4);
+        const ssize_t w1 = ::write(fd, resp_hdr, sizeof(resp_hdr));
+        (void)w1;
+        if (!hex.empty()) {
+            const ssize_t w2 = ::write(fd, hex.data(), hex.size());
+            (void)w2;
+        }
+    }
+
+    std::string socket_path_;
+    int server_fd_{-1};
+    std::atomic<bool> running_{false};
+    std::atomic<MockSignerReply> reply_{MockSignerReply::Normal};
+    std::atomic<size_t> request_count_{0};
+    std::vector<nordiska::Sha256Digest> seen_digests_;
+    std::thread server_thread_;
+};
 
 std::string_view text(const std::vector<uint8_t>& pdf) {
     return {reinterpret_cast<const char*>(pdf.data()), pdf.size()};
@@ -212,20 +296,21 @@ void test_renderers() {
     require(!nordiska::compute_byte_range_digest(bad, {.offset = 1, .max_length = SIZE_MAX}), "overflow slot accepted");
 }
 
-void test_c_adapter() {
+void test_socket_signer_adapter() {
+    const std::string socket_path = "/tmp/test_pdf_signer_" + std::to_string(::getpid()) + ".sock";
+    ::setenv("PDF_SIGNER_SOCKET_PATH", socket_path.c_str(), 1);
+
+    MockUnixSignerServer server(socket_path);
+
     const std::string input = R"({"customer_id":42,"documents":[
       {"document_id":"first","kind":"annual_tax_report","document":{"account_number":"1","tax_year":"2025"}},
       {"document_id":"second","kind":"annual_tax_report","document":{"account_number":"2","tax_year":"2025"}}
     ]})";
     const std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(input.data()), input.size());
     nordiska::GeneratorConfig config{.engine = nordiska::PdfEngineKind::Native, .enable_signing = true};
-    const int created_before = creations;
-    const int destroyed_before = destructions;
-    const int calls_before = sign_calls;
-    const int disposed_before = disposals;
+
     {
         nordiska::PdfGenerator generator(config);
-        require(creations == created_before + 1, "signer must be created once at generator initialization");
         nordiska::PipelineTiming timing;
         for (int batch = 0; batch < 2; ++batch) {
             const auto previous_hash_time = timing.hash_seconds;
@@ -255,48 +340,53 @@ void test_c_adapter() {
                 require(document.signature_slot.is_signed, "signed metadata not set");
                 const auto computed = independent_hash(covered_bytes(document.pdf_bytes));
                 require(document.signing_digest == computed, "stored signing digest mismatch");
-                require(seen_digests[static_cast<size_t>(calls_before + batch * 2) + i] == computed,
-                        "C API received wrong digest");
+                require(server.seen_digests()[static_cast<size_t>(batch * 2) + i] == computed,
+                        "Signer service received wrong digest");
                 require(document.sha256_hash == independent_hash(document.pdf_bytes),
                         "final artifact checksum mismatch");
             }
         }
-        require(creations == created_before + 1 && sign_calls == calls_before + 4, "wrong signer call count");
+        require(server.request_count() == 4, "wrong signer request count");
     }
-    require(destructions == destroyed_before + 1 && disposals == disposed_before + 4, "C resource cleanup mismatch");
-    for (auto mode : {Reply::Empty, Reply::Odd, Reply::NonHex, Reply::TooLarge, Reply::Failure}) {
-        reply = mode;
-        const int before = disposals;
-        const int calls = sign_calls;
+
+    // Test error responses from signer service
+    for (auto mode :
+         {MockSignerReply::Empty, MockSignerReply::Odd, MockSignerReply::NonHex, MockSignerReply::TooLarge,
+          MockSignerReply::Failure, MockSignerReply::ProtocolVersionMismatch, MockSignerReply::UnsupportedAlgorithm}) {
+        server.set_reply(mode);
         nordiska::PdfGenerator generator(config);
         auto result = generator.generate(payload);
-        const auto expected_kind = mode == Reply::TooLarge  ? nordiska::SigningErrorKind::SignatureTooLarge
-                                   : mode == Reply::Failure ? nordiska::SigningErrorKind::SignatureGenerationFailed
-                                                            : nordiska::SigningErrorKind::InvalidSignatureOutput;
+        const auto expected_kind =
+            mode == MockSignerReply::TooLarge                  ? nordiska::SigningErrorKind::SignatureTooLarge
+            : mode == MockSignerReply::Failure                 ? nordiska::SigningErrorKind::SignatureGenerationFailed
+            : mode == MockSignerReply::UnsupportedAlgorithm    ? nordiska::SigningErrorKind::InvalidArgument
+            : mode == MockSignerReply::ProtocolVersionMismatch ? nordiska::SigningErrorKind::InternalError
+                                                               : nordiska::SigningErrorKind::InvalidSignatureOutput;
         require(!result, "signer failures must fail generation");
         require(std::holds_alternative<nordiska::SigningError>(result.error().details),
                 "error details must be SigningError");
         require(std::get<nordiska::SigningError>(result.error().details).kind == expected_kind,
                 "signer failures must map to expected SigningErrorKind");
-        require(disposals == before + 1 && sign_calls == calls + 1, "failure cleanup or early abort incorrect");
     }
-    reply = Reply::Normal;
-    fail_create = true;
+
+    // Test socket connection failure when server is stopped
+    server.stop();
     {
-        const int calls = sign_calls;
         nordiska::PdfGenerator generator(config);
-        require(!generator.generate(payload) && sign_calls == calls, "creation failure must not call sign");
+        auto result = generator.generate(payload);
+        require(!result, "stopped socket server must cause signing failure");
     }
-    fail_create = false;
+
     config.enable_signing = false;
-    const int before = creations;
     nordiska::PdfGenerator deferred(config);
     nordiska::PipelineTiming deferred_timing;
     auto result = deferred.generate(payload, &deferred_timing);
     require(deferred_timing.hash_seconds > 0.0 && deferred_timing.signer_call_seconds == 0.0,
             "deferred mode must time hashing without recording an external call");
-    require(result.has_value() && creations == before, "deferred mode must not initialize signer");
+    require(result.has_value(), "deferred mode generation failed");
     require(!result->documents[0].signature_slot.is_signed, "deferred document marked signed");
+
+    ::unsetenv("PDF_SIGNER_SOCKET_PATH");
 }
 
 // Make a real detached test signature independently of the C stub. Verification
@@ -377,6 +467,6 @@ void test_real_cms() {
 int main() {
     std::filesystem::create_directories("signing_samples");
     test_renderers();
-    test_c_adapter();
+    test_socket_signer_adapter();
     test_real_cms();
 }

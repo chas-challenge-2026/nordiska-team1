@@ -15,14 +15,18 @@ typedef enum
   CERT_STATUS_INTERNAL_ERROR,
 } cert_status_t;
 
+/* Owns a loaded X.509 certificate. */
 typedef struct
 {
   X509* certificate;
 
 } cert_handle_t;
 
+/* Loads and X.509 certificate from a file. */
 cert_status_t cert_load_file(const char* path, cert_handle_t* out);
-void          cert_dispose(cert_handle_t* handle);
+
+/* Releases the certificate owned by the handle. */
+void cert_dispose(cert_handle_t* handle);
 
 #ifdef __cplusplus
 }
