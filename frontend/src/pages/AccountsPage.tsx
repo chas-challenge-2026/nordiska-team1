@@ -7,6 +7,7 @@ import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import HelpCard from "../components/faq/HelpCard";
 import ActionButton from "../components/accounts/ActionButton";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
+import { useSearchParams } from "react-router";
 import AccountStatementBtn from "../components/reports/AccountStatementButton";
 import TaxReportBtn from "../components/reports/TaxReportButton";
 
@@ -29,11 +30,16 @@ estimatedYearEndInterest: 1298.35
 export default function AccountsPage() {
     const {t} = useTranslation();
     const { data: accounts, isLoading, isError } = useGetAccounts("active");
-
     const { mutate: closeAccount, error: closeAccountError, isPending, reset } = useCloseAccount();
+    const [searchParams] = useSearchParams();
+    const accountIdFromUrl = Number(searchParams.get("account"));
 
     const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
-    const selectedAccountId = selectedAccount ?? accounts?.[0]?.id;
+    const selectedAccountId = 
+        selectedAccount ?? (accounts?.some((account) => account.id === accountIdFromUrl)
+            ? accountIdFromUrl
+            : accounts?.[0]?.id);
+
     const expandedAccount = accounts?.find((account) => account.id === selectedAccountId);
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
