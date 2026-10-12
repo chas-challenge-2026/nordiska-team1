@@ -40,7 +40,8 @@
     "errors": {
         "loading": "Something went wrong while loading the data.",
         "no-user": "Could not find user.",
-        "report": "Could not create the report. Try again."
+        "report": "Could not create the report. Try again.",
+        "generic": "Something went wrong. Try again later."
     },
     "aria-label": {
         "page-nav": "Main navigation",
