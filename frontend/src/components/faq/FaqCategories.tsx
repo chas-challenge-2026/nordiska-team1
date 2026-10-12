@@ -30,7 +30,7 @@ const FaqCategories = ({
             <button
                 type="button"
                 onClick={() => onSelect("")}
-                className={`cursor-pointer rounded-3xl border-2 px-3 py-1 text-sm hover:bg-nordiska-orange hover:text-dark-navy ${
+                className={`cursor-pointer rounded-3xl  border-2 px-2 sm:px-3 py-1 text-xs sm:text-sm hover:bg-nordiska-orange hover:text-dark-navy ${
                     selectedCategory === ""
                         ? "border-nordiska-orange bg-nordiska-orange text-dark-navy"
                         : "border-nordiska-orange text-white"

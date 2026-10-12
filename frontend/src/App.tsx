@@ -33,11 +33,14 @@ export default function App() {
     const noShow = location.pathname.startsWith("/admin")
 
     return (
-        <div className='flex min-h-dvh flex-col'>
+        <div className="flex h-dvh flex-col overflow-scroll">
             <PageHeader protectedHeader={protectedHeader} noShow={noShow}/>
-            <ErrorBoundary key={location.pathname}>
-                <AppRoutes />
-            </ErrorBoundary>
+
+            <div className="flex min-h-0 flex-1 flex-col">
+                <ErrorBoundary key={location.pathname}>
+                    <AppRoutes />
+                </ErrorBoundary>
+            </div>
 
             {/* TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut: */}
             {showWarning && (

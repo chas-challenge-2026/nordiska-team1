@@ -78,17 +78,17 @@ export default function PagePagination({
     const pages = getPages();
 
     return(
-        <nav className="flex items-center justify-center gap-2 sm:gap-3">
+        <nav className="flex flex-wrap items-center justify-center gap-1 sm:gap-3">
             <button
                 type="button"
                 disabled={isDisabled || !hasPreviousPage}
                 onClick={onPrevious}
                 aria-label={t("aria-label.previous-page")}
-                className="cursor-pointer font-semibold text-primary-blue hover:text-nordiska-blue disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer text-xs sm:text-sm font-semibold text-primary-blue hover:text-nordiska-blue disabled:cursor-not-allowed disabled:opacity-40"
             >
                 {t("generic.previous")}
             </button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
                 {pages.map((pageNumber, index) =>
                     pageNumber === "..." 
                     ? (<span key={`ellipsis-${index}`} className="px-2" aria-hidden="true">…</span>) 
@@ -112,7 +112,7 @@ export default function PagePagination({
                 disabled={isDisabled || !hasNextPage}
                 onClick={onNext}
                 aria-label={t("aria-label.next-page")}
-                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 font-semibold text-primary-blue hover:text-nordiska-blue"
+                className="cursor-pointer text-xs sm:text-sm disabled:cursor-not-allowed disabled:opacity-40 font-semibold text-primary-blue hover:text-nordiska-blue"
             >
                 {t("generic.next")}
             </button>
