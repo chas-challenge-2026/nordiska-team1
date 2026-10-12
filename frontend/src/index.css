@@ -24,6 +24,7 @@ body {
   --color-pagenav-bg: #F7F7F6;
   --color-error: #DC2626; /* (color-red-600) */
   --color-success: #16A34A; /* (color-green-600) */
+  --color-primary-blue-hover: #E8EEF9;
 
   --shadow-card: 0 1px 3px rgb(0 16 43 / 0.08);
   --shadow-modal: 0 24px 60px rgb(0 16 43 / 0.32);
