@@ -193,9 +193,9 @@ export default function AccountsPage() {
                                     <h2 id="account-actions-heading" className="mt-4 mb-1 ml-1 text-base font-semibold text-dark-navy sm:mt-6 sm:text-xl">{t("accounts-route.actions")}</h2>
 
                                     <section aria-labelledby="account-actions-heading" className="my-4 sm:my-6">
-                                        <div className="grid gap-2 p-1 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 [direction:rtl]">
+                                        <div className="grid gap-2 p-1 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
                                             {favoriteError ? (
-                                                <div className="col-span-full rounded-lg border border-red-200 bg-red-50 py-3 text-center [direction:ltr]" role="alert">
+                                                <div className="col-span-full rounded-lg border border-red-200 bg-red-50 py-3 text-center" role="alert">
                                                     <p className="text-sm font-medium text-red-800">{favoriteError}</p>
                                                 </div>
                                             ) : (
