@@ -4,6 +4,7 @@ import InputField from "../forms/InputField";
 import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
 import { useCreateSavingsGoal, useUpdateSavingsGoal, useDeleteSavingsGoal, } from "../../hooks/useAccounts";
 import type { SavingGoal } from "../../services/accountsService";
+import { useTranslation } from "react-i18next";
 
 type HandleSavingsGoalModalProps = {
     accountNumber: string;
@@ -38,6 +39,7 @@ export default function HandleSavingsGoalModal({
     existingSavingGoal,
     newGoal,
 }: HandleSavingsGoalModalProps) {
+    const {t} = useTranslation();
     const createSavingGoal = useCreateSavingsGoal();
     const updateSavingGoal = useUpdateSavingsGoal();
     const deleteSavingsGoal = useDeleteSavingsGoal();
@@ -75,20 +77,21 @@ export default function HandleSavingsGoalModal({
         const newErrors: FormErrors = {};
 
         const parsedAmount = formData.targetAmount.trim() === "" ? undefined : Number(formData.targetAmount);
-        if (parsedAmount === undefined || Number.isNaN(parsedAmount) || parsedAmount <= 0){newErrors.amountError = "Ange ett giltigt belopp.";}
+        if (parsedAmount === undefined || Number.isNaN(parsedAmount) || parsedAmount <= 0){newErrors.amountError = t("accounts-route.handle-saving-goal.valid-amount");}
 
         if (hasDate) {
-            if (!formData.targetDate) { newErrors.dateError = "Ange ett slutdatum";} 
+            if (!formData.targetDate) { newErrors.dateError = t("accounts-route.handle-saving-goal.required-date");} 
             else {
                 const selectedDate = new Date(formData.targetDate);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                if (selectedDate <= today) { newErrors.dateError = "Slutdatumet måste vara längre fram i tiden";}
+                if (selectedDate <= today) { newErrors.dateError = t("accounts-route.handle-saving-goal.invalid-date");}
             }
         }
 
-        if (formData.title.trim().length === 0) {newErrors.titleError = "Ange en titel";} 
-        else if (!/^[a-zA-ZåäöÅÄÖ0-9 &'’-]+$/.test(formData.title.trim())) {newErrors.titleError ="Endast tecken - ' & är tillåtna i titeln";}
+        if (formData.title.trim().length === 0) {newErrors.titleError = t("accounts-route.handle-saving-goal.required-title");}
+        else if (formData.title.length > 30) {newErrors.titleError = t("accounts-route.handle-saving-goal.title-too-long");} 
+        else if (!/^[\p{L}\p{N}\p{M}\s\p{P}\p{S}]+$/u.test(formData.title)) {newErrors.titleError = t("accounts-route.handle-saving-goal.invalid-title");}
 
         setErrors(newErrors);
 
@@ -101,9 +104,7 @@ export default function HandleSavingsGoalModal({
        const handleDelete = () => {
             if (!existingSavingGoal) return;
 
-            const confirmed = window.confirm(
-                `Är du säker på att du vill ta bort sparmål ${existingSavingGoal.title}?`
-            );
+            const confirmed = window.confirm(`${t("accounts-route.handle-saving-goal.confirm-delete")} ${existingSavingGoal.title}?`);
 
             if (!confirmed) return;
 
@@ -115,8 +116,6 @@ export default function HandleSavingsGoalModal({
                 }
             }) 
         };
-
-    
 
     function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
@@ -197,21 +196,20 @@ export default function HandleSavingsGoalModal({
         <Modal
             isOpen={isModalOpen}
             onClose={handleClose}
-            title={existingSavingGoal && !newGoal ? "Redigera sparmål" : "Sätt ett sparmål"}
+            title={existingSavingGoal && !newGoal ? t("accounts-route.handle-saving-goal.edit-title") : t("accounts-route.handle-saving-goal.create-title")}
         >
-            {isSaving && (<p className="text-sm text-red-700"> Sparar ditt sparmål... </p>)}
-            {hasError && (<p className="text-sm text-red-700"> Kunde inte spara sparmålet. Försök igen. </p>)}
+            {isSaving && (<p>{t("accounts-route.handle-saving-goal.saving")}</p>)}
+            {hasError && (<p className="text-sm text-red-700">{t("accounts-route.handle-saving-goal.save-error")}</p>)}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-
                 <p className="border-y mt-8 text-secondary/70 border-secondary/30">{accountName ? `${accountName} ${accountNumber}` : accountNumber}</p>
-                <h2 className="text-lg font-semibold text-dark-navy"> {existingSavingGoal && !newGoal ? "Redigera sparmål" : "Sätt ett sparmål"} </h2>
+                <h2 className="text-lg font-semibold text-dark-navy"> {existingSavingGoal && !newGoal ? t("accounts-route.handle-saving-goal.edit-title") : t("accounts-route.handle-saving-goal.create-title")} </h2>
 
                 <InputField
                     name="title"
                     type="text"
-                    label="Namnge ditt sparmål?"
-                    placeholder="ex. Köp ny TV"
+                    label={t("accounts-route.handle-saving-goal.title-label")}
+                    placeholder={t("accounts-route.handle-saving-goal.title-placeholder")}
                     value={formData.title}
                     onChange={(value) => updateFormField("title", value)}
                     error={errors.titleError}
@@ -221,7 +219,7 @@ export default function HandleSavingsGoalModal({
                 <InputField
                     name="amount"
                     type="number"
-                    label="Ange ditt sparmål"
+                    label={t("accounts-route.handle-saving-goal.amount-label")}
                     placeholder="40000"
                     value={formData.targetAmount}
                     onChange={(value) => updateFormField("targetAmount", value)}
@@ -245,7 +243,7 @@ export default function HandleSavingsGoalModal({
                             }}
                             className="h-4 w-4 cursor-pointer"
                         />
-                        Jag vill ange ett slutdatum för mitt sparande
+                        {t("accounts-route.handle-saving-goal.date-checkbox")}
                     </label>
                 </div>
 
@@ -254,39 +252,28 @@ export default function HandleSavingsGoalModal({
                         name="targetDate"
                         type="date"
                         placeholder=""
-                        label="Slutdatum"
+                        label={t("accounts-route.handle-saving-goal.date-checkbox")}
                         value={formData.targetDate}
                         onChange={(value) => updateFormField("targetDate", value)}
                         error={errors.dateError}
                     />
                 )}
 
-                { existingSavingGoal && !newGoal &&
-                (
+                { existingSavingGoal && !newGoal && (
 
-                                    <button
+                    <button
                         type="button"
                         onClick={handleDelete}
                         disabled={deleteSavingsGoal.isPending}
                         className="group my-5 inline-flex min-w-0 flex-1 items-center justify-center rounded-lg bg-white border px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-600 hover:text-white duration-200 ease-in disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:flex-none sm:text-sm cursor-pointer"
                     >
-                        <span
-                            aria-hidden="true"
-                            className="mr-1.5 block h-4 w-4 bg-red-600 mask-[url('/icons/close.svg')] duration-200 ease-in mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5 group-hover:bg-white"
-                        />
+                        <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-red-600 mask-[url('/icons/close.svg')] duration-200 ease-in mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5 group-hover:bg-white"/>
+
                         {deleteSavingsGoal.isPending
-                            ? "Tar bort..."
-                            : "Ta bort sparmål"}
+                            ? t("accounts-route.handle-saving-goal.deleting")
+                            : t("accounts-route.handle-saving-goal.delete-goal")}
                     </button>
-
-
-                )
-
-
-
-                }
-
-
+                )}
 
                 <CollapsibleFormBtns onClose={handleClose} submitDisabled={isSaving}/>
             </form>

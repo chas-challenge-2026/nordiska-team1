@@ -207,7 +207,28 @@
         "generate-report": "Generate report",
         "show-report": "View report",
         "tax-report-filename": "tax-report-{{year}}",
-        "account-statement-filename": "account-statement-{{from}}_{{to}}"
+        "account-statement-filename": "account-statement-{{from}}_{{to}}",
+
+        "handle-saving-goal": {
+            "valid-amount": "Enter a valid amount.",
+            "required-title": "Enter a title.",
+            "title-too-long": "The title must not exceed 30 characters.",
+            "invalid-title": "The title contains unsupported characters.",
+            "required-date": "Enter an end date.",
+            "invalid-date": "The end date must be in the future.",
+            "confirm-delete": "Are you sure you want to delete the savings goal",
+            "edit-title": "Edit savings goal",
+            "create-title": "Set a savings goal",
+            "saving": "Saving your savings goal...",
+            "save-error": "Could not save the savings goal. Please try again.",
+            "title-label": "Name your savings goal?",
+            "title-placeholder": "e.g. Buy a new TV",
+            "amount-label": "Enter your savings goal",
+            "date-checkbox": "I want to set an end date for my savings goal",
+            "date-label": "End date",
+            "deleting": "Deleting...",
+            "delete-goal": "Delete savings goal"
+        }
     },
 
     "progress-bar": {

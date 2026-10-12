@@ -205,7 +205,28 @@
         "generate-report": "Skapa rapport",
         "show-report": "Visa rapport",
         "tax-report-filename": "skatterapport-{{year}}",
-        "account-statement-filename": "kontoutdrag-{{from}}_{{to}}"
+        "account-statement-filename": "kontoutdrag-{{from}}_{{to}}",
+
+        "handle-saving-goal": {
+            "valid-amount": "Ange ett giltigt belopp.",
+            "required-title": "Ange en titel.",
+            "title-too-long": "Titeln får vara högst 30 tecken.",
+            "invalid-title": "Titeln innehåller tecken som inte stöds.",
+            "required-date": "Ange ett slutdatum.",
+            "invalid-date": "Slutdatumet måste vara längre fram i tiden.",
+            "confirm-delete": "Är du säker på att du vill ta bort sparmålet",
+            "edit-title": "Redigera sparmål",
+            "create-title": "Sätt ett sparmål",
+            "saving": "Sparar ditt sparmål...",
+            "save-error": "Kunde inte spara sparmålet. Försök igen.",
+            "title-label": "Namnge ditt sparmål?",
+            "title-placeholder": "ex. Köp ny TV",
+            "amount-label": "Ange ditt sparmål",
+            "date-checkbox": "Jag vill ange ett slutdatum för mitt sparande",
+            "date-label": "Slutdatum",
+            "deleting": "Tar bort...",
+            "delete-goal": "Ta bort sparmål"
+        }
     },
 
     "progress-bar": {
