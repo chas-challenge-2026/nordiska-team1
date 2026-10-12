@@ -109,7 +109,7 @@ volumes:
 
 secrets:
   pdf_signer_pkcs11_pin:
-    file: ../secrets/pdf_signer_pkcs11_pin.txt
+    file: ./secrets/pdf_signer_pkcs11_pin.txt
 
   pdf_signer_pkcs11_so_pin:
-    file: ../secrets/pdf_signer_pkcs11_so_pin.txt
+    file: ./secrets/pdf_signer_pkcs11_so_pin.txt

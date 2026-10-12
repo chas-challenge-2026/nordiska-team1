@@ -27,12 +27,73 @@ services:
       timeout: 5s
       retries: 12
 
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: final
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__BankingDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__FaqDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__InboxDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      Jwt__SecretKey: ${NORDISKA_JWT_SECRET:?Set NORDISKA_JWT_SECRET in infra/v2/.env}
+      Jwt__Issuer: NordiskaSparbanken
+      Jwt__Audience: NordiskaSparbankenPortal
+      AuditLogging__SigningKey: ${NORDISKA_AUDIT_SIGNING_KEY:?Set NORDISKA_AUDIT_SIGNING_KEY in infra/v2/.env}
+      ActiveLogin__BankId__Environment: Simulated
+      ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
+    volumes:
+      - report_documents:/var/lib/nordiska/report-documents:ro
+    expose:
+      - "8080"
+
+  reporting-worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: reporting-worker
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+      ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
+      NORDISKA_PDF_ENABLE_SIGNING: "0"
+    volumes:
+      - report_documents:/var/lib/nordiska/report-documents
+
   pdf-signer:
     build:
       context: ../..
       dockerfile: native/pdf-signer/docker/Dockerfile.service
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
+      NORDISKA_PDF_ENABLE_SIGNING: "1"
+      PDF_OUTPUT_DIRECTORY: /var/lib/nordiska/report-documents
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       PDF_SIGNER_PKCS11_PROVIDER: pkcs11
       PDF_SIGNER_PKCS11_MODULE: /usr/lib/softhsm/libsofthsm2.so
       PDF_SIGNER_PKCS11_URI: "pkcs11:token=key-load-dev;object=pdf-signer-test;type=private"
@@ -41,6 +102,7 @@ services:
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
       PDF_SIGNER_TSA_URL: http://127.0.0.1:8081/
     volumes:
+      - report_documents:/var/lib/nordiska/report-documents
       - pdf_signer_socket:/run/pdf-signer
     secrets:
       - pdf_signer_pkcs11_pin
@@ -48,11 +110,11 @@ services:
 
 volumes:
   postgres_v2_data:
+  report_documents:
   pdf_signer_socket:
 
 secrets:
   pdf_signer_pkcs11_pin:
-    file: ../../secrets/pdf_signer_pkcs11_pin.txt
-
+    file: ./secrets/pdf_signer_pkcs11_pin.txt
   pdf_signer_pkcs11_so_pin:
-    file: ../../secrets/pdf_signer_pkcs11_so_pin.txt
+    file: ./secrets/pdf_signer_pkcs11_so_pin.txt
