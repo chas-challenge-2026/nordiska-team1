@@ -39,7 +39,7 @@ int main(void) {
   }
   printf("PDF signer initialized\n");
 
-  if (signer_server_run(signer, shutdown_pipe[0]) != 0) {
+  if (signer_server_run(shutdown_pipe[0]) != 0) {
     fprintf(stderr, "Failed to start signer server\n");
     return 1;
   }

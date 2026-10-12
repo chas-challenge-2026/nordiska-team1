@@ -64,6 +64,7 @@ Desktop.ini
 *.dll
 *.exe
 *.out
+secrets/
 
 # Crash / sanitizer output
 core
