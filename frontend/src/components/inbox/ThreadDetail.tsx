@@ -12,6 +12,7 @@ import type { Folders, SupportTicketThread } from "../../types/inbox";
 import { formatDate, formatTime } from "../../utils/date";
 import { useUserStore } from "../../store/userStore";
 import InboxButton from "./InboxButton";
+import { InboxLoadError } from "./InboxState";
 
 type ThreadDetailProps = {
     id: number;
@@ -63,9 +64,8 @@ export default function ThreadDetail({ id, search, folder }: ThreadDetailProps) 
 
     if (thread.isError || !data) {
         return (
-            <div className="flex items-center justify-between bg-white px-4 py-3 shadow-card">
-                <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                <InboxButton variant="link" onClick={() => thread.refetch()}>{t("generic.try-again")}</InboxButton>
+            <div className="bg-white shadow-card">
+                <InboxLoadError onRetry={() => thread.refetch()} />
             </div>
         );
     }

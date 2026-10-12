@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useInboxOverview, useUnreadCount } from "../../hooks/inbox/useInboxSummary";
 import type { FeedItem } from "../../types/inbox";
 import { formatWhen } from "../../utils/date";
-import InboxButton from "../inbox/InboxButton";
+import { InboxLoading, InboxLoadError } from "../inbox/InboxState";
 
 type InboxDropdownProps = {
     open: boolean;
@@ -111,16 +111,8 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                                 <strong>{t("inbox.unread-count", { count: unreadCount })}</strong>
                             </div>
 
-                            {overview.isPending && (
-                                <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>
-                            )}
-
-                            {overview.isError && (
-                                <div className="flex items-center justify-between px-4 py-3">
-                                    <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                                    <InboxButton variant="link" onClick={() => overview.refetch()}>{t("generic.try-again")}</InboxButton>
-                                </div>
-                            )}
+                            {overview.isPending && <InboxLoading />}
+                            {overview.isError && <InboxLoadError onRetry={() => overview.refetch()} />}
 
                             {overview.isSuccess && items.length === 0 && (
                                 <p className="px-4 py-3 text-secondary">{t("inbox.empty.feed")}</p>

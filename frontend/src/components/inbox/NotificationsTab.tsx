@@ -8,6 +8,7 @@ import {
 import { formatWhen } from "../../utils/date";
 import PagePagination from "../PagePagination";
 import InboxButton from "./InboxButton";
+import { InboxLoading, InboxLoadError } from "./InboxState";
 
 type NotificationsTabProps = {
     page: number;
@@ -54,14 +55,8 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
                 <p role="alert" className="px-4 py-2 text-error">{t("generic.error-action")}</p>
             )}
 
-            {notifications.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>}
-
-            {notifications.isError && (
-                <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                    <InboxButton variant="link" onClick={() => notifications.refetch()}>{t("generic.try-again")}</InboxButton>
-                </div>
-            )}
+            {notifications.isPending && <InboxLoading />}
+            {notifications.isError && <InboxLoadError onRetry={() => notifications.refetch()} />}
 
             {notifications.isSuccess && items.length === 0 && (
                 <p className="px-4 py-3 text-secondary">{t("inbox.empty.notifications")}</p>

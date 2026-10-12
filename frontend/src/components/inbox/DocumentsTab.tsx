@@ -9,6 +9,7 @@ import type { InboxDocument, GeneralDocument } from "../../types/inbox";
 import { formatDate } from "../../utils/date";
 import PagePagination from "../PagePagination";
 import InboxButton from "./InboxButton";
+import { InboxLoading, InboxLoadError } from "./InboxState";
 
 type DocumentsTabProps = {
     page: number;
@@ -62,14 +63,8 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
                 </div>
             </div>
 
-            {documents.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>}
-
-            {documents.isError && (
-                <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
-                    <InboxButton variant="link" onClick={() => documents.refetch()}>{t("generic.try-again")}</InboxButton>
-                </div>
-            )}
+            {documents.isPending && <InboxLoading />}
+            {documents.isError && <InboxLoadError onRetry={() => documents.refetch()} />}
 
             {documents.isSuccess && personalItems.length === 0 && (
                 <p className="px-4 py-3 text-secondary">{t("inbox.empty.documents")}</p>
@@ -102,14 +97,8 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
                 {t("inbox.documents-tab.general")}
             </h3>
 
-            {general.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>}
-
-            {general.isError && (
-                <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
-                    <InboxButton variant="link" onClick={() => general.refetch()}>{t("generic.try-again")}</InboxButton>
-                </div>
-            )}
+            {general.isPending && <InboxLoading />}
+            {general.isError && <InboxLoadError onRetry={() => general.refetch()} />}
 
             {general.isSuccess && generalItems.length === 0 && (
                 <p className="px-4 py-3 text-secondary">{t("inbox.empty.documents")}</p>

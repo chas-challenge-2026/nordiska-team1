@@ -3,6 +3,7 @@ import { useAcceptPendingTerm, usePendingTerms } from "../../hooks/inbox/useTerm
 import { useDownloadInboxDocument } from "../../hooks/inbox/useDocuments";
 import { formatDate } from "../../utils/date";
 import InboxButton from "./InboxButton";
+import { InboxLoading, InboxLoadError } from "./InboxState";
 
 export default function TermsTab() {
     const { t } = useTranslation();
@@ -23,14 +24,8 @@ export default function TermsTab() {
                 <p role="alert" className="px-4 py-2 text-error">{t("generic.error-action")}</p>
             )}
 
-            {terms.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>}
-
-            {terms.isError && (
-                <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                    <InboxButton variant="link" onClick={() => terms.refetch()}>{t("generic.try-again")}</InboxButton>
-                </div>
-            )}
+            {terms.isPending && <InboxLoading />}
+            {terms.isError && <InboxLoadError onRetry={() => terms.refetch()} />}
 
             {terms.isSuccess && items.length === 0 && (
                 <p className="px-4 py-3 text-secondary">{t("inbox.empty.terms")}</p>

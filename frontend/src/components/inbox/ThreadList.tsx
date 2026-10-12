@@ -4,7 +4,7 @@ import { useSupportThreads, usePrefetchSupportThread } from "../../hooks/inbox/u
 import type { Folders } from "../../types/inbox";
 import { formatWhen } from "../../utils/date";
 import PagePagination from "../PagePagination";
-import InboxButton from "./InboxButton";
+import { InboxLoading, InboxLoadError } from "./InboxState";
 
 type ThreadListProps = {
     folder: Folders;
@@ -27,14 +27,8 @@ export default function ThreadList({ folder, page, search, selectedId, onPageCha
                 <h2 className="font-bold">{t("inbox.select-message")}</h2>
             </div>
 
-            {threads.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>}
-
-            {threads.isError && (
-                <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">{t("generic.error-load")}</span>
-                    <InboxButton variant="link" onClick={() => threads.refetch()}>{t("generic.try-again")}</InboxButton>
-                </div>
-            )}
+            {threads.isPending && <InboxLoading />}
+            {threads.isError && <InboxLoadError onRetry={() => threads.refetch()} />}
 
             {data && data.items.length === 0 && (
                 <p className="px-4 py-3 text-secondary">{t("inbox.empty.messages")}</p>
