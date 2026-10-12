@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { updateCustomerOverviewLayout } from "../../services/customerService";
 import { useUserStore } from "../../store/userStore";
 
 export const CARD_IDS = ["accounts", "savings", "planned", "transactions"] as const;
@@ -21,21 +20,10 @@ function sanitize(value: unknown): CardId[] {
 
 export function useCardOrder() {
     const user = useUserStore((state) => state.user);
-    const updateUser = useUserStore((state) => state.updateUser);
+    const [order, setOrder] = useState<CardId[]>(() => sanitize(user?.overviewPreference));
 
-    const [order, setOrderState] = useState<CardId[]>(() => sanitize(user?.overviewPreference));
-
-    async function saveOrder(next: CardId[]) {
-        setOrderState(next);
-
-        if (!user?.id) return;
-
-        try {
-            await updateCustomerOverviewLayout(user.id, next);
-            updateUser({overviewPreference: next,});
-        } catch (error) {
-            console.error("Could not save overview layout", error);
-        }
+    function beginEditing() {
+        setOrder(sanitize(user?.overviewPreference));
     }
 
     function move(id: CardId, delta: -1 | 1): number | null {
@@ -46,18 +34,19 @@ export function useCardOrder() {
         const next = [...order];
         [next[from], next[to]] = [next[to], next[from]];
 
-        saveOrder(next);
+        setOrder(next);
 
         return to;
     }
 
     function reset() {
-        saveOrder([...CARD_IDS]);
+        setOrder([...CARD_IDS]);
     }
 
     return {
         order,
-        setOrder: saveOrder,
+        setOrder,
+        beginEditing,
         move,
         reset,
     };
