@@ -43,6 +43,14 @@ export default function AccountsPage() {
         }
     };
 }, []);
+    const sortedAccounts = accounts
+            ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {
+                if (a.isFavorite && !b.isFavorite) return -1;
+                if (!a.isFavorite && b.isFavorite) return 1;
+                return 0;
+            })
+            : [];
+    const selectedAccountId = selectedAccount ?? sortedAccounts?.[0]?.id;
 
     const expandedAccount = accounts?.find((account) => account.id === selectedAccountId);
     const isFavorite = expandedAccount?.isFavorite ?? false;
@@ -51,15 +59,9 @@ export default function AccountsPage() {
 
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
 
-    const sortedAccounts = accounts
-        ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {
-            if (a.isFavorite && !b.isFavorite) return -1;
-            if (!a.isFavorite && b.isFavorite) return 1;
-            return 0;
-        })
-        : [];
+    
 
-    const selectedAccountId = selectedAccount ?? sortedAccounts?.[0]?.id;
+
 
     function handleOpenConfirm() {
         reset();
