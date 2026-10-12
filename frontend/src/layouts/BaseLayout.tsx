@@ -12,7 +12,7 @@ export default function DesktopLayout() {
             <main className="flex flex-1 min-h-0 w-full overflow-x-hidden pb-20 xl:mb-0">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={location.pathname}
+                        key={location.pathname.split("/")[1]}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
