@@ -33,49 +33,27 @@ export function toPlannedDateIso(dateStr: string) {
     return new Date(`${dateStr}T00:00:00Z`).toISOString();
 }
 
-export type RepeatInterval = "week" | "month" | "year" | "custom";
+// Backend kör bara "week" | "month" | "year" som återkommande. Andra värden
+// körs en gång och tas sedan bort.
+export type RepeatInterval = "week" | "month" | "year";
 
-export const CUSTOM_DAYS_MAX = 365;
-
-/** Antal dagar för eget intervall, eller null om värdet inte är 1–365. */
-export function parseCustomDays(raw: string) {
-    const trimmed = raw.trim();
-    if (!/^\d+$/.test(trimmed)) return null;
-    const days = Number(trimmed);
-    return days >= 1 && days <= CUSTOM_DAYS_MAX ? days : null;
+export function isRepeatInterval(repeating: string | undefined): repeating is RepeatInterval {
+    return repeating === "week" || repeating === "month" || repeating === "year";
 }
 
-// Backend stödjer "week" | "month" | "year". Eget intervall skickas som
-// "days:N" — det har inget backend-stöd än och körs då bara en gång.
-export function toRepeating(interval: RepeatInterval, customDays: number | null) {
-    if (interval !== "custom") return interval;
-    return customDays === null ? undefined : `days:${customDays}`;
-}
-
-export function parseRepeatingDays(repeating: string) {
-    const match = /^days:(\d+)$/.exec(repeating);
-    return match ? Number(match[1]) : null;
-}
-
-/** Motsatsen till toRepeating — används för att fylla i redigeringsformuläret. */
+/** Fyller i redigeringsformuläret från ett befintligt repeating-värde. */
 export function fromRepeating(repeating: string | undefined) {
-    const days = repeating ? parseRepeatingDays(repeating) : null;
-    if (days !== null) {
-        return { recurring: true, interval: "custom" as RepeatInterval, customDays: String(days) };
+    if (isRepeatInterval(repeating)) {
+        return { recurring: true, interval: repeating };
     }
-    if (repeating === "week" || repeating === "month" || repeating === "year") {
-        return { recurring: true, interval: repeating as RepeatInterval, customDays: "" };
-    }
-    return { recurring: false, interval: "month" as RepeatInterval, customDays: "" };
+    return { recurring: false, interval: "month" as RepeatInterval };
 }
 
-export function addRepeatIso(dateStr: string, repeating: string) {
+export function addRepeatIso(dateStr: string, repeating: RepeatInterval) {
     const d = new Date(`${dateStr}T00:00:00Z`);
-    const days = parseRepeatingDays(repeating);
     if (repeating === "week") d.setUTCDate(d.getUTCDate() + 7);
     else if (repeating === "month") d.setUTCMonth(d.getUTCMonth() + 1);
-    else if (repeating === "year") d.setUTCFullYear(d.getUTCFullYear() + 1);
-    else if (days !== null) d.setUTCDate(d.getUTCDate() + days);
+    else d.setUTCFullYear(d.getUTCFullYear() + 1);
     return d.toISOString().slice(0, 10);
 }
 
@@ -88,15 +66,11 @@ export function nextBankDayIso(dateStr: string) {
     return d.toISOString().slice(0, 10);
 }
 
-/** Text för ett repeating-värde, t.ex. "Månadsvis" eller "Med 14 dagars intervall". */
+/** Text för ett repeating-värde, t.ex. "Månadsvis". Tom sträng om det inte upprepas. */
 export function repeatingLabel(repeating: string, t: TFunction) {
-    if (repeating === "week" || repeating === "month" || repeating === "year") {
-        return t(`page-transfer.repeating.${repeating}`);
-    }
-    const days = parseRepeatingDays(repeating);
-    return days !== null
-        ? t("page-transfer.repeating.days", { count: days })
-        : repeating;
+    return isRepeatInterval(repeating)
+        ? t(`page-transfer.repeating.${repeating}`)
+        : "";
 }
 
 export function matchesSearch(account: TransferAccount, query: string) {

@@ -52,7 +52,7 @@ export default function PlannedTransferActionsModal({
 
     const handleSave = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!recurrence.isValid || isUnchanged) return;
+        if (isUnchanged) return;
         onSave({ date, repeating });
     };
 
@@ -146,9 +146,7 @@ export default function PlannedTransferActionsModal({
                         }
                         // Nytt försök efter "cleanup" skulle skapa ännu en dubblett.
                         submitDisabled={
-                            editError === "cleanup" ||
-                            !recurrence.isValid ||
-                            isUnchanged
+                            editError === "cleanup" || isUnchanged
                         }
                     />
                 </form>

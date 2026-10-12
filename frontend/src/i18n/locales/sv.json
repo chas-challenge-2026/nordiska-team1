@@ -301,17 +301,10 @@
         "date-label": "Överföringsdatum",
         "recurring-label": "Återkommande",
         "interval-label": "Intervall",
-        "custom-days-label": "Antal dagar mellan",
-        "custom-days-placeholder": "1–{{max}}",
-        "custom-days-suffix": "dagar",
-        "custom-days-error": "Ange 1–365 dagar",
         "repeating": {
             "week": "Veckovis",
             "month": "Månadsvis",
-            "year": "Årsvis",
-            "custom": "Eget intervall",
-            "days_one": "Varje dag",
-            "days_other": "Med {{count}} dagars intervall"
+            "year": "Årsvis"
         },
         "cta-submit-internal": "Bekräfta överföring",
         "cta-submit-external": "Bekräfta med BankID",

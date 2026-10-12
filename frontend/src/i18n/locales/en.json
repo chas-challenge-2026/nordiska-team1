@@ -305,17 +305,10 @@
         "date-label": "Transfer date",
         "recurring-label": "Recurring",
         "interval-label": "Interval",
-        "custom-days-label": "Days between",
-        "custom-days-placeholder": "1–{{max}}",
-        "custom-days-suffix": "days",
-        "custom-days-error": "Enter 1–365 days",
         "repeating": {
             "week": "Weekly",
             "month": "Monthly",
-            "year": "Yearly",
-            "custom": "Custom interval",
-            "days_one": "Every day",
-            "days_other": "Every {{count}} days"
+            "year": "Yearly"
         },
         "cta-submit-internal": "Confirm transfer",
         "cta-submit-external": "Confirm with BankID",

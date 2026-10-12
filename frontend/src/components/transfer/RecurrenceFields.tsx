@@ -1,16 +1,11 @@
 import { useTranslation } from "react-i18next";
-import InputField from "../forms/InputField";
-import { CUSTOM_DAYS_MAX } from "./transferHelpers";
 import type { RepeatInterval } from "./transferHelpers";
 
-const REPEAT_INTERVALS: RepeatInterval[] = ["week", "month", "year", "custom"];
+const REPEAT_INTERVALS: RepeatInterval[] = ["week", "month", "year"];
 
 export type RecurrenceFieldsValue = {
     repeatInterval: RepeatInterval;
     onRepeatIntervalChange: (value: RepeatInterval) => void;
-    customDays: string;
-    onCustomDaysChange: (value: string) => void;
-    customDaysError?: string;
 };
 
 type RecurrenceFieldsProps = RecurrenceFieldsValue & {
@@ -18,14 +13,11 @@ type RecurrenceFieldsProps = RecurrenceFieldsValue & {
     name: string;
 };
 
-/** Intervallval (+ antal dagar för eget intervall) för återkommande överföringar. */
+/** Intervallval för återkommande överföringar. */
 export default function RecurrenceFields({
     name,
     repeatInterval,
     onRepeatIntervalChange,
-    customDays,
-    onCustomDaysChange,
-    customDaysError,
 }: RecurrenceFieldsProps) {
     const { t } = useTranslation();
     const intervalId = `${name}Interval`;
@@ -55,23 +47,6 @@ export default function RecurrenceFields({
                     ))}
                 </select>
             </div>
-            {repeatInterval === "custom" && (
-                <InputField
-                    name={`${name}CustomDays`}
-                    type="text"
-                    label={t("page-transfer.custom-days-label")}
-                    placeholder={t("page-transfer.custom-days-placeholder", {
-                        max: CUSTOM_DAYS_MAX,
-                    })}
-                    value={customDays}
-                    required
-                    onChange={(value) =>
-                        onCustomDaysChange(value.replace(/\D/g, ""))
-                    }
-                    suffix={t("page-transfer.custom-days-suffix")}
-                    error={customDaysError}
-                />
-            )}
         </div>
     );
 }

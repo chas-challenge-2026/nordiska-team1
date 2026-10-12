@@ -76,8 +76,7 @@ export default function TransferPage() {
         !!fromAccount &&
         !!toAccount &&
         amountValue > 0 &&
-        !over &&
-        recurrence.isValid;
+        !over;
 
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
