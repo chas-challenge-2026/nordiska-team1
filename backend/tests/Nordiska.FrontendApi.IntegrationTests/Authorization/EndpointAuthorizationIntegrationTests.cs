@@ -61,8 +61,9 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
         "POST ActiveLogin/BankId/Auth/Api/QrCode",
         "POST ActiveLogin/BankId/Auth/Api/Cancel",
 
-        // Dev tooling, only mapped in Development
-        "GET /health/database",
+        // Health checks & dev tooling
+        "* /health",
+        "* /health/database",
         "GET,HEAD /openapi/{documentName}.json",
         "GET /scalar/{documentName?}",
         "GET /scalar/scalar.js",

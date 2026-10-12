@@ -7,6 +7,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" />
     <PackageReference Include="Microsoft.OpenApi" />
@@ -50,14 +51,8 @@
   </ItemGroup>
 
   <Target Name="CopyNativePdfRuntime" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-    <Warning
-      Condition="'@(NativePdfRuntimeFiles)' == ''"
-      Text="Native PDF runtime not found. Build native/pdf_generator before running PDF generation." />
-    <Copy
-      Condition="'@(NativePdfRuntimeFiles)' != ''"
-      SourceFiles="@(NativePdfRuntimeFiles)"
-      DestinationFolder="$(TargetDir)"
-      SkipUnchangedFiles="true" />
+    <Warning Condition="'@(NativePdfRuntimeFiles)' == ''" Text="Native PDF runtime not found. Build native/pdf_generator before running PDF generation." />
+    <Copy Condition="'@(NativePdfRuntimeFiles)' != ''" SourceFiles="@(NativePdfRuntimeFiles)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
   </Target>
 
 
