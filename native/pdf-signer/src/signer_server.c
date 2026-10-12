@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #define SIGNER_WORKER_COUNT 8
 #define SIGNER_QUEUE_SIZE 256
@@ -434,6 +435,7 @@ int signer_server_run(int shutdown_fd) {
     perror("bind");
     close(fd);
 
+
     queue_shutdown(&queue);
 
     for (size_t i = 0; i < started_workers; i++) {
@@ -446,6 +448,26 @@ int signer_server_run(int shutdown_fd) {
 
     queue_destroy(&queue);
     return 1;
+  }
+
+  if (chmod(addr.sun_path, 0666) != 0) {
+    perror("chmod");
+
+    close(fd);
+    unlink(addr.sun_path);
+
+    queue_shutdown(&queue);
+
+    for (size_t i = 0; i < started_workers; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    for (size_t i = 0; i < created_signers; i++) {
+      pdf_signer_destroy(signers[i]);
+    }
+
+    queue_destroy(&queue);
+    return -1;
   }
 
   if (listen(fd, 128) != 0) {
