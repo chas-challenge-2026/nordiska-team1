@@ -1,4 +1,5 @@
 import axiosInstance from "./axiosInstance";
+import axios from "axios";
 import type { User } from "../types/types";
 
 
@@ -13,8 +14,12 @@ export async function checkSession(): Promise<User | null> {
             ...authRes.data,
             ...customerRes.data,
         };
-    } catch {
-        return null;
+    } catch(error) {
+        // returnera inget om unauthorized
+        if (axios.isAxiosError(error) && error.response?.status === 401){ return null;}
+        
+        // skicka resten av felen vidare
+        throw error;
     }
 }
 
