@@ -8,10 +8,12 @@ interface AccountSelectorProps {
     onChange: (ids: number[]) => void;
     isLoading: boolean;
     isError: boolean;
+    showClosed: boolean;
+    onShowClosedChange: (show: boolean) => void;
     variant?: 'panel' | 'sheet';
 }
 
-export default function AccountSelector({ accounts, selectedIds, onChange, isLoading, isError, variant = 'panel' }: AccountSelectorProps) {
+export default function AccountSelector({ accounts, selectedIds, onChange, isLoading, isError, showClosed, onShowClosedChange, variant = 'panel' }: AccountSelectorProps) {
     const { t } = useTranslation();
     const isSheet = variant === 'sheet';
     const allSelected = accounts.length > 0 && selectedIds.length === accounts.length;
@@ -81,7 +83,12 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                                             className="mt-0.5 cursor-pointer"
                                         />
                                         <span className="flex flex-col">
-                                            <span>{acc.accountName} | {acc.accountNumber}</span>
+                                            <span>
+                                                {acc.accountName} | {acc.accountNumber}
+                                                {acc.status === "closed" && (
+                                                    <span className="ml-1 text-xs text-secondary">({t("transactions-route.closed")})</span>
+                                                )}
+                                            </span>
                                             <span className="text-secondary">
                                                 {acc.balance.toLocaleString('sv-SE', { minimumFractionDigits: 2 })} sek
                                             </span>
@@ -94,6 +101,16 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                             <p className="py-4 text-center text-sm text-secondary">{t("transactions-route.no-account-match")}</p>
                         )}
                     </fieldset>
+
+                    <label className={`flex items-center gap-2 text-sm border-t border-gray-200 ${isSheet ? 'pt-3' : 'mt-3 pt-3'}`}>
+                        <input
+                            type="checkbox"
+                            checked={showClosed}
+                            onChange={e => onShowClosedChange(e.target.checked)}
+                            className="cursor-pointer"
+                        />
+                        {t("transactions-route.show-closed")}
+                    </label>
                 </>
             )}
         </div>

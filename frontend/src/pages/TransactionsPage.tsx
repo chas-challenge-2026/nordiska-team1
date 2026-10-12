@@ -58,7 +58,12 @@ function SheetTrigger({ label, count, onClick, children }: { label: string; coun
 
 export default function TransactionsPage() {
     const { t } = useTranslation();
-    const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useGetAccounts();
+    // Alla konton hämtas så att transaktioner från stängda konton fortfarande kan visas
+    const { data: allAccounts, isLoading: accountsLoading, isError: accountsError } = useGetAccounts();
+
+    // Stängda konton döljs som standard men kan visas via kontoväljaren
+    const [showClosed, setShowClosed] = useState(false);
+    const accounts = showClosed ? allAccounts : allAccounts?.filter(a => a.status === "active");
 
     const [selectedAccountIds, setSelectedAccountIds] = useState<number[] | null>(null);
     const effectiveSelectedIds = selectedAccountIds ?? accounts?.map(a => a.id) ?? [];
@@ -134,6 +139,13 @@ export default function TransactionsPage() {
         setPage(1);
     };
 
+    const handleShowClosedChange = (show: boolean) => {
+        setShowClosed(show);
+        // Återställ valet så att alla synliga konton blir valda
+        setSelectedAccountIds(null);
+        setPage(1);
+    };
+
     return (
         <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 md:p-6 max-md:p-2 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
             <div className='hidden md:block'>
@@ -166,7 +178,7 @@ export default function TransactionsPage() {
             </div>
 
             <TransactionTable
-                accounts={accounts ?? []}
+                accounts={allAccounts ?? []}
                 transactions={transactions?.items ?? []}
                 totalCount={transactions?.totalCount ?? 0}
                 totalPages={transactions?.totalPages ?? 1}
@@ -187,6 +199,8 @@ export default function TransactionsPage() {
                     onChange={handleAccountsChange}
                     isLoading={accountsLoading}
                     isError={accountsError}
+                    showClosed={showClosed}
+                    onShowClosedChange={handleShowClosedChange}
                 />
             </div>
 
@@ -243,6 +257,8 @@ export default function TransactionsPage() {
                     onChange={handleAccountsChange}
                     isLoading={accountsLoading}
                     isError={accountsError}
+                    showClosed={showClosed}
+                    onShowClosedChange={handleShowClosedChange}
                     variant='sheet'
                 />
             </Modal>

@@ -102,7 +102,9 @@
         "search-account": "Sök kontonummer",
         "no-account-match": "Inga konton matchar sökningen.",
         "select-account": "Välj minst ett konto för att se transaktioner.",
-        "no-transactions": "Inga transaktioner hittades."
+        "no-transactions": "Inga transaktioner hittades.",
+        "show-closed": "Visa stängda konton",
+        "closed": "Stängt"
     },
     "accounts-route": {
         "help-card-search": "rapporter konto villkor",

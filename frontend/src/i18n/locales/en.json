@@ -102,7 +102,9 @@
         "search-account": "Search account number",
         "no-account-match": "No accounts match your search.",
         "select-account": "Select at least one account to see transactions.",
-        "no-transactions": "No transactions found."
+        "no-transactions": "No transactions found.",
+        "show-closed": "Show closed accounts",
+        "closed": "Closed"
     },
     "accounts-route": {
         "help-card-search": "reports account terms",
