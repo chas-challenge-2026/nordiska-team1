@@ -64,12 +64,14 @@ export async function updateFavoriteAccount(id: number, isFavorite: boolean) {
 // ------------------------
 // ----- SAVING GOALS -----
 // ------------------------
+export type SavingGoalStatus = "active" | "completed";
 
 export type CreateSavingGoalParams = {
     accountId: number,
     targetAmount: number,
     targetDate: string | null,
-    title: string | null
+    title: string | null,
+    status?: SavingGoalStatus
 };
 
 export async function createSavingsGoal(params: CreateSavingGoalParams) {
@@ -110,18 +112,20 @@ type UpdateSavingGoalParams = {
     title?: string | null;
     targetAmount?: number | null;
     targetDate?: string | null;
-    status?: string | null;
+    status?: SavingGoalStatus | null;
 };
 
 export async function updateSavingsGoal({    
     id,
     title,
     targetAmount,
-    targetDate,}:UpdateSavingGoalParams) {
+    targetDate,
+    status}:UpdateSavingGoalParams) {
     const res = await axiosInstance.patch(`/savings-goals/${id}`, {
         title,
         targetAmount,
         targetDate,
+        status
     });
     return res.data;
 }

@@ -18,6 +18,8 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
     const { t } = useTranslation();
     const deleteSavingsGoalMutation = useDeleteSavingsGoal();
 
+    console.log("saving", savingGoal);
+
     if (!savingGoal) {
         return (
             <div className="flex flex-col items-center justify-center pb-2">

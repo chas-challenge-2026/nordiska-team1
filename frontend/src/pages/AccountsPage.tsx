@@ -41,7 +41,9 @@ export default function AccountsPage() {
     const totalBalance = accounts?.reduce((sum, account) => sum + account.balance, 0) ?? 0;
     const canClose = expandedAccount?.balance === 0;
 
-    const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId);
+    const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
+
+    (console.log("existing", existingSavingGoal));
 
     const sortedAccounts = accounts
         ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {

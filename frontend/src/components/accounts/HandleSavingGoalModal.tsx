@@ -129,18 +129,64 @@ export default function HandleSavingsGoalModal({
             targetDate: hasDate ? new Date(formData.targetDate).toISOString() : null,
         };
 
-        if (existingSavingGoal || newGoal) {
-            if(!existingSavingGoal) return;
+        // Skapa ett nytt sparmål och stäng det gamla
+        if (newGoal && existingSavingGoal) {
             updateSavingGoal.mutate(
-                { id: existingSavingGoal.id, ...goalData,},
-                { onSuccess: () => { onSavingGoalCreated?.(); onClose();},}
+                {
+                    id: existingSavingGoal.id,
+                    status: "completed",
+                },
+                {
+                    onSuccess: () => {
+                        createSavingGoal.mutate(
+                            {
+                                accountId,
+                                ...goalData,
+                                status: "active",
+                            },
+                            {
+                                onSuccess: () => {
+                                    onSavingGoalCreated?.();
+                                    onClose();
+                                },
+                            }
+                        );
+                    },
+                }
             );
             return;
         }
 
+        // Redigera befintligt sparmål
+        if (existingSavingGoal && !newGoal) {
+            updateSavingGoal.mutate(
+                {
+                    id: existingSavingGoal.id,
+                    ...goalData,
+                },
+                {
+                    onSuccess: () => {
+                        onSavingGoalCreated?.();
+                        onClose();
+                    },
+                }
+            );
+            return;
+        }
+
+        // Skapa det första sparmålet
         createSavingGoal.mutate(
-            {accountId,...goalData,},
-            {onSuccess: () => {onSavingGoalCreated?.(); onClose();},}
+            {
+                accountId,
+                ...goalData,
+                status: "active",
+            },
+            {
+                onSuccess: () => {
+                    onSavingGoalCreated?.();
+                    onClose();
+                },
+            }
         );
     }
 
