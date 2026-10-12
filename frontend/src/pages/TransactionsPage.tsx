@@ -4,7 +4,7 @@ import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
 import type { TransactionFilters } from '../components/transactions/TransactionsFilter';
 import Modal from '../components/modals/Modal';
-import { useTransactions } from '../hooks/useTransactions';
+import { useGroupedTransactions } from '../hooks/useTransactions';
 import type { TransactionParams } from '../services/transactionsService';
 import { useGetAccounts } from '../hooks/useAccounts';
 import { useTranslation } from 'react-i18next';
@@ -101,7 +101,7 @@ export default function TransactionsPage() {
         Type: filters.type === 'all' ? undefined : filters.type,
     };
 
-    const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
+    const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useGroupedTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
 
     const hasNextPage = transactions?.hasNextPage ?? false;
     const hasPreviousPage = transactions?.hasPreviousPage ?? false;
@@ -182,6 +182,7 @@ export default function TransactionsPage() {
             <TransactionTable
                 accounts={allAccounts ?? []}
                 transactions={transactions?.items ?? []}
+                groups={transactions?.groups ?? []}
                 totalCount={transactions?.totalCount ?? 0}
                 totalPages={transactions?.totalPages ?? 1}
                 emptyMessage={effectiveSelectedIds.length === 0 ? t("transactions-route.select-account") : t("transactions-route.no-transactions")}

@@ -18,6 +18,7 @@ export interface TransactionParams {
     AccountIds?: number[];
     Type?: Transaction["type"];
     IsPlanned?: boolean;
+    GroupByDate?: boolean;
     FromDate?: string;
     ToDate?: string;
     MinAmount?: number;
@@ -58,8 +59,24 @@ export interface PagedResult<T> {
     hasPreviousPage: boolean;
 }
 
+/** Transaktioner för ett datum, grupperade av backend (date/dateKey är YYYY-MM-DD i UTC). */
+export interface TransactionDateGroup {
+    date: string;
+    dateKey: string;
+    items: Transaction[];
+}
+
+export interface GroupedPagedResult<T> extends PagedResult<T> {
+    groups: TransactionDateGroup[];
+}
+
 export async function getTransactions(input: TransactionParams): Promise<PagedResult<Transaction>> {
     const res = await axiosInstance.get("/transactions", { params: input, paramsSerializer: { indexes: null } });
+    return res.data;
+}
+
+export async function getGroupedTransactions(input: TransactionParams): Promise<GroupedPagedResult<Transaction>> {
+    const res = await axiosInstance.get("/transactions", { params: { ...input, GroupByDate: true }, paramsSerializer: { indexes: null } });
     return res.data;
 }
 
