@@ -64,7 +64,6 @@ Desktop.ini
 *.dll
 *.exe
 *.out
-secrets/
 
 # Crash / sanitizer output
 core
@@ -115,3 +114,17 @@ temp/
 
 # 7. Claude Code local settings
 .claude/
+
+# Accidental local files
+/=
+/[internal]
+/CACHED
+/exporting
+/naming
+/reading
+/resolving
+/transferring
+/writing
+
+# Local installer script
+/dotnet-install.sh
