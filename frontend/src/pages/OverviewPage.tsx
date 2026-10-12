@@ -8,6 +8,7 @@ import RecentTransactionsCard from "../components/overview/RecentTransactionsCar
 import ReorderableCard from "../components/overview/ReorderableCard";
 import { useCardOrder, type CardId } from "../components/overview/useCardOrder";
 import { useUserStore } from "../store/userStore";
+import { useUpdateOverviewLayout } from "../hooks/useUpdateOverviewLayout";
 
 const CARD_COMPONENTS: Record<CardId, ComponentType> = {
     accounts: AccountsCard,
@@ -18,7 +19,8 @@ const CARD_COMPONENTS: Record<CardId, ComponentType> = {
 
 export default function OverviewPage() {
     const { t } = useTranslation();
-    const { order, setOrder, move, reset } = useCardOrder();
+    const { order, setOrder, beginEditing, move, reset } = useCardOrder();
+    const updateOverviewLayout = useUpdateOverviewLayout();
     const [isEditing, setIsEditing] = useState(false);
     const [announcement, setAnnouncement] = useState("");
 
@@ -43,9 +45,21 @@ export default function OverviewPage() {
         setAnnouncement(t("overview-route.edit-reset-done"));
     }
 
-    function toggleEditing() {
-        setIsEditing((prev) => !prev);
+    function handleStartEditing() {
+        beginEditing();
+        setIsEditing(true);
         setAnnouncement("");
+    }
+
+    async function handleDone() {
+        try {
+            await updateOverviewLayout.mutateAsync(order);
+            setIsEditing(false);
+            setAnnouncement(t("overview-route.edit-done"));
+        } catch (error) {
+            console.error("Could not save overview layout", error);
+            setAnnouncement(t("overview-route.edit-save-error"));
+        }
     }
 
     return (
@@ -72,7 +86,8 @@ export default function OverviewPage() {
                         )}
                         <button
                             type="button"
-                            onClick={toggleEditing}
+                            onClick={isEditing ? handleDone : handleStartEditing}
+                            disabled={updateOverviewLayout.isPending}
                             aria-pressed={isEditing}
                             className={`group ml-3 sm:ml-0 flex cursor-pointer items-center rounded-lg px-2 py-1 text-xs uppercase tracking-wider shadow-md transition sm:text-sm
                                 ${isEditing
@@ -98,7 +113,7 @@ export default function OverviewPage() {
 
                 <Reorder.Group
                     values={order}
-                    onReorder={setOrder}
+                    onReorder={isEditing ? setOrder : () => {}}
                     className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 md:max-w-lg lg:max-w-5xl md:mx-auto lg:gap-6"
                 >
                     {order.map((id) => {
