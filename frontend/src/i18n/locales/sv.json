@@ -258,7 +258,8 @@
 
         "account-card":{
             "title": "Saldo",
-            "description": "Här visas aktuella saldon för dina konton",
+            "description": "Här visas saldo för favoritmarkerade konton",
+            "description-no-favorites": "Favoritmarkera konton för att visa saldo här",
             "pending": "Laddar dina konton",
             "error": "Det gick inte att ladda dina konton",
             "total-balance": "Totalt saldo",
@@ -268,7 +269,7 @@
         "transactions-card": {
             "closed-account": "stängt konto",
             "title": "Senaste transaktioner",
-            "description": "Här är dina senaste transaktioner från alla konton",
+            "description": "Visar senaste transaktioner från alla konton",
             "pending": "Laddar transaktioner",
             "error": "Det gick inte att ladda dina transaktioner",
             "transfer-type-transfer": "Överföring",
@@ -288,7 +289,16 @@
 
         "savings-card": {
             "title": "Sparmål",
-            "description": "Här ser du dina valda sparmål"
+            "description": "Här ser du dina valda sparmål",
+            "select": "Välj",
+            "selected-count": "{{selected}}/{{max}}",
+            "max-goals": "Max {{max}} sparmål",
+            "done": "Klar",
+            "loading": "Laddar sparmål...",
+            "error": "Kunde inte hämta sparmålen eller kontosaldon.",
+            "achieved": "uppnått",
+            "remaining": "kvar",
+            "empty-selection": "Välj ett eller flera sparmål för att visa dina framsteg."
         },
 
         "savings-eta": "Uppnås om {{time}}",

@@ -259,7 +259,8 @@
 
     "account-card": {
         "title": "Balance",
-        "description": "Here you can see the current balances of your accounts",
+        "description": "Here are the balances of your favorite accounts",
+        "description-no-favorites": "Mark account as favorite to show balance here",
         "pending": "Loading your accounts",
         "error": "Oops... Something went wrong",
         "total-balance": "Total balance",
@@ -269,7 +270,7 @@
     "transactions-card": {
         "closed-account": "closed account",
         "title": "Recent transactions",
-        "description": "Here are your latest transactions from all accounts",
+        "description": "Showing the latest transactions from all accounts",
         "pending": "Loading transactions",
         "error": "Oops... Something went wrong",
         "transfer-type-transfer": "Transfer",
@@ -288,8 +289,17 @@
     },
 
     "savings-card": {
-        "title": "Savings goals",
-        "description": "Here are your selected savings goals"
+    "title": "Savings Goals",
+    "description": "Here are your selected savings goals",
+    "select": "Select",
+    "selected-count": "{{selected}}/{{max}}",
+    "max-goals": "Max {{max}} savings goals",
+    "done": "Done",
+    "loading": "Loading savings goals...",
+    "error": "Could not retrieve savings goals or account balances.",
+    "achieved": "achieved",
+    "remaining": "remaining",
+    "empty-selection": "Select one or more savings goals to view your progress."
     },
 
     "savings-eta": "Reached in {{time}}",
