@@ -346,9 +346,7 @@
             "group-bg": "BG/PG",
             "group-bank": "Bankkonto",
             "empty": "Inga konton matchar din sökning.",
-            "add-new": "+ Lägg till nytt konto",
-            "selected-as-from": "Valt som avsändarkonto",
-            "selected-as-to": "Valt som mottagarkonto"
+            "add-new": "+ Lägg till nytt konto"
         },
         "bankid": {
             "heading": "Godkänn överföringen",

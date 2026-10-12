@@ -350,9 +350,7 @@
             "group-bg": "BG/PG",
             "group-bank": "Bank account",
             "empty": "No accounts match your search.",
-            "add-new": "+ Add new account",
-            "selected-as-from": "Selected as sender account",
-            "selected-as-to": "Selected as recipient account"
+            "add-new": "+ Add new account"
         },
         "bankid": {
             "heading": "Approve the transfer",

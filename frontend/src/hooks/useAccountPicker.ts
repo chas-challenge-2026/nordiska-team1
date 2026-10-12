@@ -14,8 +14,8 @@ type UseAccountPickerArgs = {
     ownAccounts: OwnAccount[];
     fromId: string | null;
     toId: string | null;
-    setFromId: (id: string) => void;
-    setToId: (id: string) => void;
+    setFromId: (id: string | null) => void;
+    setToId: (id: string | null) => void;
 };
 
 export function useAccountPicker({
@@ -36,12 +36,6 @@ export function useAccountPicker({
 
     const query = search.trim().toLowerCase();
     const selectedId = modal === "from" ? fromId : toId;
-    // Kontot som är valt på andra sidan går inte att välja (samma från och till).
-    const otherSideId = modal === "from" ? toId : fromId;
-    const otherSideReason =
-        modal === "from"
-            ? t("page-transfer.modal.selected-as-to")
-            : t("page-transfer.modal.selected-as-from");
 
     const buildGroups = (): AccountPickerGroup[] => {
         // Saldo visas bara för egna konton, aldrig för externa mottagare.
@@ -54,8 +48,6 @@ export function useAccountPicker({
                     meta: a.meta,
                     balance: a.own ? `${formatSek(a.balance)} sek` : undefined,
                     selected: a.id === selectedId,
-                    disabledReason:
-                        a.id === otherSideId ? otherSideReason : undefined,
                 }));
 
         let groups: AccountPickerGroup[] = [];
@@ -98,8 +90,14 @@ export function useAccountPicker({
     };
 
     const handleSelectAccount = (id: string) => {
-        if (modal === "from") setFromId(id);
-        else if (modal === "to") setToId(id);
+        // Väljs kontot som redan står på andra sidan nollställs den sidan.
+        if (modal === "from") {
+            setFromId(id);
+            if (id === toId) setToId(null);
+        } else if (modal === "to") {
+            setToId(id);
+            if (id === fromId) setFromId(null);
+        }
         setModal(null);
         setSearch("");
     };
