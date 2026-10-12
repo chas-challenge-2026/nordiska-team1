@@ -55,6 +55,7 @@ services:
       AuditLogging__SigningKey: ${NORDISKA_AUDIT_SIGNING_KEY:?Set NORDISKA_AUDIT_SIGNING_KEY in infra/v2/.env}
       ActiveLogin__BankId__Environment: Simulated
       ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
+      FaqSearchLog__Salt: ${FAQ_SEARCH_LOG_SALT:-nordiska-faq-search-salt-dev}
     volumes:
       - report_documents:/var/lib/nordiska/report-documents:ro
     expose:
@@ -92,15 +93,7 @@ services:
     security_opt:
       - no-new-privileges:true
 
-    depends_on:
-      db:
-        condition: service_healthy
-
     environment:
-      NORDISKA_PDF_ENABLE_SIGNING: "1"
-      PDF_OUTPUT_DIRECTORY: /var/lib/nordiska/report-documents
-      ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       PDF_SIGNER_PKCS11_PROVIDER: pkcs11
       PDF_SIGNER_PKCS11_MODULE: /usr/lib/softhsm/libsofthsm2.so
       PDF_SIGNER_PKCS11_URI: "pkcs11:token=key-load-dev;object=pdf-signer-test;type=private"
@@ -110,8 +103,8 @@ services:
       PDF_SIGNER_TSA_URL: http://127.0.0.1:8081/
 
     volumes:
-      - report_documents:/var/lib/nordiska/report-documents
       - pdf_signer_socket:/run/pdf-signer
+
 
     secrets:
       - pdf_signer_pkcs11_pin
