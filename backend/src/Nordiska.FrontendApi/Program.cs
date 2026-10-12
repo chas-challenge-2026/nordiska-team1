@@ -81,11 +81,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // include XML comments so Scalar/Swagger can show summaries and parameter docs
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-    if (File.Exists(xmlPath))
+    foreach (var file in Directory.GetFiles(AppContext.BaseDirectory, "Nordiska.*.xml"))
     {
-        options.IncludeXmlComments(xmlPath);
+        options.IncludeXmlComments(file);
     }
 
     // Configure JWT Bearer authentication in Swagger / Scalar UI
@@ -258,12 +256,22 @@ if (app.Environment.IsDevelopment())
     }).AllowAnonymous();
 }
 
-// Seed Test Customer 
+// Always ensure essential Identity roles and bootstrap administrator exist (both Development and Production)
+try
+{
+    await DbInitializer.EnsureAdminAndRolesAsync(app.Services, app.Configuration);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Could not ensure admin and roles at startup: {Message}", ex.Message);
+}
+
+// Seed demo customer and sample data in Development
 if (app.Environment.IsDevelopment())
 {
     try
     {
-        await DbInitializer.SeedAsync(app.Services);
+        await DbInitializer.SeedAsync(app.Services, app.Configuration);
     }
     catch (Exception ex)
     {

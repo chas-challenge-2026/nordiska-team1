@@ -16,6 +16,9 @@ public sealed class FeedItem
     {CustomerId=customerId; ItemType=itemType; SourceId=sourceId; Title=title; Preview=preview; Priority=priority; ActionRequired=actionRequired; OccurredAt=occurredAt;}
     public bool IsRead=>ReadAt is not null;
     public void MarkAsRead()=>ReadAt ??= DateTimeOffset.UtcNow;
+    public void MarkAsUnread()=>ReadAt = null;
+    public void Update(string title,string? preview,FeedPriority priority,bool actionRequired,DateTimeOffset occurredAt)
+    {Title=title; Preview=preview; Priority=priority; ActionRequired=actionRequired; OccurredAt=occurredAt;}
 }
 public enum FeedItemType { Message=1, Document=2, Terms=3, Loan=4, Notification=5 }
 public enum FeedPriority { Normal=1, Important=2, Critical=3 }

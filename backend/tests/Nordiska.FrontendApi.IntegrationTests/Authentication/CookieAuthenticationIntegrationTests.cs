@@ -14,6 +14,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Moq;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
@@ -201,6 +206,55 @@ public class TestAuthService : IAuthService
         }
 
         return new AuthenticationResultDto(false, "Användaren hittades inte.");
+    }
+}
+
+public class TestJwtProvider : IJwtProvider
+{
+    private readonly JwtOptions _options;
+
+    public TestJwtProvider(IOptions<JwtOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    public Task<string> Generate(Customer customer)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, customer.Email ?? string.Empty),
+            new Claim("customer_id", customer.Id.ToString()),
+            new Claim(ClaimTypes.Role, "Customer")
+        };
+        return Task.FromResult(GenerateToken(claims));
+    }
+
+    public Task<string> Generate(StaffMember staff)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, staff.Role)
+        };
+        return Task.FromResult(GenerateToken(claims));
+    }
+
+    private string GenerateToken(IEnumerable<Claim> claims)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(_options.TokenLifetimeInMinutes),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
 
@@ -695,6 +749,9 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IJwtProvider>();
+            services.AddScoped<IJwtProvider, TestJwtProvider>();
+
             services.RemoveAll<IAuthService>();
             services.AddScoped<IAuthService, TestAuthService>();
 
