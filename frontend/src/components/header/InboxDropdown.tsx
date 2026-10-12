@@ -2,14 +2,27 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useNotifications, useSupportThreads, useUnreadCount } from "../../hooks/useInbox";
+import { useInboxOverview, useUnreadCount } from "../../hooks/inbox/useInboxSummary";
+import type { FeedItem } from "../../types/inbox";
 import { formatWhen } from "../../utils/date";
-import { toNotificationViews } from "../inbox/inboxAdapters";
 
 type InboxDropdownProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
+
+const MAX_ITEMS = 6;
+
+/** Where a feed item leads. Threads open directly; other types open their tab. */
+function hrefFor(item: FeedItem): string {
+    switch (item.type) {
+        case "thread": return `/inbox/${item.sourceId}`;
+        case "notification": return "/inbox?folder=notifications";
+        case "document": return "/inbox?folder=documents";
+        case "term": return "/inbox?folder=terms";
+        default: return "/inbox";
+    }
+}
 
 export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps) {
     const { t } = useTranslation();
@@ -18,10 +31,9 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
     const reduceMotion = useReducedMotion();
 
     const { data: unreadCount = 0 } = useUnreadCount();
-    const threads = useSupportThreads("inbox", 1, 5, open);
-    const notifications = useNotifications(true, 1, 5, open);
+    const overview = useInboxOverview(open);
+    const items = overview.data?.feed.slice(0, MAX_ITEMS) ?? [];
 
-    const unreadNotifications = toNotificationViews(notifications.data);
     const close = () => onOpenChange(false);
 
     useEffect(() => {
@@ -98,96 +110,57 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                                 <strong>{t("inbox.unread-count", { count: unreadCount })}</strong>
                             </div>
 
-                            <p
-                                id="inbox-panel-messages"
-                                className="px-4 pt-3 text-xs font-semibold uppercase text-secondary"
-                            >
-                                {t("inbox.messages")}
-                            </p>
-
-                            {threads.isPending && (
-                                <p role="status" className="px-4 py-3 text-secondary">{t("inbox.loading")}</p>
+                            {overview.isPending && (
+                                <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>
                             )}
 
-                            {threads.isError && (
+                            {overview.isError && (
                                 <div className="flex items-center justify-between px-4 py-3">
-                                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
+                                    <span role="alert" className="text-error">{t("generic.error-load")}</span>
                                     <button
                                         type="button"
-                                        onClick={() => threads.refetch()}
+                                        onClick={() => overview.refetch()}
                                         className="cursor-pointer text-primary-blue underline"
                                     >
-                                        {t("inbox.try-again")}
+                                        {t("generic.try-again")}
                                     </button>
                                 </div>
                             )}
 
-                            {threads.data && threads.data.items.length === 0 && (
-                                <p className="px-4 py-3 text-secondary">{t("inbox.empty.messages")}</p>
+                            {overview.isSuccess && items.length === 0 && (
+                                <p className="px-4 py-3 text-secondary">{t("inbox.empty.feed")}</p>
                             )}
 
-                            {threads.data && threads.data.items.length > 0 && (
-                                <ul aria-labelledby="inbox-panel-messages" className="mt-2">
-                                    {threads.data.items.map((thread) => (
-                                        <li key={thread.id} className="border-t border-light-blue-accent/50">
+                            {items.length > 0 && (
+                                <ul aria-label={t("inbox.title")}>
+                                    {items.map((item) => (
+                                        <li
+                                            key={`${item.type}-${item.id}`}
+                                            className="border-t border-light-blue-accent/50 first:border-t-0"
+                                        >
                                             <Link
-                                                to={`/inbox/${thread.id}`}
+                                                to={hrefFor(item)}
                                                 onClick={close}
-                                                className={`block px-4 py-3 ${thread.isRead ? "" : "bg-light-blue-accent/20 font-bold"}`}
+                                                className={`block px-4 py-3 ${item.isRead ? "" : "bg-light-blue-accent/20"}`}
                                             >
-                                                <span className="block text-xs font-normal text-secondary">
-                                                    {formatWhen(thread.lastMessageAt)} · {t("inbox.message-count", { count: thread.messageCount })}
+                                                <span className="flex justify-between gap-2 text-xs text-secondary">
+                                                    <span>{item.type ? t(`inbox.feed-type.${item.type}`) : ""}</span>
+                                                    <span>{formatWhen(item.occuredAt)}</span>
                                                 </span>
-                                                {!thread.isRead && <span className="sr-only">{t("inbox.unread-prefix")}</span>}
-                                                {thread.subject ?? t("inbox.no-subject")}
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-
-                            <p
-                                id="inbox-panel-notifications"
-                                className="border-t border-light-blue-accent/50 px-4 pt-3 text-xs font-semibold uppercase text-secondary"
-                            >
-                                {t("inbox.notifications")}
-                            </p>
-
-                            {notifications.isPending && (
-                                <p role="status" className="px-4 py-3 text-secondary">{t("inbox.loading")}</p>
-                            )}
-
-                            {notifications.isError && (
-                                <div className="flex items-center justify-between px-4 py-3">
-                                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => notifications.refetch()}
-                                        className="cursor-pointer text-primary-blue underline"
-                                    >
-                                        {t("inbox.try-again")}
-                                    </button>
-                                </div>
-                            )}
-
-                            {notifications.isSuccess && unreadNotifications.length === 0 && (
-                                <p className="px-4 py-3 text-secondary">{t("inbox.empty.new-notifications")}</p>
-                            )}
-
-                            {unreadNotifications.length > 0 && (
-                                <ul aria-labelledby="inbox-panel-notifications" className="mt-2">
-                                    {unreadNotifications.map((item) => (
-                                        <li key={item.id} className="border-t border-light-blue-accent/50">
-                                            <Link
-                                                to="/inbox?folder=notifications"
-                                                onClick={close}
-                                                className="block bg-light-blue-accent/20 px-4 py-3 font-bold"
-                                            >
-                                                <span className="block text-xs font-normal text-secondary">
-                                                    {formatWhen(item.date)}
+                                                <span className={`block break-words ${item.isRead ? "" : "font-bold"}`}>
+                                                    {!item.isRead && <span className="sr-only">{t("inbox.unread-prefix")}</span>}
+                                                    {item.title ?? t("inbox.untitled")}
                                                 </span>
-                                                <span className="sr-only">{t("inbox.unread-prefix")}</span>
-                                                {item.title ?? t("inbox.untitled")}
+                                                {item.preview && (
+                                                    <span className="line-clamp-2 block break-words text-xs text-secondary">
+                                                        {item.preview}
+                                                    </span>
+                                                )}
+                                                {item.actionRequired && (
+                                                    <span className="mt-1 inline-block rounded bg-nordiska-orange px-1.5 text-xs font-semibold text-dark-navy">
+                                                        {t("inbox.action-required")}
+                                                    </span>
+                                                )}
                                             </Link>
                                         </li>
                                     ))}
