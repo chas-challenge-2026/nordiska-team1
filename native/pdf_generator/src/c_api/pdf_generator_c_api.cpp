@@ -149,8 +149,14 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
         bool enable_signing = false;
         if (sign_env != nullptr) {
             enable_signing = (std::strcmp(sign_env, "1") == 0 || strcasecmp(sign_env, "true") == 0);
-        } else if (std::getenv("PDF_SIGNER_KEY_PATH") != nullptr || ::access("/app/certs/signing_key.pem", R_OK) == 0) {
-            enable_signing = true;
+        } else {
+            const char* socket_path = std::getenv("PDF_SIGNER_SOCKET_PATH");
+            if (socket_path == nullptr || socket_path[0] == '\0') {
+                socket_path = "/run/pdf-signer/pdf-signer.sock";
+            }
+            if (::access(socket_path, R_OK | W_OK) == 0) {
+                enable_signing = true;
+            }
         }
 
         const nordiska::GeneratorConfig config{
