@@ -51,13 +51,28 @@ export function useCreateAccount() {
 
 export function useCloseAccount() {
     const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: (id: number) => closeAccount(id),
-        onSuccess: (_, id) => {
-            queryClient.invalidateQueries({ queryKey: accountKey.all })
-            queryClient.invalidateQueries({ queryKey: accountKey.detail(id) })
-        }
-    })
+
+        onSuccess: async (_, id) => {
+            const { goals } = await getAllSavingsGoals();
+            const accountGoals = goals.filter((goal) => goal.accountId === id && goal.status !== "completed");
+
+            await Promise.all(
+                accountGoals.map((goal) =>
+                    updateSavingsGoal({
+                        id: goal.id,
+                        status: "completed",
+                    })
+                )
+            );
+
+            await queryClient.invalidateQueries({queryKey: accountKey.all,});
+            await queryClient.invalidateQueries({queryKey: accountKey.detail(id),});
+            await queryClient.invalidateQueries({queryKey: savingGoalKey.all,});
+        },
+    });
 }
 
 export function useAccountTypes() {
