@@ -40,7 +40,7 @@ export default function PlannedTransfersCard() {
         <div className="flex h-full flex-col">
             
             {/* CARD HEADER */}
-            <div className="h-22 rounded-t-3xl bg-dark-navy pl-2 pt-1.5 text-white sm:pl-3">
+            <div className="h-22 bg-dark-navy pl-2 pt-1.5 text-white sm:pl-3">
                 <div className="flex flex-col items-start p-3 sm:p-4">
                     <h2 className="text-xl font-semibold tracking-wide sm:text-2xl"> {t("overview-route.planned-card.title")} </h2>
                     <p className="text-[0.65em] uppercase text-white/80 sm:text-[0.75em]"> {t("overview-route.planned-card.description")}  </p>
@@ -53,7 +53,7 @@ export default function PlannedTransfersCard() {
             {upcoming.length === 0 && (<NoPlannedState/>)}
 
             <section className="flex flex-1 flex-col p-2 sm:p-3">
-            <div className="flex flex-1 flex-col rounded-b-xl overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden">
 
             </div>
             </section>
