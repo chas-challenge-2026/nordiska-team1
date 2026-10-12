@@ -40,7 +40,8 @@
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
         "no-user": "Kan inte hitta användare.",
-        "report": "Det gick inte att skapa rapporten. Försök igen."
+        "report": "Det gick inte att skapa rapporten. Försök igen.",
+        "generic": "Något gick fel. Försök igen senare."
     },
     "aria-label": {
         "page-nav": "Huvudnavigation",
@@ -105,36 +106,91 @@
         "no-transactions": "Inga transaktioner hittades."
     },
     "accounts-route": {
-        "help-card-search": "rapporter konto villkor",
-        "yearly-interest": "Beräknad årsränta",
-        "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo",
-        "my-accounts": "Mina konton",
-        "pick-account": "Välj konto",
-        "pick-one-account": "Välj ett konto",
-        "total-balance": "Totalt saldo",
-        "show-accountinfo": "Visa kontoinformation",
-        "new-account": "Nytt konto",
-        "full-report": "Skatteunderlag",
-        "account-report": "Kontoutdrag",
-        "loading-accounts": "Laddar konton...",
-        "accounts-error": "Ett problem uppstod vid hämtning av konton",
-        "no-accounts": "Inga konton hittades.",
-        "account-name": "Kontonamn",
-        "account-name-placeholder": "T.ex. Semesterfonden",
+        "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
         "account-type": "Kontotyp",
-        "account-type-required": "kontotyp krävs",
-        "select-account-type": "Välj kontotyp",
         "account-type-saving": "Sparkonto",
         "account-type-standard": "Standardkonto",
         "account-type-flex": "Flexkonto",
         "account-type-fix": "Fasträntekonto",
         "account-type-premium": "Premiumkonto",
+        "account-name": "Kontonamn",
+        "savings-goal-title": "Sparmål",
+        "actions": "Kontohantering",
+        "favorite": "Favoritmarkera",
+        "no-favorite": "Avmarkera favorit",
+        "close-account": "Avsluta konto",
+        "help-card-search": "rapporter konto villkor",
+
+        "accounts-header": {
+            "my-accounts": "Mina konton",
+            "total-balance": "Totalt saldo",
+            "new-account": "Nytt konto"
+        },
+        "accounts-nav": {
+            "pick-account": "Välj konto",
+            "show-accountinfo": "Visa kontoinformation",
+            "pick-one-account": "Välj ett konto"
+        },
+        "interest-section": {
+            "accured-interest": "Intjänad ränta",
+            "accured-interest-info": "Intjänad ränta beräknas från 1 januari varje år.",
+            "yearly-interest": "Beräknad årsränta",
+            "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo"
+        },
+        "savings-goal": {
+            "no-goal-title": "Sätt ett sparmål och följ ditt sparande",
+            "no-goal-info": "Bestäm hur mycket du vill spara på kontot och följ hur ditt sparande växer.",
+            "no-goal-info-span": "Sätt upp ditt mål och kom igång med sparandet redan idag!",
+            "create-savingsgoal": "Sätt ett sparmål",
+            "create-new": "Sätt ett nytt sparmål",
+            "confirm-delete": "Är du säker på att du vill ta bort sparmål",
+            "your-goal": "Ditt sparmål",
+            "remaining": "Kvar att spara",
+            "goal-amount": "Målsumma",
+            "goal-achieved": "Mål uppnått",
+            "progress-label": "Varje insättning räknas",
+            "deposit": "Gör en insättning",
+            "completed-title": "Du klarade ditt sparmål",
+            "completed-info": "Nu kan",
+            "completed-info-suffix": "bli verklighet!",
+            "edit": "Ändra sparmål",
+            "delete": "Ta bort sparmål",
+            "deleting": "Tar bort...",
+            "progress": {
+                "almost-there": "Snart i mål!",
+                "great-progress": "Du har kommit långt",
+                "halfway": "Mer än halvvägs!",
+                "nearly-halfway": "Snart halvvägs!",
+                "getting-started": "Du är på gång",
+                "good-start": "Bra start!",
+                "lets-go": "Nu kör vi!",
+                "start-saving": "Dags att börja spara"
+            },
+            "pie-chart": "sparat"
+        },
+        "errors": {
+            "accounts-error": "Ett problem uppstod vid hämtning av konton"
+        },
+        "aria-label": {
+            "new-account": "Skapa nytt konto",
+            "my-accounts": "Mina konton",
+            "generate-full-report": "Generera skatteunderlag",
+            "account-action-buttons": "Hantera konto knappar"
+        },
+        "full-report": "Skatteunderlag",
+        "account-report": "Kontoutdrag",
+        "loading-accounts": "Laddar konton...",
+        "no-accounts": "Inga konton hittades.",
+        "account-name-placeholder": "T.ex. Semesterfonden",
+
+        "account-type-required": "kontotyp krävs",
+        "select-account-type": "Välj kontotyp",
+
         "initial-deposit": "Startinsättning",
         "interest-rate": "Ränta",
         "invalid-amount": "ogiltigt belopp",
         "invalid-interest-rate": "ogiltig ränta",
         "create-account-error": "Kunde inte skapa kontot. Försök igen.",
-        "close-account": "Avsluta konto",
         "close-account-info": "Du är på väg att permanent avsluta konto.",
         "close-account-warning": "Stäng konto \"{{accountNumber}}\"? Kontot går ej att återöppna.",
         "close-confirmation": "Kontot går inte att återöppna efter att det har avslutats.",
@@ -142,23 +198,51 @@
         "closing": "Stänger...",
         "loading-account-types": "Laddar kontotyper...",
         "error-account-types": "Kunde inte hämta kontotyper",
-        "create-savingsgoal": "Sätt ett sparmål",
-        "favorite": "Favoritmarkera",
         "payback": "Intjänad och beräknad årsränta",
-        "accured-interest": "Intjänad ränta",
-        "accured-interest-info": "Intjänad ränta beräknas från 1 januari varje år.",
-        "aria-label": {
-            "new-account": "Skapa nytt konto",
-            "generate-full-report": "Generera skatteunderlag",
-            "account-action-buttons": "Hantera konto knappar"
-        },
+
         "generate-statement": "Skapa kontoutdrag",
         "show-statement": "Visa kontoutdrag",
         "generate-report": "Skapa rapport",
         "show-report": "Visa rapport",
         "tax-report-filename": "skatterapport-{{year}}",
-        "account-statement-filename": "kontoutdrag-{{from}}_{{to}}"
+        "account-statement-filename": "kontoutdrag-{{from}}_{{to}}",
+
+        "handle-saving-goal": {
+            "valid-amount": "Ange ett giltigt belopp.",
+            "required-title": "Ange en titel.",
+            "title-too-long": "Titeln får vara högst 30 tecken.",
+            "invalid-title": "Titeln innehåller tecken som inte stöds.",
+            "required-date": "Ange ett slutdatum.",
+            "invalid-date": "Slutdatumet måste vara längre fram i tiden.",
+            "confirm-delete": "Är du säker på att du vill ta bort sparmålet",
+            "edit-title": "Redigera sparmål",
+            "create-title": "Sätt ett sparmål",
+            "saving": "Sparar ditt sparmål...",
+            "save-error": "Kunde inte spara sparmålet. Försök igen.",
+            "title-label": "Namnge ditt sparmål?",
+            "title-placeholder": "ex. Köp ny TV",
+            "amount-label": "Ange ditt sparmål",
+            "date-checkbox": "Jag vill ange ett slutdatum för mitt sparande",
+            "date-label": "Slutdatum",
+            "deleting": "Tar bort...",
+            "delete-goal": "Ta bort sparmål"
+        }
     },
+
+    "progress-bar": {
+        "invalid-period": "Ogiltig sparperiod.",
+        "invalid-goal": "Ogiltigt mål.",
+        "target-date-label": "Slutdatum för ditt sparande",
+        "just-started": "Ditt sparande har precis börjat",
+        "days-elapsed_one": "{{count}} dag har gått",
+        "days-elapsed_other": "{{count}} dagar har gått",
+        "days-remaining_one": "{{count}} dag kvar",
+        "days-remaining_other": "{{count}} dagar kvar",
+        "amount-achieved": "{{amount}} uppnått",
+        "amount-remaining": "{{amount}} kvar",
+        "percentage": "{{percentage}} %"
+    },
+
     "overview-route": {
         "edit-moved": "{{card}} flyttades till plats {{position}} av {{total}}.",
         "card-accounts": "Mina konton",
