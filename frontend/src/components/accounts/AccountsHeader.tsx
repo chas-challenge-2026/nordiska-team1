@@ -30,7 +30,7 @@ export default function AccountsHeader({totalBalance, selectedAccountId, onCreat
                         <div className="flex w-full flex-row gap-2 lg:w-auto">
                             <button
                                 onClick={onCreateAccount}
-                                aria-label={t("accounts-route.aria-label.accounts-header.new-account")}
+                                aria-label={t("accounts-route.aria-label.new-account")}
                                 className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-nordiska-blue sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm"
                             >
                                 <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/plus.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5" />
