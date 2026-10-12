@@ -10,13 +10,12 @@ const MAX_ROWS = 4;
 
 export default function PlannedTransfersCard() {
     const { t } = useTranslation();
-    // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
-    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
+    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [], IsPlanned: true });
 
     const startOfToday = new Date().setHours(0, 0, 0, 0);
 
     const upcoming = (transactions?.items ?? [])
-        .filter((tx) => tx.isPlanned && toTimestamp(tx.plannedDate) >= startOfToday)
+        .filter((tx) => toTimestamp(tx.plannedDate) >= startOfToday)
         .sort((a, b) => toTimestamp(a.plannedDate) - toTimestamp(b.plannedDate))
         .slice(0, MAX_ROWS);
 

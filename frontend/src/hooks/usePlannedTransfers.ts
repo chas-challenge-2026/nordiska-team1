@@ -27,8 +27,7 @@ export type PlannedTransferChanges = {
 export function usePlannedTransfers(ownAccounts: OwnAccount[]) {
     const { t } = useTranslation();
 
-    // Stopgap: backend cannot filter isPlanned yet, planned transfers beyond first page are missed
-    const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [] });
+    const { data: transactionsData } = useTransactions({ Page: 1, PageSize: 100, AccountIds: [], IsPlanned: true });
     const createPlannedMutation = useCreatePlannedTransaction();
     const cancelPlannedMutation = useCancelPlannedTransaction();
 
@@ -41,24 +40,22 @@ export function usePlannedTransfers(ownAccounts: OwnAccount[]) {
                 : (ownAccounts.find((a) => a.id === String(id))?.name ??
                   t("page-transfer.planned.unknown-account"));
 
-        return (transactionsData?.items ?? [])
-            .filter((tx) => tx.isPlanned)
-            .map((tx) => ({
-                localId: `backend-${tx.id}`,
-                source: "backend" as const,
-                backendId: tx.id,
-                date: (tx.plannedDate ?? tx.createdAt).slice(0, 10),
-                name: tx.label?.trim() || t("page-transfer.default-name"),
-                note: tx.repeating ? repeatingLabel(tx.repeating, t) : "",
-                sum: tx.amount,
-                fromName: accountName(tx.accountId),
-                toName: accountName(tx.targetAccountId),
-                accountId: tx.accountId,
-                targetAccountId: tx.targetAccountId,
-                type: tx.type,
-                label: tx.label,
-                repeating: tx.repeating,
-            }));
+        return (transactionsData?.items ?? []).map((tx) => ({
+            localId: `backend-${tx.id}`,
+            source: "backend" as const,
+            backendId: tx.id,
+            date: (tx.plannedDate ?? tx.createdAt).slice(0, 10),
+            name: tx.label?.trim() || t("page-transfer.default-name"),
+            note: tx.repeating ? repeatingLabel(tx.repeating, t) : "",
+            sum: tx.amount,
+            fromName: accountName(tx.accountId),
+            toName: accountName(tx.targetAccountId),
+            accountId: tx.accountId,
+            targetAccountId: tx.targetAccountId,
+            type: tx.type,
+            label: tx.label,
+            repeating: tx.repeating,
+        }));
     }, [transactionsData, ownAccounts, t]);
 
     const plannedTransfers = [
