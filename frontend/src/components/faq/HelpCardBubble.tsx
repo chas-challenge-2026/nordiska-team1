@@ -163,7 +163,7 @@ export default function HelpCardBubble({
                         : {}),
                     touchAction: "none",
                 }}
-                className="xl:hidden fixed z-[1000] h-14 w-14 rounded-full bg-dark-navy text-white shadow-lg flex items-center justify-center text-xl font-semibold cursor-grab active:cursor-grabbing select-none"
+                className="xl:hidden fixed z-[1100] h-12 w-12 rounded-full bg-primary-blue text-white shadow-lg flex items-center justify-center text-xl font-semibold cursor-grab active:cursor-grabbing select-none"
             >
                 ?
             </button>
