@@ -9,20 +9,11 @@ import {
 import type { FeedItemTypes } from "../../types/inbox";
 import { inboxKeys } from "./inboxKeys";
 
-/** Full counts object (threads, notifications, documents, terms). */
+// all unread in one big response.
 export function useInboxCounts() {
     return useQuery({
         queryKey: inboxKeys.unreadCount(),
         queryFn: getUnreadCount,
-    });
-}
-
-/** Single number for badge. Same request and cache as useInboxCounts. */
-export function useUnreadCount() {
-    return useQuery({
-        queryKey: inboxKeys.unreadCount(),
-        queryFn: getUnreadCount,
-        select: (counts) => counts.unreadCount,
     });
 }
 

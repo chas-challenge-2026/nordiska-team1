@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useInboxOverview, useUnreadCount } from "../../hooks/inbox/useInboxSummary";
+import { useInboxOverview, useInboxCounts } from "../../hooks/inbox/useInboxSummary";
 import type { FeedItem } from "../../types/inbox";
 import { formatWhen } from "../../utils/date";
 import { InboxLoading, InboxLoadError } from "../inbox/InboxState";
@@ -31,7 +31,8 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
     const buttonRef = useRef<HTMLButtonElement>(null);
     const reduceMotion = useReducedMotion();
 
-    const { data: unreadCount = 0 } = useUnreadCount();
+    const { data: counts } = useInboxCounts();
+    const unreadCount = counts?.unreadCount ?? 0;
     const overview = useInboxOverview(open);
     const items = overview.data?.feed.slice(0, MAX_ITEMS) ?? [];
 
