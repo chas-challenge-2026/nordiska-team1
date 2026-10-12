@@ -20,6 +20,8 @@ public abstract class ModuleDesignTimeDbContextFactory<TContext>
 
         var connectionString =
             Environment.GetEnvironmentVariable(variableName)
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__MigrationDatabase")
+            ?? Environment.GetEnvironmentVariable("MIGRATION_CONNECTION_STRING")
             ?? throw new InvalidOperationException(
                 $" '{variableName}' needs to be set before running EF Core migrations.");
 

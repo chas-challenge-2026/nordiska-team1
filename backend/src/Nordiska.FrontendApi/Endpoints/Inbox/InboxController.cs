@@ -273,7 +273,16 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     /// <summary>
     /// Creates a new support ticket / inquiry thread with an initial message.
     /// </summary>
-    /// <param name="request">Ticket subject, category (Sparkonto, Sparmål, Skatteunderlag, Allmänt), and message body.</param>
+    /// <remarks>
+    /// <para><strong>Category values:</strong></para>
+    /// <para>The <c>Category</c> field is optional. If provided, it accepts (case-insensitive):</para>
+    /// <list type="bullet">
+    ///   <item><description><strong>Svenska (rekommenderade):</strong> <c>Sparkonto</c>, <c>Sparmål</c> (alt <c>Sparmal</c>), <c>Konto</c>, <c>Transaktioner</c>, <c>Skatteunderlag</c>, <c>Allmänt</c> (alt <c>Allmant</c>)</description></item>
+    ///   <item><description><strong>Engelska motsvarigheter:</strong> <c>Savings</c>, <c>SavingsAccount</c>, <c>Goals</c>, <c>SavingsGoals</c>, <c>Account</c>, <c>Transactions</c>, <c>Tax</c>, <c>TaxReport</c>, <c>General</c></description></item>
+    /// </list>
+    /// <para><em>Note:</em> Categories are self-contained for Inbox support messaging and are completely independent from FAQ categories (<c>/api/faq/{lang}/categories</c>).</para>
+    /// </remarks>
+    /// <param name="request">Ticket subject, message body, and optional category.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="201">Thread created successfully.</response>
     /// <response code="400">Validation error.</response>
@@ -798,6 +807,10 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     /// <summary>
     /// Retrieves all pending terms and condition updates requiring digital acceptance from the customer
     /// </summary>
+    /// <remarks>
+    /// <para>Returns all terms that the customer has not yet digitally accepted.</para>
+    /// <para>Each item contains a machine-readable agreement identifier in the <c>code</c> field (e.g. <c>ALLMANNA_VILLKOR_2026</c>, <c>TERMS_GENERAL_2026</c>, or <c>PRIVACY_POLICY</c>).</para>
+    /// </remarks>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">List of pending terms awaiting acceptance.</response>
     /// <response code="401">Unauthorized if not authenticated.</response>
@@ -849,6 +862,9 @@ public sealed class InboxController(IInboxService service) : ControllerBase
     /// <summary>
     /// Publishes a new version of general terms or policy, generating pending acceptance records for affected customers
     /// </summary>
+    /// <remarks>
+    /// <para>The <c>code</c> field is a unique, machine-readable agreement identifier (e.g. <c>ALLMANNA_VILLKOR_2026</c>, <c>TERMS_GENERAL_2026</c>, <c>PRIVACY_POLICY</c>).</para>
+    /// </remarks>
     /// <param name="request">Payload containing code, version, title, and document ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="201">Term published successfully.</response>

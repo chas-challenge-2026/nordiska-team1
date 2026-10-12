@@ -43,6 +43,22 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set up .NET 8 SDK for Database Migrations
+        uses: actions/setup-dotnet@v4
+        if: env.AZURE_MIGRATOR_CONNECTION_STRING != ''
+        env:
+          AZURE_MIGRATOR_CONNECTION_STRING: ${{ secrets.AZURE_MIGRATOR_CONNECTION_STRING }}
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run Database Migrations (Banking, Inbox, Faq, Reporting)
+        if: env.AZURE_MIGRATOR_CONNECTION_STRING != ''
+        env:
+          AZURE_MIGRATOR_CONNECTION_STRING: ${{ secrets.AZURE_MIGRATOR_CONNECTION_STRING }}
+        run: |
+          chmod +x ./backend/scripts/migrate-database.sh
+          ./backend/scripts/migrate-database.sh "$AZURE_MIGRATOR_CONNECTION_STRING"
+
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         if: env.AZURE_CREDENTIALS != ''
