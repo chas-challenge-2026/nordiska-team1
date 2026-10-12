@@ -86,6 +86,8 @@ export default function TransactionsPage() {
         Page: page,
         PageSize: pageSize,
         AccountIds: effectiveSelectedIds,
+        // Planerade transaktioner visas först när de har genomförts
+        IsPlanned: false,
         SearchTerm: debouncedSearch || undefined,
         FromDate: filters.dateFrom ? startOfLocalDay(filters.dateFrom) : undefined,
         ToDate: filters.dateTo ? endOfLocalDay(filters.dateTo) : undefined,
