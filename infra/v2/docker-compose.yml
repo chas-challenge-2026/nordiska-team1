@@ -83,12 +83,19 @@ services:
     build:
       context: ../..
       dockerfile: native/pdf-signer/docker/Dockerfile.service
+
+    entrypoint:
+      - bash
+      - /app/docker/service-entrypoint-lf.sh
+
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+
     depends_on:
       db:
         condition: service_healthy
+
     environment:
       NORDISKA_PDF_ENABLE_SIGNING: "1"
       PDF_OUTPUT_DIRECTORY: /var/lib/nordiska/report-documents
@@ -101,9 +108,11 @@ services:
       PDF_SIGNER_TSA_CERT_PATH: /app/tests/data/tsa_cert.pem
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
       PDF_SIGNER_TSA_URL: http://127.0.0.1:8081/
+
     volumes:
       - report_documents:/var/lib/nordiska/report-documents
       - pdf_signer_socket:/run/pdf-signer
+
     secrets:
       - pdf_signer_pkcs11_pin
       - pdf_signer_pkcs11_so_pin
