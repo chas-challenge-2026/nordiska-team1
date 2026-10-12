@@ -4,10 +4,9 @@ import {
     useMarkAllNotificationsAsRead,
     useMarkNotificationAsRead,
     useNotifications,
-} from "../../hooks/useInbox";
+} from "../../hooks/inbox/useNotifications";
 import { formatWhen } from "../../utils/date";
 import PagePagination from "../PagePagination";
-import { pagingOf, toNotificationViews } from "./inboxAdapters";
 
 type NotificationsTabProps = {
     page: number;
@@ -23,8 +22,8 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
     const markOne = useMarkNotificationAsRead();
     const markAll = useMarkAllNotificationsAsRead();
 
-    const items = toNotificationViews(notifications.data);
-    const paging = pagingOf(notifications.data);
+    const data = notifications.data;
+    const items = data?.items ?? [];
     const hasUnread = items.some((item) => !item.isRead);
 
     return (
@@ -58,16 +57,16 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
             </div>
 
             {(markOne.isError || markAll.isError) && (
-                <p role="alert" className="px-4 py-2 text-error">{t("inbox.error.action")}</p>
+                <p role="alert" className="px-4 py-2 text-error">{t("generic.error-action")}</p>
             )}
 
-            {notifications.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("inbox.loading")}</p>}
+            {notifications.isPending && <p role="status" className="px-4 py-3 text-secondary">{t("generic.loading")}</p>}
 
             {notifications.isError && (
                 <div className="flex items-center justify-between px-4 py-3">
-                    <span role="alert" className="text-error">{t("inbox.error.load")}</span>
+                    <span role="alert" className="text-error">{t("generic.error-load")}</span>
                     <button type="button" onClick={() => notifications.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("inbox.try-again")}
+                        {t("generic.try-again")}
                     </button>
                 </div>
             )}
@@ -79,19 +78,21 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
             {items.length > 0 && (
                 <ul>
                     {items.map((item) => {
-                        const title = item.title ?? t("inbox.untitled");
+                        // Without title, body is shown as title.
+                        const title = item.title ?? item.body ?? t("inbox.untitled");
+                        const body = item.title ? item.body : null;
                         return (
                             <li
                                 key={item.id}
                                 className={`flex flex-wrap items-start justify-between gap-2 border-t border-light-blue-accent/50 px-4 py-3 ${item.isRead ? "" : "bg-light-blue-accent/20"}`}
                             >
                                 <div className="min-w-0">
-                                    <span className="block text-xs text-secondary">{formatWhen(item.date)}</span>
+                                    <span className="block text-xs text-secondary">{formatWhen(item.createdAt)}</span>
                                     <span className={`block break-words ${item.isRead ? "" : "font-bold"}`}>
                                         {!item.isRead && <span className="sr-only">{t("inbox.unread-prefix")}</span>}
                                         {title}
                                     </span>
-                                    {item.body && <p className="whitespace-pre-wrap break-words">{item.body}</p>}
+                                    {body && <p className="whitespace-pre-wrap break-words">{body}</p>}
                                 </div>
                                 {!item.isRead && (
                                     <button
@@ -110,15 +111,15 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
                 </ul>
             )}
 
-            {paging && paging.totalPages > 1 && (
+            {data && data.totalPages > 1 && (
                 <div className="border-t border-light-blue-accent/50 p-4">
                     <PagePagination
-                        page={paging.page}
-                        totalPages={paging.totalPages}
-                        hasPreviousPage={paging.hasPreviousPage}
-                        hasNextPage={paging.hasNextPage}
-                        onPrevious={() => onPageChange(paging.page - 1)}
-                        onNext={() => onPageChange(paging.page + 1)}
+                        page={data.page}
+                        totalPages={data.totalPages}
+                        hasPreviousPage={data.hasPreviousPage}
+                        hasNextPage={data.hasNextPage}
+                        onPrevious={() => onPageChange(data.page - 1)}
+                        onNext={() => onPageChange(data.page + 1)}
                         onPageChange={onPageChange}
                         isDisabled={notifications.isPlaceholderData}
                     />

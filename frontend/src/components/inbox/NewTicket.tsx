@@ -2,9 +2,8 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import Modal from "../modals/Modal";
-import { useCreateSupportTicket } from "../../hooks/useInbox";
-// ENDPOINT VERSION: replace import above with this one.
-// import { useCreateSupportTicket, useTicketCategories } from "../../hooks/useInbox";
+import { useCreateSupportTicket } from "../../hooks/inbox/useThreads";
+import type { Categories } from "../../types/inbox";
 
 type NewTicketButtonProps = {
     /** Optional: called with new thread id after ticket is created. */
@@ -16,10 +15,7 @@ const btn = "cursor-pointer rounded bg-primary-blue px-4 py-2 font-semibold text
 const field = "w-full border border-secondary p-2";
 const label = "text-xs font-semibold uppercase text-secondary";
 
-// Temporary: hardcoded until faqs/{language}/categories works.
-// Values are sent to backend as-is; labels come from inbox.ticket.categories.
-// ENDPOINT VERSION: delete this constant.
-const CATEGORIES = ["Sparkonto", "Sparmål", "Skatteunderlag", "Allmänt"];
+const CATEGORIES: Categories[] = ["Sparkonto", "Sparmål", "Skatteunderlag", "Allmänt"];
 
 export default function NewTicketButton({ onCreated, className = btn }: NewTicketButtonProps) {
     const { t } = useTranslation();
@@ -50,9 +46,6 @@ type NewTicketFormProps = {
 
 function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
     const { t } = useTranslation();
-    // ENDPOINT VERSION: replace line above with these two.
-    // const { t, i18n } = useTranslation();
-    // const categories = useTicketCategories(i18n.language);
     const id = useId();
     const subjectRef = useRef<HTMLInputElement>(null);
     const doneRef = useRef<HTMLHeadingElement>(null);
@@ -64,12 +57,10 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
 
     const valid = subject.trim() !== "" && category.trim() !== "" && body.trim() !== "";
 
-    // Dialog focuses its close button first; move focus to first field.
     useEffect(() => {
         subjectRef.current?.focus();
     }, []);
 
-    // Move focus to confirmation so it is announced.
     useEffect(() => {
         if (create.isSuccess) doneRef.current?.focus();
     }, [create.isSuccess]);
@@ -102,7 +93,7 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
                         {t("inbox.view-message")}
                     </Link>
                     <button type="button" onClick={onClose} className={btn}>
-                        {t("inbox.ticket.close")}
+                        {t("generic.close")}
                     </button>
                 </div>
             </div>
@@ -123,7 +114,6 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
 
             <label htmlFor={`${id}-category`} className={label}>{t("inbox.ticket.category")}</label>
 
-            {/* HARDCODED VERSION: delete this select when endpoint works. */}
             <select
                 id={`${id}-category`}
                 required
@@ -139,32 +129,6 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
                 ))}
             </select>
 
-            {/* ENDPOINT VERSION: uncomment this block.
-            <select
-                id={`${id}-category`}
-                required
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                disabled={categories.isPending || categories.isError}
-                className={field}
-            >
-                <option value="">
-                    {categories.isPending ? t("inbox.loading") : t("inbox.ticket.select-category")}
-                </option>
-                {categories.data?.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                ))}
-            </select>
-            {categories.isError && (
-                <span role="alert" className="text-error">
-                    {t("inbox.error.load")}{" "}
-                    <button type="button" onClick={() => categories.refetch()} className="cursor-pointer text-primary-blue underline">
-                        {t("inbox.try-again")}
-                    </button>
-                </span>
-            )}
-            */}
-
             <label htmlFor={`${id}-body`} className={label}>{t("inbox.ticket.message")}</label>
             <textarea
                 id={`${id}-body`}
@@ -178,14 +142,14 @@ function NewTicketForm({ onCreated, onClose }: NewTicketFormProps) {
             {showRequired && !valid && (
                 <span role="alert" className="text-error">{t("inbox.error.required-fields")}</span>
             )}
-            {create.isError && <span role="alert" className="text-error">{t("inbox.error.action")}</span>}
+            {create.isError && <span role="alert" className="text-error">{t("generic.error-action")}</span>}
 
             <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button type="button" onClick={onClose} className="cursor-pointer px-4 py-2 text-primary-blue underline">
-                    {t("inbox.ticket.cancel")}
+                    {t("generic.cancel")}
                 </button>
                 <button type="submit" className={btn} disabled={create.isPending}>
-                    {create.isPending ? t("inbox.sending") : t("inbox.send")}
+                    {create.isPending ? t("generic.sending") : t("generic.send")}
                 </button>
             </div>
         </form>

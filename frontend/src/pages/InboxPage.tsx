@@ -5,25 +5,30 @@ import NotificationsTab from "../components/inbox/NotificationsTab";
 import TermsTab from "../components/inbox/TermsTab";
 import ThreadDetail from "../components/inbox/ThreadDetail";
 import ThreadList from "../components/inbox/ThreadList";
-import { useUnreadCount } from "../hooks/useInbox";
-import type { Folders } from "../services/inboxService";
+import { useInboxCounts, useMarkAllItemsAsRead } from "../hooks/inbox/useInboxSummary";
+import type { FeedCounts, Folders } from "../types/inbox";
 
 type Tab = Folders | "notifications" | "documents" | "terms";
 
-const TABS: { key: Tab; labelKey: string }[] = [
-    { key: "inbox", labelKey: "inbox.title" },
-    { key: "notifications", labelKey: "inbox.notifications" },
+const TABS: { key: Tab; labelKey: string; count?: keyof FeedCounts }[] = [
+    { key: "inbox", labelKey: "inbox.title", count: "unreadThreads" },
+    { key: "notifications", labelKey: "inbox.notifications", count: "unreadNotifications" },
     { key: "sent", labelKey: "inbox.sent" },
     { key: "archive", labelKey: "inbox.archive" },
-    { key: "documents", labelKey: "inbox.documents" },
-    { key: "terms", labelKey: "inbox.terms" },
+    { key: "documents", labelKey: "inbox.documents", count: "unreadDocuments" },
+    { key: "terms", labelKey: "inbox.terms", count: "unreadTerms" },
 ];
+
+const headBtn = "cursor-pointer rounded border border-primary-blue px-3 py-1 text-xs font-semibold text-primary-blue disabled:cursor-default disabled:opacity-40";
 
 export default function InboxPage() {
     const { t } = useTranslation();
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { data: unreadCount = 0 } = useUnreadCount();
+    const { data: counts } = useInboxCounts();
+    const markAll = useMarkAllItemsAsRead();
+
+    const unreadCount = counts?.unreadCount ?? 0;
 
     const tabParam = searchParams.get("folder");
     const tab: Tab = TABS.some((item) => item.key === tabParam) ? (tabParam as Tab) : "inbox";
@@ -48,22 +53,47 @@ export default function InboxPage() {
         <main className="mx-auto w-full max-w-6xl px-4 py-6 font-montserrat text-sm text-dark-navy">
             <div className="flex flex-wrap items-baseline justify-between gap-3 border-b-2 border-nordiska-orange pb-3">
                 <h1 className="text-2xl font-bold">{t("inbox.messages")}</h1>
-                <span className="text-xs uppercase text-primary-blue">
-                    {t("inbox.unread")} <strong className="ml-1 text-base text-dark-navy">{unreadCount}</strong>
-                </span>
+                <div className="flex items-center gap-4">
+                    <span className="text-xs uppercase text-primary-blue">
+                        {t("inbox.unread")} <strong className="ml-1 text-base text-dark-navy">{unreadCount}</strong>
+                    </span>
+                    <button
+                        type="button"
+                        className={headBtn}
+                        disabled={unreadCount === 0 || markAll.isPending}
+                        onClick={() => markAll.mutate()}
+                    >
+                        {t("inbox.mark-all-read")}
+                    </button>
+                </div>
             </div>
+            {markAll.isError && <p role="alert" className="mt-2 text-error">{t("generic.error-action")}</p>}
 
             <nav aria-label={t("inbox.folders-label")} className="my-4 flex flex-wrap gap-x-6 gap-y-2">
-                {TABS.map((item) => (
-                    <Link
-                        key={item.key}
-                        to={`/inbox?folder=${item.key}`}
-                        aria-current={item.key === tab ? "page" : undefined}
-                        className={`pb-1 font-semibold ${item.key === tab ? "border-b-[3px] border-nordiska-orange" : ""}`}
-                    >
-                        {t(item.labelKey)}
-                    </Link>
-                ))}
+                {TABS.map((item) => {
+                    const count = item.count && counts ? counts[item.count] : 0;
+                    return (
+                        <Link
+                            key={item.key}
+                            to={`/inbox?folder=${item.key}`}
+                            aria-current={item.key === tab ? "page" : undefined}
+                            className={`flex items-center gap-1 pb-1 font-semibold ${item.key === tab ? "border-b-[3px] border-nordiska-orange" : ""}`}
+                        >
+                            {t(item.labelKey)}
+                            {count > 0 && (
+                                <>
+                                    <span
+                                        aria-hidden="true"
+                                        className="rounded-full bg-nordiska-orange px-1.5 text-xs text-dark-navy"
+                                    >
+                                        {count > 99 ? "99+" : count}
+                                    </span>
+                                    <span className="sr-only">, {t("inbox.unread-count", { count })}</span>
+                                </>
+                            )}
+                        </Link>
+                    );
+                })}
             </nav>
 
             {tab === "notifications" && <NotificationsTab page={page} onPageChange={setPage} />}
@@ -89,7 +119,7 @@ export default function InboxPage() {
                                     to={{ pathname: "/inbox", search }}
                                     className="mb-3 inline-block text-primary-blue md:hidden"
                                 >
-                                    <span aria-hidden="true">‹ </span>{t("inbox.back")}
+                                    <span aria-hidden="true">‹ </span>{t("generic.back")}
                                 </Link>
                                 <ThreadDetail key={threadId} id={threadId} search={search} folder={folder} />
                             </>
