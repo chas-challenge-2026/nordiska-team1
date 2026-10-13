@@ -17,7 +17,7 @@ export default function AccountTriggerButton({
         <button
             type="button"
             onClick={onClick}
-            className="flex min-h-18 w-full min-w-0 cursor-pointer items-center justify-between gap-3 border border-primary-blue/40 bg-primary-blue/10 px-3 py-2.5 text-left hover:bg-primary-blue/20 sm:px-4 sm:py-3"
+            className="flex min-h-18 w-full min-w-0 cursor-pointer items-center justify-between gap-3 border border-primary-blue/40 bg-white px-3 py-2.5 text-left transition-colors hover:border-primary-blue hover:bg-primary-blue/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue sm:px-4 sm:py-3"
         >
             <span className="min-w-0">
                 <span className="block truncate text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
