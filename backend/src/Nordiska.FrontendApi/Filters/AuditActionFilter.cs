@@ -75,7 +75,8 @@ public sealed class AuditActionFilter : IAsyncActionFilter
         try
         {
             long? userId = null;
-            var nameIdentifier = executedContext.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            var nameIdentifier = executedContext.HttpContext.User.FindFirst("staff_id")?.Value
+                                 ?? executedContext.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                                  ?? executedContext.HttpContext.User.FindFirst("sub")?.Value;
             if (long.TryParse(nameIdentifier, out var parsedUserId))
             {

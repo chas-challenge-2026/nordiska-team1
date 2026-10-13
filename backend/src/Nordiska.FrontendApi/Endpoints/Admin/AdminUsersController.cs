@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
+using Nordiska.FrontendApi.Filters;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 
@@ -115,6 +116,7 @@ public class AdminUsersController : ControllerBase
     /// <response code="400">Invalid input parameters.</response>
     /// <response code="409">Email is already registered.</response>
     [HttpPost]
+    [AuditAction("ADMIN_STAFF_CREATE")]
     [ProducesResponseType(typeof(AdminUserResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -189,6 +191,7 @@ public class AdminUsersController : ControllerBase
     /// <response code="400">Invalid parameters or attempting to demote the last remaining administrator.</response>
     /// <response code="404">User not found.</response>
     [HttpPut("{id:long}")]
+    [AuditAction("ADMIN_STAFF_UPDATE")]
     [ProducesResponseType(typeof(AdminUserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -255,6 +258,7 @@ public class AdminUsersController : ControllerBase
     /// <response code="404">User not found.</response>
     [HttpPut("{id:long}/password")]
     [HttpPost("{id:long}/password")]
+    [AuditAction("ADMIN_PASSWORD_RESET")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -288,6 +292,7 @@ public class AdminUsersController : ControllerBase
     /// <response code="400">Attempting to delete current user or the last administrator.</response>
     /// <response code="404">User not found.</response>
     [HttpDelete("{id:long}")]
+    [AuditAction("ADMIN_STAFF_DEACTIVATE")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
