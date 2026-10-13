@@ -106,7 +106,11 @@
         "no-transactions": "No transactions found.",
         "show-closed": "Show closed accounts",
         "help-card-search": "transactions deposit withdrawal transfer",
-        "closed": "Closed"
+        "closed": "Closed",
+        "page-title": "Transactions",
+        "filter-subtitle": "Search and filter",
+        "accounts-subtitle": "Show transactions for",
+        "list-title": "Transaction history"
     },
  
 

@@ -34,7 +34,7 @@ function endOfLocalDay(date: string): string {
 function SheetHeader({ title, meta }: { title: string; meta?: string }) {
     return (
         <div className='flex items-baseline justify-between border-b-2 border-nordiska-orange pb-1.5'>
-            <h2 className='text-base font-semibold'>{title}</h2>
+            <h2 className='text-base font-semibold text-dark-navy'>{title}</h2>
             {meta && <span className='text-xs text-secondary'>{meta}</span>}
         </div>
     );
@@ -46,7 +46,7 @@ function SheetTrigger({ label, count, onClick, children }: { label: string; coun
             type='button'
             onClick={onClick}
             aria-label={label}
-            className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-lg border ${count > 0 ? 'border-nordiska-blue bg-blue-50' : 'border-gray-300 bg-white'}`}
+            className={`relative grid h-10 w-10 shrink-0 cursor-pointer place-items-center border ${count > 0 ? 'border-primary-blue/40 bg-primary-blue/10' : 'border-gray-200 bg-white hover:bg-primary-blue/10'}`}
         >
             {children}
             {count > 0 && (
@@ -149,132 +149,148 @@ export default function TransactionsPage() {
     };
 
     return (
-        <div className='flex flex-1 flex-col md:flex-row gap-2 w-full min-h-0 md:p-6 max-md:p-2 font-montserrat bg-light-gray max-md:h-[calc(100dvh-120px)]'>
-            <div className='hidden md:block'>
-                <TransactionFilter filters={filters} onChange={handleFiltersChange} onReset={handleFiltersReset} />
-            </div>
+        <main className='min-h-screen w-full font-montserrat text-dark-navy'>
+            <div className='mx-auto w-full max-w-7xl px-2 sm:px-6 sm:py-8 lg:px-1 lg:py-10'>
+                {/* HEADER */}
+                <header className='mb-5'>
+                    <h1 className='border-b-2 border-nordiska-orange pb-2 text-2xl font-bold tracking-tight text-dark-navy sm:text-3xl'>{t("transactions-route.page-title")}</h1>
+                </header>
 
-            <div className='flex gap-2 md:hidden'>
-                <input
-                    type='search'
-                    value={filters.search}
-                    onChange={e => handleFiltersChange({ ...filters, search: e.target.value })}
-                    placeholder={t("transactions-route.search")}
-                    aria-label={t("transactions-route.search")}
-                    className='bg-white h-10 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm'
-                />
-                <SheetTrigger
-                    label={t("transactions-route.filter-aria", { count: activeFilterCount })}
-                    count={activeFilterCount}
-                    onClick={() => setOpenSheet('filter')}
-                >
-                    <img src='/icons/filter.svg' alt='' className='h-[18px] w-[18px]' />
-                </SheetTrigger>
-                <SheetTrigger
-                    label={t("transactions-route.accounts-aria", { count: effectiveSelectedIds.length })}
-                    count={accountBadge}
-                    onClick={() => setOpenSheet('accounts')}
-                >
-                    <img src='/icons/bank-card.svg' alt='' className='h-[18px] w-[18px]' />
-                </SheetTrigger>
-            </div>
-
-            <TransactionTable
-                accounts={allAccounts ?? []}
-                transactions={transactions?.items ?? []}
-                groups={transactions?.groups ?? []}
-                totalCount={transactions?.totalCount ?? 0}
-                totalPages={transactions?.totalPages ?? 1}
-                emptyMessage={effectiveSelectedIds.length === 0 ? t("transactions-route.select-account") : t("transactions-route.no-transactions")}
-                page={page}
-                hasNextPage={hasNextPage}
-                hasPreviousPage={hasPreviousPage}
-                isPlaceholderData={isPlaceholderData}
-                onPageChange={setPage}
-                isLoading={transactionsLoading || accountsLoading}
-                isError={transactionsError}
-            />
-
-            <div className='hidden md:flex flex-col gap-2'>
-                <AccountSelector
-                    accounts={accounts ?? []}
-                    selectedIds={effectiveSelectedIds}
-                    onChange={handleAccountsChange}
-                    isLoading={accountsLoading}
-                    isError={accountsError}
-                    showClosed={showClosed}
-                    onShowClosedChange={handleShowClosedChange}
-                />
-
-                {/* RELATERAT */}
-                <aside aria-label={t("generic.help")} className='hidden xl:block w-64 bg-white p-4 rounded-xl shadow-md border border-secondary'>
-                    <HelpCard searchTerms={t("transactions-route.help-card-search")} numOfHits={5} />
-                </aside>
-            </div>
-
-            <Modal
-                title={t("generic.filter")}
-                isOpen={openSheet === 'filter'}
-                onClose={closeSheet}
-                showCloseButton={false}
-                header={
-                    <SheetHeader
-                        title={t("generic.filter")}
-                        meta={activeFilterCount > 0 ? t("transactions-route.active-count", { count: activeFilterCount }) : undefined}
+                {/* MOBIL: SÖK + FILTER/KONTO-KNAPPAR */}
+                <div className='mb-4 flex gap-2 lg:hidden'>
+                    <input
+                        type='search'
+                        value={filters.search}
+                        onChange={e => handleFiltersChange({ ...filters, search: e.target.value })}
+                        placeholder={t("transactions-route.search")}
+                        aria-label={t("transactions-route.search")}
+                        className='h-10 min-w-0 flex-1 border border-primary-blue/40 bg-white px-3 text-sm'
                     />
-                }
-                footer={
-                    <>
-                        <button type='button' onClick={handleSheetReset} className='px-2 py-2.5 text-sm font-semibold text-primary-blue'>
-                            {t("generic.reset")}
-                        </button>
-                        <button type='button' onClick={closeSheet} className='flex-1 rounded-lg bg-primary-blue py-3 text-sm font-semibold text-white'>
-                            {t("transactions-route.show-count", { count: totalCount })}
-                        </button>
-                    </>
-                }
-            >
-                <TransactionFilter filters={filters} onChange={handleFiltersChange} variant='sheet' />
-            </Modal>
+                    <SheetTrigger
+                        label={t("transactions-route.filter-aria", { count: activeFilterCount })}
+                        count={activeFilterCount}
+                        onClick={() => setOpenSheet('filter')}
+                    >
+                        <img src='/icons/filter.svg' alt='' className='h-[18px] w-[18px]' />
+                    </SheetTrigger>
+                    <SheetTrigger
+                        label={t("transactions-route.accounts-aria", { count: effectiveSelectedIds.length })}
+                        count={accountBadge}
+                        onClick={() => setOpenSheet('accounts')}
+                    >
+                        <img src='/icons/bank-card.svg' alt='' className='h-[18px] w-[18px]' />
+                    </SheetTrigger>
+                </div>
 
-            <Modal
-                title={t("generic.account")}
-                isOpen={openSheet === 'accounts'}
-                onClose={closeSheet}
-                showCloseButton={false}
-                header={
-                    <SheetHeader
-                        title={t("generic.account")}
-                        meta={t("transactions-route.selected-of", { selected: effectiveSelectedIds.length, total: accounts?.length ?? 0 })}
+                <div className='grid gap-5 lg:grid-cols-[minmax(220px,280px)_1fr] xl:grid-cols-[280px_1fr_240px]'>
+                    {/* DESKTOP: FILTER + KONTON */}
+                    <div className='hidden min-w-0 flex-col gap-5 lg:flex'>
+                        <TransactionFilter filters={filters} onChange={handleFiltersChange} onReset={handleFiltersReset} />
+                        <AccountSelector
+                            accounts={accounts ?? []}
+                            selectedIds={effectiveSelectedIds}
+                            onChange={handleAccountsChange}
+                            isLoading={accountsLoading}
+                            isError={accountsError}
+                            showClosed={showClosed}
+                            onShowClosedChange={handleShowClosedChange}
+                        />
+                    </div>
+
+                    {/* TRANSAKTIONSLISTA */}
+                    <TransactionTable
+                        accounts={allAccounts ?? []}
+                        transactions={transactions?.items ?? []}
+                        groups={transactions?.groups ?? []}
+                        totalCount={transactions?.totalCount ?? 0}
+                        totalPages={transactions?.totalPages ?? 1}
+                        emptyMessage={effectiveSelectedIds.length === 0 ? t("transactions-route.select-account") : t("transactions-route.no-transactions")}
+                        page={page}
+                        hasNextPage={hasNextPage}
+                        hasPreviousPage={hasPreviousPage}
+                        isPlaceholderData={isPlaceholderData}
+                        onPageChange={setPage}
+                        isLoading={transactionsLoading || accountsLoading}
+                        isError={transactionsError}
                     />
-                }
-                footer={
-                    <>
-                        <button type='button' onClick={() => handleAccountsChange([])} className='px-2 py-2.5 text-sm font-semibold text-primary-blue'>
-                            {t("transactions-route.deselect-all")}
-                        </button>
-                        <button type='button' onClick={closeSheet} className='flex-1 rounded-lg bg-primary-blue py-3 text-sm font-semibold text-white'>
-                            {t("transactions-route.show-count", { count: totalCount })}
-                        </button>
-                    </>
-                }
-            >
-                <AccountSelector
-                    accounts={accounts ?? []}
-                    selectedIds={effectiveSelectedIds}
-                    onChange={handleAccountsChange}
-                    isLoading={accountsLoading}
-                    isError={accountsError}
-                    showClosed={showClosed}
-                    onShowClosedChange={handleShowClosedChange}
-                    variant='sheet'
-                />
-            </Modal>
 
-            <HelpCardBubble
-                searchTerms={t("transactions-route.help-card-search")}
-                numOfHits={6}
-            />
-        </div>
+                    {/* HJÄLPCENTER */}
+                    <aside aria-label={t("generic.help")} className='hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block'>
+                        <div className='min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white'>
+                            <p className='mt-2 truncate text-right text-sm uppercase text-white/80'>{t("generic.help-center")}</p>
+                            <p className='mt-1 truncate text-right text-md font-semibold'>{t("generic.related-articles")}</p>
+                        </div>
+
+                        <div className='p-4'>
+                            <HelpCard searchTerms={t("transactions-route.help-card-search")} removeHeading numOfHits={12} />
+                        </div>
+                    </aside>
+                </div>
+
+                <Modal
+                    title={t("generic.filter")}
+                    isOpen={openSheet === 'filter'}
+                    onClose={closeSheet}
+                    showCloseButton={false}
+                    header={
+                        <SheetHeader
+                            title={t("generic.filter")}
+                            meta={activeFilterCount > 0 ? t("transactions-route.active-count", { count: activeFilterCount }) : undefined}
+                        />
+                    }
+                    footer={
+                        <>
+                            <button type='button' onClick={handleSheetReset} className='px-2 py-2.5 text-sm font-semibold text-primary-blue'>
+                                {t("generic.reset")}
+                            </button>
+                            <button type='button' onClick={closeSheet} className='flex-1 rounded-lg bg-primary-blue py-3 text-sm font-semibold text-white'>
+                                {t("transactions-route.show-count", { count: totalCount })}
+                            </button>
+                        </>
+                    }
+                >
+                    <TransactionFilter filters={filters} onChange={handleFiltersChange} variant='sheet' />
+                </Modal>
+
+                <Modal
+                    title={t("generic.account")}
+                    isOpen={openSheet === 'accounts'}
+                    onClose={closeSheet}
+                    showCloseButton={false}
+                    header={
+                        <SheetHeader
+                            title={t("generic.account")}
+                            meta={t("transactions-route.selected-of", { selected: effectiveSelectedIds.length, total: accounts?.length ?? 0 })}
+                        />
+                    }
+                    footer={
+                        <>
+                            <button type='button' onClick={() => handleAccountsChange([])} className='px-2 py-2.5 text-sm font-semibold text-primary-blue'>
+                                {t("transactions-route.deselect-all")}
+                            </button>
+                            <button type='button' onClick={closeSheet} className='flex-1 rounded-lg bg-primary-blue py-3 text-sm font-semibold text-white'>
+                                {t("transactions-route.show-count", { count: totalCount })}
+                            </button>
+                        </>
+                    }
+                >
+                    <AccountSelector
+                        accounts={accounts ?? []}
+                        selectedIds={effectiveSelectedIds}
+                        onChange={handleAccountsChange}
+                        isLoading={accountsLoading}
+                        isError={accountsError}
+                        showClosed={showClosed}
+                        onShowClosedChange={handleShowClosedChange}
+                        variant='sheet'
+                    />
+                </Modal>
+
+                <HelpCardBubble
+                    searchTerms={t("transactions-route.help-card-search")}
+                    numOfHits={6}
+                />
+            </div>
+        </main>
     );
 }

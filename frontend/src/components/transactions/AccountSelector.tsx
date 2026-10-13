@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { type Account } from "../../services/accountsService";
 import { useTranslation } from "react-i18next";
+import { formatCurrency } from "../../utils/currency";
+import PanelHeader from "./PanelHeader";
 
 interface AccountSelectorProps {
     accounts: Account[];
@@ -41,19 +43,23 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
     };
 
     return (
-        <div className={isSheet ? 'bg-white px-4 pb-4 rounded-xl shadow-md border border-secondary ' : 'bg-white p-4 w-64 rounded-xl shadow-md border border-secondary'}>
-            {!isSheet && (
-                <>
-                    <h3 className="font-semibold text-sm mb-1 border-b-1 border-nordiska-orange">{t("generic.account")}</h3>
-                    <p className="text-xs text-secondary mb-3">{t("transactions-route.account-select")}</p>
-                </>
+        <div className={isSheet ? 'bg-white px-4 pb-4 text-dark-navy' : 'overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm'}>
+            {!isSheet && <PanelHeader subtitle={t("transactions-route.accounts-subtitle")} title={t("generic.account")} />}
+
+            {isLoading && (
+                <div className="flex min-h-24 items-center justify-center px-4" role="status" aria-live="polite">
+                    <p className="text-sm text-secondary">{t("transactions-route.loading-accounts")}</p>
+                </div>
             )}
-            {isLoading && <p className="text-sm text-secondary">{t("transactions-route.loading-accounts")}</p>}
-            {isError && <p className="text-sm text-red-700">{t("transactions-route.accounts-error")}</p>}
+            {isError && (
+                <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
+                    <p className="text-sm font-medium text-red-800">{t("transactions-route.accounts-error")}</p>
+                </div>
+            )}
 
             {!isLoading && !isError && (
                 <>
-                    <div className={isSheet ? 'sticky top-0 z-10 bg-white pt-3 pb-2' : ''}>
+                    <div className={isSheet ? 'sticky top-0 z-10 bg-white pt-3' : ''}>
                         {isSheet && (
                             <input
                                 type="search"
@@ -61,53 +67,56 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder={t("transactions-route.search-account")}
                                 aria-label={t("transactions-route.search-account")}
-                                className="mb-3 h-10 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm"
+                                className="mb-3 h-10 w-full border border-primary-blue/40 bg-white px-3 text-sm"
                             />
                         )}
-                        <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer"/>
+                        <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 text-sm font-semibold ${isSheet ? '' : 'px-4'}`}>
+                            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer accent-primary-blue" />
                             {t("transactions-route.all-accounts")}
                         </label>
                     </div>
 
                     <fieldset>
                         <legend className="sr-only">{t("transactions-route.account-select")}</legend>
-                        <ul className={isSheet ? 'divide-y divide-gray-100' : 'space-y-2'}>
-                            {visibleAccounts.map(acc => (
-                                <li key={acc.id}>
-                                    <label className={`flex items-start gap-2 text-sm ${isSheet ? 'py-3' : ''}`}>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.includes(acc.id)}
-                                            onChange={() => toggleOne(acc.id)}
-                                            className="mt-0.5 cursor-pointer"
-                                        />
-                                        <span className="flex flex-col">
-                                            <span>
-                                                {acc.accountName} | {acc.accountNumber}
-                                                {acc.status === "closed" && (
-                                                    <span className="ml-1 text-xs text-secondary">({t("transactions-route.closed")})</span>
-                                                )}
+                        <ul>
+                            {visibleAccounts.map(acc => {
+                                const isSelected = selectedIds.includes(acc.id);
+                                return (
+                                    <li key={acc.id}>
+                                        <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 ${isSheet ? '' : 'px-4'} ${isSelected ? 'bg-primary-blue/10' : 'bg-white hover:bg-primary-blue/10'}`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleOne(acc.id)}
+                                                className="cursor-pointer accent-primary-blue"
+                                            />
+                                            <span className="min-w-0">
+                                                <span className="block truncate text-xs text-dark-navy">
+                                                    {acc.accountNumber} • <span className="font-semibold">{formatCurrency(acc.balance)}</span>
+                                                </span>
+                                                <span className="mt-0.5 block truncate text-sm font-semibold">
+                                                    {acc.accountName || t(`accounts-route.account-type-${acc.accountType}`)}
+                                                    {acc.status === "closed" && (
+                                                        <span className="ml-1 text-xs font-normal text-secondary">({t("transactions-route.closed")})</span>
+                                                    )}
+                                                </span>
                                             </span>
-                                            <span className="text-secondary">
-                                                {acc.balance.toLocaleString('sv-SE', { minimumFractionDigits: 2 })} sek
-                                            </span>
-                                        </span>
-                                    </label>
-                                </li>
-                            ))}
+                                        </label>
+                                    </li>
+                                );
+                            })}
                         </ul>
                         {isSheet && visibleAccounts.length === 0 && (
                             <p className="py-4 text-center text-sm text-secondary">{t("transactions-route.no-account-match")}</p>
                         )}
                     </fieldset>
 
-                    <label className={`flex items-center gap-2 text-sm border-t border-gray-200 ${isSheet ? 'pt-3' : 'mt-3 pt-3'}`}>
+                    <label className={`flex cursor-pointer items-center gap-3 py-3 text-sm ${isSheet ? '' : 'px-4'}`}>
                         <input
                             type="checkbox"
                             checked={showClosed}
                             onChange={e => onShowClosedChange(e.target.checked)}
-                            className="cursor-pointer"
+                            className="cursor-pointer accent-primary-blue"
                         />
                         {t("transactions-route.show-closed")}
                     </label>

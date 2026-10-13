@@ -106,7 +106,11 @@
         "no-transactions": "Inga transaktioner hittades.",
         "show-closed": "Visa stängda konton",
         "help-card-search": "transaktioner insättning uttag överföring",
-        "closed": "Stängt"
+        "closed": "Stängt",
+        "page-title": "Transaktioner",
+        "filter-subtitle": "Sök och filtrera",
+        "accounts-subtitle": "Visa transaktioner för",
+        "list-title": "Transaktionshistorik"
     },
     "accounts-route": {
         "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",

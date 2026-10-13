@@ -34,69 +34,80 @@ export default function TransactionTable({ accounts, transactions, groups, total
     const accountsById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts])
 
     return (
-        <div className="p-4 flex-1 min-h-0 flex flex-col md:rounded-xl md:mb-10 md:shadow-md md:border md:border-secondary md:bg-white">
-            <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px] border-b-3 border-b-nordiska-orange mb-2">{t("transactions-route.transactions")}</h2>
+        <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-200 md:shadow-sm">
+            {/* CARD HEADER */}
+            <div className="flex min-h-22 flex-col justify-center bg-dark-navy px-4 py-3 text-white sm:px-6">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs" aria-live="polite">
+                    {!isLoading && !isError && t("transactions-route.showing-count", { shown: transactions.length, count: totalCount })}
+                </p>
+                <h2 id={`${listId}-heading`} className="mt-0.5 truncate text-base font-bold uppercase tracking-wide sm:mt-1 sm:text-lg">{t("transactions-route.list-title")}</h2>
+            </div>
 
-            {isLoading && <p className="text-sm text-secondary">{t("transactions-route.loading-transactions")}</p>}
-            {isError && <p className="text-sm text-red-700">{t("transactions-route.transactions-error")}</p>}
+            {isLoading && (
+                <div className="flex min-h-40 items-center justify-center px-4" role="status" aria-live="polite">
+                    <p className="text-sm text-secondary">{t("transactions-route.loading-transactions")}</p>
+                </div>
+            )}
+            {isError && (
+                <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
+                    <p className="text-sm font-medium text-red-800">{t("transactions-route.transactions-error")}</p>
+                </div>
+            )}
 
             {!isLoading && !isError && (
-                <>
-                    <p className="shrink-0 text-xs text-secondary mb-3" aria-live="polite">
-                        {t("transactions-route.showing-count", { shown: transactions.length, count: totalCount })}
-                    </p>
-
-                    <div
-                        id={listId}
-                        aria-busy={isPlaceholderData}
-                        className={`flex-1 min-h-0 overflow-y-auto ${isPlaceholderData ? 'opacity-50' : ''}`}
-                    >
-                        {transactions.length === 0 && emptyMessage && (
-                            <p className="py-6 text-center text-sm text-secondary">{emptyMessage}</p>
-                        )}
-                        {groups.map(group => (
-                            <div key={group.dateKey} className="mb-3">
-                                <h4 className="text-xs font-medium text-secondary mb-1 border-b-2 border-gray-200">
-                                    {formatDate(`${group.date}T00:00:00`)}
-                                </h4>
-                                <ul className="divide-y divide-gray-100 px-3">
-                                    {group.items.map(transaction => (
-                                        <li key={transaction.id} className="py-3 flex justify-between items-start">
-                                            <div>
-                                                <p className="text-sm font-medium">{transaction.label || transactionTypeLabel(transaction.type, t)}</p>
-                                                {(() => {
-                                                    const account = accountsById.get(transaction.accountId);
-                                                    return account ? (
-                                                        <p className="text-xs text-secondary">
-                                                            {account.accountName} | {account.accountNumber}
-                                                        </p>
-                                                    ) : null;
-                                                })()}
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-secondary">{formatTime(transaction.createdAt)}</p>
-                                                <p className={`text-sm font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                <div
+                    id={listId}
+                    aria-busy={isPlaceholderData}
+                    className={`flex-1 py-2 sm:p-4 ${isPlaceholderData ? 'opacity-50' : ''}`}
+                >
+                    {transactions.length === 0 && emptyMessage && (
+                        <p className="py-10 text-center text-sm text-secondary">{emptyMessage}</p>
+                    )}
+                    {groups.map(group => (
+                        <div key={group.dateKey} className="mb-4 last:mb-0">
+                            <h3 className="border border-nordiska-blue/50 bg-primary-blue/10 px-3 py-2 text-xs font-medium uppercase tracking-wide text-nordiska-blue sm:px-5">
+                                {formatDate(`${group.date}T00:00:00`)}
+                            </h3>
+                            <ul>
+                                {group.items.map(transaction => {
+                                    const account = accountsById.get(transaction.accountId);
+                                    return (
+                                        <li key={transaction.id} className="border-b-2 border-nordiska-orange px-3 py-3 odd:bg-white even:bg-light-gray/80 last:border-0 sm:px-5">
+                                            <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
+                                                <span className="min-w-0 wrap-break-word font-semibold">{transaction.label || transactionTypeLabel(transaction.type, t)}</span>
+                                                <span className={`shrink-0 whitespace-nowrap font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>
                                                     {formatCurrency(transaction.amount, { signed: true })}
-                                                </p>
-                                            </div>
+                                                </span>
+                                            </p>
+                                            <p className="mt-0.5 flex flex-wrap justify-between gap-x-2 gap-y-1 text-[10px] uppercase text-dark-navy/60 sm:text-xs">
+                                                <span>{formatTime(transaction.createdAt)}</span>
+                                                {account && (
+                                                    <span className="min-w-0 wrap-break-word text-right">
+                                                        {account.accountNumber} • {account.accountName || t(`accounts-route.account-type-${account.accountType}`)}
+                                                    </span>
+                                                )}
+                                            </p>
                                         </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                </>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
             )}
-            <PagePagination 
-                page={page}
-                totalPages={totalPages}
-                hasPreviousPage={hasPreviousPage}
-                hasNextPage={hasNextPage}
-                onPrevious={() => onPageChange(page - 1)}
-                onNext={() => onPageChange(page + 1)}
-                onPageChange={onPageChange}
-                isDisabled={isLoading}
-            />
-        </div>
+
+            <div className="border-t-2 border-nordiska-orange px-2 py-3 sm:mx-4">
+                <PagePagination
+                    page={page}
+                    totalPages={totalPages}
+                    hasPreviousPage={hasPreviousPage}
+                    hasNextPage={hasNextPage}
+                    onPrevious={() => onPageChange(page - 1)}
+                    onNext={() => onPageChange(page + 1)}
+                    onPageChange={onPageChange}
+                    isDisabled={isLoading}
+                />
+            </div>
+        </section>
     );
 }
