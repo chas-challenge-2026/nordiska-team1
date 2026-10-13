@@ -6,6 +6,7 @@ type InputFieldProps = {
     value: string;
     required?: boolean;
     onChange: (value: string) => void;
+    onBlur?: () => void;
     error?: string;
     suffix?: string;
     textarea?: boolean;
@@ -25,6 +26,7 @@ export default function InputField({
         value,
         required = false,
         onChange,
+        onBlur,
         error,
         suffix,
         textarea,
@@ -51,6 +53,7 @@ export default function InputField({
                         value={value}
                         required={required}
                         onChange={(e) => onChange(e.target.value)}
+                        onBlur={onBlur}
                         rows={rows}
                         aria-invalid={!!error}
                         aria-describedby={error ? `${name}-error` : undefined}
@@ -67,6 +70,7 @@ export default function InputField({
                         value={value}
                         required={required}
                         onChange={(e) => onChange(e.target.value)}
+                        onBlur={onBlur}
                         aria-invalid={!!error}
                         aria-describedby={error ? `${name}-error` : undefined}
                         className={`w-full rounded-md border bg-white ${

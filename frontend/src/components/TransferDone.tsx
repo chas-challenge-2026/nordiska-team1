@@ -2,13 +2,38 @@ import { useTranslation } from "react-i18next";
 
 export type TransferPhase = "processing" | "success" | "failure";
 
+export type TransferSummary = {
+    amount: string;
+    fromName: string;
+    fromMeta: string;
+    toName: string;
+    toMeta: string;
+    date: string;
+    /** Bara satt för återkommande överföringar. */
+    interval?: string;
+};
+
 type TransferDoneProps = {
     phase: TransferPhase;
-    summaryLine: string;
-    fromName: string;
-    toName: string;
+    summary: TransferSummary;
     onReset: () => void;
 };
+
+function SummaryRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+    return (
+        <div className="flex justify-between gap-4">
+            <span className="text-sm text-secondary">{label}</span>
+            <span className="min-w-0 text-right">
+                <span className="block wrap-break-word text-[15px] font-bold text-dark-navy">
+                    {value}
+                </span>
+                {sub && (
+                    <span className="block text-sm text-secondary">{sub}</span>
+                )}
+            </span>
+        </div>
+    );
+}
 
 /**
  * Bekräftelsevy efter en överföring. Tre faser:
@@ -19,9 +44,7 @@ type TransferDoneProps = {
  */
 export default function TransferDone({
     phase,
-    summaryLine,
-    fromName,
-    toName,
+    summary,
     onReset,
 }: TransferDoneProps) {
     const { t } = useTranslation();
@@ -41,7 +64,7 @@ export default function TransferDone({
                                 {t("generic.from")}
                             </div>
                             <div className="truncate text-[15px] font-bold text-dark-navy">
-                                {fromName}
+                                {summary.fromName}
                             </div>
                         </div>
                         <div className="relative h-0.5 w-10 flex-none bg-[#E5EAF0] sm:w-28">
@@ -52,7 +75,7 @@ export default function TransferDone({
                                 {t("generic.to")}
                             </div>
                             <div className="truncate text-[15px] font-bold text-dark-navy">
-                                {toName}
+                                {summary.toName}
                             </div>
                         </div>
                     </div>
@@ -107,13 +130,38 @@ export default function TransferDone({
                                         : "page-transfer.done.heading",
                                 )}
                             </h2>
-                            {!isFailure && (
-                                <p className="mt-1.5 text-sm text-secondary">
-                                    {summaryLine}
-                                </p>
-                            )}
                         </div>
                     </div>
+
+                    {!isFailure && (
+                        <div className="mt-6 flex max-w-full flex-col gap-3 rounded-lg border border-[#E5EAF0] px-5 py-4.5 sm:max-w-[520px]">
+                            <SummaryRow
+                                label={t("page-transfer.bankid.amount")}
+                                value={`${summary.amount} sek`}
+                            />
+                            <div className="h-px bg-[#EEF1F4]" />
+                            <SummaryRow
+                                label={t("generic.from")}
+                                value={summary.fromName}
+                                sub={summary.fromMeta}
+                            />
+                            <SummaryRow
+                                label={t("generic.to")}
+                                value={summary.toName}
+                                sub={summary.toMeta}
+                            />
+                            <SummaryRow
+                                label={t("generic.date")}
+                                value={summary.date}
+                            />
+                            {summary.interval && (
+                                <SummaryRow
+                                    label={t("page-transfer.interval-label")}
+                                    value={summary.interval}
+                                />
+                            )}
+                        </div>
+                    )}
 
                     <button
                         type="button"

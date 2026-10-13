@@ -17,6 +17,7 @@ export interface TransactionParams {
     AccountId?: number;
     AccountIds?: number[];
     Type?: Transaction["type"];
+    IsPlanned?: boolean;
     FromDate?: string;
     ToDate?: string;
     MinAmount?: number;
