@@ -216,13 +216,6 @@ export default function TransferPage() {
     return (
         <main className="min-h-screen w-full text-dark-navy">
             <div className="mx-auto w-full max-w-7xl px-2 pb-20 sm:px-6 sm:pt-8 md:pb-8 lg:px-1 lg:py-10">
-                {/* HEADER */}
-                <header className="mb-5">
-                    <h1 className="border-b-2 border-nordiska-orange pb-2 text-2xl font-bold tracking-tight text-dark-navy sm:text-3xl">
-                        {t("page-navigation.transfers")}
-                    </h1>
-                </header>
-
                 {/* MAIN CONTENT */}
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_240px]">
                     {/* TRANSFER FORM */}
