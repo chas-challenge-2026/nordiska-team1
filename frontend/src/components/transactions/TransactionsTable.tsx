@@ -41,10 +41,10 @@ export default function TransactionTable({ accounts, transactions, groups, total
         <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-200 md:shadow-sm">
             {/* CARD HEADER */}
             <div className="flex min-h-22 flex-col justify-center bg-dark-navy px-4 py-3 text-white sm:px-6">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs" aria-live="polite">
+                <h2 id={`${listId}-heading`} className="truncate text-base font-bold uppercase tracking-wide sm:text-lg">{t("transactions-route.list-title")}</h2>
+                <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-white/90 sm:mt-1 sm:text-xs" aria-live="polite">
                     {!isLoading && !isError && t("transactions-route.showing-count", { shown: transactions.length, count: totalCount })}
                 </p>
-                <h2 id={`${listId}-heading`} className="mt-0.5 truncate text-base font-bold uppercase tracking-wide sm:mt-1 sm:text-lg">{t("transactions-route.list-title")}</h2>
             </div>
 
             {isLoading && (
@@ -69,10 +69,10 @@ export default function TransactionTable({ accounts, transactions, groups, total
                     )}
                     {groups.map(group => (
                         <div key={group.dateKey} className="mb-4 last:mb-0">
-                            <h3 className="border border-nordiska-blue/50 bg-primary-blue/10 px-3 py-2 text-xs font-medium uppercase tracking-wide text-nordiska-blue sm:px-5">
+                            <h3 className="mb-1 border-b-2 border-nordiska-orange px-3 pb-1 text-xs font-medium text-secondary sm:px-5">
                                 {formatDate(`${group.date}T00:00:00`)}
                             </h3>
-                            <ul>
+                            <ul className="ml-3 sm:ml-5">
                                 {group.items.map(transaction => {
                                     const accountNumber = accountsById.get(transaction.accountId)?.accountNumber;
                                     // Överföringar visas som "från → till" precis som på Översikt
@@ -81,7 +81,7 @@ export default function TransactionTable({ accounts, transactions, groups, total
                                         ? (transaction.amount < 0 ? `${accountNumber} → ${targetNumber}` : `${targetNumber} → ${accountNumber}`)
                                         : accountNumber;
                                     return (
-                                        <li key={transaction.id} className="border-b-2 border-nordiska-orange px-3 py-3 odd:bg-white even:bg-light-gray/80 last:border-0 sm:px-5">
+                                        <li key={transaction.id} className="px-3 py-3 odd:bg-white even:bg-light-gray/60 sm:px-5">
                                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
                                                 <span className="min-w-0 wrap-break-word font-semibold">{transaction.label || transactionTypeLabel(transaction, t)}</span>
                                                 <span className={`shrink-0 whitespace-nowrap font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>

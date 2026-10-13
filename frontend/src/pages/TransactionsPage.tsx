@@ -150,11 +150,9 @@ export default function TransactionsPage() {
 
     return (
         <main className='min-h-screen w-full font-montserrat text-dark-navy'>
-            <div className='mx-auto w-full max-w-7xl px-2 sm:px-6 sm:py-8 lg:px-1 lg:py-10'>
-                {/* HEADER */}
-                <header className='mb-5'>
-                    <h1 className='border-b-2 border-nordiska-orange pb-2 text-2xl font-bold tracking-tight text-dark-navy sm:text-3xl'>{t("transactions-route.page-title")}</h1>
-                </header>
+            <div className='relative mx-auto w-full max-w-7xl px-2 pt-4 sm:px-6 sm:py-8 lg:px-1 lg:py-10'>
+                {/* Sidrubriken visas inte men behålls för skärmläsare */}
+                <h1 className='sr-only'>{t("transactions-route.page-title")}</h1>
 
                 {/* MOBIL: SÖK + FILTER/KONTO-KNAPPAR */}
                 <div className='mb-4 flex gap-2 lg:hidden'>
