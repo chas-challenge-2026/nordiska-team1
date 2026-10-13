@@ -74,7 +74,12 @@ export default function TransactionTable({ accounts, transactions, groups, total
                             </h3>
                             <ul>
                                 {group.items.map(transaction => {
-                                    const account = accountsById.get(transaction.accountId);
+                                    const accountNumber = accountsById.get(transaction.accountId)?.accountNumber;
+                                    // Överföringar visas som "från → till" precis som på Översikt
+                                    const targetNumber = transaction.targetAccountId ? accountsById.get(transaction.targetAccountId)?.accountNumber : undefined;
+                                    const accountText = targetNumber
+                                        ? (transaction.amount < 0 ? `${accountNumber} → ${targetNumber}` : `${targetNumber} → ${accountNumber}`)
+                                        : accountNumber;
                                     return (
                                         <li key={transaction.id} className="border-b-2 border-nordiska-orange px-3 py-3 odd:bg-white even:bg-light-gray/80 last:border-0 sm:px-5">
                                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
@@ -85,10 +90,8 @@ export default function TransactionTable({ accounts, transactions, groups, total
                                             </p>
                                             <p className="mt-0.5 flex flex-wrap justify-between gap-x-2 gap-y-1 text-[10px] uppercase text-dark-navy/60 sm:text-xs">
                                                 <span>{formatTime(transaction.createdAt)}</span>
-                                                {account && (
-                                                    <span className="min-w-0 wrap-break-word text-right">
-                                                        {account.accountNumber} • {account.accountName || t(`accounts-route.account-type-${account.accountType}`)}
-                                                    </span>
+                                                {accountText && (
+                                                    <span className="min-w-0 wrap-break-word text-right">{accountText}</span>
                                                 )}
                                             </p>
                                         </li>

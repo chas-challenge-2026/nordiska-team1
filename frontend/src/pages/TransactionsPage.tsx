@@ -182,19 +182,10 @@ export default function TransactionsPage() {
                     </SheetTrigger>
                 </div>
 
-                <div className='grid gap-5 lg:grid-cols-[minmax(220px,280px)_1fr] xl:grid-cols-[280px_1fr_240px]'>
-                    {/* DESKTOP: FILTER + KONTON */}
-                    <div className='hidden min-w-0 flex-col gap-5 lg:flex'>
+                <div className='grid gap-5 lg:grid-cols-[220px_1fr_220px] xl:grid-cols-[280px_1fr_280px]'>
+                    {/* DESKTOP: FILTER */}
+                    <div className='hidden min-w-0 self-start lg:block'>
                         <TransactionFilter filters={filters} onChange={handleFiltersChange} onReset={handleFiltersReset} />
-                        <AccountSelector
-                            accounts={accounts ?? []}
-                            selectedIds={effectiveSelectedIds}
-                            onChange={handleAccountsChange}
-                            isLoading={accountsLoading}
-                            isError={accountsError}
-                            showClosed={showClosed}
-                            onShowClosedChange={handleShowClosedChange}
-                        />
                     </div>
 
                     {/* TRANSAKTIONSLISTA */}
@@ -214,17 +205,29 @@ export default function TransactionsPage() {
                         isError={transactionsError}
                     />
 
-                    {/* HJÄLPCENTER */}
-                    <aside aria-label={t("generic.help")} className='hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block'>
-                        <div className='min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white'>
-                            <p className='mt-2 truncate text-right text-sm uppercase text-white/80'>{t("generic.help-center")}</p>
-                            <p className='mt-1 truncate text-right text-md font-semibold'>{t("generic.related-articles")}</p>
-                        </div>
+                    {/* DESKTOP: KONTON + HJÄLPCENTER */}
+                    <div className='hidden min-w-0 flex-col gap-5 self-start lg:flex'>
+                        <AccountSelector
+                            accounts={accounts ?? []}
+                            selectedIds={effectiveSelectedIds}
+                            onChange={handleAccountsChange}
+                            isLoading={accountsLoading}
+                            isError={accountsError}
+                            showClosed={showClosed}
+                            onShowClosedChange={handleShowClosedChange}
+                        />
 
-                        <div className='p-4'>
-                            <HelpCard searchTerms={t("transactions-route.help-card-search")} removeHeading numOfHits={12} />
-                        </div>
-                    </aside>
+                        <aside aria-label={t("generic.help")} className='hidden min-w-0 border border-gray-200 bg-white md:shadow-sm xl:block'>
+                            <div className='min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white'>
+                                <p className='mt-2 truncate text-right text-sm uppercase text-white/80'>{t("generic.help-center")}</p>
+                                <p className='mt-1 truncate text-right text-md font-semibold'>{t("generic.related-articles")}</p>
+                            </div>
+
+                            <div className='p-4'>
+                                <HelpCard searchTerms={t("transactions-route.help-card-search")} removeHeading numOfHits={12} />
+                            </div>
+                        </aside>
+                    </div>
                 </div>
 
                 <Modal
