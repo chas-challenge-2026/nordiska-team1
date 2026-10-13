@@ -122,17 +122,27 @@ export default function PageHeader({protectedHeader, noShow}: pageHeaderProps) {
 
         ) : ( // ----- PROTECTED HEADER -----
         <>
-        <header className={`fixed z-[1001] w-screen h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
+        <header className={`fixed z-[1001] w-screen grid grid-cols-[1fr_2fr_1fr] items-end h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
 
             {/* ----- LOGO ----- */}
-            <section>
+            <section className="flex min-w-0 justify-start">
                 <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer text-shadow-lg/50`}>
                     nordiska<span className={dotColor}>.</span>
                 </a>
             </section>
 
+            {/* ----- NAVIGATION ----- */}
+            <div className="min-w-0">
+                <nav className="hidden md:flex justify-center gap-4 lg:gap-8">
+                    <PageLink title={t("page-navigation.overview")} route="/" />
+                    <PageLink title={t("page-navigation.accounts")} route="/accounts" />
+                    <PageLink title={t("page-navigation.transactions")} route="/transactions" />
+                    <PageLink title={t("page-navigation.transfers")} route="/transfer" />
+                </nav>
+            </div>
+
             {/* ----- HELP & MENU ----- */}
-            <section className="flex -mr-1 mb-0.5">
+            <section className="flex min-w-0 justify-end gap-0.5 mb-0.5">
 
                 {/* HELP ICON */}
                 {!menuOpen && (
