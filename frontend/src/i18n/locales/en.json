@@ -40,7 +40,8 @@
     "errors": {
         "loading": "Something went wrong while loading the data.",
         "no-user": "Could not find user.",
-        "report": "Could not create the report. Try again."
+        "report": "Could not create the report. Try again.",
+        "generic": "Something went wrong. Try again later."
     },
     "aria-label": {
         "page-nav": "Main navigation",
@@ -107,88 +108,229 @@
         "help-card-search": "transactions deposit withdrawal transfer",
         "closed": "Closed"
     },
+ 
+
     "accounts-route": {
-        "help-card-search": "reports account terms",
-        "yearly-interest": "Yearly interest amount",
-        "yearly-interest-info": "Yearly interest is based on the current account balance",
-        "my-accounts": "My accounts",
-        "pick-account": "Select account",
-        "pick-one-account": "Select an account",
-        "total-balance": "Total balance",
-        "show-accountinfo": "Show account information",
-        "new-account": "New account",
-        "full-report": "Tax statement",
-        "account-report": "Account statement",
-        "loading-accounts": "Loading accounts...",
-        "accounts-error": "There was an issue loading accounts",
-        "no-accounts": "No accounts found.",
-        "account-name": "Account name",
-        "account-name-placeholder": "E.g. Vacation fund",
+        "favorite-error": "You can have a maximum of 4 favorite accounts. Remove a favorite to add a new one.",
         "account-type": "Account type",
-        "account-type-required": "Account type required",
-        "select-account-type": "Select account type",
         "account-type-saving": "Savings account",
         "account-type-standard": "Standard account",
-        "account-type-flex": "Flex account",
-        "account-type-fix": "Fixed-rate account",
+        "account-type-flex": "Flexible savings account",
+        "account-type-fix": "Fixed-term savings account",
         "account-type-premium": "Premium account",
+        "account-name": "Account name",
+        "savings-goal-title": "Savings goal",
+        "actions": "Account management",
+        "favorite": "Add to favorites",
+        "no-favorite": "Remove favorite",
+        "close-account": "Close account",
+        "help-card-search": "reports account terms",
+
+        "accounts-header": {
+            "my-accounts": "My accounts",
+            "total-balance": "Total balance",
+            "new-account": "New account"
+        },
+        "accounts-nav": {
+            "pick-account": "Select account",
+            "show-accountinfo": "Show account information",
+            "pick-one-account": "Select an account"
+        },
+        "interest-section": {
+            "accured-interest": "Interest earned",
+            "accured-interest-info": "Interest earned is calculated from January 1 each year.",
+            "yearly-interest": "Estimated annual interest",
+            "yearly-interest-info": "Annual interest is calculated based on the current balance."
+        },
+        "savings-goal": {
+            "no-goal-title": "Set a savings goal and track your progress",
+            "no-goal-info": "Decide how much you want to save in your account and watch your savings grow.",
+            "no-goal-info-span": "Set your goal and start saving today!",
+            "create-savingsgoal": "Set a savings goal",
+            "create-new": "Set a new savings goal",
+            "confirm-delete": "Are you sure you want to delete the savings goal",
+            "your-goal": "Your savings goal",
+            "remaining": "Left to save",
+            "goal-amount": "Target amount",
+            "goal-achieved": "Goal achieved",
+            "progress-label": "Every deposit counts",
+            "deposit": "Make a deposit",
+            "completed-title": "You reached your savings goal",
+            "completed-info": "Now",
+            "completed-info-suffix": "can become a reality!",
+            "edit": "Edit savings goal",
+            "delete": "Delete savings goal",
+            "deleting": "Deleting...",
+            "progress": {
+                "almost-there": "Almost there!",
+                "great-progress": "You've made great progress",
+                "halfway": "More than halfway there!",
+                "nearly-halfway": "Almost halfway there!",
+                "getting-started": "You're making progress",
+                "good-start": "A great start!",
+                "lets-go": "Let's go!",
+                "start-saving": "Time to start saving"
+            },
+            "pie-chart": "saved"
+        },
+        "errors": {
+            "accounts-error": "An error occurred while retrieving accounts."
+        },
+        "aria-label": {
+            "new-account": "Create a new account",
+            "my-accounts": "My accounts",
+            "generate-full-report": "Generate tax report",
+            "account-action-buttons": "Account management actions"
+        },
+        "full-report": "Tax report",
+        "account-report": "Account statement",
+        "loading-accounts": "Loading accounts...",
+        "no-accounts": "No accounts found.",
+        "account-name-placeholder": "e.g. Holiday fund",
+
+        "account-type-required": "Account type is required",
+        "select-account-type": "Select account type",
+
         "initial-deposit": "Initial deposit",
         "interest-rate": "Interest rate",
         "invalid-amount": "Invalid amount",
         "invalid-interest-rate": "Invalid interest rate",
-        "create-account-error": "Could not create account. Try again.",
-        "close-account": "Close account",
-        "close-account-info": "You are about to permanently close the account.",
-        "close-account-warning": "Close account \"{{accountNumber}}\"? This cannot be undone.",
-        "close-confirmation": "The account cannot be reopened after it has been closed.",
-        "close-error": "Failed to close account. Try again.",
+        "create-account-error": "Could not create the account. Please try again.",
+        "close-account-info": "You are about to permanently close this account.",
+        "close-account-warning": "Close account \"{{accountNumber}}\"? The account cannot be reopened.",
+        "close-confirmation": "The account cannot be reopened once it has been closed.",
+        "close-error": "Could not close the account. Please try again.",
         "closing": "Closing...",
-        "loading-account-types": "Loading types...",
-        "error-account-types": "Could not retrieve account types",
-        "create-savingsgoal": "Set a savings goal",
-        "favorite": "Add to favorites",
-        "payback": "Earned and estimated annual interest",
-        "accured-interest": "Earned interest",
-        "accured-interest-info": "Earned interest is calculated from January 1 each year.",
-        "aria-label": {
-            "new-account": "Create new account",
-            "generate-full-report": "Generate tax statement",
-            "account-action-buttons": "Manage account actions"
-        },
-        "generate-statement": "Generate statement",
-        "show-statement": "Show statement",
+        "loading-account-types": "Loading account types...",
+        "error-account-types": "Could not retrieve account types.",
+        "payback": "Interest earned and estimated annual interest",
+
+        "generate-statement": "Generate account statement",
+        "show-statement": "View account statement",
         "generate-report": "Generate report",
-        "show-report": "Show report",
+        "show-report": "View report",
         "tax-report-filename": "tax-report-{{year}}",
-        "account-statement-filename": "account-statement-{{from}}_{{to}}"
+        "account-statement-filename": "account-statement-{{from}}_{{to}}",
+
+        "handle-saving-goal": {
+            "valid-amount": "Enter a valid amount.",
+            "required-title": "Enter a title.",
+            "title-too-long": "The title must not exceed 30 characters.",
+            "invalid-title": "The title contains unsupported characters.",
+            "required-date": "Enter an end date.",
+            "invalid-date": "The end date must be in the future.",
+            "confirm-delete": "Are you sure you want to delete the savings goal",
+            "edit-title": "Edit savings goal",
+            "create-title": "Set a savings goal",
+            "saving": "Saving your savings goal...",
+            "save-error": "Could not save the savings goal. Please try again.",
+            "title-label": "Name your savings goal?",
+            "title-placeholder": "e.g. Buy a new TV",
+            "amount-label": "Enter your savings goal",
+            "date-checkbox": "I want to set an end date for my savings goal",
+            "date-label": "End date",
+            "deleting": "Deleting...",
+            "delete-goal": "Delete savings goal"
+        }
     },
-    "overview-route": {
-        "savings-title": "Savings goals",
-        "savings-total": "Total saved",
-        "savings-next-goal": "Next goal:",
-        "savings-eta": "Reached in {{time}}",
-        "savings-progress-label": "{{percent}}% of next goal reached",
 
-        "loading-planned": "Loading planned transfers...",
-        "planned-error": "There was an issue loading planned transfers",
-        "no-planned": "No upcoming transfers.",
-        "planned-unnamed": "Unnamed transfer",
-
-        "no-transactions": "No transactions yet.",
-
-        "edit-start": "Edit layout",
-        "edit-done": "Done",
-        "edit-reset": "Reset order",
-        "edit-reset-done": "Card order reset.",
-        "edit-instructions": "Drag a card by its handle, or focus the handle and use the arrow keys to move it.",
-        "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
-        "edit-handle-label": "Move {{card}}",
-
-        "card-accounts": "My accounts",
-        "card-savings": "Savings goals",
-        "card-planned": "Planned transfers",
-        "card-transactions": "Latest transactions"
+    "progress-bar": {
+        "invalid-period": "Invalid savings period.",
+        "invalid-goal": "Invalid goal.",
+        "target-date-label": "Savings deadline",
+        "just-started": "Your savings journey has just begun",
+        "days-elapsed_one": "{{count}} day elapsed",
+        "days-elapsed_other": "{{count}} days elapsed",
+        "days-remaining_one": "{{count}} day remaining",
+        "days-remaining_other": "{{count}} days remaining",
+        "amount-achieved": "{{amount}} achieved",
+        "amount-remaining": "{{amount}} remaining",
+        "percentage": "{{percentage}}%"
     },
+"overview-route": {
+    "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
+    "card-accounts": "My accounts",
+    "card-savings": "Savings goals",
+    "card-planned": "Planned transfers",
+    "card-transactions": "Recent transactions",
+    "edit-reset-done": "Card order reset.",
+    "edit-instructions": "Drag a card by its handle, or focus the handle and use the arrow keys to move it.",
+    "viewing-instruction": "Here you can see information about your savings goals and favorite accounts.",
+    "edit-reset": "Reset order",
+    "edit-done": "Done",
+    "edit-start": "Edit layout",
+
+    "account-card": {
+        "title": "Balance",
+        "description": "Here are the balances of your favorite accounts",
+        "description-no-favorites": "Mark account as favorite to show balance here",
+        "pending": "Loading your accounts",
+        "error": "Oops... Something went wrong",
+        "total-balance": "Total balance",
+        "hover-title": "Open account"
+    },
+
+    "transactions-card": {
+        "closed-account": "closed account",
+        "title": "Recent transactions",
+        "description": "Showing the latest transactions from all accounts",
+        "pending": "Loading transactions",
+        "error": "Oops... Something went wrong",
+        "transfer-type-transfer": "Transfer",
+        "transfer-type-transfer-group": "Transfer",
+        "transfer-type-deposit": "Deposit",
+        "transfer-type-withdrawl": "Withdrawal",
+        "transfer-type-interest": "Interest payment",
+        "transfer-type-tax": "Tax"
+    },
+
+    "planned-card": {
+        "title": "Planned transfers",
+        "description": "Shows your planned transfers",
+        "pending": "Loading planned transfers",
+        "error": "Oops... Something went wrong"
+    },
+
+    "savings-card": {
+    "title": "Savings Goals",
+    "description": "Here are your selected savings goals",
+    "select": "Select",
+    "selected-count": "{{selected}}/{{max}}",
+    "max-goals": "Max {{max}} savings goals",
+    "done": "Done",
+    "loading": "Loading savings goals...",
+    "error": "Could not retrieve savings goals or account balances.",
+    "achieved": "achieved",
+    "remaining": "remaining",
+    "empty-selection": "Select one or more savings goals to view your progress."
+    },
+
+    "savings-eta": "Reached in {{time}}",
+    "savings-total": "Total saved",
+    "savings-next-goal": "Next goal:",
+    "savings-progress-label": "{{percent}}% of next goal reached",
+
+    "edit-handle-label": "Move {{card}}",
+    "savings-title": "Savings goals",
+    "loading-planned": "Loading planned transfers...",
+    "planned-error": "There was an issue loading planned transfers",
+    "no-planned": "No upcoming transfers.",
+    "planned-unnamed": "Unnamed transfer",
+    "no-transactions": "No transactions yet."
+},
+
+"no-planned-state": {
+    "title": "There are no planned transfers",
+    "description": "Create automatic, recurring transfers. Perfect for regular saving or fixed payments.",
+    "action": "Manage your"
+},
+
+"no-saving-goal-state": {
+    "title": "Set a savings goal and track your progress",
+    "description": "Create an overall savings goal for how much you want to save in total, or set a goal for a specific account.",
+    "action": "You can create savings goals under"
+},
+
     "register-route": {
         "title": "Become a customer",
         "paragraph": "Fill in your details and we will create your customer account at Nordiska.",
@@ -265,6 +407,7 @@
     "table": {
         "my-accounts": "My accounts",
         "planned-transactions": "Planned transfers",
+        "pending-transfers": "Upcoming transfers",
         "latest-transactions": "Latest transactions"
     },
     "forms": {
@@ -305,9 +448,12 @@
         "amount-suffix": "sek",
         "amount-error": "Amount exceeds the balance on {{account}}",
         "date-label": "Transfer date",
-        "recurring-label": "Recurring every month",
+        "recurring-label": "Recurring",
+        "interval-label": "Interval",
         "repeating": {
-            "month": "Monthly"
+            "week": "Weekly",
+            "month": "Monthly",
+            "year": "Yearly"
         },
         "cta-submit-internal": "Confirm transfer",
         "cta-submit-external": "Confirm with BankID",
@@ -316,58 +462,65 @@
         "add-account": {
             "heading": "Add new account",
             "help-text": "The account is saved among your recipients and filled in directly in the transfer.",
+            "required-hint": "Fields marked with * are required.",
             "type-label": "Account type",
-            "type-placeholder": "Bank account, Bankgiro or Plusgiro",
+            "type-placeholder": "Select account type",
+            "type-personal": "Personal account",
+            "type-bgpg": "Bankgiro/Plusgiro",
             "clearing-label": "Clearing number",
-            "clearing-placeholder": "4 digits",
+            "clearing-placeholder": "4–5 digits",
             "number-label": "Account number",
-            "number-placeholder": "Without dashes",
+            "number-placeholder": "7–10 digits",
+            "bgpg-label": "Bankgiro/Plusgiro number",
+            "bgpg-placeholder": "2–8 digits",
             "name-label": "Recipient name",
             "name-placeholder": "E.g. Olle Persson",
-            "default-type": "Bank account",
-            "default-name": "New account"
+            "error-required": "Required field",
+            "error-clearing": "Enter 4–5 digits",
+            "error-number": "Enter 7–10 digits",
+            "error-bgpg": "Enter 2–8 digits"
         },
         "modal": {
             "from-title": "Choose Account",
             "to-title": "Choose recipient",
             "search-placeholder": "Search by name",
             "group-own": "My accounts",
-            "group-favorites": "Favorites",
             "group-bg": "BG/PG",
             "group-bank": "Bank account",
             "empty": "No accounts match your search.",
-            "add-new": "+ Add new account",
-            "selected-as-from": "Selected as sender account",
-            "selected-as-to": "Selected as recipient account"
+            "add-new": "+ Add new account"
         },
         "bankid": {
             "heading": "Approve the transfer",
             "help-text": "The recipient is an external account. Sign with BankID to complete it.",
             "amount": "Amount",
-            "approve": "Approve with BankID"
+            "waiting-for-app": "Approve the transfer in the BankID app",
+            "user-cancel": "The signing was cancelled.",
+            "wrong-user": "The transfer must be signed with your own BankID."
         },
         "done": {
             "processing": "Processing the transfer...",
             "heading": "The transfer is complete",
-            "summary": "{{amount}} sek to {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek to {{name}} · {{date}} · recurring every month",
             "new-transfer": "New transfer",
             "failure-heading": "Transfer failed",
             "back-to-transfers": "Back to transfers"
         },
+        "pending": {
+            "arrives": "Expected to arrive {{date}}",
+            "footnote": "Payments to other banks and BG/PG normally take one banking day."
+        },
         "planned": {
             "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
-            "note-to": "To {{name}}",
-            "note-internal": "Between your own accounts",
+            "unknown-account": "Unknown account",
             "actions-label": "More options",
             "actions-heading": "Planned transfer",
             "action-edit": "Edit",
             "action-delete": "Delete",
-            "edit-heading": "Change date",
-            "edit-date-label": "New date",
+            "edit-heading": "Edit transfer",
+            "edit-date-label": "Date",
             "edit-save-loading": "Saving...",
-            "edit-error": "Could not change the date. Please try again.",
-            "edit-cleanup-error": "The transfer with the new date was created, but the old one could not be removed. Please delete the old one manually from the list.",
+            "edit-error": "Could not save the changes. Please try again.",
+            "edit-cleanup-error": "The updated transfer was created, but the old one could not be removed. Please delete the old one manually from the list.",
             "delete-heading": "Delete planned transfer",
             "delete-confirm-text": "Do you want to delete \"{{name}}\"? This cannot be undone.",
             "delete-confirm": "Yes, delete",

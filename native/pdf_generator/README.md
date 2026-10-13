@@ -58,8 +58,8 @@ Raw JSON Buffer (UTF-8)
    - Compiles binary PDF 1.4 streams
          │
          ▼  [4. Optional Signing Stage]
-   PdfSigner (Stub / PKCS#7)
-   - Per-document signing dispatch
+   PdfSigner (Unix Domain Socket / Protocol v2)
+   - Per-document signing dispatch to pdf-signer service
    - Strict all-or-nothing failure guarantee
          │
          ▼
@@ -212,7 +212,7 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 - `-e, --ingestor <simdjson|nlohmann>`: JSON ingestor (default: `simdjson`).
 - `--no-compression`: Disable Flate stream compression for maximum rendering speed.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
-- `--signing`: Call the C signer and embed its CMS hex in generated documents (default: `false`).
+- `--signing`: Call the PDF signer service via Unix domain socket and embed its CMS hex in generated documents (default: `false`).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.

@@ -48,11 +48,11 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
     }
 
     return (
-        <div className="w-full lg:flex-1 flex flex-col gap-5 ml-5">
+        <div className="flex w-full min-w-0 flex-col gap-4 lg:flex-1 lg:gap-5 lg:h-full">
 
             {/* ----- HELPFUL ----- */}
             {/* ------------------- */}
-            <article className="bg-white shadow-md p-4 sm:p-5 max-h-[280px] min-h-[260px]">
+            <article className="bg-white p-4 shadow-md sm:p-5">
                 <HelpCard
                     items={helpfulArticles}
                 />
@@ -60,7 +60,7 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
 
             {/* ----- KONTAKT ----- */}
             {/* ------------------- */}
-            <article className="bg-white shadow-md p-4 sm:p-5 max-h-[280px] min-h-[260px]">
+            <article className="bg-white p-4 shadow-md sm:p-5">
                 <div className="border-b border-nordiska-orange pb-1 mb-3">
                     <h2 className="font-semibold text-lg text-nordiska-blue">{t("faq.faq-sidebar.no-answer-title")}</h2>
                 </div>

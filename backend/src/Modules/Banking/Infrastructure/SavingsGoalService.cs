@@ -198,14 +198,13 @@ public sealed class SavingsGoalService : ISavingsGoalService
             goal.TargetAmount = request.TargetAmount.Value;
         }
 
-        if (request.TargetDate.HasValue)
+        if (request.TargetDate.HasValue &&
+            request.TargetDate.Value <= DateTime.UtcNow)
         {
-            if (request.TargetDate.Value <= DateTime.UtcNow)
-            {
-                throw new ValidationException("Måldatum måste vara ett framtida datum.");
-            }
-            goal.TargetDate = request.TargetDate.Value;
+            throw new ValidationException("Måldatum måste vara ett framtida datum.");
         }
+
+        goal.TargetDate = request.TargetDate;
 
         if (request.Status is not null)
         {

@@ -25,6 +25,8 @@ type PlannedRow = {
     plannedName: string;
     plannedSum: number;
     plannedNote?: string;
+    /** T.ex. "Lönekonto → Sparkonto". */
+    plannedAccounts?: string;
     plannedActionsLabel?: string;
     onOpenActions?: () => void;
 };
@@ -109,6 +111,7 @@ export default function TableRow(props: RowProps) {
                             </button>
                         )}
                     </div>
+                    {props.plannedAccounts && <p className="mt-0.5 wrap-break-word text-xs text-dark-navy sm:text-sm">{props.plannedAccounts}</p>}
                     <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-secondary sm:text-xs">{props.plannedDate}</p>
                     {props.plannedNote && <p className="wrap-break-word text-xs text-secondary">{props.plannedNote}</p>}
                 </div>

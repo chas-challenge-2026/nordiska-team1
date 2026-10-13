@@ -3,7 +3,7 @@ import axiosInstance from "./axiosInstance";
 export interface Transaction {
     id: number;
     accountId: number;
-    type: "deposit" | "withdrawal";
+    type: "deposit" | "withdrawal" | "transfer";
     amount: number;
     createdAt: string;
     label?: string;
@@ -70,27 +70,43 @@ export interface GroupedPagedResult<T> extends PagedResult<T> {
     groups: TransactionDateGroup[];
 }
 
-export async function getTransactions(input: TransactionParams): Promise<PagedResult<Transaction>> {
-    const res = await axiosInstance.get("/transactions", { params: input, paramsSerializer: { indexes: null } });
+export async function getTransactions(
+    input: TransactionParams,
+): Promise<PagedResult<Transaction>> {
+    const res = await axiosInstance.get("/transactions", {
+        params: input,
+        paramsSerializer: { indexes: null },
+    });
     return res.data;
 }
 
-export async function getGroupedTransactions(input: TransactionParams): Promise<GroupedPagedResult<Transaction>> {
-    const res = await axiosInstance.get("/transactions", { params: { ...input, GroupByDate: true }, paramsSerializer: { indexes: null } });
+export async function getGroupedTransactions(
+    input: TransactionParams,
+): Promise<GroupedPagedResult<Transaction>> {
+    const res = await axiosInstance.get("/transactions", {
+        params: { ...input, GroupByDate: true },
+        paramsSerializer: { indexes: null },
+    });
     return res.data;
 }
 
-export async function createTransaction(payload: NewTransaction): Promise<Transaction> {
+export async function createTransaction(
+    payload: NewTransaction,
+): Promise<Transaction> {
     const res = await axiosInstance.post("/transactions", payload);
     return res.data;
 }
 
-export async function transferFunds(payload: TransferPayload): Promise<Transaction> {
+export async function transferFunds(
+    payload: TransferPayload,
+): Promise<Transaction> {
     const res = await axiosInstance.post("/transactions/transfer", payload);
     return res.data;
 }
 
-export async function createPlannedTransaction(payload: PlannedTransactionPayload): Promise<Transaction> {
+export async function createPlannedTransaction(
+    payload: PlannedTransactionPayload,
+): Promise<Transaction> {
     const res = await axiosInstance.post("/transactions/planned", payload);
     return res.data;
 }

@@ -4,6 +4,7 @@ export interface User {
     role?: string;
     name?: string;
     phone?: string;
+    overviewPreference?: string[];
 }
 
 export type Faq = {

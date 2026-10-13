@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-type TableType = "account" | "planned" | "transaction" | "savings";
+type TableType = "account" | "planned" | "pending" | "transaction" | "savings";
 
 type TableProps = {
     tableType: TableType;
@@ -12,6 +12,7 @@ type TableProps = {
 const HEADERS: Record<TableType, { titleKey: string; actionKey?: string }> = {
     account: { titleKey: "table.my-accounts", actionKey: "generic.edit" },
     planned: { titleKey: "table.planned-transactions" },
+    pending: { titleKey: "table.pending-transfers" },
     transaction: { titleKey: "table.latest-transactions", actionKey: "generic.show-all" },
     savings: { titleKey: "overview-route.savings-title" },
 };

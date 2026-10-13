@@ -1,13 +1,25 @@
 import axiosInstance from "./axiosInstance";
+import axios from "axios";
 import type { User } from "../types/types";
 
 
 export async function checkSession(): Promise<User | null> {
     try {
-        const res = await axiosInstance.get<User>("/auth/me");
-        return res.data;
-    } catch {
-        return null;
+        //Authenticate
+        const authRes = await axiosInstance.get<User>("/auth/me");
+        // Get customerinfo
+        const customerRes = await axiosInstance.get<User>(`/customers/${authRes.data.id}`);
+
+        return {
+            ...authRes.data,
+            ...customerRes.data,
+        };
+    } catch(error) {
+        // returnera inget om unauthorized
+        if (axios.isAxiosError(error) && error.response?.status === 401){ return null;}
+        
+        // skicka resten av felen vidare
+        throw error;
     }
 }
 
