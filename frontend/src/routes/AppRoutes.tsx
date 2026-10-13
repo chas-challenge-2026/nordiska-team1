@@ -17,6 +17,7 @@ import TransactionsPage from "../pages/TransactionsPage";
 import SettingsPage from "../pages/SettingsPage";
 import AccountsPage from "../pages/AccountsPage";
 import FaqPage from "../pages/FaqPage";
+import InboxPage from "../pages/InboxPage";
 
 // Admin
 import Admin from "../pages/admin/Admin";
@@ -24,6 +25,7 @@ import FaqAdmin from "../pages/admin/faq/Faq";
 import CreateAndUpdateFaq from "../pages/admin/faq/CreateAndUpdateFaq";
 import EditFaq from "../pages/admin/faq/EditFaq";
 import DeleteFaq from "../pages/admin/faq/DeleteFaq";
+import AdminInbox from "../pages/admin/inbox/AdminInbox";
 import OperationalMessage from "../pages/admin/OperationalMessage";
 import OperationalMessagesList from "../components/admin/drift/OperationalMessagesList";
 import CreateOperationalMessage from "../components/admin/drift/CreateOperationalMessage";
@@ -49,8 +51,9 @@ export default function AppRoutes() {
                 <Route path="/" element={<DesktopLayout />}>
                     <Route index element={<OverviewPage />} />
                     <Route path="/transfer" element={<TransferPage />} />
-                    <Route path="/transactions" element={<TransactionsPage />}/>
+                    <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/accounts" element={<AccountsPage />} />
+                    <Route path="/inbox/:threadId?" element={<InboxPage />} />
                 </Route>
             </Route>
 
@@ -70,6 +73,7 @@ export default function AppRoutes() {
                         <Route path="edit/form" element={<CreateAndUpdateFaq />} />
                         <Route path="delete" element={<DeleteFaq />} />
                     </Route>
+                    <Route path="inbox" element={<AdminInbox />} />
                 </Route>
             </Route>
         </Routes>
