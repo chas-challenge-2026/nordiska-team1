@@ -110,22 +110,15 @@ services:
       PDF_SIGNER_TSA_CERT_PATH: /app/tests/data/tsa_cert.pem
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
       PDF_SIGNER_TSA_URL: http://127.0.0.1:8081/
+      PDF_SIGNER_PKCS11_PIN: ${PDF_SIGNER_PKCS11_PIN:?Set PDF_SIGNER_PKCS11_PIN}
+      PDF_SIGNER_PKCS11_SO_PIN: ${PDF_SIGNER_PKCS11_SO_PIN:?Set PDF_SIGNER_PKCS11_SO_PIN}
 
     volumes:
       - report_documents:/var/lib/nordiska/report-documents
       - pdf_signer_socket:/run/pdf-signer
-
-    secrets:
-      - pdf_signer_pkcs11_pin
-      - pdf_signer_pkcs11_so_pin
 
 volumes:
   postgres_v2_data:
   report_documents:
   pdf_signer_socket:
 
-secrets:
-  pdf_signer_pkcs11_pin:
-    file: ./secrets/pdf_signer_pkcs11_pin.txt
-  pdf_signer_pkcs11_so_pin:
-    file: ./secrets/pdf_signer_pkcs11_so_pin.txt
