@@ -37,7 +37,7 @@ export default function TransactionFilter({ filters, onChange, onReset, variant 
     };
 
     return (
-        <search className={isSheet ? "bg-white p-4 text-dark-navy" : "overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm"}>
+        <search className={isSheet ? "relative bg-white p-4 text-dark-navy" : "relative overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm"}>
             {!isSheet && <PanelHeader subtitle={t("transactions-route.filter-subtitle")} title={t("generic.filter")} />}
 
             <div className={isSheet ? "" : "p-4"}>

@@ -80,6 +80,7 @@
         "withdraws": "Endast uttag",
         "type-deposit": "Insättning",
         "type-withdraw": "Uttag",
+        "type-transfer": "Överföring",
         "transactions": "Senaste transaktioner",
         "all-transactions": "Visa fler transaktioner",
         "less-transactions": "Visa färre transaktioner",

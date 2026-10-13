@@ -80,6 +80,7 @@
         "withdraws": "Withdraws only",
         "type-deposit": "Deposit",
         "type-withdraw": "Withdrawal",
+        "type-transfer": "Transfer",
         "transactions": "Latest transactions",
         "all-transactions": "Show more transactions",
         "less-transactions": "Show fewer transactions",

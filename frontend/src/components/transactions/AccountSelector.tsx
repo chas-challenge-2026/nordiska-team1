@@ -43,7 +43,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
     };
 
     return (
-        <div className={isSheet ? 'bg-white px-4 pb-4 text-dark-navy' : 'overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm'}>
+        <div className={isSheet ? 'relative bg-white px-4 pb-4 text-dark-navy' : 'relative overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm'}>
             {!isSheet && <PanelHeader subtitle={t("transactions-route.accounts-subtitle")} title={t("generic.account")} />}
 
             {isLoading && (

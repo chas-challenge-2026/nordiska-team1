@@ -24,8 +24,12 @@ interface TransactionTableProps {
     emptyMessage?: string;
 }
 
-function transactionTypeLabel(type: Transaction["type"], t: TFunction): string {
-    return t(type === "deposit" ? "transactions-route.type-deposit" : "transactions-route.type-withdraw");
+function transactionTypeLabel(transaction: Transaction, t: TFunction): string {
+    if (transaction.type === "transfer") return t("transactions-route.type-transfer");
+    if (transaction.type === "deposit") return t("transactions-route.type-deposit");
+    if (transaction.type === "withdrawal") return t("transactions-route.type-withdraw");
+    // Okända typer (t.ex. ränta) märks efter beloppets tecken
+    return t(transaction.amount >= 0 ? "transactions-route.type-deposit" : "transactions-route.type-withdraw");
 }
 
 export default function TransactionTable({ accounts, transactions, groups, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
@@ -74,7 +78,7 @@ export default function TransactionTable({ accounts, transactions, groups, total
                                     return (
                                         <li key={transaction.id} className="border-b-2 border-nordiska-orange px-3 py-3 odd:bg-white even:bg-light-gray/80 last:border-0 sm:px-5">
                                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
-                                                <span className="min-w-0 wrap-break-word font-semibold">{transaction.label || transactionTypeLabel(transaction.type, t)}</span>
+                                                <span className="min-w-0 wrap-break-word font-semibold">{transaction.label || transactionTypeLabel(transaction, t)}</span>
                                                 <span className={`shrink-0 whitespace-nowrap font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>
                                                     {formatCurrency(transaction.amount, { signed: true })}
                                                 </span>
