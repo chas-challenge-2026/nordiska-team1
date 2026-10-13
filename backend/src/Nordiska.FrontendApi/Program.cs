@@ -113,6 +113,11 @@ builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
 builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
+
+// Official Microsoft HealthChecks with EF Core database check
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<BankingDbContext>("database");
+
 // Background worker for scheduled & recurring transactions
 builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
 builder.Services.AddHostedService<FaqSearchLogBackgroundWorker>();
@@ -222,6 +227,14 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 
+// Standard HealthChecks endpoint available in all environments (Azure, Coolify, Docker, Local)
+app.MapHealthChecks("/health")
+    .AllowAnonymous();
+
+// Backwards-compatible /health/database endpoint returning detailed status
+app.MapHealthChecks("/health/database")
+    .AllowAnonymous();
+
 if (app.Environment.IsDevelopment())
 {
     // Dev tooling is only mapped in Development, so it can stay open for local testing
@@ -240,19 +253,6 @@ if (app.Environment.IsDevelopment())
         options.WithDefaultHttpClient(
             ScalarTarget.CSharp,
             ScalarClient.HttpClient);
-    }).AllowAnonymous();
-    app.MapGet("/health/database", async (
-        BankingDbContext db,
-        CancellationToken cancellationToken) =>
-    {
-        var connected = await db.Database.CanConnectAsync(
-            cancellationToken);
-
-        return connected
-            ? Results.Ok(new { status = "connected" })
-            : Results.Json(
-                new { status = "unavailable" },
-                statusCode: StatusCodes.Status503ServiceUnavailable);
     }).AllowAnonymous();
 }
 
