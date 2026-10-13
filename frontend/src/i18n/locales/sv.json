@@ -425,6 +425,10 @@
     },
     "page-transfer": {
         "heading": "Ny överföring",
+        "form-card-label": "Betala och för över",
+        "section-accounts": "Konton",
+        "section-details": "Belopp och detaljer",
+        "help-card-search": "överföring betalning",
         "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
         "name-label": "Egen notis",
         "name-label-recurring": "Namnge överföringen",
@@ -500,10 +504,12 @@
             "back-to-transfers": "Tillbaka till överföringar"
         },
         "pending": {
+            "card-label": "Skickade betalningar",
             "arrives": "Beräknas vara framme {{date}}",
             "footnote": "Betalningar till andra banker och BG/PG tar normalt en bankdag."
         },
         "planned": {
+            "card-label": "Kommande dragningar",
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
             "unknown-account": "Okänt konto",
             "actions-label": "Fler alternativ",
