@@ -128,8 +128,10 @@ export default function Admin(){
                 >
                         Hantera FAQ
                 </button>
-                <button className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold">
-                        Se hjälpcenter statistik
+                <button
+                    onClick={() => navigate("operational-message")} 
+                    className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold">
+                        Driftmeddelande
                 </button>
                 <button className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold">
                         ?????
