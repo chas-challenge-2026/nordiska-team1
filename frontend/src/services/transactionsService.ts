@@ -66,25 +66,16 @@ export interface TransactionDateGroup {
     items: Transaction[];
 }
 
-export interface GroupedPagedResult<T> extends PagedResult<T> {
-    groups: TransactionDateGroup[];
+export interface TransactionsResult extends PagedResult<Transaction> {
+    /** Finns bara när GroupByDate: true skickas med */
+    groups?: TransactionDateGroup[];
 }
 
 export async function getTransactions(
     input: TransactionParams,
-): Promise<PagedResult<Transaction>> {
+): Promise<TransactionsResult> {
     const res = await axiosInstance.get("/transactions", {
         params: input,
-        paramsSerializer: { indexes: null },
-    });
-    return res.data;
-}
-
-export async function getGroupedTransactions(
-    input: TransactionParams,
-): Promise<GroupedPagedResult<Transaction>> {
-    const res = await axiosInstance.get("/transactions", {
-        params: { ...input, GroupByDate: true },
         paramsSerializer: { indexes: null },
     });
     return res.data;

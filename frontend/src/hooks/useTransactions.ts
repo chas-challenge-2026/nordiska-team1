@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import {
     createTransaction,
     getTransactions,
-    getGroupedTransactions,
     transferFunds,
     createPlannedTransaction,
     cancelPlannedTransaction,
@@ -20,16 +19,6 @@ export function useTransactions(params: TransactionParams, enabled = true) {
     return useQuery({
         queryKey: transactionKey.list(params),
         queryFn: () => getTransactions(params),
-        placeholderData: keepPreviousData,
-        enabled,
-    });
-}
-
-/** Som useTransactions, men backend returnerar även transaktionerna grupperade per datum. */
-export function useGroupedTransactions(params: TransactionParams, enabled = true) {
-    return useQuery({
-        queryKey: transactionKey.list({ ...params, GroupByDate: true }),
-        queryFn: () => getGroupedTransactions(params),
         placeholderData: keepPreviousData,
         enabled,
     });

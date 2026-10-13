@@ -4,7 +4,7 @@ import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
 import type { TransactionFilters } from '../components/transactions/TransactionsFilter';
 import Modal from '../components/modals/Modal';
-import { useGroupedTransactions } from '../hooks/useTransactions';
+import { useTransactions } from '../hooks/useTransactions';
 import type { TransactionParams } from '../services/transactionsService';
 import { useGetAccounts } from '../hooks/useAccounts';
 import { useTranslation } from 'react-i18next';
@@ -95,13 +95,14 @@ export default function TransactionsPage() {
         AccountIds: effectiveSelectedIds,
         // Planerade transaktioner visas först när de har genomförts
         IsPlanned: false,
+        GroupByDate: true,
         SearchTerm: debouncedSearch || undefined,
         FromDate: filters.dateFrom ? startOfLocalDay(filters.dateFrom) : undefined,
         ToDate: filters.dateTo ? endOfLocalDay(filters.dateTo) : undefined,
         Type: filters.type === 'all' ? undefined : filters.type,
     };
 
-    const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useGroupedTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
+    const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
 
     const hasNextPage = transactions?.hasNextPage ?? false;
     const hasPreviousPage = transactions?.hasPreviousPage ?? false;
