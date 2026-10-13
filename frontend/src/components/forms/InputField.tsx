@@ -11,6 +11,7 @@ type InputFieldProps = {
     suffix?: string;
     textarea?: boolean;
     rows?: number;
+    maxLength?: number;
 }
 
 /**
@@ -31,6 +32,7 @@ export default function InputField({
         suffix,
         textarea,
         rows,
+        maxLength,
     }: InputFieldProps) {
     return (
         <div>
@@ -55,6 +57,7 @@ export default function InputField({
                         onChange={(e) => onChange(e.target.value)}
                         onBlur={onBlur}
                         rows={rows}
+                        maxLength={maxLength}
                         aria-invalid={!!error}
                         aria-describedby={error ? `${name}-error` : undefined}
                         className={`w-full rounded-md border bg-white ${
@@ -69,6 +72,7 @@ export default function InputField({
                         placeholder={placeholder}
                         value={value}
                         required={required}
+                        maxLength={maxLength}
                         onChange={(e) => onChange(e.target.value)}
                         onBlur={onBlur}
                         aria-invalid={!!error}
