@@ -26,6 +26,9 @@ import CreateAndUpdateFaq from "../pages/admin/faq/CreateAndUpdateFaq";
 import EditFaq from "../pages/admin/faq/EditFaq";
 import DeleteFaq from "../pages/admin/faq/DeleteFaq";
 import AdminInbox from "../pages/admin/inbox/AdminInbox";
+import OperationalMessage from "../pages/admin/OperationalMessage";
+import OperationalMessagesList from "../components/admin/drift/OperationalMessagesList";
+import CreateOperationalMessage from "../components/admin/drift/CreateOperationalMessage";
 
 export default function AppRoutes() {
     return (
@@ -58,6 +61,11 @@ export default function AppRoutes() {
             <Route element={<AdminRoute />}>
                 <Route path="/admin">
                     <Route index element={<Admin />} />
+
+                    <Route path="operational-message" element={<OperationalMessage />}>
+                        <Route index element={<OperationalMessagesList />} />
+                        <Route path="create" element={<CreateOperationalMessage />} />
+                    </Route>
 
                     <Route path="faq" element={<FaqAdmin />}>
                         <Route path="create" element={<CreateAndUpdateFaq />} />

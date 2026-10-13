@@ -1,5 +1,5 @@
 import { Outlet } from "react-router";
-import PageNavigation from "../components/PageNavigation";
+import MobileNavigation from "../components/MobileNavigation";
 import { useLocation } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -8,7 +8,7 @@ export default function DesktopLayout() {
 
     return (
         <div className="flex flex-1 flex-col bg-nordiska-bg">
-            <PageNavigation />
+            <MobileNavigation />
             <main className="flex flex-1 min-h-0 w-full overflow-x-hidden pb-20 xl:mb-0">
                 <AnimatePresence mode="wait">
                     <motion.div

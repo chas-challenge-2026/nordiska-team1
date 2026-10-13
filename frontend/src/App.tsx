@@ -5,9 +5,10 @@ import PageHeader from './components/header/PageHeader'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useLocation } from 'react-router'
 
-// TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut:
 import { useSessionActivity } from './hooks/useSessionActivity'
 import InactivityWarning from './components/InactivityWarning'
+import ServiceAlertBanner from './components/ServiceAlertBanner'
+import OperationalMessageLoader from './components/admin/drift/OperationalMessageLoader'
 
 export default function App() {
     const location = useLocation();
@@ -31,10 +32,15 @@ export default function App() {
 
     const protectedHeader = !UNPROTECTED_HEADER.includes(location.pathname);
     const noShow = location.pathname.startsWith("/admin")
+    const margin = UNPROTECTED_HEADER.includes(location.pathname);
+    const hidden = location.pathname.startsWith("/admin")
 
     return (
         <div className="flex h-dvh flex-col overflow-scroll">
-            <PageHeader protectedHeader={protectedHeader} noShow={noShow} />
+            <PageHeader protectedHeader={protectedHeader} noShow={noShow}/>
+            <OperationalMessageLoader />
+            <ServiceAlertBanner margin={margin} hidden={hidden}/>
+
             <div className="flex min-h-0 flex-1 flex-col">
                 <ErrorBoundary key={location.pathname.split("/")[1]}>
                     <AppRoutes />

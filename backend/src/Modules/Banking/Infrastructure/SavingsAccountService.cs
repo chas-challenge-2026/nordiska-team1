@@ -43,8 +43,12 @@ public class SavingsAccountService : ISavingsAccountService
         {
             list = list.Where(a => a.IsFavorite == isFavorite.Value);
         }
-        var tasks = list.Select(a => MapWithInterestAsync(a, cancellationToken));
-        return await Task.WhenAll(tasks);
+        var result = new List<SavingsAccountResponse>();
+        foreach (var acc in list)
+        {
+            result.Add(await MapWithInterestAsync(acc, cancellationToken));
+        }
+        return result;
     }
 
     public Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
@@ -57,9 +61,14 @@ public class SavingsAccountService : ISavingsAccountService
         {
             list = list.Where(a => a.IsFavorite == isFavorite.Value);
         }
-        var tasks = list.Select(a => MapWithInterestAsync(a, cancellationToken));
-        return await Task.WhenAll(tasks);
+        var result = new List<SavingsAccountResponse>();
+        foreach (var acc in list)
+        {
+            result.Add(await MapWithInterestAsync(acc, cancellationToken));
+        }
+        return result;
     }
+
 
     public async Task<SavingsAccountResponse> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
