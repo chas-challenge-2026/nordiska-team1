@@ -5,22 +5,29 @@ import { useGetAccounts } from "../../hooks/useAccounts";
 import { LoadingState, ErrorState } from "../StatusMessage";
 import { useNavigate } from "react-router";
 
-const MAX_ROWS_UNTIL_FAVORITE_KEY_ON_ACCOUNT_EXISTS = 4;
-
 export default function AccountsCard() {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
     const { data: accounts, isPending, isError } = useGetAccounts("active");
     const totalBalance = accounts?.reduce((sum, a) => sum + a.balance, 0) ?? 0;
+
+    const favoriteAccounts = accounts?.filter((account) => account.isFavorite) ?? [];
+
+    const displayedAccounts = favoriteAccounts.length > 0
+        ? favoriteAccounts
+        : (accounts ?? []).slice(0, 4);
+
     return (
     <OverviewCard>
         <div className="flex h-full flex-col">
             {/* CARD HEADER */}
-            <div className="h-22 rounded-t-3xl bg-dark-navy pl-2 pt-1.5 text-white sm:pl-3">
+            <div className="h-22 bg-dark-navy pl-2 pt-1.5 text-white sm:pl-3">
                 <div className="flex flex-col items-start p-3 sm:p-4">
                     <h2 className="text-xl font-semibold tracking-wide sm:text-2xl"> {t("overview-route.account-card.title")} </h2>
-                    <p className="text-[0.65em] uppercase text-white/80 sm:text-[0.70em]"> {t("overview-route.account-card.description")} </p>
+                    <p className="text-[0.65em] uppercase text-white/80 sm:text-[0.70em]"> 
+                        {favoriteAccounts.length > 0 ? t("overview-route.account-card.description") : t("overview-route.account-card.description-no-favorites") }
+                    </p>
                </div>
             </div>
 
@@ -31,21 +38,22 @@ export default function AccountsCard() {
             {/* CONTENT */}
             {!isPending && !isError && (
                 <section className="flex flex-1 flex-col p-2 sm:p-3">
-                <div className="flex flex-1 flex-col rounded-b-xl overflow-hidden">
+                <div className="flex flex-1 flex-col overflow-hidden">
 
                     {/* TOTALT SALDO */}
-                    <div className="flex h-15 flex-1 items-center justify-between border-b-2 border-nordiska-blue/50 bg-primary-blue/10 px-3 py-2 sm:px-5">
+                    <div className="flex h-15 basis-1/5 shrink-0 items-center justify-between border-b-2 border-nordiska-blue/50 bg-primary-blue/10 px-3 py-2 sm:px-5">
                         <p className="text-sm font-semibold sm:text-xl"> {t("overview-route.account-card.total-balance")}</p>
                         <p className="text-sm font-semibold sm:text-xl"> {formatCurrency(totalBalance)}</p>
                     </div>
 
-                    {accounts?.slice(0, MAX_ROWS_UNTIL_FAVORITE_KEY_ON_ACCOUNT_EXISTS).map((account) => (
+                    {displayedAccounts?.map((account, index) => (
                         <button 
                             key={account.id}
                             title={`${t("overview-route.account-card.hover-title")} ${account.accountNumber}`}
                             type="button"
                             onClick={() => navigate(`/accounts?account=${account.id}`)}
-                            className="flex flex-1 flex-col justify-center border-b-2 border-nordiska-orange px-3 py-2 odd:bg-light-gray/60 even:bg-white last:border-0 sm:px-5 cursor-pointer hover:bg-primary-blue/10">
+                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 ${index === 3 ? "last:border-0" : "border-b-2"}`}
+                            >
 
                             {/* KONTONAMN OCH SALDO */}
                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
