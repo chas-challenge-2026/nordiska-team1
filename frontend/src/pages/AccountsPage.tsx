@@ -1,66 +1,288 @@
-import { useGetAccounts } from "../hooks/useAccounts";
-import AccountCard from "../components/AccountCard";
-import { formatCurrency } from "../utils/currency";
-import { useState } from "react";
-import CreateAccountModal from "../components/CreateAccountModal";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
+import axios from "axios";
+
+import { useGetAccounts, useCloseAccount, useGetAllSavingsGoals, useUpdateFavoriteAccount } from "../hooks/useAccounts";
+import { formatCurrency } from "../utils/currency";
+
+import CreateAccountModal from "../components/accounts/CreateAccountModal";
+import ActionButton from "../components/accounts/ActionButton";
+import HandleSavingsGoalModal from "../components/accounts/HandleSavingGoalModal";
+import AccountsHeader from "../components/accounts/AccountsHeader";
+import AccountsNavigation from "../components/accounts/AccountNavigation";
+import InterestSection from "../components/accounts/InterestSection";
+import CloseAccountModal from "../components/accounts/CloseAccountModal";
+import SavingsGoalSection from "../components/accounts/SavingsGoalSection";
+
+import HelpCard from "../components/faq/HelpCard";
+import HelpCardBubble from "../components/faq/HelpCardBubble";
+import { useSearchParams } from "react-router";
+import AccountStatementBtn from "../components/reports/AccountStatementButton";
 
 export default function AccountsPage() {
-    const { data: accounts, isLoading, isError } = useGetAccounts("active");
-    const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
-    const {t} = useTranslation();
+    const { t } = useTranslation();
+    const navigate = useNavigate();
 
-    const totalBalance = accounts?.reduce((sum, a) => sum + a.balance, 0) ?? 0;
+    const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useGetAccounts("active");
+    const { data: goals } = useGetAllSavingsGoals();
+    const updateFavorite = useUpdateFavoriteAccount();
+    const { mutate: closeAccount, error: closeAccountError, isPending, reset } = useCloseAccount();
+    const [searchParams] = useSearchParams();
+    const accountIdFromUrl = Number(searchParams.get("account"));
+    const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+
+    const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isSavingGoalOpen, setIsSavingGoalOpen] = useState(false);
+    const [newGoal, setNewGoal] = useState(false);
+    const [favoriteError, setFavoriteError] = useState("");
+    const favoriteErrorTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (favoriteErrorTimeout.current) {
+                clearTimeout(favoriteErrorTimeout.current);
+            }
+        };
+    }, []);
+
+    const sortedAccounts = accounts
+        ? [...accounts].filter((account) => account.status === "active").sort((a, b) => {
+            if (a.isFavorite && !b.isFavorite) return -1;
+            if (!a.isFavorite && b.isFavorite) return 1;
+            return 0;
+        })
+        : [];
+
+    const selectedAccountId = 
+        selectedAccount ?? (sortedAccounts?.some((account) => account.id === accountIdFromUrl)
+            ? accountIdFromUrl
+            : sortedAccounts?.[0]?.id);
+
+    const expandedAccount = accounts?.find((account) => account.id === selectedAccountId);
+    const isFavorite = expandedAccount?.isFavorite ?? false;
+    const totalBalance = accounts?.reduce((sum, account) => sum + account.balance, 0) ?? 0;
+    const canClose = expandedAccount?.balance === 0;
+    const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
+
+    function handleOpenConfirm() {
+        reset();
+        setIsConfirmOpen(true);
+    }
+
+    function handleConfirmClose() {
+        if (typeof expandedAccount?.id !== "number") return;
+
+        const currentIndex = sortedAccounts.findIndex((account) => account.id === expandedAccount.id);
+        const nextAccount = sortedAccounts[currentIndex + 1] ?? sortedAccounts[currentIndex - 1];
+
+        closeAccount(expandedAccount.id, {
+            onSuccess: () => {
+                setIsConfirmOpen(false);
+                setSelectedAccount(nextAccount?.id ?? null);
+            },
+        });
+    }
+
+    function handleFavorite(accountId: number, isFavorite: boolean) {
+        setFavoriteError("");
+
+        updateFavorite.mutate(
+            { id: accountId, isFavorite },
+            {
+                onError: (error) => {
+                    if (favoriteErrorTimeout.current) {
+                        clearTimeout(favoriteErrorTimeout.current);
+                    }
+
+                    if (axios.isAxiosError(error) && error.response?.status === 400) {
+                        setFavoriteError(t("accounts-route.favorite-error"));
+                    } else {
+                        setFavoriteError(t("generic.errors.generic"));
+                    }
+
+                    favoriteErrorTimeout.current = setTimeout(() => {
+                        setFavoriteError("");
+                        favoriteErrorTimeout.current = null;
+                    }, 3000);
+                },
+            },
+        );
+    }
 
     return (
-        <div className="mx-auto  px-4 py-6 sm:px-6 sm:py-10">
-            <div className=" p-4 sm:p-6">
-                <div className="mb-6 flex flex-col gap-2 border-b-2 border-nordiska-orange pb-2 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between">
-                    <h1 className="text-lg font-semibold text-dark-navy">{t("accounts-route.my-accounts")}</h1>
-                    {accounts && accounts.length > 0 && (
-                        <p className="text-sm text-secondary">
-                        {t("accounts-route.total-balance")}{" "}
-                            <strong className="font-semibold text-dark-navy">
-                                {formatCurrency(totalBalance)}
-                            </strong>
-                        </p>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => setIsCreateAccountOpen(true)}
-                        className="rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue"
-                    >
-                    {t("accounts-route.new-account")}
-                    </button>
+        <main className="min-h-screen w-full text-dark-navy">
+            <div className="mx-auto w-full max-w-7xl px-2 sm:px-6 sm:py-8 lg:px-1 lg:py-10">
+                {/* HEADER */}
+                <AccountsHeader selectedAccountId={selectedAccountId} totalBalance={totalBalance} onCreateAccount={() => setIsCreateAccountOpen(true)} />
+
+                {/* MAIN CONTENT */}
+                <div className="grid gap-5 lg:grid-cols-[minmax(220px,280px)_1fr] xl:grid-cols-[280px_1fr_240px]">
+                    {/* ACCOUNT NAVIGATION */}
+                    <AccountsNavigation accounts={sortedAccounts} accountsLoading={accountsLoading} accountsError={accountsError} selectedAccountId={selectedAccountId} expandedAccount={expandedAccount} onSelectAccount={setSelectedAccount} />
+
+                    {/* ACCOUNT INFORMATION */}
+                    <section aria-labelledby="account-details-heading" className="min-w-0 overflow-hidden bg-white md:border md:border-gray-200 md:shadow-sm">
+                        {expandedAccount && (
+                            <article>
+                                {/* CARD HEADER */}
+                                <div className="bg-dark-navy px-3 py-3 text-white sm:px-6 sm:py-5">
+                                    <div className="flex items-center justify-between">
+                                        {/* ACCOUNT TYPE */}
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs">{t("accounts-route.account-type")}</p>
+                                            <p className="mt-0.5 truncate text-base font-bold uppercase tracking-wide sm:mt-1 sm:text-lg">{t(`accounts-route.account-type-${expandedAccount.accountType}`)}</p>
+                                        </div>
+
+                                        {/* INTEREST RATE */}
+                                        <div className="ml-4 shrink-0 text-right">
+                                            <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs">{t("generic.interest")}</p>
+                                            <p className="mt-0.5 text-base font-bold tracking-wide sm:mt-1 sm:text-lg">
+                                                {(expandedAccount.interestRate * 100).toLocaleString("sv-SE")}<span className="font-normal"> %</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="sm:p-4">
+                                    {/* ACCOUNT NAME AND BALANCE */}
+                                    <div className="flex flex-col gap-3 border border-nordiska-blue/50 bg-primary-blue/10 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:p-5">
+                                        <div className="min-w-0">
+                                            <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.account-name")}</p>
+                                            <p className="mt-0.5 truncate text-xl font-bold text-dark-navy sm:mt-1 sm:text-3xl">
+                                                {expandedAccount.accountName || t(`accounts-route.account-type-${expandedAccount.accountType}`)}
+                                            </p>
+                                        </div>
+
+                                        <div className="sm:text-right">
+                                            <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("generic.balance")}</p>
+                                            <p className="mt-0.5 text-xl font-bold tracking-tight text-dark-navy sm:mt-1 sm:text-3xl">{formatCurrency(expandedAccount.balance)}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* DIVIDER */}
+                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
+
+                                    {/* INTEREST SECTION */}
+                                    <InterestSection accruedInterestYtd={expandedAccount.accruedInterestYtd} estimatedYearEndInterest={expandedAccount.estimatedYearEndInterest} />
+
+                                    {/* DIVIDER */}
+                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
+
+                                    {/* SAVINGS GOAL */}
+                                    <section aria-labelledby="savings-goal-heading" className="mt-4 sm:mt-6">
+                                        <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
+
+                                        <div className="border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:p-4">
+                                            <SavingsGoalSection
+                                                savingGoal={existingSavingGoal}
+                                                accountAmount={expandedAccount.balance}
+                                                onDeposit={() => {
+                                                    navigate("/transfer")
+                                                }}
+                                                onEdit={(newGoal) => {
+                                                    setIsSavingGoalOpen(true);
+                                                    setNewGoal(newGoal);
+                                                }}
+                                            />
+                                        </div>
+                                    </section>
+
+                                    {/* DIVIDER */}
+                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
+
+                                    {/* OTHER ACTIONS */}
+                                    <h2 id="account-actions-heading" className="mt-4 mb-1 ml-1 text-base font-semibold text-dark-navy sm:mt-6 sm:text-xl">{t("accounts-route.actions")}</h2>
+
+                                    <section aria-labelledby="account-actions-heading" className="my-4 sm:my-6">
+                                        <div className="grid gap-2 p-1 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+                                            {favoriteError ? (
+                                                <div className="col-span-full rounded-lg border border-red-200 bg-red-50 py-3 text-center" role="alert">
+                                                    <p className="text-sm font-medium text-red-800">{favoriteError}</p>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {/* ACCOUNT STATEMENT */}
+                                                    <AccountStatementBtn key={expandedAccount.id} accountId={expandedAccount.id} />
+
+                                                    {/* FAVORITE */}
+                                                    <ActionButton
+                                                        onClick={() => handleFavorite(expandedAccount.id, !expandedAccount.isFavorite)}
+                                                        disabled={updateFavorite.isPending}
+                                                        ariaLabel={isFavorite ? t("accounts-route.no-favorite") : t("accounts-route.favorite")}
+                                                        prefixIcon={isFavorite ? "/icons/star-solid.svg" : "/icons/star.svg"}
+                                                        title={isFavorite ? t("accounts-route.no-favorite") : t("accounts-route.favorite")}
+                                                    />
+
+                                                    {/* CLOSE ACCOUNT */}
+                                                    {canClose && (
+                                                        <ActionButton
+                                                            style="cancel"
+                                                            onClick={handleOpenConfirm}
+                                                            ariaLabel={t("accounts-route.close-account")}
+                                                            prefixIcon="/icons/warning.svg"
+                                                            title={t("accounts-route.close-account")}
+                                                        />
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </section>
+                                </div>
+                            </article>
+                        )}
+                    </section>
+
+                    {/* HELP / RELATED ARTICLES */}
+                    <aside aria-label={t("generic.help")} className="hidden min-w-0 border border-gray-200 bg-white md:shadow-sm xl:block">
+                        <div className="min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white">
+                            <p className="mt-2 truncate text-right text-sm uppercase text-white/80">{t("generic.help-center")}</p>
+                            <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
+                        </div>
+
+                        <div className="p-4">
+                            <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={12} />
+                        </div>
+                    </aside>
                 </div>
 
-                {isLoading && <p className="text-sm text-secondary">{t("accounts-route.loading-accounts")}</p>}
-                {isError && <p className="text-sm text-red-700">{t("accounts-route.accounts-error")}</p>}
-                {accounts && accounts.length === 0 && (
-                    <p className="text-sm text-secondary">{t("accounts-route.no-accounts")}</p>
+                {/* CLOSE ACCOUNT MODAL */}
+                <CloseAccountModal
+                    isConfirmOpen={isConfirmOpen}
+                    expandedAccount={expandedAccount}
+                    closeAccountError={closeAccountError}
+                    isPending={isPending}
+                    onClose={() => setIsConfirmOpen(false)}
+                    onConfirm={handleConfirmClose}
+                />
+
+                {/* SAVINGS GOAL MODAL */}
+                {isSavingGoalOpen && expandedAccount && (
+                    <HandleSavingsGoalModal
+                        accountId={expandedAccount.id}
+                        accountNumber={expandedAccount.accountNumber}
+                        accountName={expandedAccount.accountName}
+                        isModalOpen={isSavingGoalOpen}
+                        onClose={() => setIsSavingGoalOpen(false)}
+                        existingSavingGoal={existingSavingGoal}
+                        newGoal={newGoal}
+                    />
                 )}
 
-                {accounts && accounts.length > 0 && (
-                    <>
-                        <section aria-label="Konton" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {accounts.map((account) => (
-                                <AccountCard key={account.id} account={account} />
-                            ))}
-                        </section>
+                {/* CREATE ACCOUNT MODAL */}
+                <CreateAccountModal
+                    isModalOpen={isCreateAccountOpen}
+                    onClose={() => setIsCreateAccountOpen(false)}
+                    onAccountCreated={(newAccount) => {
+                        setSelectedAccount(newAccount.id);
+                        setIsCreateAccountOpen(false);
+                    }}
+                />
 
-                        <div className="mt-6">
-                            <button
-                                type="button"
-                                onClick={() => { }}
-                                className="w-full rounded-md bg-primary-blue py-3 text-sm font-semibold text-white transition-colors hover:bg-nordiska-blue"
-                            >
-                            {t("accounts-route.full-report")}
-                            </button>
-                        </div>
-                    </>
-                )}
+                {/* HELP BUBBLE */}
+                <HelpCardBubble searchTerms={t("accounts-route.help-card-search")} numOfHits={6} />
             </div>
-            <CreateAccountModal isModalOpen={isCreateAccountOpen} onClose={() => setIsCreateAccountOpen(false)} />
-        </div>
+        </main>
     );
 }

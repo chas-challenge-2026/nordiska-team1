@@ -13,6 +13,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Moq;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.FrontendApi.Authentication;
@@ -23,6 +30,8 @@ using Nordiska.FrontendApi.Extensions;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Communication.Domain;
+using Nordiska.Modules.Inbox.Application;
 using Xunit;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Authentication;
@@ -110,23 +119,48 @@ public class TestAuthService : IAuthService
 
     public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
     {
+        var cleanEmail = request.Email?.Trim() ?? string.Empty;
+        if (_customers.ContainsKey(cleanEmail))
+        {
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med denna e-post finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "EMAIL_TAKEN");
+        }
+
         var cleanPersonalNum = request.PersonalNum.Replace("-", "").Trim();
+        if (_customers.ContainsKey(cleanPersonalNum))
+        {
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med detta personnummer finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "PERSONAL_NUM_TAKEN");
+        }
+
         var customer = new Customer
         {
             Id = Random.Shared.Next(100, 9999),
             Name = request.Name,
-            Email = request.Email,
+            Email = cleanEmail,
             PersonalNum = cleanPersonalNum,
             PhoneNumber = request.PhoneNumber
         };
 
         _customers[cleanPersonalNum] = customer;
-        _customers[request.Email] = customer;
+        _customers[cleanEmail] = customer;
 
         var token = await _jwtProvider.Generate(customer);
         response.AppendAuthCookie(token, 15);
 
-        return new AuthenticationResultDto(true, null, Token: token);
+        var customerDto = new CustomerResponseDto(customer.Id, customer.Email, customer.Name, token);
+
+        return new AuthenticationResultDto(
+            IsSuccess: true,
+            ErrorMessage: null,
+            Token: token,
+            Customer: customerDto);
     }
 
     public async Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response)
@@ -175,6 +209,55 @@ public class TestAuthService : IAuthService
     }
 }
 
+public class TestJwtProvider : IJwtProvider
+{
+    private readonly JwtOptions _options;
+
+    public TestJwtProvider(IOptions<JwtOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    public Task<string> Generate(Customer customer)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, customer.Email ?? string.Empty),
+            new Claim("customer_id", customer.Id.ToString()),
+            new Claim(ClaimTypes.Role, "Customer")
+        };
+        return Task.FromResult(GenerateToken(claims));
+    }
+
+    public Task<string> Generate(StaffMember staff)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, staff.Role)
+        };
+        return Task.FromResult(GenerateToken(claims));
+    }
+
+    private string GenerateToken(IEnumerable<Claim> claims)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(_options.TokenLifetimeInMinutes),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
+
 public class TestSavingsAccountRepository : ISavingsAccountRepository
 {
     private static readonly List<SavingsAccount> _store = new()
@@ -193,6 +276,9 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
 
     public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
+
+    public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
 
     public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
     {
@@ -313,6 +399,128 @@ public class TestTransactionRepository : ITransactionRepository
         }
         return Task.FromResult(false);
     }
+
+    public Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(l => l.SavingsGoalId == savingsGoalId && l.IsPlanned));
+}
+
+public class TestSavingsGoalRepository : ISavingsGoalRepository
+{
+    private static readonly List<SavingsGoal> _store = new();
+    private static long _next = 1;
+
+    public static void Reset()
+    {
+        _store.Clear();
+        _next = 1;
+    }
+
+    public static void Seed(SavingsGoal goal)
+    {
+        if (goal.Id == 0) goal.Id = _next++;
+        _store.Add(goal);
+    }
+
+    public Task<SavingsGoal?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(g => g.Id == id));
+
+    public Task<List<SavingsGoal>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Where(g => g.CustomerId == customerId).ToList());
+
+    public Task<List<SavingsGoal>> GetByAccountIdAsync(long accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.Where(g => g.AccountId == accountId).ToList());
+
+    public Task<long> CreateAsync(SavingsGoal goal, CancellationToken cancellationToken = default)
+    {
+        goal.Id = _next++;
+        _store.Add(goal);
+        return Task.FromResult(goal.Id);
+    }
+
+    public Task<bool> UpdateAsync(SavingsGoal goal, CancellationToken cancellationToken = default)
+    {
+        var idx = _store.FindIndex(g => g.Id == goal.Id);
+        if (idx >= 0)
+        {
+            _store[idx] = goal;
+            return Task.FromResult(true);
+        }
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var count = _store.RemoveAll(g => g.Id == id);
+        return Task.FromResult(count > 0);
+    }
+}
+
+public sealed class TestSavingsGoalDepositRepository(
+    ISavingsGoalRepository goalRepository,
+    ISavingsAccountRepository accountRepository)
+    : ISavingsGoalDepositRepository
+{
+    public async Task<SavingsGoalDepositResult> DepositAsync(
+        long savingsGoalId,
+        long sourceAccountId,
+        decimal amount,
+        long customerId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        var goal = await goalRepository.GetByIdAsync(savingsGoalId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmål med ID {savingsGoalId} hittades inte.");
+
+        var sourceAccount = await accountRepository.GetByIdAsync(sourceAccountId, cancellationToken)
+            ?? throw new NotFoundException($"Källkonto med ID {sourceAccountId} hittades inte.");
+
+        var targetAccount = await accountRepository.GetByIdAsync(goal.AccountId, cancellationToken)
+            ?? throw new NotFoundException($"Sparmålets konto med ID {goal.AccountId} hittades inte.");
+
+        if (!isAdmin && goal.CustomerId != customerId)
+        {
+            throw new NotFoundException($"Sparmål med ID {savingsGoalId} hittades inte.");
+        }
+
+        if (!isAdmin && sourceAccount.CustomerId != customerId)
+        {
+            throw new ValidationException("Källkontot tillhör inte den inloggade kunden.");
+        }
+
+        if (sourceAccount.Balance < amount)
+        {
+            throw new ConflictException("Otillräckligt saldo.");
+        }
+
+        var depositedAt = DateTime.UtcNow;
+        goal.CurrentAmount += amount;
+        goal.UpdatedAt = depositedAt;
+
+        var completedNow = goal.CurrentAmount >= goal.TargetAmount &&
+                           !string.Equals(goal.Status, "completed", StringComparison.OrdinalIgnoreCase);
+
+        if (completedNow)
+        {
+            goal.Status = "completed";
+        }
+
+        await goalRepository.UpdateAsync(goal, cancellationToken);
+
+        return new SavingsGoalDepositResult(
+            goal.Id,
+            goal.CustomerId,
+            goal.Title,
+            sourceAccount.Id,
+            targetAccount.Id,
+            amount,
+            sourceAccount.Balance - amount,
+            targetAccount.Balance + amount,
+            goal.CurrentAmount,
+            goal.TargetAmount,
+            goal.Status,
+            completedNow,
+            depositedAt);
+    }
 }
 
 public class TestCustomerService : ICustomerService
@@ -342,20 +550,21 @@ public class TestCustomerService : ICustomerService
         throw new NotFoundException($"Customer with id {id} was not found.");
     }
 
-    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
         var customer = _customers.GetOrAdd(id, k => new Customer { Id = k, Name = "User", Email = "u@ex.se", PersonalNum = "198001010000" });
         if (!string.IsNullOrWhiteSpace(name)) customer.Name = name;
         if (!string.IsNullOrWhiteSpace(email)) customer.Email = email;
         if (!string.IsNullOrWhiteSpace(personalNum)) customer.PersonalNum = personalNum;
         if (phoneNumber != null) customer.PhoneNumber = phoneNumber;
+        if (overviewPreference != null) customer.OverviewPreference = overviewPreference;
         customer.UpdatedAt = DateTime.UtcNow;
         return Task.FromResult(customer);
     }
 
-    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default)
+    public Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, List<string>? overviewPreference = null, CancellationToken cancellationToken = default)
     {
-        return UpdateAsync(id, name, email, null, phoneNumber, cancellationToken);
+        return UpdateAsync(id, name, email, null, phoneNumber, overviewPreference, cancellationToken);
     }
 
     public Task DeleteAsync(long id, CancellationToken cancellationToken = default)
@@ -396,6 +605,23 @@ public class TestAccountTypeConfigRepository : IAccountTypeConfigRepository
             existing.InterestRate = entity.InterestRate;
             existing.Description = entity.Description;
         }
+        return Task.CompletedTask;
+    }
+
+    private static readonly List<AccountTypeRateHistory> _rateHistories = new();
+
+    public Task<IEnumerable<AccountTypeRateHistory>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default)
+    {
+        var list = _rateHistories
+            .Where(r => string.Equals(r.AccountType, accountType, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(r => r.EffectiveFromUtc)
+            .ToList();
+        return Task.FromResult<IEnumerable<AccountTypeRateHistory>>(list);
+    }
+
+    public Task AddRateHistoryAsync(AccountTypeRateHistory history, CancellationToken cancellationToken = default)
+    {
+        _rateHistories.Add(history);
         return Task.CompletedTask;
     }
 }
@@ -471,16 +697,61 @@ public class TestOperationalMessageRepository : IOperationalMessageRepository
     }
 }
 
+// Anna (customer 1) has loan 1, Erik (customer 2) has loan 2
+public class TestLoanRepository : ILoanRepository
+{
+    private static readonly List<Loan> _store = new()
+    {
+        CreateLoan(1, 1, 50000m),
+        CreateLoan(2, 2, 80000m)
+    };
+
+    // Id has a private setter since EF is the one that normally sets it
+    private static Loan CreateLoan(long id, long customerId, decimal principal)
+    {
+        var loan = new Loan(customerId, $"LN-TEST-{id}", LoanType.Personal, principal, 0.0675m, DateOnly.FromDateTime(DateTime.UtcNow));
+        typeof(Loan).GetProperty(nameof(Loan.Id))!.SetValue(loan, id);
+        return loan;
+    }
+
+    public Task<IEnumerable<Loan>> GetAllAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<Loan>>(_store.ToList());
+
+    public Task<IEnumerable<Loan>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<Loan>>(_store.Where(l => l.CustomerId == customerId).ToList());
+
+    public Task<Loan?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
+
+    public Task CreateWithPayoutAsync(Loan loan, LedgerEntry payout, SavingsAccount account, CancellationToken cancellationToken = default)
+    {
+        _store.Add(loan);
+        return Task.CompletedTask;
+    }
+
+    public Task AddRepaymentAsync(Loan loan, LedgerEntry repayment, SavingsAccount account, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
+}
+
 public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public ConcurrentQueue<(long CustomerId, string Type, string Title, long? TargetId)> Notifications { get; } = new();
+    public Exception? NotificationFailure { get; set; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureLogging(logging => logging.ClearProviders());
+
         // Tests share one factory per class, so raise the limits to keep rate limiting out of the way (NOR-70)
+        builder.UseSetting("ConnectionStrings:DefaultConnection", "Host=localhost;Database=test;Username=postgres;Password=postgres");
         builder.UseSetting("RateLimiting:Auth:PermitLimit", "10000");
         builder.UseSetting("RateLimiting:Transactions:PermitLimit", "10000");
 
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IJwtProvider>();
+            services.AddScoped<IJwtProvider, TestJwtProvider>();
+
             services.RemoveAll<IAuthService>();
             services.AddScoped<IAuthService, TestAuthService>();
 
@@ -498,6 +769,37 @@ public class CustomAuthWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IOperationalMessageRepository>();
             services.AddScoped<IOperationalMessageRepository, TestOperationalMessageRepository>();
+
+            services.RemoveAll<ILoanRepository>();
+            services.AddScoped<ILoanRepository, TestLoanRepository>();
+
+            services.RemoveAll<ISavingsGoalRepository>();
+            services.AddScoped<ISavingsGoalRepository, TestSavingsGoalRepository>();
+
+            services.RemoveAll<ISavingsGoalDepositRepository>();
+            services.AddScoped<ISavingsGoalDepositRepository, TestSavingsGoalDepositRepository>();
+
+            var inboxRepository = new Mock<IInboxRepository>();
+            inboxRepository
+                .Setup(repository => repository.AddNotificationAsync(
+                    It.IsAny<long>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<NotificationPriority>(),
+                    It.IsAny<NotificationTargetType?>(),
+                    It.IsAny<long?>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<long, string, string, string?, NotificationPriority, NotificationTargetType?, long?, CancellationToken>(
+                    (customerId, type, title, _, _, _, targetId, _) =>
+                        Notifications.Enqueue((customerId, type, title, targetId)))
+                .Returns<long, string, string, string?, NotificationPriority, NotificationTargetType?, long?, CancellationToken>(
+                    (_, _, _, _, _, _, _, _) => NotificationFailure is null
+                        ? Task.FromResult(new CustomerNotification(1, "test", "test"))
+                        : Task.FromException<CustomerNotification>(NotificationFailure));
+
+            services.RemoveAll<IInboxRepository>();
+            services.AddSingleton(inboxRepository.Object);
         });
     }
 }
@@ -640,10 +942,11 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebA
         });
 
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
+        var validPersonalNum = CreateRandomPersonalNum();
         var registerPayload = new
         {
             name = $"Test Person {uniqueId}",
-            personalNum = $"19900101{Random.Shared.Next(1000, 9999)}",
+            personalNum = validPersonalNum,
             email = $"test_{uniqueId}@example.com",
             phoneNumber = "+46701234567"
         };
@@ -660,6 +963,156 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebA
         setCookieHeader.Should().Contain("access_token=");
         setCookieHeader.Should().Contain("httponly");
         setCookieHeader.Should().Contain("path=/");
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(content);
+        jsonDoc.RootElement.GetProperty("name").GetString().Should().Be($"Test Person {uniqueId}");
+        jsonDoc.RootElement.GetProperty("email").GetString().Should().Be($"test_{uniqueId}@example.com");
+    }
+
+    [Fact]
+    public async Task Register_DuplicateEmail_Returns_409Conflict_With_EmailTakenCode()
+    {
+        // Arrange: Anna is already a seeded customer with anna@exempel.se
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false
+        });
+
+        var payload = new
+        {
+            name = "Another Anna",
+            personalNum = CreateRandomPersonalNum(),
+            email = "anna@exempel.se", // Already exists
+            phoneNumber = "+46701112233"
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/auth/register", payload);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(content);
+        jsonDoc.RootElement.GetProperty("status").GetInt32().Should().Be(409);
+        jsonDoc.RootElement.GetProperty("code").GetString().Should().Be("EMAIL_TAKEN");
+    }
+
+    [Fact]
+    public async Task Register_DuplicatePersonalNum_Returns_409Conflict_With_PersonalNumTakenCode()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false
+        });
+
+        var sharedPersonalNum = CreateRandomPersonalNum();
+        var uniqueId1 = Guid.NewGuid().ToString("N")[..8];
+        var firstCustomer = new
+        {
+            name = $"First User {uniqueId1}",
+            personalNum = sharedPersonalNum,
+            email = $"first_{uniqueId1}@example.com",
+            phoneNumber = "+46701112233"
+        };
+
+        var firstResponse = await client.PostAsJsonAsync("/api/auth/register", firstCustomer);
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var uniqueId2 = Guid.NewGuid().ToString("N")[..8];
+        var duplicatePayload = new
+        {
+            name = $"Second User {uniqueId2}",
+            personalNum = sharedPersonalNum, // Same personal number
+            email = $"second_{uniqueId2}@example.com",
+            phoneNumber = "+46702223344"
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/auth/register", duplicatePayload);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(content);
+        jsonDoc.RootElement.GetProperty("status").GetInt32().Should().Be(409);
+        jsonDoc.RootElement.GetProperty("code").GetString().Should().Be("PERSONAL_NUM_TAKEN");
+    }
+
+    [Fact]
+    public async Task Register_InvalidPersonalNum_LuhnCheckFailed_Returns_400ValidationProblemDetails()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false
+        });
+
+        var uniqueId = Guid.NewGuid().ToString("N")[..8];
+        var payload = new
+        {
+            name = $"Invalid User {uniqueId}",
+            personalNum = "199001019999", // Invalid Luhn checksum
+            email = $"invalid_{uniqueId}@example.com",
+            phoneNumber = "+46701112233"
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/auth/register", payload);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(content);
+        jsonDoc.RootElement.GetProperty("status").GetInt32().Should().Be(400);
+        jsonDoc.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
+        errors.TryGetProperty("PersonalNum", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Register_UnderageCustomer_Returns_400ValidationProblemDetails()
+    {
+        // Arrange: Born 5 years ago (under 18)
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false
+        });
+
+        var underageBirthDate = DateTime.UtcNow.AddYears(-5);
+        var digits = $"{underageBirthDate:yyMMdd}123";
+        var sum = 0;
+        for (var i = 0; i < digits.Length; i++)
+        {
+            var n = (digits[i] - '0') * (i % 2 == 0 ? 2 : 1);
+            sum += n > 9 ? n - 9 : n;
+        }
+        var checkDigit = (10 - sum % 10) % 10;
+        var underagePersonalNum = $"{underageBirthDate:yyyy}{digits[2..]}{checkDigit}";
+
+        var uniqueId = Guid.NewGuid().ToString("N")[..8];
+        var payload = new
+        {
+            name = $"Underage User {uniqueId}",
+            personalNum = underagePersonalNum,
+            email = $"underage_{uniqueId}@example.com",
+            phoneNumber = "+46701112233"
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/auth/register", payload);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(content);
+        jsonDoc.RootElement.GetProperty("status").GetInt32().Should().Be(400);
+        jsonDoc.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
+        errors.TryGetProperty("PersonalNum", out _).Should().BeTrue();
     }
 
     [Fact]
@@ -694,7 +1147,7 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebA
         });
 
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
-        var customPersonalNum = $"19910203{Random.Shared.Next(1000, 9999)}";
+        var customPersonalNum = CreateRandomPersonalNum();
         var customEmail = $"customer_{uniqueId}@example.com";
 
         var registerPayload = new
@@ -847,5 +1300,21 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebA
 
         // Assert
         refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private static string CreateRandomPersonalNum()
+    {
+        var birthDate = new DateTime(1970, 1, 1).AddDays(Random.Shared.Next(0, 365 * 30));
+        var digits = $"{birthDate:yyMMdd}{Random.Shared.Next(0, 1000):D3}";
+
+        var sum = 0;
+        for (var i = 0; i < digits.Length; i++)
+        {
+            var n = (digits[i] - '0') * (i % 2 == 0 ? 2 : 1);
+            sum += n > 9 ? n - 9 : n;
+        }
+        var checkDigit = (10 - sum % 10) % 10;
+
+        return $"{birthDate:yyyy}{digits[2..]}{checkDigit}";
     }
 }

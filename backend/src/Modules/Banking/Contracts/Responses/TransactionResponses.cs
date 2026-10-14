@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Nordiska.Modules.Banking.Contracts.Responses;
 
@@ -15,9 +16,37 @@ public record TransactionResponse(
     long? TargetAccountId = null,
     bool IsPlanned = false,
     DateTime? PlannedDate = null,
-    string? Repeating = null
+    string? Repeating = null,
+    Guid? CorrelationId = null
 )
 {
     public bool Planned => IsPlanned;
-    public string? Lable => Label; // Alias matching frontend spec typo
 }
+
+/// <summary>
+/// A grouped collection of transactions for a specific calendar date (formatted as yyyy-MM-dd).
+/// </summary>
+public record TransactionDateGroup(
+    string Date,
+    IReadOnlyList<TransactionResponse> Items
+)
+{
+    /// <summary>
+    /// Alias matching frontend dateKey convention.
+    /// </summary>
+    public string DateKey => Date;
+}
+
+/// <summary>
+/// Paginated query result with both date groups and flat items.
+/// </summary>
+public record GroupedTransactionsPagedResult(
+    IReadOnlyList<TransactionDateGroup> Groups,
+    IReadOnlyCollection<TransactionResponse> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages,
+    bool HasNextPage,
+    bool HasPreviousPage
+);

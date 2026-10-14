@@ -33,6 +33,28 @@ public static class ClaimsPrincipalExtensions
     }
 
     /// <summary>
+    /// Returns the staff id from the token claims ("staff_id", "sub", or NameIdentifier), or null if missing or not a number.
+    /// </summary>
+    public static long? GetStaffId(this ClaimsPrincipal user)
+    {
+        var value = user.FindFirst("staff_id")?.Value
+                    ?? user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                    ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        return long.TryParse(value, out var staffId) ? staffId : null;
+    }
+
+    /// <summary>
+    /// Returns the staff id from the token. Throws if the token has no valid staff id,
+    /// which the global exception handler turns into 401.
+    /// </summary>
+    public static long GetRequiredStaffId(this ClaimsPrincipal user)
+    {
+        return user.GetStaffId()
+               ?? throw new UnauthorizedAccessException("Token saknar giltigt handläggar-id.");
+    }
+
+    /// <summary>
     /// True if the logged in user has the Admin role.
     /// </summary>
     public static bool IsAdmin(this ClaimsPrincipal user) => user.IsInRole(AdminRole);

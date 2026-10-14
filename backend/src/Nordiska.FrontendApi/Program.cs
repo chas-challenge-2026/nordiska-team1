@@ -11,6 +11,9 @@ using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Faq.Application;
 using System.IO;
 using System.Reflection;
+using FluentValidation;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Validators;
 using Scalar.AspNetCore;
 using Nordiska.FrontendApi.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -22,7 +25,7 @@ using Nordiska.Modules.Banking.Infrastructure;
 using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.FrontendApi.BackgroundWorkers;
-
+using Nordiska.Modules.Inbox.Infrastructure.Db;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
@@ -70,6 +73,7 @@ builder.Services.AddApiAuthorization();
 // Register JWT Provider in Dependency Injection
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IValidator<RegisterCustomerRequestDto>, RegisterCustomerRequestDtoValidator>();
 
 // Register controller services
 builder.Services.AddControllers();
@@ -77,11 +81,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // include XML comments so Scalar/Swagger can show summaries and parameter docs
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-    if (File.Exists(xmlPath))
+    foreach (var file in Directory.GetFiles(AppContext.BaseDirectory, "Nordiska.*.xml"))
     {
-        options.IncludeXmlComments(xmlPath);
+        options.IncludeXmlComments(file);
     }
 
     // Configure JWT Bearer authentication in Swagger / Scalar UI
@@ -110,9 +112,17 @@ builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
+builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
+
+// Official Microsoft HealthChecks with EF Core database check
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<BankingDbContext>("database");
 
 // Background worker for scheduled & recurring transactions
 builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
+builder.Services.AddHostedService<FaqSearchLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqViewLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqSearchLogCleanupWorker>();
  
 builder.Services
     .AddIdentityCore<Customer>(options =>
@@ -198,42 +208,6 @@ builder.Services.AddRateLimitingPolicies(builder.Configuration);
 
 var app = builder.Build();
 
-// Automatic database migrations on startup (Banking, FAQ, Reporting)
-using (var migrationScope = app.Services.CreateScope())
-{
-    var services = migrationScope.ServiceProvider;
-
-    try
-    {
-        var bankingDb = services.GetRequiredService<BankingDbContext>();
-        await bankingDb.Database.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Automatic Banking database migration could not be completed: {Message}", ex.Message);
-    }
-
-    try
-    {
-        var faqDb = services.GetRequiredService<FaqDbContext>();
-        await faqDb.Database.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Automatic FAQ database migration could not be completed: {Message}", ex.Message);
-    }
-
-    try
-    {
-        var reportingDb = services.GetRequiredService<ReportingDbContext>();
-        await reportingDb.Database.MigrateAsync();
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Automatic Reporting database migration could not be completed: {Message}", ex.Message);
-    }
-}
-
 //look out for the order of middleware, it matters.
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
@@ -252,6 +226,14 @@ app.UseAuthorization();
 // Must run after authentication so the transactions policy can partition on the customer id
 app.UseRateLimiter();
 app.MapControllers();
+
+// Standard HealthChecks endpoint available in all environments (Azure, Coolify, Docker, Local)
+app.MapHealthChecks("/health")
+    .AllowAnonymous();
+
+// Backwards-compatible /health/database endpoint returning detailed status
+app.MapHealthChecks("/health/database")
+    .AllowAnonymous();
 
 if (app.Environment.IsDevelopment())
 {
@@ -272,27 +254,24 @@ if (app.Environment.IsDevelopment())
             ScalarTarget.CSharp,
             ScalarClient.HttpClient);
     }).AllowAnonymous();
-    app.MapGet("/health/database", async (
-        BankingDbContext db,
-        CancellationToken cancellationToken) =>
-    {
-        var connected = await db.Database.CanConnectAsync(
-            cancellationToken);
-
-        return connected
-            ? Results.Ok(new { status = "connected" })
-            : Results.Json(
-                new { status = "unavailable" },
-                statusCode: StatusCodes.Status503ServiceUnavailable);
-    }).AllowAnonymous();
 }
 
-// Seed Test Customer 
+// Always ensure essential Identity roles and bootstrap administrator exist (both Development and Production)
+try
+{
+    await DbInitializer.EnsureAdminAndRolesAsync(app.Services, app.Configuration);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Could not ensure admin and roles at startup: {Message}", ex.Message);
+}
+
+// Seed demo customer and sample data in Development
 if (app.Environment.IsDevelopment())
 {
     try
     {
-        await DbInitializer.SeedAsync(app.Services);
+        await DbInitializer.SeedAsync(app.Services, app.Configuration);
     }
     catch (Exception ex)
     {

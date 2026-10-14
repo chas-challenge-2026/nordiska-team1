@@ -28,7 +28,11 @@ public static class BankingMappers
         target.UpdatedAt = DateTime.UtcNow;
     }
 
-    public static SavingsAccountResponse ToResponse(this SavingsAccount acc, decimal? calculatedBalance = null)
+    public static SavingsAccountResponse ToResponse(
+        this SavingsAccount acc,
+        decimal? calculatedBalance = null,
+        decimal accruedInterestYtd = 0m,
+        decimal estimatedYearEndInterest = 0m)
         => new(
             acc.Id,
             acc.CustomerId,
@@ -39,7 +43,11 @@ public static class BankingMappers
             acc.CreatedAt,
             acc.AccountName,
             acc.UpdatedAt,
-            acc.Status
+            acc.Status,
+            acc.CurrencyCode,
+            accruedInterestYtd,
+            estimatedYearEndInterest,
+            acc.IsFavorite
         );
 
     public static AccountTypeConfig ToDomain(this CreateAccountTypeConfigRequest req)
@@ -115,4 +123,23 @@ public static class BankingMappers
             msg.CreatedAt,
             msg.UpdatedAt
         );
+
+    public static LoanResponse ToResponse(this Loan loan, DateOnly asOf)
+    {
+        decimal accruedInterest = loan.CalculateAccruedInterest(asOf);
+
+        return new LoanResponse(
+            loan.Id,
+            loan.CustomerId,
+            loan.LoanNumber,
+            loan.Type.ToString().ToLowerInvariant(),
+            loan.PrincipalAmount,
+            loan.OutstandingAmount + accruedInterest,
+            accruedInterest,
+            loan.InterestRate,
+            loan.Currency,
+            loan.Status.ToString().ToLowerInvariant(),
+            loan.OpenedAt,
+            loan.MaturityDate);
+    }
 }

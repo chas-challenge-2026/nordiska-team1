@@ -19,35 +19,125 @@ public class SavingsAccountService : ISavingsAccountService
     private readonly ILogger<SavingsAccountService> _logger;
     private readonly ISavingsAccountRepository _repo;
     private readonly IAccountTypeConfigRepository? _accountTypeConfigRepo;
+    private readonly ITransactionRepository? _txRepo;
 
     public SavingsAccountService(
         ISavingsAccountRepository repo, 
         ILogger<SavingsAccountService> logger,
-        IAccountTypeConfigRepository? accountTypeConfigRepo = null)
+        IAccountTypeConfigRepository? accountTypeConfigRepo = null,
+        ITransactionRepository? txRepo = null)
     {
         _repo = repo;
         _logger = logger;
         _accountTypeConfigRepo = accountTypeConfigRepo;
+        _txRepo = txRepo;
     }
 
-    public async Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+        => GetAllAsync(null, cancellationToken);
+
+    public async Task<IEnumerable<SavingsAccountResponse>> GetAllAsync(bool? isFavorite, CancellationToken cancellationToken = default)
     {
         var list = await _repo.GetAllAsync(cancellationToken);
-        return list.Select(a => a.ToResponse());
+        if (isFavorite.HasValue)
+        {
+            list = list.Where(a => a.IsFavorite == isFavorite.Value);
+        }
+        var result = new List<SavingsAccountResponse>();
+        foreach (var acc in list)
+        {
+            result.Add(await MapWithInterestAsync(acc, cancellationToken));
+        }
+        return result;
     }
 
-    public async Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => GetByCustomerIdAsync(customerId, null, cancellationToken);
+
+    public async Task<IEnumerable<SavingsAccountResponse>> GetByCustomerIdAsync(long customerId, bool? isFavorite, CancellationToken cancellationToken = default)
     {
         var list = await _repo.GetByCustomerIdAsync(customerId, cancellationToken);
-        return list.Select(a => a.ToResponse());
+        if (isFavorite.HasValue)
+        {
+            list = list.Where(a => a.IsFavorite == isFavorite.Value);
+        }
+        var result = new List<SavingsAccountResponse>();
+        foreach (var acc in list)
+        {
+            result.Add(await MapWithInterestAsync(acc, cancellationToken));
+        }
+        return result;
     }
+
 
     public async Task<SavingsAccountResponse> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
         var acc = await _repo.GetByIdAsync(id, cancellationToken);
         if (acc is null)
             throw new NotFoundException($"Savings account with ID {id} was not found.");
-        return acc.ToResponse();
+        return await MapWithInterestAsync(acc, cancellationToken);
+    }
+
+    private async Task<SavingsAccountResponse> MapWithInterestAsync(SavingsAccount acc, CancellationToken cancellationToken)
+    {
+        if (acc.Status != "active" || acc.Balance <= 0)
+        {
+            return acc.ToResponse();
+        }
+
+        try
+        {
+            var now = DateTime.UtcNow;
+            var year = now.Year;
+            var yearStartDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            IEnumerable<LedgerEntry> txs = [];
+            if (_txRepo != null)
+            {
+                txs = await _txRepo.QueryAsync(acc.Id, cancellationToken);
+            }
+
+            var txList = txs.Select(t => (t.Amount, t.CreatedAt)).ToList();
+            var openingBalance = txList
+                .Where(t => t.CreatedAt < yearStartDate)
+                .Sum(t => t.Amount);
+
+            // Fallback: If an account has a balance but no ledger transaction records,
+            // calculate interest from the account's creation date (or Jan 1 if opened before current year)
+            if (txList.Count == 0 && acc.Balance > 0)
+            {
+                if (acc.CreatedAt < yearStartDate)
+                {
+                    openingBalance = acc.Balance;
+                }
+                else
+                {
+                    txList.Add((acc.Balance, acc.CreatedAt));
+                }
+            }
+
+            IEnumerable<(decimal Rate, DateTime EffectiveFromUtc, DateTime? EffectiveToUtc)>? rateHistory = null;
+            if (_accountTypeConfigRepo != null && !string.IsNullOrWhiteSpace(acc.AccountType))
+            {
+                var history = await _accountTypeConfigRepo.GetRateHistoryAsync(acc.AccountType, cancellationToken);
+                rateHistory = history.Select(h => (h.InterestRate, h.EffectiveFromUtc, h.EffectiveToUtc));
+            }
+
+            var (accruedYtd, estimatedYearEnd) = AccountInterestCalculator.Calculate(
+                openingBalance,
+                txList,
+                year,
+                acc.InterestRate,
+                rateHistory,
+                now);
+
+            return acc.ToResponse(null, accruedYtd, estimatedYearEnd);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to compute accrued interest for account {AccountId}", acc.Id);
+            return acc.ToResponse();
+        }
     }
 
     public async Task<SavingsAccountResponse> CreateAsync(OpenSavingsAccountRequest request, CancellationToken cancellationToken = default)
@@ -95,10 +185,25 @@ public class SavingsAccountService : ISavingsAccountService
 
         var entity = normalizedRequest.ToDomain();
         entity.InterestRate = rate;
-        await _repo.CreateAsync(entity, cancellationToken);
-        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}) for customer {CustomerId}", 
-            entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, entity.CustomerId);
-        return entity.ToResponse();
+        var createdId = await _repo.CreateAsync(entity, cancellationToken);
+        entity.Id = createdId;
+
+        if (request.InitialDeposit > 0 && _txRepo != null)
+        {
+            var initialEntry = new LedgerEntry
+            {
+                AccountId = entity.Id,
+                Type = "deposit",
+                Amount = request.InitialDeposit,
+                Label = "Initial insättning",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _txRepo.CreateAsync(initialEntry, cancellationToken);
+        }
+
+        _logger.LogInformation("Created savings account {Id} (accountNumber={AccountNumber}, type={AccountType}, rate={Rate}, initialDeposit={InitialDeposit}) for customer {CustomerId}", 
+            entity.Id, entity.AccountNumber, entity.AccountType, entity.InterestRate, request.InitialDeposit, entity.CustomerId);
+        return await MapWithInterestAsync(entity, cancellationToken);
     }
 
     private static string NormalizeAccountType(string? rawType)
@@ -115,6 +220,31 @@ public class SavingsAccountService : ISavingsAccountService
 
     private static bool IsStandardType(string type)
         => type is "saving" or "flex" or "fix" or "standard" or "premium";
+
+    public async Task<SavingsAccountResponse> SetFavoriteAsync(long id, long customerId, bool isFavorite, CancellationToken cancellationToken = default)
+    {
+        var acc = await _repo.GetByIdAsync(id, cancellationToken);
+        if (acc is null || acc.CustomerId != customerId)
+            throw new NotFoundException($"Savings account with ID {id} was not found.");
+
+        if (isFavorite && !acc.IsFavorite)
+        {
+            var favoritesCount = await _repo.CountFavoritesByCustomerIdAsync(customerId, cancellationToken);
+            if (favoritesCount >= 4)
+            {
+                throw new ValidationException("Du kan maximalt ha 4 favoritkonton markerade samtidigt.");
+            }
+        }
+
+        acc.IsFavorite = isFavorite;
+        acc.UpdatedAt = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(acc, cancellationToken);
+        _logger.LogInformation("Updated account {Id} (accountNumber={AccountNumber}) favorite status to {IsFavorite} for customer {CustomerId}",
+            acc.Id, acc.AccountNumber, acc.IsFavorite, acc.CustomerId);
+
+        return await MapWithInterestAsync(acc, cancellationToken);
+    }
 
     public async Task<SavingsAccountResponse> CloseAccountAsync(long id, CancellationToken cancellationToken = default)
     {

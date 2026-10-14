@@ -33,5 +33,21 @@ public sealed class LedgerEntryConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.AccountId);
+
+        builder.HasIndex(x => new
+        {
+            x.AccountId,
+            x.CreatedAt
+        });
+
+        builder.HasOne(x => x.SavingsGoal)
+            .WithMany()
+            .HasForeignKey(x => x.SavingsGoalId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(x => x.SavingsGoalId);
+
+        builder.Property(x => x.CorrelationId);
+        builder.HasIndex(x => x.CorrelationId);
     }
 }

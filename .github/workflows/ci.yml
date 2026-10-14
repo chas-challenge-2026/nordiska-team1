@@ -86,8 +86,25 @@ jobs:
       - name: Restore NuGet Packages (Locked Mode)
         run: dotnet restore backend/np.sln --locked-mode
 
+      - name: Restore Local .NET Tools
+        working-directory: backend
+        run: dotnet tool restore
+
       - name: Build Solution (Release, TreatWarningsAsErrors)
         run: dotnet build backend/np.sln --configuration Release --no-restore
+
+      - name: Apply Database Migrations
+        working-directory: backend
+        run: |
+          dotnet tool run dotnet-ef -- database update --context BankingDbContext --project src/Modules/Banking/Nordiska.Modules.Banking.csproj --startup-project src/Nordiska.FrontendApi/Nordiska.FrontendApi.csproj --configuration Release --no-build
+          dotnet tool run dotnet-ef -- database update --context FaqDbContext --project src/Modules/Faq/Nordiska.Modules.Faq.csproj --startup-project src/Nordiska.FrontendApi/Nordiska.FrontendApi.csproj --configuration Release --no-build
+          dotnet tool run dotnet-ef -- database update --context ReportingDbContext --project src/Modules/Reporting/Nordiska.Modules.Reporting.csproj --startup-project src/Nordiska.FrontendApi/Nordiska.FrontendApi.csproj --configuration Release --no-build
+          dotnet tool run dotnet-ef -- database update --context InboxDbContext --project src/Modules/Inbox/Nordiska.Modules.Inbox.csproj --startup-project src/Nordiska.FrontendApi/Nordiska.FrontendApi.csproj --configuration Release --no-build
+        env:
+          ConnectionStrings__BankingMigrationDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
+          ConnectionStrings__FaqMigrationDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
+          ConnectionStrings__ReportingMigrationDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
+          ConnectionStrings__InboxMigrationDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
 
       - name: Run Unit and Integration Tests
         run: dotnet test backend/np.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx"
@@ -102,6 +119,7 @@ jobs:
           ConnectionStrings__BankingDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
           ConnectionStrings__FaqDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
           ConnectionStrings__ReportingDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
+          ConnectionStrings__InboxDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
 
   # Smoke test production container build
   docker-build-check:

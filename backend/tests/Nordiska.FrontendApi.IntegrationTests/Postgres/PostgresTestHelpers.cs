@@ -10,6 +10,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
+using Xunit;
+
+// Disable parallel test execution across all integration tests to prevent race conditions
+// when multiple WebApplicationFactory instances migrate/seed the shared database simultaneously.
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Nordiska.FrontendApi.IntegrationTests.Postgres;
 
@@ -28,8 +33,7 @@ public sealed class PostgresFactAttribute : FactAttribute
     }
 }
 
-// Real services, no fakes. Limits are raised so the rate limiter never answers before the lockout does,
-// and so the transaction tests don't hit the 10/min per customer limit.
+ 
 public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -45,9 +49,7 @@ public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Pr
         });
     }
 }
-
-// Every test class starts its own host and runs the EF migrations on startup. In parallel they race against
-// the same CI database, so these tests run alone (after the parallel ones) to get a fully migrated database.
+ 
 [CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class PostgresCollection : ICollectionFixture<PostgresAuthWebApplicationFactory>
 {
@@ -90,7 +92,7 @@ public static class PostgresTestData
         return client;
     }
 
-    // Everything in banking is DeleteBehavior.Restrict, so ledger entries go first, then accounts, then the customer
+    // Everything in banking is DeleteBehavior.Restrict, so ledger entries go first, then accounts and loans, then the customer
     public static async Task DeleteCustomersAsync(IServiceProvider services, IEnumerable<long> customerIds)
     {
         var ids = customerIds.ToList();
@@ -106,6 +108,7 @@ public static class PostgresTestData
 
         await db.LedgerEntries.Where(e => accountIds.Contains(e.AccountId)).ExecuteDeleteAsync();
         await db.SavingsAccounts.Where(a => accountIds.Contains(a.Id)).ExecuteDeleteAsync();
+        await db.Loans.Where(l => ids.Contains(l.CustomerId)).ExecuteDeleteAsync();
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Customer>>();
         foreach (var id in ids)

@@ -10,6 +10,7 @@ set_target_properties(pdf_generator PROPERTIES
 target_link_libraries(pdf_generator PRIVATE
     nordiska_document_core
     nordiska_document_input_json
+    nlohmann_json::nlohmann_json
 )
 
 # Custom target for convenient command-line or IDE execution/debugging

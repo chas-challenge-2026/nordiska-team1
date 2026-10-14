@@ -19,12 +19,12 @@ public interface ICustomerService
     /// <summary>
     /// Updates a customer with the provided details. Only non-null parameters will be updated.
     /// </summary>
-    Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, CancellationToken cancellationToken = default);
+    Task<Customer> UpdateAsync(long id, string? name, string? email, string? personalNum, string? phoneNumber = null, System.Collections.Generic.List<string>? overviewPreference = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Partially updates customer profile fields (e.g. email or phone number).
+    /// Partially updates customer profile fields (e.g. email, phone number, or overview preferences).
     /// </summary>
-    Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, CancellationToken cancellationToken = default);
+    Task<Customer> PatchProfileAsync(long id, string? name, string? email, string? phoneNumber = null, System.Collections.Generic.List<string>? overviewPreference = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a customer profile if they have no active accounts with positive balance.

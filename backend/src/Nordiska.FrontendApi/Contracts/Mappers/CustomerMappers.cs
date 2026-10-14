@@ -12,6 +12,7 @@ public static class CustomerMappers
         if (!string.IsNullOrWhiteSpace(req.Email)) target.Email = req.Email!;
         if (!string.IsNullOrWhiteSpace(req.PersonalNum)) target.PersonalNum = req.PersonalNum!;
         if (!string.IsNullOrWhiteSpace(req.EffectivePhone)) target.PhoneNumber = req.EffectivePhone!;
+        if (req.OverviewPreference != null) target.OverviewPreference = req.OverviewPreference;
         target.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -24,6 +25,7 @@ public static class CustomerMappers
             c.PhoneNumber,
             c.CreatedAt,
             c.PhoneNumber,
-            c.UpdatedAt
+            c.UpdatedAt,
+            c.OverviewPreference ?? new List<string>()
         );
 }

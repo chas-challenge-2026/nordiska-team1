@@ -20,4 +20,7 @@ public class InterestRateService : IInterestRateService
 
     public Task<IEnumerable<AccountTypeConfigResponse>> GetAllAsync(CancellationToken cancellationToken = default)
         => _configService.GetAllAsync(cancellationToken);
+
+    public Task<IReadOnlyList<AccountTypeRateHistoryResponse>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default)
+        => _configService.GetRateHistoryAsync(accountType, cancellationToken);
 }

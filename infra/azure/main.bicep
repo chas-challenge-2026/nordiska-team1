@@ -23,6 +23,10 @@ param dbAdminPassword string
 @secure()
 param jwtSecretKey string
 
+@description('Salt for hashing sessions in the FAQ search log')
+@secure()
+param faqSearchLogSalt string
+
 @description('Initial container image to deploy (default: placeholder image until first CI/CD build)')
 param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
@@ -143,6 +147,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'jwt-secret'
           value: jwtSecretKey
         }
+        {
+          name: 'faq-search-log-salt'
+          value: faqSearchLogSalt
+        }
       ]
     }
     template: {
@@ -198,6 +206,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'Banking__PlannedWorkerIntervalSeconds'
               value: '60'
+            }
+            {
+              name: 'FaqSearchLog__Salt'
+              secretRef: 'faq-search-log-salt'
             }
           ]
         }

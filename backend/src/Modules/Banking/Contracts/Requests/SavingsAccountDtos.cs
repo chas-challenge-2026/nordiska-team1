@@ -45,3 +45,12 @@ public record CloseSavingsAccountRequest(
     [Required] long Id,
     [Required] string Reason
 );
+
+/// <summary>
+/// Request payload to set or toggle the favorite status of a savings account.
+/// </summary>
+/// <param name="IsFavorite">True to mark as favorite, false to remove favorite status.</param>
+public record SetAccountFavoriteRequest(
+    [Required] bool IsFavorite
+);
+

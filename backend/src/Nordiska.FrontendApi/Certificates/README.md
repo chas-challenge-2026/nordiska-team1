@@ -3,6 +3,24 @@
 Den här mappen innehåller tre olika format av samma certifikat för test.
 Lösenordet för samtliga är: `qwerty123`
 
+---
+
+### Konfiguration i appsettings.Development.json
+
+För att använda dessa certifikat mot BankIDs testmiljö ska `appsettings.Development.json` ha:
+```json
+"ActiveLogin": {
+  "BankId": {
+    "Environment": "Test"
+  }
+}
+```
+
+* **`"Test"` (Standard med certifikat):** Ansluter till BankIDs officiella testservrar med `FPTestcert5_20240610.p12`. Kräver att du har BankID-appen i mobilen ställd på `kundtest`.
+* **`"Simulated"` (Fejkat läge för snabb frontend-dev):** Fejkar BankID internt i minnet utan nätverksanrop, certifikat eller mobilapp.
+
+---
+
  **Så väljer du rätt fil:**
 
 * Använd `FPTestcert5_20240610.p12` för nya applikationer och miljöer som stöder modern kryptering. Vi rekommenderar dig att välja den här i första hand. 

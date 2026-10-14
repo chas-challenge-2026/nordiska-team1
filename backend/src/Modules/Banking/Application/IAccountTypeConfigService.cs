@@ -30,4 +30,9 @@ public interface IAccountTypeConfigService
     /// Updates the interest rate or description of an existing account type and invalidates the cache.
     /// </summary>
     Task<AccountTypeConfigResponse> UpdateAsync(string accountType, UpdateAccountTypeConfigRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves historical interest rate records for a given account type.
+    /// </summary>
+    Task<IReadOnlyList<AccountTypeRateHistoryResponse>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default);
 }

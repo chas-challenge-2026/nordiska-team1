@@ -5,12 +5,13 @@ import TableRow from "../TableRow";
 import PlannedTransferActionsModal from "./PlannedTransferActionsModal";
 import type { EditPlannedError } from "./PlannedTransferActionsModal";
 import type { PlannedTransfer } from "../../constants/transferAccounts";
+import type { PlannedTransferChanges } from "../../hooks/usePlannedTransfers";
 
 type PlannedTransfersPanelProps = {
     upcomingTransfers: PlannedTransfer[];
     onEditTransfer: (
         transfer: PlannedTransfer,
-        newDate: string,
+        changes: PlannedTransferChanges,
         onSaved: () => void,
     ) => void;
     onDeleteTransfer: (transfer: PlannedTransfer, onDeleted: () => void) => void;
@@ -49,16 +50,20 @@ export default function PlannedTransfersPanel({
     };
 
     return (
-        <div className="border-t border-[#E5EAF0] px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:border-t-0 lg:border-l lg:px-10 lg:pt-8 lg:pb-10">
+        <div >
             <Table tableType="planned" handleClick={() => { }}>
                 <div className="max-h-[420px] overflow-y-auto">
                     {upcomingTransfers.map((planned) => (
                         <TableRow
                             key={planned.localId}
-                            id={planned.localId}
                             rowType="planned"
                             plannedDate={planned.date}
                             plannedName={planned.name}
+                            plannedAccounts={
+                                planned.fromName && planned.toName
+                                    ? `${planned.fromName} → ${planned.toName}`
+                                    : undefined
+                            }
                             plannedNote={planned.note}
                             plannedSum={planned.sum}
                             plannedActionsLabel={t("page-transfer.planned.actions-label")}
@@ -67,17 +72,19 @@ export default function PlannedTransfersPanel({
                     ))}
                 </div>
             </Table>
-            <p className="mt-5.5 max-w-[42ch] text-xs text-secondary">
+            <p className="mt-3 max-w-[42ch] text-sm text-secondary">
                 {t("page-transfer.planned.footnote")}
             </p>
 
             {displayedTransfer && (
                 <PlannedTransferActionsModal
+                    // Ny instans per överföring så att formuläret börjar från rätt värden.
+                    key={displayedTransfer.localId}
                     isOpen={activeTransfer !== null}
                     transfer={displayedTransfer}
                     onClose={closeActions}
-                    onSaveDate={(newDate) =>
-                        onEditTransfer(displayedTransfer, newDate, closeActions)
+                    onSave={(changes) =>
+                        onEditTransfer(displayedTransfer, changes, closeActions)
                     }
                     isSaving={isSaving}
                     editError={editError}

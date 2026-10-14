@@ -9,6 +9,7 @@ namespace Nordiska.Modules.Banking.Contracts.Requests;
 public record TransactionQueryParameters(
     IReadOnlyList<long>? AccountIds = null,
     string? Type = null,
+    bool? IsPlanned = null,
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     decimal? MinAmount = null,
@@ -17,7 +18,9 @@ public record TransactionQueryParameters(
     string? SortBy = "createdAt",
     string? SortOrder = "desc",
     int Page = 1,
-    int PageSize = 20)
+    int PageSize = 20,
+    Guid? CorrelationId = null,
+    bool GroupByDate = false)
 {
     /// <summary>
     /// Gets sanitized page number (minimum 1).

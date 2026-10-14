@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ActiveLogin.Authentication.BankId.Api;
 using ActiveLogin.Authentication.BankId.Api.Models;
+using ActiveLogin.Identity.Swedish;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,7 @@ using Nordiska.Modules.Banking.Infrastructure.Db;
 
 
 
-namespace Nordiska.Modules.Banking.Application;
+namespace Nordiska.FrontendApi.Authentication;
 
 public class AuthService : IAuthService
 {
@@ -51,13 +52,28 @@ public class AuthService : IAuthService
     {
         try
         {
-            var cleanPersonalNum = request?.PersonalNum?.Replace("-", "")?.Trim();
+            string? cleanPersonalNum = null;
+            if (!string.IsNullOrWhiteSpace(request?.PersonalNum))
+            {
+                if (PersonalIdentityNumber.TryParse(request.PersonalNum, out var pin))
+                {
+                    cleanPersonalNum = pin.To12DigitString();
+                }
+                else
+                {
+                    cleanPersonalNum = request.PersonalNum.Replace("-", "").Trim();
+                }
+            }
 
             var requirement = !string.IsNullOrWhiteSpace(cleanPersonalNum)
                 ? new Requirement(personalNumber: cleanPersonalNum)
                 : null;
 
-            var effectiveIp = string.IsNullOrWhiteSpace(clientIp) || clientIp == "::1" ? "127.0.0.1" : clientIp;
+            var effectiveIp = clientIp?.Replace("::ffff:", "").Trim();
+            if (string.IsNullOrWhiteSpace(effectiveIp) || effectiveIp == "::1" || effectiveIp == "localhost")
+            {
+                effectiveIp = "127.0.0.1";
+            }
 
             var response = await _bankIdAppApiClient.AuthAsync(new AuthRequest(
                 endUserIp: effectiveIp,
@@ -153,19 +169,45 @@ public class AuthService : IAuthService
 
     public async Task<AuthenticationResultDto> RegisterCustomerAsync(RegisterCustomerRequestDto request, HttpResponse response)
     {
-        var existingCustomer = await _userManager.FindByEmailAsync(request.Email);
-        if (existingCustomer != null)
+        var cleanEmail = request.Email?.Trim() ?? string.Empty;
+        var existingCustomerByEmail = await _userManager.FindByEmailAsync(cleanEmail);
+        if (existingCustomerByEmail != null)
         {
-            return new AuthenticationResultDto(false, "En användare med denna e-post finns redan.");
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med denna e-post finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "EMAIL_TAKEN");
+        }
+
+        string cleanPersonalNum;
+        if (PersonalIdentityNumber.TryParse(request.PersonalNum, out var pin))
+        {
+            cleanPersonalNum = pin.To12DigitString();
+        }
+        else
+        {
+            cleanPersonalNum = request.PersonalNum?.Replace("-", "").Trim() ?? string.Empty;
+        }
+
+        var existingCustomerByPersonalNum = await _db.Customers.AnyAsync(c => c.PersonalNum == cleanPersonalNum);
+        if (existingCustomerByPersonalNum)
+        {
+            return new AuthenticationResultDto(
+                IsSuccess: false,
+                ErrorMessage: "En användare med detta personnummer finns redan.",
+                FailureReason: AuthFailureReason.Conflict,
+                ConflictCode: "PERSONAL_NUM_TAKEN");
         }
 
         var newCustomer = new Customer
         {
-            UserName = request.Email,
-            Name = request.Name,
-            PersonalNum = request.PersonalNum,
-            Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
+            UserName = cleanEmail,
+            Name = request.Name?.Trim() ?? string.Empty,
+            PersonalNum = cleanPersonalNum,
+            Email = cleanEmail,
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+            PasswordHash = string.Empty,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -179,7 +221,14 @@ public class AuthService : IAuthService
 
         var token = await _jwtProvider.Generate(newCustomer);
         response.AppendAuthCookie(token, _jwtOptions.TokenLifetimeInMinutes);
-        return new AuthenticationResultDto(true, null, Token: token);
+
+        var customerDto = new CustomerResponseDto(newCustomer.Id, newCustomer.Email ?? string.Empty, newCustomer.Name, token);
+
+        return new AuthenticationResultDto(
+            IsSuccess: true,
+            ErrorMessage: null,
+            Token: token,
+            Customer: customerDto);
     }
 
     public async Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response)
@@ -191,6 +240,27 @@ public class AuthService : IAuthService
 
         // UserManager looks up on the normalized columns, so this is already case-insensitive
         var login = request.Email.Trim();
+
+        // Check if user is an internal staff/admin member (RBAC)
+        var staffMember = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email.ToLower() == login.ToLower());
+        if (staffMember != null && staffMember.IsActive)
+        {
+            var passwordHasher = new PasswordHasher<StaffMember>();
+            var verifyResult = passwordHasher.VerifyHashedPassword(staffMember, staffMember.PasswordHash, request.Password);
+            if (verifyResult == PasswordVerificationResult.Failed)
+            {
+                return InvalidCredentials();
+            }
+
+            var staffToken = await _jwtProvider.Generate(staffMember);
+            response.AppendAuthCookie(staffToken, _jwtOptions.TokenLifetimeInMinutes);
+
+            var staffDto = new CustomerResponseDto(staffMember.Id, staffMember.Email, staffMember.FullName, staffToken);
+            var staffData = new BankIdCollectResponseDto("COMPLETE", null, staffDto);
+
+            return new AuthenticationResultDto(true, null, Token: staffToken, CollectData: staffData);
+        }
+
         var customer = await _userManager.FindByEmailAsync(login) ?? await _userManager.FindByNameAsync(login);
 
         if (customer == null)
@@ -231,6 +301,28 @@ public class AuthService : IAuthService
             return new AuthenticationResultDto(false, "Ogiltig session.");
         }
 
+        var normalized = customerIdOrEmail.Trim();
+
+        // Check if session belongs to a StaffMember (RBAC)
+        StaffMember? staff = null;
+        if (long.TryParse(normalized, out var staffId))
+        {
+            staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Id == staffId && s.IsActive);
+        }
+        if (staff == null)
+        {
+            staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email == normalized && s.IsActive);
+        }
+
+        if (staff != null)
+        {
+            var staffToken = await _jwtProvider.Generate(staff);
+            response.AppendAuthCookie(staffToken, _jwtOptions.TokenLifetimeInMinutes);
+
+            var staffDto = new CustomerResponseDto(staff.Id, staff.Email, staff.FullName, staffToken);
+            return new AuthenticationResultDto(true, null, Token: staffToken, Customer: staffDto);
+        }
+
         Customer? customer = null;
         if (long.TryParse(customerIdOrEmail, out var customerId))
         {
@@ -240,7 +332,6 @@ public class AuthService : IAuthService
 
         if (customer == null)
         {
-            var normalized = customerIdOrEmail.Trim();
             customer = await _userManager.FindByEmailAsync(normalized)
                        ?? await _userManager.FindByNameAsync(normalized)
                        ?? await _db.Customers.FirstOrDefaultAsync(c => c.Email == normalized);

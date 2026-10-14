@@ -34,6 +34,22 @@ public sealed class CustomerConfiguration
         builder.Property(x => x.CreatedAt)
             .IsRequired();
 
+        var stringListComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
+            (c1, c2) => c1 != null && c2 != null ? System.Linq.Enumerable.SequenceEqual(c1, c2) : c1 == c2,
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c.ToList());
+
+        builder.Property(x => x.OverviewPreference)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+            )
+            .Metadata.SetValueComparer(stringListComparer);
+
+        builder.Property(x => x.OverviewPreference)
+            .HasDefaultValueSql("'[]'::jsonb");
+
         builder.HasIndex(x => x.PersonalNum)
             .IsUnique();
 

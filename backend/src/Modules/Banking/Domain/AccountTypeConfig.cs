@@ -7,4 +7,5 @@ public sealed class AccountTypeConfig
     public string Description { get; set; } = string.Empty;
 
     public ICollection<SavingsAccount> SavingsAccounts { get; set; } = [];
+    public ICollection<AccountTypeRateHistory> RateHistories { get; set; } = [];
 }

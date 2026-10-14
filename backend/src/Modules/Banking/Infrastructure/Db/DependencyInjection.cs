@@ -22,8 +22,11 @@ public static class DependencyInjection
         services.AddScoped<ISavingsAccountRepository, SavingsAccountRepository>();
         services.AddScoped<IAccountTypeConfigRepository, AccountTypeConfigRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<ISavingsGoalRepository, SavingsGoalRepository>();
+        services.AddScoped<ISavingsGoalDepositRepository, SavingsGoalDepositRepository>();
         services.AddScoped<ISavingsAccountService, SavingsAccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ISavingsGoalService, SavingsGoalService>();
         services.AddScoped<ICustomerService, CustomerService>();
 
         // Interest rates & account types are read often and change rarely, so they are cached in memory
@@ -51,6 +54,15 @@ public static class DependencyInjection
             .AddStandardResilienceHandler();
 
         services.AddScoped<IPolicyRateService, PolicyRateService>();
+
+        services.AddOptions<LoanOptions>()
+            .Bind(configuration.GetSection(LoanOptions.SectionName))
+            .Validate(o => o.MinAmount > 0 && o.MinAmount <= o.MaxAmount, "Loans:MinAmount must be greater than zero and not above Loans:MaxAmount.")
+            .Validate(o => o.MinTermMonths > 0 && o.MinTermMonths <= o.MaxTermMonths, "Loans:MinTermMonths must be greater than zero and not above Loans:MaxTermMonths.")
+            .ValidateOnStart();
+
+        services.AddScoped<ILoanRepository, LoanRepository>();
+        services.AddScoped<ILoanService, LoanService>();
 
         return services;
     }

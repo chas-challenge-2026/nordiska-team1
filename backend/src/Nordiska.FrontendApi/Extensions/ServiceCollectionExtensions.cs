@@ -1,4 +1,4 @@
-﻿namespace Nordiska.FrontendApi.Extensions;
+namespace Nordiska.FrontendApi.Extensions;
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -50,9 +50,9 @@ public static class ServiceCollectionExtensions
 
                 policy.RequireAuthenticatedUser();
 
-                policy.RequireClaim(
-                    "permission",
-                    "faq:manage");
+                policy.RequireAssertion(ctx =>
+                    ctx.User.IsInRole("Admin") ||
+                    ctx.User.HasClaim("permission", "faq:manage"));
             });
         });
 

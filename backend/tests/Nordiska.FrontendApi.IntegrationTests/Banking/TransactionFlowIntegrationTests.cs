@@ -93,15 +93,24 @@ public class TransactionFlowIntegrationTests : IAsyncLifetime
         var sourceEntry = (await GetLedgerEntriesAsync(sourceId)).Single(e => e.Type == "transfer");
         sourceEntry.Amount.Should().Be(-750m);
         sourceEntry.TargetAccountId.Should().Be(targetId);
+        sourceEntry.CorrelationId.Should().NotBeNull();
 
         var targetEntry = (await GetLedgerEntriesAsync(targetId)).Single(e => e.Type == "transfer");
         targetEntry.Amount.Should().Be(750m);
         targetEntry.TargetAccountId.Should().Be(sourceId);
+        targetEntry.CorrelationId.Should().Be(sourceEntry.CorrelationId);
 
         (await GetBalanceAsync(client, sourceId)).Should().Be(1250m);
         (await GetBalanceAsync(client, targetId)).Should().Be(1250m);
         (await GetStoredAccountAsync(sourceId)).Balance.Should().Be(1250m);
         (await GetStoredAccountAsync(targetId)).Balance.Should().Be(1250m);
+
+        var relatedResponse = await client.GetAsync($"/api/transactions/{sourceEntry.Id}/related");
+        relatedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var relatedItems = await relatedResponse.Content.ReadFromJsonAsync<List<TransactionResponse>>();
+        relatedItems.Should().ContainSingle();
+        relatedItems![0].Id.Should().Be(targetEntry.Id);
+        relatedItems[0].CorrelationId.Should().Be(sourceEntry.CorrelationId);
     }
 
     [PostgresFact]
@@ -140,15 +149,20 @@ public class TransactionFlowIntegrationTests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BankingDbContext>();
 
+        var accountType = await db.AccountTypeConfigs
+            .AsNoTracking()
+            .FirstAsync();
+
         var account = new SavingsAccount
         {
             CustomerId = customerId,
             AccountNumber = $"NOR-T{Guid.NewGuid().ToString("N")[..12]}",
-            AccountType = "Standard",
+            AccountType = accountType.AccountType,
             Balance = balance,
-            InterestRate = 0.025m,
+            InterestRate = accountType.InterestRate,
             CreatedAt = DateTime.UtcNow
         };
+
         db.SavingsAccounts.Add(account);
         await db.SaveChangesAsync();
 
@@ -161,6 +175,7 @@ public class TransactionFlowIntegrationTests : IAsyncLifetime
                 Amount = balance,
                 CreatedAt = DateTime.UtcNow
             });
+
             await db.SaveChangesAsync();
         }
 

@@ -19,6 +19,9 @@ type ModalProps = {
     maxHeightClassName?: string;
     closeOnOverlayClick?: boolean;
     closeOnEscape?: boolean;
+    header?: ReactNode;
+    footer?: ReactNode;
+    showCloseButton?: boolean;
 };
 
 const DRAG_CLOSE_THRESHOLD_PX = 200;
@@ -27,26 +30,24 @@ const DRAG_CLOSE_VELOCITY = 500; // px/s
 function useBodyScrollLock(locked: boolean) {
     useLayoutEffect(() => {
         if (!locked) return;
+
         const { body, documentElement } = document;
-        const scrollY = window.scrollY;
-        const scrollbarGap = window.innerWidth - documentElement.clientWidth;
+        const scrollbarGap =
+            window.innerWidth - documentElement.clientWidth;
+
         const previous = {
-            position: body.style.position,
-            top: body.style.top,
-            width: body.style.width,
             overflow: body.style.overflow,
             paddingRight: body.style.paddingRight,
         };
 
-        body.style.position = "fixed";
-        body.style.top = `-${scrollY}px`;
-        body.style.width = "100%";
         body.style.overflow = "hidden";
-        if (scrollbarGap > 0) body.style.paddingRight = `${scrollbarGap}px`;
+
+        if (scrollbarGap > 0) {
+            body.style.paddingRight = `${scrollbarGap}px`;
+        }
 
         return () => {
             Object.assign(body.style, previous);
-            window.scrollTo({ top: scrollY, behavior: "instant" });
         };
     }, [locked]);
 }
@@ -61,6 +62,9 @@ export default function Modal({
     maxHeightClassName = "max-h-[85vh] sm:max-h-[calc(100vh-5rem)]",
     closeOnOverlayClick = true,
     closeOnEscape = true,
+    header,
+    footer,
+    showCloseButton = true,
 }: ModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -163,15 +167,25 @@ export default function Modal({
                         >
                             <div className="h-1.5 w-10 rounded-full bg-gray-300" />
                         </div>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            aria-label="Close"
-                            className="absolute top-3 right-3 z-10 rounded-md p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl leading-none cursor-pointer"
-                        >
-                            ×
-                        </button>
-                        {children}
+                        {showCloseButton && (
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                aria-label="Close"
+                                className="absolute top-3 right-3 z-10 group"
+                            >
+                                <span className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100 leading-none cursor-pointer">
+                                    <span aria-hidden="true" className="block h-5 w-5 bg-gray-400 mask-[url('/icons/close.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-primary-blue "/>
+                                </span>
+                            </button>
+                        )}
+                        {header && <div className="shrink-0 px-4">{header}</div>}
+                        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+                        {footer && (
+                            <div className="shrink-0 flex items-center gap-3 border-t border-gray-200 px-4 py-3">
+                                {footer}
+                            </div>
+                        )}
                     </motion.div>
                 </motion.dialog>
             )}

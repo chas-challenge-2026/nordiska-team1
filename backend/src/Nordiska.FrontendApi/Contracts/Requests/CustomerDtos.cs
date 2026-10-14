@@ -12,6 +12,7 @@ namespace Nordiska.FrontendApi.Contracts.Requests;
 /// <param name="PersonalNum">The Swedish personal identification number (10-12 digits).</param>
 /// <param name="PhoneNumber">The optional updated phone number.</param>
 /// <param name="Phone">Alias for phone number.</param>
+/// <param name="OverviewPreference">The optional updated list of overview card preference keys.</param>
 public record UpdateCustomerRequest(
     [Required]
     long Id,
@@ -32,7 +33,9 @@ public record UpdateCustomerRequest(
 
     [Phone]
     [StringLength(50)]
-    string? Phone = null
+    string? Phone = null,
+
+    List<string>? OverviewPreference = null
 )
 {
     public string? EffectivePhone => PhoneNumber ?? Phone;
@@ -41,6 +44,12 @@ public record UpdateCustomerRequest(
 /// <summary>
 /// Request payload for partially patching customer profile fields.
 /// </summary>
+/// <param name="Id">Optional customer identifier.</param>
+/// <param name="Name">Optional updated name.</param>
+/// <param name="Email">Optional updated email address.</param>
+/// <param name="PhoneNumber">Optional updated phone number.</param>
+/// <param name="Phone">Alias for phone number.</param>
+/// <param name="OverviewPreference">Optional updated list of overview card preference keys.</param>
 public record PatchCustomerRequest(
     long? Id = null,
 
@@ -57,7 +66,9 @@ public record PatchCustomerRequest(
 
     [Phone]
     [StringLength(50)]
-    string? Phone = null
+    string? Phone = null,
+
+    List<string>? OverviewPreference = null
 )
 {
     public string? EffectivePhone => PhoneNumber ?? Phone;
@@ -74,6 +85,7 @@ public record PatchCustomerRequest(
 /// <param name="Phone">Alias for phone number.</param>
 /// <param name="CreatedAt">Timestamp when the customer profile was created.</param>
 /// <param name="UpdatedAt">Optional timestamp when the customer profile was last updated.</param>
+/// <param name="OverviewPreference">List of overview card preference keys in desired display order.</param>
 public record CustomerResponse(
     long Id,
     string PersonalNum,
@@ -82,5 +94,6 @@ public record CustomerResponse(
     string? PhoneNumber,
     DateTime CreatedAt,
     string? Phone = null,
-    DateTime? UpdatedAt = null
+    DateTime? UpdatedAt = null,
+    IReadOnlyList<string>? OverviewPreference = null
 );

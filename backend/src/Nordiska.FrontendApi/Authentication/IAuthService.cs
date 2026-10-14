@@ -3,7 +3,7 @@ using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
 
 
-namespace Nordiska.Modules.Banking.Application;
+namespace Nordiska.FrontendApi.Authentication;
 
 public interface IAuthService
 { 

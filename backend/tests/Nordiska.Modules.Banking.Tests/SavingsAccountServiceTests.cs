@@ -1,4 +1,5 @@
 using System.Threading;
+using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Domain;
@@ -33,6 +34,9 @@ public class SavingsAccountServiceTests
 
         public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
             => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
+
+        public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
 
         public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
         {
@@ -101,6 +105,7 @@ public class SavingsAccountServiceTests
         Assert.Equal(req.InitialDeposit, created.Balance);
         Assert.Equal("standard", created.AccountType);
         Assert.Equal(0.025m, created.InterestRate);
+        Assert.Equal("SEK", created.CurrencyCode);
     }
 
     [Fact]
@@ -176,5 +181,164 @@ public class SavingsAccountServiceTests
         var req = new OpenSavingsAccountRequest(1, "NOR-999999", "unsupported_crypto_type");
 
         await Assert.ThrowsAsync<NotFoundException>(() => service.CreateAsync(req));
+    }
+
+    private class FakeTxRepo : ITransactionRepository
+    {
+        public readonly List<LedgerEntry> Store = new();
+        private long _next = 1;
+
+        public Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
+            => Task.FromResult<IEnumerable<LedgerEntry>>(accountId.HasValue ? Store.Where(e => e.AccountId == accountId.Value).ToList() : Store.ToList());
+
+        public Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
+            => Task.FromResult(PagedResult<LedgerEntry>.Create(Store, Store.Count, 1, 10));
+
+        public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.FirstOrDefault(e => e.Id == id));
+
+        public Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc).ToList());
+
+        public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            entry.Id = _next++;
+            Store.Add(entry);
+            return Task.FromResult(entry.Id);
+        }
+
+        public Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            var idx = Store.FindIndex(l => l.Id == entry.Id);
+            if (idx >= 0)
+            {
+                Store[idx] = entry;
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+            => Task.FromResult(Store.RemoveAll(e => e.Id == id) > 0);
+    }
+
+    [Fact]
+    public async Task Create_WithInitialDeposit_CreatesLedgerDepositEntry()
+    {
+        var savingsRepo = new FakeSavingsRepo();
+        var txRepo = new FakeTxRepo();
+        var service = new SavingsAccountService(savingsRepo, new TestLogger<SavingsAccountService>(), null, txRepo);
+
+        var req = new OpenSavingsAccountRequest(1, "NOR-123456", "standard", 750m, 0.025m);
+
+        var created = await service.CreateAsync(req);
+
+        Assert.NotNull(created);
+        Assert.Equal(750m, created.Balance);
+        Assert.Single(txRepo.Store);
+        var entry = txRepo.Store.First();
+        Assert.Equal(created.Id, entry.AccountId);
+        Assert.Equal("deposit", entry.Type);
+        Assert.Equal(750m, entry.Amount);
+        Assert.True(created.EstimatedYearEndInterest > 0m);
+    }
+
+    [Fact]
+    public async Task GetById_AccountWithBalanceButNoLedgerEntries_CalculatesInterestUsingFallback()
+    {
+        var acc = new SavingsAccount
+        {
+            Id = 42,
+            CustomerId = 1,
+            AccountNumber = "NOR-999888",
+            AccountType = "saving",
+            Balance = 10000m,
+            InterestRate = 0.035m,
+            Status = "active",
+            CreatedAt = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        var savingsRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(); // empty tx repo
+        var service = new SavingsAccountService(savingsRepo, new TestLogger<SavingsAccountService>(), null, txRepo);
+
+        var result = await service.GetByIdAsync(42);
+
+        Assert.NotNull(result);
+        Assert.Equal(10000m, result.Balance);
+        Assert.True(result.EstimatedYearEndInterest > 0m);
+        Assert.True(result.AccruedInterestYtd > 0m);
+    }
+
+    [Fact]
+    public async Task SetFavorite_WhenUnderLimit_UpdatesAccountToFavorite()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", AccountType = "standard", IsFavorite = false, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var result = await service.SetFavoriteAsync(1, 1, true);
+
+        Assert.True(result.IsFavorite);
+        var inRepo = await repo.GetByIdAsync(1);
+        Assert.True(inRepo?.IsFavorite);
+    }
+
+    [Fact]
+    public async Task SetFavorite_WhenReachingFiveFavorites_ThrowsValidationException()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 3, CustomerId = 1, AccountNumber = "A3", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 4, CustomerId = 1, AccountNumber = "A4", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 5, CustomerId = 1, AccountNumber = "A5", IsFavorite = false, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => service.SetFavoriteAsync(5, 1, true));
+        Assert.Equal("Du kan maximalt ha 4 favoritkonton markerade samtidigt.", ex.Message);
+    }
+
+    [Fact]
+    public async Task SetFavorite_UnsettingFavorite_SucceedsEvenIfLimitWasReached()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", IsFavorite = true, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var result = await service.SetFavoriteAsync(1, 1, false);
+
+        Assert.False(result.IsFavorite);
+    }
+
+    [Fact]
+    public async Task GetByCustomerId_WithIsFavoriteTrue_ReturnsOnlyFavorites()
+    {
+        var seed = new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1", IsFavorite = true, Status = "active" },
+            new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2", IsFavorite = false, Status = "active" },
+            new SavingsAccount { Id = 3, CustomerId = 1, AccountNumber = "A3", IsFavorite = true, Status = "active" }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var favorites = await service.GetByCustomerIdAsync(1, isFavorite: true);
+
+        Assert.Equal(2, favorites.Count());
+        Assert.All(favorites, f => Assert.True(f.IsFavorite));
     }
 }

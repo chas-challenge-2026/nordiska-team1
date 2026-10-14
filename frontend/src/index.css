@@ -21,8 +21,10 @@ body {
   --color-nordiska-orange: #EDA91B;
   --color-nordiska-orange-hover: #D9990F;
   --color-login-bg: #0F3644;
+  --color-nordiska-bg: #F7F7F6;
   --color-error: #DC2626; /* (color-red-600) */
   --color-success: #16A34A; /* (color-green-600) */
+  --color-primary-blue-hover: #E8EEF9;
 
   --shadow-card: 0 1px 3px rgb(0 16 43 / 0.08);
   --shadow-modal: 0 24px 60px rgb(0 16 43 / 0.32);
@@ -30,6 +32,7 @@ body {
 
   --font-montserrat-alternates: "Montserrat Alternates", sans-serif;
   --font-montserrat: "Montserrat", sans-serif;
+  --font-inter: "Inter", sans-serif;
   --animate-bounce-right: bounce-right 0.6s ease-in-out infinite;
   --animate-rise: rise 0.25s ease-out both;
 }

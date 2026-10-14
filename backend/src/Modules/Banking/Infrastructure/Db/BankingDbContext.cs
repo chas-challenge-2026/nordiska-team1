@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Nordiska.Modules.Banking.Domain;
-
 namespace Nordiska.Modules.Banking.Infrastructure.Db;
 
 public sealed class BankingDbContext(
@@ -12,10 +11,13 @@ public sealed class BankingDbContext(
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<SavingsAccount> SavingsAccounts => Set<SavingsAccount>();
     public DbSet<AccountTypeConfig> AccountTypeConfigs => Set<AccountTypeConfig>();
+    public DbSet<AccountTypeRateHistory> AccountTypeRateHistories => Set<AccountTypeRateHistory>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<OperationalMessage> OperationalMessages => Set<OperationalMessage>();
-
+    public DbSet<Loan> Loans => Set<Loan>();
+    public DbSet<SavingsGoal> SavingsGoals => Set<SavingsGoal>();
+    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

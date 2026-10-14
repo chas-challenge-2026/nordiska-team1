@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import InputField from "../forms/InputField";
 import AccountTriggerButton from "./AccountTriggerButton";
+import RecurrenceFields from "./RecurrenceFields";
+import type { RecurrenceFieldsValue } from "./RecurrenceFields";
 import { formatSek } from "./transferHelpers";
 import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
 
@@ -16,6 +18,7 @@ type TransferFormProps = {
     onDateChange: (value: string) => void;
     recurring: boolean;
     onRecurringChange: (value: boolean) => void;
+    recurrence: RecurrenceFieldsValue;
     name: string;
     onNameChange: (value: string) => void;
     isExternal: boolean;
@@ -36,6 +39,7 @@ export default function TransferForm({
     onDateChange,
     recurring,
     onRecurringChange,
+    recurrence,
     name,
     onNameChange,
     isExternal,
@@ -47,8 +51,8 @@ export default function TransferForm({
 
     return (
         <div>
-            <div className="flex items-end justify-between border-b-[3px] border-nordiska-orange pb-2.5">
-                <h2 className="m-0 text-[26px] font-semibold text-dark-navy">
+            <div className="flex items-end justify-between gap-4 border-b-3 border-b-nordiska-orange pb-2.5">
+                <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px]">
                     {t("page-transfer.heading")}
                 </h2>
             </div>
@@ -142,6 +146,10 @@ export default function TransferForm({
                         {t("page-transfer.recurring-label")}
                     </label>
                 </div>
+
+                {recurring && (
+                    <RecurrenceFields name="transfer" {...recurrence} />
+                )}
 
                 <InputField
                     name="transferName"

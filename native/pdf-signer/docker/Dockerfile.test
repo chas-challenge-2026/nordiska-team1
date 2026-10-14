@@ -24,4 +24,4 @@ COPY . .
 
 RUN chmod +x docker/test-entrypoint.sh
 
-CMD ["./docker/test-entrypoint.sh"]
+ENTRYPOINT ["/app/docker/test-entrypoint.sh"]

@@ -29,4 +29,14 @@ public interface IAccountTypeConfigRepository
     /// Updates an existing account type configuration entity.
     /// </summary>
     Task UpdateAsync(AccountTypeConfig entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves historical interest rate records for a given account type.
+    /// </summary>
+    Task<IEnumerable<AccountTypeRateHistory>> GetRateHistoryAsync(string accountType, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Persists a new rate history record.
+    /// </summary>
+    Task AddRateHistoryAsync(AccountTypeRateHistory history, CancellationToken cancellationToken = default);
 }

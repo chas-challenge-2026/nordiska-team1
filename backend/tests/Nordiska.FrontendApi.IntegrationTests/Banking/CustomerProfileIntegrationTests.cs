@@ -54,6 +54,47 @@ public class CustomerProfileIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [PostgresFact]
+    public async Task GetById_ReturnsEmptyOverviewPreferenceByDefault()
+    {
+        var (client, customer) = await CreateLoggedInCustomerAsync();
+
+        var response = await client.GetAsync($"/api/customers/{customer.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<CustomerResponse>();
+        body.Should().NotBeNull();
+        body!.OverviewPreference.Should().NotBeNull();
+        body.OverviewPreference.Should().BeEmpty();
+    }
+
+    [PostgresFact]
+    public async Task Patch_WithOverviewPreference_PersistsAndReturnsUpdatedPreferences()
+    {
+        var (client, customer) = await CreateLoggedInCustomerAsync();
+        var preferences = new List<string> { "accounts", "savings", "transactions", "inbox" };
+
+        var patchResponse = await client.PatchAsJsonAsync($"/api/customers/{customer.Id}", new PatchCustomerRequest(
+            OverviewPreference: preferences));
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var patchBody = await patchResponse.Content.ReadFromJsonAsync<CustomerResponse>();
+        patchBody.Should().NotBeNull();
+        patchBody!.OverviewPreference.Should().BeEquivalentTo(preferences);
+
+        // Verify via GET
+        var getResponse = await client.GetAsync($"/api/customers/{customer.Id}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var getBody = await getResponse.Content.ReadFromJsonAsync<CustomerResponse>();
+        getBody.Should().NotBeNull();
+        getBody!.OverviewPreference.Should().BeEquivalentTo(preferences);
+
+        // Verify in database
+        var stored = await GetStoredCustomerAsync(customer.Id);
+        stored.Should().NotBeNull();
+        stored!.OverviewPreference.Should().BeEquivalentTo(preferences);
+    }
+
     public Task InitializeAsync() => Task.CompletedTask;
 
     public Task DisposeAsync() => PostgresTestData.DeleteCustomersAsync(_factory.Services, _createdCustomerIds);

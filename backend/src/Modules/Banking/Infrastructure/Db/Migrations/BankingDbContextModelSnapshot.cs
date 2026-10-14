@@ -207,6 +207,81 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.AccountTypeRateHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AccountType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EffectiveFromUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EffectiveToUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("InterestRate")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountType", "EffectiveFromUtc");
+
+                    b.ToTable("account_type_rate_histories", "banking");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1L,
+                            AccountType = "flex",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.035000m
+                        },
+                        new
+                        {
+                            Id = 2L,
+                            AccountType = "fix",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.041000m
+                        },
+                        new
+                        {
+                            Id = 3L,
+                            AccountType = "standard",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.025000m
+                        },
+                        new
+                        {
+                            Id = 4L,
+                            AccountType = "saving",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.035000m
+                        },
+                        new
+                        {
+                            Id = 5L,
+                            AccountType = "premium",
+                            CreatedAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EffectiveFromUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            InterestRate = 0.040000m
+                        });
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.Customer", b =>
                 {
                     b.Property<long>("Id")
@@ -250,6 +325,12 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<string>("OverviewPreference")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'::jsonb");
 
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(512)
@@ -318,6 +399,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -333,6 +417,9 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.Property<string>("Repeating")
                         .HasColumnType("text");
 
+                    b.Property<long?>("SavingsGoalId")
+                        .HasColumnType("bigint");
+
                     b.Property<long?>("TargetAccountId")
                         .HasColumnType("bigint");
 
@@ -345,7 +432,71 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
 
                     b.HasIndex("AccountId");
 
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("SavingsGoalId");
+
+                    b.HasIndex("AccountId", "CreatedAt");
+
                     b.ToTable("ledger_entries", "banking");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.Loan", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("InterestAccruedThrough")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("InterestRate")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)");
+
+                    b.Property<string>("LoanNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateOnly?>("MaturityDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("OpenedAt")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("OutstandingAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("PrincipalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LoanNumber")
+                        .IsUnique();
+
+                    b.HasIndex("CustomerId", "Status");
+
+                    b.ToTable("loans", "banking");
                 });
 
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.Notification", b =>
@@ -479,12 +630,24 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("SEK");
+
                     b.Property<long>("CustomerId")
                         .HasColumnType("bigint");
 
                     b.Property<decimal>("InterestRate")
                         .HasPrecision(9, 6)
                         .HasColumnType("numeric(9,6)");
+
+                    b.Property<bool>("IsFavorite")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -506,6 +669,119 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.HasIndex("CustomerId");
 
                     b.ToTable("savings_accounts", "banking");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.SavingsGoal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("CurrentAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<long>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("active");
+
+                    b.Property<decimal>("TargetAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("TargetDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("savings_goals", "banking");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.StaffMember", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("EmployeeNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("staff_members", "banking");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>
@@ -559,6 +835,17 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.AccountTypeRateHistory", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Banking.Domain.AccountTypeConfig", "AccountTypeConfig")
+                        .WithMany("RateHistories")
+                        .HasForeignKey("AccountType")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AccountTypeConfig");
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.LedgerEntry", b =>
                 {
                     b.HasOne("Nordiska.Modules.Banking.Domain.SavingsAccount", "Account")
@@ -567,7 +854,23 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Nordiska.Modules.Banking.Domain.SavingsGoal", "SavingsGoal")
+                        .WithMany()
+                        .HasForeignKey("SavingsGoalId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Account");
+
+                    b.Navigation("SavingsGoal");
+                });
+
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.Loan", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Banking.Domain.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.SavingsAccount", b =>
@@ -589,18 +892,43 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("Nordiska.Modules.Banking.Domain.SavingsGoal", b =>
+                {
+                    b.HasOne("Nordiska.Modules.Banking.Domain.SavingsAccount", "Account")
+                        .WithMany("SavingsGoals")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Nordiska.Modules.Banking.Domain.Customer", "Customer")
+                        .WithMany("SavingsGoals")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.AccountTypeConfig", b =>
                 {
+                    b.Navigation("RateHistories");
+
                     b.Navigation("SavingsAccounts");
                 });
 
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.Customer", b =>
                 {
                     b.Navigation("SavingsAccounts");
+
+                    b.Navigation("SavingsGoals");
                 });
 
             modelBuilder.Entity("Nordiska.Modules.Banking.Domain.SavingsAccount", b =>
                 {
+                    b.Navigation("SavingsGoals");
+
                     b.Navigation("Transactions");
                 });
 #pragma warning restore 612, 618

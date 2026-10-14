@@ -12,7 +12,8 @@
         "date": "Datum",
         "reset": "Återställ",
         "all": "Alla",
-
+        "yes": "Ja",
+        "no": "Nej",
         "account": "Konto",
         "savings-account": "Sparkonto",
         "interest": "Ränta",
@@ -23,17 +24,41 @@
         "balance": "Saldo",
         "tax-report": "Skatteunderlag",
         "log-out": "Logga ut",
-        "stay": "Stanna kvar"
+        "stay": "Stanna kvar",
+        "next": "Nästa",
+        "previous": "Föregående",
+        "page": "Sida",
+        "loading": "Laddar...",
+        "help": "Hjälp",
+        "help-center": "Hjälpcenter",
+        "related-articles": "Relaterade artiklar",
+        "from-date": "Från datum",
+        "to-date": "Till datum",
+        "download": "Ladda ner",
+        "year": "År",
+        "information": "Information",
+        "try-again": "Försök igen",
+        "send": "Skicka",
+        "sending": "Skickar...",
+        "downloading": "Laddar ner...",
+        "back": "Tillbaka",
+        "error-load": "Det gick inte att hämta innehållet.",
+        "error-action": "Något gick fel. Försök igen."
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
-        "no-user": "Kan inte hitta användare."
+        "no-user": "Kan inte hitta användare.",
+        "report": "Det gick inte att skapa rapporten. Försök igen.",
+        "generic": "Något gick fel. Försök igen senare."
     },
     "aria-label": {
         "page-nav": "Huvudnavigation",
         "mobile-menu-close": "Stäng meny",
         "mobile-menu-open": "Öppna meny",
-        "mobile-nav": "Mobilnavigation"
+        "mobile-nav": "Mobilnavigation",
+        "previous-page": "Föregående sida",
+        "next-page": "Nästa sida",
+        "open-help": "Öppna hjälp"
     },
     "welcome-route": {
         "title": "Kundportalen",
@@ -43,7 +68,7 @@
     },
     "inactivity-route": {
         "title": "Du är utloggad",
-        "paragraph": "På grund av inactivitet har du av säkerhetsskäl blivit utloggad.",
+        "paragraph": "På grund av inaktivitet har du av säkerhetsskäl blivit utloggad.",
         "button": "Logga in igen"
     },
     "loggedout-route": {
@@ -70,41 +95,244 @@
         "loading-accounts": "Laddar konton...",
         "accounts-error": "Ett problem uppstod vid hämtning av konton",
         "loading-transactions": "Laddar transaktioner...",
-        "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner"
+        "transactions-error": "Ett problem uppstod vid hämtningen av transaktioner",
+        "showing-count_one": "Visar {{shown}} av {{count}} transaktion",
+        "showing-count_other": "Visar {{shown}} av {{count}} transaktioner",
+        "filter-aria_one": "Filter, {{count}} aktivt",
+        "filter-aria_other": "Filter, {{count}} aktiva",
+        "accounts-aria_one": "Konton, {{count}} valt",
+        "accounts-aria_other": "Konton, {{count}} valda",
+        "active-count_one": "{{count}} aktivt",
+        "active-count_other": "{{count}} aktiva",
+        "selected-of": "{{selected}} av {{total}} valda",
+        "show-count_one": "Visa {{count}} transaktion",
+        "show-count_other": "Visa {{count}} transaktioner",
+        "deselect-all": "Avmarkera alla",
+        "search-account": "Sök kontonummer",
+        "no-account-match": "Inga konton matchar sökningen.",
+        "select-account": "Välj minst ett konto för att se transaktioner.",
+        "no-transactions": "Inga transaktioner hittades."
     },
     "accounts-route": {
-        "yearly-interest": "Beräknad årsränta",
-        "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo",
-        "my-accounts": "Mina konton",
-        "total-balance": "Totalt saldo",
-        "new-account": "Nytt konto",
-        "full-report": "Skatteunderlag för samtliga konton",
-        "loading-accounts": "Laddar konton...",
-        "accounts-error": "Ett problem uppstod vid hämtning av konton",
-        "no-accounts": "Inga konton hittades.",
-        "account-name": "Kontonamn",
-        "account-name-placeholder": "T.ex. Semesterfonden",
+        "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
         "account-type": "Kontotyp",
-        "account-type-required": "kontotyp krävs",
-        "select-account-type": "Välj kontotyp",
         "account-type-saving": "Sparkonto",
         "account-type-standard": "Standardkonto",
         "account-type-flex": "Flexkonto",
         "account-type-fix": "Fasträntekonto",
         "account-type-premium": "Premiumkonto",
+        "account-name": "Kontonamn",
+        "savings-goal-title": "Sparmål",
+        "actions": "Kontohantering",
+        "favorite": "Favoritmarkera",
+        "no-favorite": "Avmarkera favorit",
+        "close-account": "Avsluta konto",
+        "help-card-search": "rapporter konto villkor",
+
+        "accounts-header": {
+            "my-accounts": "Mina konton",
+            "total-balance": "Totalt saldo",
+            "new-account": "Nytt konto"
+        },
+        "accounts-nav": {
+            "pick-account": "Välj konto",
+            "show-accountinfo": "Visa kontoinformation",
+            "pick-one-account": "Välj ett konto"
+        },
+        "interest-section": {
+            "accured-interest": "Intjänad ränta",
+            "accured-interest-info": "Intjänad ränta beräknas från 1 januari varje år.",
+            "yearly-interest": "Beräknad årsränta",
+            "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo"
+        },
+        "savings-goal": {
+            "no-goal-title": "Sätt ett sparmål och följ ditt sparande",
+            "no-goal-info": "Bestäm hur mycket du vill spara på kontot och följ hur ditt sparande växer.",
+            "no-goal-info-span": "Sätt upp ditt mål och kom igång med sparandet redan idag!",
+            "create-savingsgoal": "Sätt ett sparmål",
+            "create-new": "Sätt ett nytt sparmål",
+            "confirm-delete": "Är du säker på att du vill ta bort sparmål",
+            "your-goal": "Ditt sparmål",
+            "remaining": "Kvar att spara",
+            "goal-amount": "Målsumma",
+            "goal-achieved": "Mål uppnått",
+            "progress-label": "Varje insättning räknas",
+            "deposit": "Gör en insättning",
+            "completed-title": "Du klarade ditt sparmål",
+            "completed-info": "Nu kan",
+            "completed-info-suffix": "bli verklighet!",
+            "edit": "Ändra sparmål",
+            "delete": "Ta bort sparmål",
+            "deleting": "Tar bort...",
+            "progress": {
+                "almost-there": "Snart i mål!",
+                "great-progress": "Du har kommit långt",
+                "halfway": "Mer än halvvägs!",
+                "nearly-halfway": "Snart halvvägs!",
+                "getting-started": "Du är på gång",
+                "good-start": "Bra start!",
+                "lets-go": "Nu kör vi!",
+                "start-saving": "Dags att börja spara"
+            },
+            "pie-chart": "sparat"
+        },
+        "errors": {
+            "accounts-error": "Ett problem uppstod vid hämtning av konton"
+        },
+        "aria-label": {
+            "new-account": "Skapa nytt konto",
+            "my-accounts": "Mina konton",
+            "generate-full-report": "Generera skatteunderlag",
+            "account-action-buttons": "Hantera konto knappar"
+        },
+        "full-report": "Skatteunderlag",
+        "account-report": "Kontoutdrag",
+        "loading-accounts": "Laddar konton...",
+        "no-accounts": "Inga konton hittades.",
+        "account-name-placeholder": "T.ex. Semesterfonden",
+
+        "account-type-required": "kontotyp krävs",
+        "select-account-type": "Välj kontotyp",
+
         "initial-deposit": "Startinsättning",
         "interest-rate": "Ränta",
         "invalid-amount": "ogiltigt belopp",
         "invalid-interest-rate": "ogiltig ränta",
         "create-account-error": "Kunde inte skapa kontot. Försök igen.",
-        "close-account": "Stäng konto",
+        "close-account-info": "Du är på väg att permanent avsluta konto.",
         "close-account-warning": "Stäng konto \"{{accountNumber}}\"? Kontot går ej att återöppna.",
-        "close-confirmation": "Stäng konto bekräftelse",
+        "close-confirmation": "Kontot går inte att återöppna efter att det har avslutats.",
         "close-error": "Det gick ej att stänga kontot. Försök igen.",
         "closing": "Stänger...",
         "loading-account-types": "Laddar kontotyper...",
-        "error-account-types": "Kunde inte hämta kontotyper"
+        "error-account-types": "Kunde inte hämta kontotyper",
+        "payback": "Intjänad och beräknad årsränta",
+
+        "generate-statement": "Skapa kontoutdrag",
+        "show-statement": "Visa kontoutdrag",
+        "generate-report": "Skapa rapport",
+        "show-report": "Visa rapport",
+        "tax-report-filename": "skatterapport-{{year}}",
+        "account-statement-filename": "kontoutdrag-{{from}}_{{to}}",
+
+        "handle-saving-goal": {
+            "valid-amount": "Ange ett giltigt belopp.",
+            "required-title": "Ange en titel.",
+            "title-too-long": "Titeln får vara högst 30 tecken.",
+            "invalid-title": "Titeln innehåller tecken som inte stöds.",
+            "required-date": "Ange ett slutdatum.",
+            "invalid-date": "Slutdatumet måste vara längre fram i tiden.",
+            "confirm-delete": "Är du säker på att du vill ta bort sparmålet",
+            "edit-title": "Redigera sparmål",
+            "create-title": "Sätt ett sparmål",
+            "saving": "Sparar ditt sparmål...",
+            "save-error": "Kunde inte spara sparmålet. Försök igen.",
+            "title-label": "Namnge ditt sparmål?",
+            "title-placeholder": "ex. Köp ny TV",
+            "amount-label": "Ange ditt sparmål",
+            "date-checkbox": "Jag vill ange ett slutdatum för mitt sparande",
+            "date-label": "Slutdatum",
+            "deleting": "Tar bort...",
+            "delete-goal": "Ta bort sparmål"
+        }
     },
+
+    "progress-bar": {
+        "invalid-period": "Ogiltig sparperiod.",
+        "invalid-goal": "Ogiltigt mål.",
+        "target-date-label": "Slutdatum för ditt sparande",
+        "just-started": "Ditt sparande har precis börjat",
+        "days-elapsed_one": "{{count}} dag har gått",
+        "days-elapsed_other": "{{count}} dagar har gått",
+        "days-remaining_one": "{{count}} dag kvar",
+        "days-remaining_other": "{{count}} dagar kvar",
+        "amount-achieved": "{{amount}} uppnått",
+        "amount-remaining": "{{amount}} kvar",
+        "percentage": "{{percentage}} %"
+    },
+
+    "overview-route": {
+        "edit-moved": "{{card}} flyttades till plats {{position}} av {{total}}.",
+        "card-accounts": "Mina konton",
+        "card-savings": "Sparmål",
+        "card-planned": "Planerade överföringar",
+        "card-transactions": "Senaste transaktioner",
+        "edit-reset-done": "Kortens ordning har återställts.",
+        "edit-instructions": "Dra ett kort i handtaget, eller fokusera handtaget och flytta kortet med piltangenterna.",
+        "viewing-instruction":"Här visas information från dina sparmål och favoritmarkerade konton",
+        "edit-reset": "Återställ ordning",
+        "edit-done": "Klar",
+        "edit-start": "Redigera layout",
+
+        "account-card":{
+            "title": "Saldo",
+            "description": "Här visas saldo för favoritmarkerade konton",
+            "description-no-favorites": "Favoritmarkera konton för att visa saldo här",
+            "pending": "Laddar dina konton",
+            "error": "Det gick inte att ladda dina konton",
+            "total-balance": "Totalt saldo",
+            "hover-title": "Öppna konto"
+        },
+
+        "transactions-card": {
+            "closed-account": "stängt konto",
+            "title": "Senaste transaktioner",
+            "description": "Visar senaste transaktioner från alla konton",
+            "pending": "Laddar transaktioner",
+            "error": "Det gick inte att ladda dina transaktioner",
+            "transfer-type-transfer": "Överföring",
+            "transfer-type-transfer-group": "Överföring",
+            "transfer-type-deposit": "Insättning",
+            "transfer-type-withdrawl": "Uttag",
+            "transfer-type-interest": "Ränteutbetalning",
+            "transfer-type-tax": "Skatt"
+        },
+
+        "planned-card": {
+            "title": "Planerade överföringar",
+            "description": "Visar dina planerade överföringar",
+            "pending": "Laddar planerade överföringar",
+            "error": "Det gick inte att ladda planerade överföringar"
+        },
+
+        "savings-card": {
+            "title": "Sparmål",
+            "description": "Här ser du dina valda sparmål",
+            "select": "Välj",
+            "selected-count": "{{selected}}/{{max}}",
+            "max-goals": "Max {{max}} sparmål",
+            "done": "Klar",
+            "loading": "Laddar sparmål...",
+            "error": "Kunde inte hämta sparmålen eller kontosaldon.",
+            "achieved": "uppnått",
+            "remaining": "kvar",
+            "empty-selection": "Välj ett eller flera sparmål för att visa dina framsteg."
+        },
+
+        "savings-eta": "Uppnås om {{time}}",
+        "savings-total": "Totalt sparat",
+        "savings-next-goal": "Nästa mål:",
+        "savings-progress-label": "{{percent}} % av nästa mål uppnått",
+
+        "edit-handle-label": "Flytta {{card}}",
+        "savings-title": "Sparmål",
+        "loading-planned": "Laddar planerade överföringar...",
+        "planned-error": "Det gick inte att ladda planerade överföringar",
+        "no-planned": "Inga kommande överföringar.",
+        "planned-unnamed": "Namnlös överföring",
+        "no-transactions": "Inga transaktioner än."
+    },
+    "no-planned-state" : {
+        "title" : "Det finns inga planerade överföringar",
+        "description" : "Skapa automatiska, återkommande överföringar. Perfekt för regelbundet sparande eller fasta betalningar.",
+        "action": "Hantera dina"
+    },
+    "no-saving-goal-state" : {
+        "title" : "Sätt ett sparmål och följ ditt sparande",
+        "description" : "Skapa ett övergripande sparmål för hur mycket du vill spara totalt, eller sätt ett eget mål för ett specifikt konto.",
+        "action": "Du kan skapa sparmål under"
+    },
+
     "register-route": {
         "title": "Bli kund",
         "paragraph": "Fyll i dina uppgifter så skapar vi ditt kundkonto hos Nordiska.",
@@ -126,7 +354,32 @@
     },
     "login-route": {
         "title": "Logga in",
-        "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen."
+        "paragraph": "Vänligen identifiera dig med BankID för att komma vidare till kundportalen.",
+        "bankid-intro": "Identifiera dig med BankID för att logga in på ditt sparkonto",
+        "bankid-other-device": "BankID på annan enhet",
+        "bankid-this-device": "BankID på denna enhet",
+        "manual-link": "Logga in med e-post och lösenord",
+        "bankid-submit": "Logga in",
+        "bankid-submitting": "Loggar in...",
+        "or-email": "eller med e-post",
+        "email": "e-post",
+        "email-placeholder": "namn@exempel.se",
+        "password": "lösenord",
+        "submit": "Logga in",
+        "submitting": "Loggar in...",
+        "back": "Tillbaka",
+        "qr-help": "Öppna BankID-appen och skanna QR-koden",
+        "not-found": "Vi hittade ingen kund med det personnumret.",
+        "invalid-credentials": "Fel e-post eller lösenord.",
+        "locked": "Kontot är tillfälligt spärrat. Försök igen senare.",
+        "qr-loading": "Laddar QR-kod...",
+        "starting-app": "Startar BankID-appen...",
+        "open-app-again": "Öppna BankID igen",
+        "retry": "Försök igen",
+        "waiting-for-app": "Godkänn inloggningen i BankID-appen",
+        "start-failed": "BankID startades inte i tid. Försök igen.",
+        "user-cancel": "Inloggningen avbröts.",
+        "failed": "Något gick fel med BankID. Försök igen."
     },
     "404-route": {
         "title": "Sidan kunde inte hittas.",
@@ -137,6 +390,81 @@
         "title": "Något gick fel.",
         "paragraph": "Ett internt serverfel uppstod. Försök igen om en stund.",
         "button": "Tillbaka till hem"
+    },
+    "inbox": {
+        "title": "Inkorg",
+        "messages": "Meddelanden",
+        "notifications": "Aviseringar",
+        "documents": "Dokument",
+        "terms": "Villkor",
+        "sent": "Skickat",
+        "archive": "Arkiv",
+        "unread": "Olästa",
+        "subject": "Ämne",
+        "no-subject": "(inget ämne)",
+        "untitled": "(namnlös)",
+        "unread-prefix": "Oläst: ",
+        "new-prefix": "Nytt: ",
+        "message-count_one": "{{count}} meddelande",
+        "message-count_other": "{{count}} meddelanden",
+        "unread-count": "{{count}} olästa",
+        "aria-label-unread": "Inkorg, {{count}} olästa",
+        "mark-read": "Markera som läst",
+        "mark-read-aria": "Markera som läst: {{title}}",
+        "mark-all-read": "Markera alla som lästa",
+        "download-aria": "Ladda ner {{name}}",
+        "folders-label": "Mappar",
+        "view-message": "Visa meddelande",
+        "select-message": "Välj ett meddelande",
+        "select-prompt": "Välj ett meddelande för att läsa det.",
+        "open-inbox": "Öppna inkorgen",
+        "action-required": "Åtgärd krävs",
+        "feed-type": { "thread": "Meddelande", "notification": "Avisering", "document": "Dokument", "term": "Villkor" },
+        "status": { "open": "Öppen", "closed": "Stängd" },
+        "empty": {
+            "messages": "Inga meddelanden.",
+            "notifications": "Inga aviseringar.",
+            "new-notifications": "Inga nya aviseringar.",
+            "documents": "Inga dokument.",
+            "terms": "Inga villkor att godkänna."
+        },
+        "thread": {
+            "status": "Status",
+            "you": "Du",
+            "support": "Kundservice",
+            "reply": "Svara",
+            "reply-sent": "Svaret har skickats.",
+            "archive": "Arkivera",
+            "restore": "Återställ"
+        },
+        "notifications-tab": {
+            "unread-only": "Endast olästa"
+        },
+        "documents-tab": {
+            "all-years": "Alla år",
+            "general": "Allmänna dokument",
+            "personal": "Dina dokument"
+        },
+        "terms-tab": {
+            "to-accept": "Att godkänna",
+            "version": "Version {{version}}",
+            "effective-from": "Gäller från {{date}}",
+            "accept": "Godkänn",
+            "accepting": "Godkänner...",
+            "accept-aria": "Godkänn {{title}}"
+        },
+        "ticket": {
+            "new": "Nytt meddelande",
+            "category": "Kategori",
+            "select-category": "Välj kategori",
+            "message": "Meddelande",
+            "received-heading": "Vi har tagit emot ditt meddelande",
+            "received-body": "Vi svarar inom {{time}}. Du hittar svaret i din inkorg.",
+            "reply-time": "2 arbetsdagar"
+        },
+        "error": {
+            "required-fields": "Fyll i ämne, kategori och meddelande."
+        }
     },
     "page-header": {
         "help-center": "Hjälpcenter",
@@ -156,6 +484,7 @@
     "table": {
         "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
+        "pending-transfers": "Kommande överföringar",
         "latest-transactions": "Senaste transaktioner"
     },
     "forms": {
@@ -196,9 +525,12 @@
         "amount-suffix": "sek",
         "amount-error": "Belopp överstiger saldo på {{account}}",
         "date-label": "Överföringsdatum",
-        "recurring-label": "Återkommande varje månad",
+        "recurring-label": "Återkommande",
+        "interval-label": "Intervall",
         "repeating": {
-            "month": "Månadsvis"
+            "week": "Veckovis",
+            "month": "Månadsvis",
+            "year": "Årsvis"
         },
         "cta-submit-internal": "Bekräfta överföring",
         "cta-submit-external": "Bekräfta med BankID",
@@ -207,58 +539,65 @@
         "add-account": {
             "heading": "Lägg till nytt konto",
             "help-text": "Kontot sparas bland dina mottagare och fylls i direkt i överföringen.",
+            "required-hint": "Fält markerade med * är obligatoriska.",
             "type-label": "Kontotyp",
-            "type-placeholder": "Bankkonto, Bankgiro eller Plusgiro",
+            "type-placeholder": "Välj kontotyp",
+            "type-personal": "Personkonto",
+            "type-bgpg": "Bankgiro/Plusgiro",
             "clearing-label": "Clearingnummer",
-            "clearing-placeholder": "4 siffror",
+            "clearing-placeholder": "4–5 siffror",
             "number-label": "Kontonummer",
-            "number-placeholder": "Utan bindestreck",
+            "number-placeholder": "7–10 siffror",
+            "bgpg-label": "Bankgiro-/Plusgironummer",
+            "bgpg-placeholder": "2–8 siffror",
             "name-label": "Namn på mottagaren",
             "name-placeholder": "T.ex. Olle Persson",
-            "default-type": "Bankkonto",
-            "default-name": "Nytt konto"
+            "error-required": "Obligatoriskt fält",
+            "error-clearing": "Ange 4–5 siffror",
+            "error-number": "Ange 7–10 siffror",
+            "error-bgpg": "Ange 2–8 siffror"
         },
         "modal": {
             "from-title": "Välj konto",
             "to-title": "Välj mottagare",
             "search-placeholder": "Sök på namn",
             "group-own": "Mina konton",
-            "group-favorites": "Favoriter",
             "group-bg": "BG/PG",
             "group-bank": "Bankkonto",
             "empty": "Inga konton matchar din sökning.",
-            "add-new": "+ Lägg till nytt konto",
-            "selected-as-from": "Valt som avsändarkonto",
-            "selected-as-to": "Valt som mottagarkonto"
+            "add-new": "+ Lägg till nytt konto"
         },
         "bankid": {
             "heading": "Godkänn överföringen",
             "help-text": "Mottagaren är ett externt konto. Signera med BankID för att slutföra.",
             "amount": "Belopp",
-            "approve": "Godkänn med BankID"
+            "waiting-for-app": "Godkänn överföringen i BankID-appen",
+            "user-cancel": "Signeringen avbröts.",
+            "wrong-user": "Överföringen måste signeras med ditt eget BankID."
         },
         "done": {
             "processing": "Överföringen behandlas...",
             "heading": "Överföringen är genomförd",
-            "summary": "{{amount}} sek till {{name}} · {{date}}",
-            "summary-recurring": "{{amount}} sek till {{name}} · {{date}} · återkommande varje månad",
             "new-transfer": "Ny överföring",
             "failure-heading": "Överföring misslyckades",
             "back-to-transfers": "Tillbaka till överföringar"
         },
+        "pending": {
+            "arrives": "Beräknas vara framme {{date}}",
+            "footnote": "Betalningar till andra banker och BG/PG tar normalt en bankdag."
+        },
         "planned": {
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
-            "note-to": "Till {{name}}",
-            "note-internal": "Mellan egna konton",
+            "unknown-account": "Okänt konto",
             "actions-label": "Fler alternativ",
             "actions-heading": "Planerad överföring",
             "action-edit": "Redigera",
             "action-delete": "Ta bort",
-            "edit-heading": "Ändra datum",
-            "edit-date-label": "Nytt datum",
+            "edit-heading": "Redigera överföring",
+            "edit-date-label": "Datum",
             "edit-save-loading": "Sparar...",
-            "edit-error": "Det gick inte att ändra datumet. Försök igen.",
-            "edit-cleanup-error": "Överföringen med det nya datumet skapades, men den gamla kunde inte tas bort. Ta bort den gamla manuellt i listan.",
+            "edit-error": "Det gick inte att spara ändringarna. Försök igen.",
+            "edit-cleanup-error": "Den ändrade överföringen skapades, men den gamla kunde inte tas bort. Ta bort den gamla manuellt i listan.",
             "delete-heading": "Ta bort planerad överföring",
             "delete-confirm-text": "Vill du ta bort \"{{name}}\"? Det går inte att ångra.",
             "delete-confirm": "Ja, ta bort",
@@ -284,5 +623,68 @@
         "minutes": "minuter",
         "and": "och",
         "seconds": "sekunder"
+    },
+    "faq": {
+        "faq-header": {
+            "title": "Hur kan vi hjälpa dig idag?",
+            "paragraph": "Sök eller hitta vanliga frågor efter kategori"
+        },
+        "faq-search": {
+            "placeholder-category": "Sök i kategori",
+            "placeholder-no-category": "Sök i alla kategorier",
+            "aria-label": "Rensa sökning"
+        },
+        "faq-filter-info": {
+            "no-filter": "Filtrera vanliga frågor efter kategori eller sök efter din fråga i sökfältet.",
+            "category-filter": "Visar resultat i kategori:",
+            "search-filter": "Visar resultat som matchar:",
+            "in-category": "i kategori:"
+        },
+        "faq-list": {
+            "loading": "Laddar vanliga frågor",
+            "error": "Kunde inte hämta vanliga frågor.",
+            "no-results": "Inga resultat matchade din sökning."
+        },
+        "faq-feedback": {
+            "question": "Hjälpte det här svaret dig?",
+            "feedback": "Tack för ditt svar!",
+            "no-results": "Inga resultat matchade din sökning.",
+            "aria-label": {
+                "div": "Bedöm svaret",
+                "btn-yes": "Ja, svaret hjälpte mig",
+                "btn-no": "Nej, svaret hjälpte inte mig"
+
+            }
+        },
+        "faq-sidebar": {
+            "close-btn-aria-label": "Stäng relaterad information",
+            "question": {
+                "change-language": "How do I change language?",
+                "update-info": "Hur uppdaterar jag mina kontaktuppgifter?",
+                "terms": "Vilka villkor gäller hos Nordiska?",
+                "gdpr": "Hur jobbar ni med GDPR?"
+            },
+            "answer": {
+                "change-language": "Navigate to the menu in the top right corner and choose your language at the bottom of the open menu. Or simply change language directly below:",
+                "change-language-action": "Switch to english",
+                "update-info": "Navigera till menyn i övre högra hörnet och välj \"Inställningar\", eller navigera direkt via länken nedan.",
+                "update-info-action": "Uppdatera kontaktuppgifter",
+                "terms": "Hos Nordiska gäller villkor för bland annat konton, räntor och uttag.",
+                "gdpr": "Vi följer GDPR och behandlar dina personuppgifter enligt gällande dataskyddsregler."
+
+            },
+            "no-answer-title": "Hittar du inte svaret?",
+            "contact-us": "Vi finns här för att hjälpa dig. \n Kontakta kundservice om du inte hittar svaret på din fråga.",
+            "phone-specs": "Vardagar 08-20, helger 10-17",
+            "mail-specs": "Svar normalt inom 48h"
+        }
+    },
+    "faq-page": {
+        "categories-error": "Kunde inte hämta kategorier"
+    },
+    "help-card": {
+        "related": "Relaterat",
+        "information": "Mer information",
+        "load-error": "Kunde inte ladda relaterade frågor."
     }
 }

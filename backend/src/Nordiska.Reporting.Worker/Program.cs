@@ -1,23 +1,45 @@
+using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Reporting.PdfGeneration;
+using Nordiska.Reporting.Worker;
+using Nordiska.Reporting.Worker.AccountStatements;
+using Nordiska.Reporting.Worker.TaxReports;
 
+HostApplicationBuilder builder =
+    Host.CreateApplicationBuilder(args);
 
-PdfGenerationService service = new();
-Console.WriteLine($"starting");
+builder.Services.AddReportingModuleInfrastructure(
+    builder.Configuration);
 
-var jsonPath = Path.Combine(
-    AppContext.BaseDirectory,
-    "sample-input-huge.json"
-);
-//nu
-string jsonhuge = File.ReadAllText(jsonPath);
+builder.Services.Configure<TaxReportWorkerOptions>(
+    builder.Configuration.GetSection(
+        "TaxReportWorker"));
 
-byte[] pdf = service.Generate(jsonhuge);
+builder.Services.AddScoped<
+    IPdfBatchGenerator,
+    PdfGenerationService>();
 
-string path = Path.Combine(AppContext.BaseDirectory, "testfil.pdf");
+builder.Services.AddSingleton<
+    AnnualTaxReportNativeMapper>();
 
-File.WriteAllBytes(path, pdf);
+builder.Services.AddScoped<
+    ITaxReportRenderPipeline,
+    TaxReportRenderPipeline>();
 
-Console.WriteLine($"PDF at: {path}");
+builder.Services.AddScoped<
+    TaxReportJobProcessor>();
 
+builder.Services.AddSingleton<
+    AccountStatementNativeMapper>();
 
+builder.Services.AddScoped<
+    IAccountStatementRenderPipeline,
+    AccountStatementRenderPipeline>();
 
+builder.Services.AddScoped<
+    AccountStatementJobProcessor>();
+
+builder.Services.AddHostedService<Worker>();
+
+IHost host = builder.Build();
+
+await host.RunAsync();
