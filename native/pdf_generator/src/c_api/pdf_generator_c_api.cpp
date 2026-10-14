@@ -3,29 +3,18 @@
 #include "nordiska/application/pdf_generator.hpp"
 
 #include <array>
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <expected>
-#include <memory>
 #include <new>
 #include <span>
 #include <string>
 #include <string_view>
 #include <unistd.h>
-#include <utility>
 #include <vector>
-
-// Opaque caller-owned lifecycle state. Customer input and results remain local
-// to each synchronous generation call; this object only retains components.
-struct nordiska_pdf_generator {
-    explicit nordiska_pdf_generator(nordiska::GeneratorConfig config) : generator(std::move(config)) {}
-    nordiska::PdfGenerator generator;
-    std::atomic_flag in_use{};
-};
 
 namespace {
 
@@ -177,50 +166,60 @@ int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_d
     return NORDISKA_PDF_OK;
 }
 
-std::expected<nordiska::GeneratorConfig, int> resolve_config() {
-    const char* sign_env = std::getenv("NORDISKA_PDF_ENABLE_SIGNING");
-    bool enable_signing = false;
-    if (sign_env != nullptr) {
-        enable_signing = (std::strcmp(sign_env, "1") == 0 || strcasecmp(sign_env, "true") == 0);
-    } else {
-        const char* socket_path = std::getenv("PDF_SIGNER_SOCKET_PATH");
-        if (socket_path == nullptr || socket_path[0] == '\0') {
-            socket_path = "/run/pdf-signer/pdf-signer.sock";
-        }
-        if (::access(socket_path, R_OK | W_OK) == 0) {
-            enable_signing = true;
-        }
-    }
+template <typename Callback>
+int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callback callback, void* user_data) {
+    clear_last_error(); // clear thread local error before we start
 
-    auto engine = nordiska::PdfEngineKind::Libharu;
-    if (const char* engine_env = std::getenv("NORDISKA_PDF_ENGINE"); engine_env && engine_env[0] != '\0') {
-        if (strcasecmp(engine_env, "native") == 0) {
-            engine = nordiska::PdfEngineKind::Native;
-        } else if (strcasecmp(engine_env, "cairo") == 0) {
-            engine = nordiska::PdfEngineKind::Cairo;
-        } else if (strcasecmp(engine_env, "libharu") != 0 && strcasecmp(engine_env, "haru") != 0) {
-            set_last_error("NORDISKA_PDF_ENGINE must be native, libharu, haru, or cairo");
-            return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
-        }
-    }
-
-    return nordiska::GeneratorConfig{
-        .ingestor = nordiska::JsonIngestorKind::Simdjson,
-        .engine = engine,
-        .enable_signing = enable_signing,
-        .compression = true, // Cut output size by 60% for a 25% performance penalty, huge win
-    };
-}
-
-// All exported status-returning functions contain exceptions at the C boundary.
-template <typename Operation> int invoke_boundary(Operation&& operation) noexcept {
-    clear_last_error();
     try {
-        const int status = operation();
-        if (status == NORDISKA_PDF_OK) {
-            clear_last_error();
+        auto val_res = validate_boundary_arguments(json_utf8, json_length, callback != nullptr);
+        if (!val_res) {
+            return val_res.error();
         }
-        return status;
+
+        const std::span<const uint8_t> payload_span{json_utf8, json_length};
+
+        const char* sign_env = std::getenv("NORDISKA_PDF_ENABLE_SIGNING");
+        bool enable_signing = false;
+        if (sign_env != nullptr) {
+            enable_signing = (std::strcmp(sign_env, "1") == 0 || strcasecmp(sign_env, "true") == 0);
+        } else {
+            const char* socket_path = std::getenv("PDF_SIGNER_SOCKET_PATH");
+            if (socket_path == nullptr || socket_path[0] == '\0') {
+                socket_path = "/run/pdf-signer/pdf-signer.sock";
+            }
+            if (::access(socket_path, R_OK | W_OK) == 0) {
+                enable_signing = true;
+            }
+        }
+
+        auto engine = nordiska::PdfEngineKind::Libharu;
+        if (const char* engine_env = std::getenv("NORDISKA_PDF_ENGINE"); engine_env && engine_env[0] != '\0') {
+            if (strcasecmp(engine_env, "native") == 0) {
+                engine = nordiska::PdfEngineKind::Native;
+            } else if (strcasecmp(engine_env, "cairo") == 0) {
+                engine = nordiska::PdfEngineKind::Cairo;
+            } else if (strcasecmp(engine_env, "libharu") != 0 && strcasecmp(engine_env, "haru") != 0) {
+                set_last_error("NORDISKA_PDF_ENGINE must be native, libharu, haru, or cairo");
+                return NORDISKA_PDF_INVALID_ARGUMENT;
+            }
+        }
+
+        const nordiska::GeneratorConfig config{
+            .ingestor = nordiska::JsonIngestorKind::Simdjson,
+            .engine = engine,
+            .enable_signing = enable_signing,
+            .compression = true, // Cut output size by 60% for a 25% performance penalty, huge win
+        };
+
+        // Generate PDFs
+        nordiska::PdfGenerator generator(config);
+        auto batch_result = generator.generate(payload_span);
+        if (!batch_result) {
+            return map_generator_error(batch_result.error());
+        }
+
+        return deliver_batch(*batch_result, callback, user_data);
+
     } catch (const std::bad_alloc&) {
         set_last_error_static("Out of memory during document generation");
         return NORDISKA_PDF_OUT_OF_MEMORY;
@@ -233,66 +232,6 @@ template <typename Operation> int invoke_boundary(Operation&& operation) noexcep
     }
 }
 
-template <typename Callback>
-int generate_and_deliver(nordiska::PdfGenerator& generator, std::span<const uint8_t> payload, Callback callback,
-                         void* user_data) {
-    auto batch = generator.generate(payload);
-    if (!batch) {
-        return map_generator_error(batch.error());
-    }
-    return deliver_batch(*batch, callback, user_data);
-}
-
-template <typename Callback>
-int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callback callback, void* user_data) {
-    return invoke_boundary([&]() -> int {
-        auto validation = validate_boundary_arguments(json_utf8, json_length, callback != nullptr);
-        if (!validation) {
-            return validation.error();
-        }
-        auto config = resolve_config();
-        if (!config) {
-            return config.error();
-        }
-        nordiska::PdfGenerator generator(std::move(*config));
-        return generate_and_deliver(generator, {json_utf8, json_length}, callback, user_data);
-    });
-}
-
-class GeneratorUseGuard {
-  public:
-    explicit GeneratorUseGuard(std::atomic_flag& flag) : flag_(flag) {}
-    ~GeneratorUseGuard() {
-        flag_.clear(std::memory_order_release);
-    }
-    GeneratorUseGuard(const GeneratorUseGuard&) = delete;
-    GeneratorUseGuard& operator=(const GeneratorUseGuard&) = delete;
-
-  private:
-    std::atomic_flag& flag_;
-};
-
-template <typename Callback>
-int generate_with_handle(nordiska_pdf_generator* handle, const uint8_t* json_utf8, size_t json_length,
-                         Callback callback, void* user_data) {
-    return invoke_boundary([&]() -> int {
-        if (!handle) {
-            set_last_error("generator handle must not be null");
-            return NORDISKA_PDF_INVALID_ARGUMENT;
-        }
-        auto validation = validate_boundary_arguments(json_utf8, json_length, callback != nullptr);
-        if (!validation) {
-            return validation.error();
-        }
-        if (handle->in_use.test_and_set(std::memory_order_acquire)) {
-            set_last_error("generator handle is already in use");
-            return NORDISKA_PDF_INVALID_ARGUMENT;
-        }
-        GeneratorUseGuard guard(handle->in_use);
-        return generate_and_deliver(handle->generator, {json_utf8, json_length}, callback, user_data);
-    });
-}
-
 } // namespace
 
 extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
@@ -303,40 +242,6 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
 extern "C" int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                        nordiska_pdf_delivery_callback_v2 callback, void* user_data) {
     return generate_customer_batch(json_utf8, json_length, callback, user_data);
-}
-
-extern "C" int nordiska_pdf_v2_create_generator(nordiska_pdf_generator** out_generator) {
-    return invoke_boundary([&]() -> int {
-        if (!out_generator) {
-            set_last_error("out_generator must not be null");
-            return NORDISKA_PDF_INVALID_ARGUMENT;
-        }
-        *out_generator = nullptr;
-        auto config = resolve_config();
-        if (!config) {
-            return config.error();
-        }
-        *out_generator = std::make_unique<nordiska_pdf_generator>(std::move(*config)).release();
-        return NORDISKA_PDF_OK;
-    });
-}
-
-extern "C" void nordiska_pdf_v2_destroy_generator(nordiska_pdf_generator* generator) {
-    delete generator;
-}
-
-extern "C" int nordiska_pdf_v1_generate_customer_batch_with_generator(nordiska_pdf_generator* generator,
-                                                                      const uint8_t* json_utf8, size_t json_length,
-                                                                      nordiska_pdf_delivery_callback callback,
-                                                                      void* user_data) {
-    return generate_with_handle(generator, json_utf8, json_length, callback, user_data);
-}
-
-extern "C" int nordiska_pdf_v2_generate_customer_batch_with_generator(nordiska_pdf_generator* generator,
-                                                                      const uint8_t* json_utf8, size_t json_length,
-                                                                      nordiska_pdf_delivery_callback_v2 callback,
-                                                                      void* user_data) {
-    return generate_with_handle(generator, json_utf8, json_length, callback, user_data);
 }
 
 extern "C" size_t nordiska_pdf_v1_max_json_bytes(void) {

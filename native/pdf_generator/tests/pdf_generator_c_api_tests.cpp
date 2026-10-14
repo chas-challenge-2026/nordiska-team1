@@ -8,13 +8,11 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <future>
 #include <memory>
 #include <openssl/sha.h>
 #include <optional>
@@ -358,132 +356,44 @@ int main() {
     require(std::string(nordiska_pdf_v1_get_last_error()).find("unsupported_unknown_kind") != std::string::npos,
             "error diagnostic must identify unsupported kind");
 
-    // #221: retain components and resolved configuration, while keeping batches isolated.
+    // Stateless v1 and v2 calls must isolate customers during concurrent use.
     {
         ScopedEnvironment signing("NORDISKA_PDF_ENABLE_SIGNING", "0");
         ScopedEnvironment engine("NORDISKA_PDF_ENGINE", "native");
-        require(nordiska_pdf_v2_create_generator(nullptr) == NORDISKA_PDF_INVALID_ARGUMENT,
-                "create must reject null output slot");
-        nordiska_pdf_generator* raw_handle = nullptr;
-        require(nordiska_pdf_v2_create_generator(&raw_handle) == NORDISKA_PDF_OK && raw_handle != nullptr,
-                "generator creation failed");
-        std::unique_ptr<nordiska_pdf_generator, decltype(&nordiska_pdf_v2_destroy_generator)> handle(
-            raw_handle, nordiska_pdf_v2_destroy_generator);
-        const auto* data = reinterpret_cast<const uint8_t*>(valid_batch_json.data());
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(
-                    nullptr, data, valid_batch_json.size(), batch_save_cb_v2, nullptr) == NORDISKA_PDF_INVALID_ARGUMENT,
-                "generation must reject null handle");
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(handle.get(), nullptr, 1, batch_save_cb_v2,
-                                                                       nullptr) == NORDISKA_PDF_INVALID_ARGUMENT,
-                "handle generation must reject null input");
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(handle.get(), data, 0, batch_save_cb_v2,
-                                                                       nullptr) == NORDISKA_PDF_INVALID_ARGUMENT,
-                "handle generation must reject zero length");
-        require(nordiska_pdf_v1_generate_customer_batch_with_generator(
-                    handle.get(), data, valid_batch_json.size(), nullptr, nullptr) == NORDISKA_PDF_INVALID_ARGUMENT,
-                "handle generation must reject null callback");
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(
-                    handle.get(), data, nordiska_pdf_v1_max_json_bytes() + 1, batch_save_cb_v2, nullptr) ==
-                    NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED,
-                "handle generation must enforce payload limits");
-
-        // An existing handle must not read changed process configuration per batch.
-        engine.set("invalid-new-setting");
-        signing.set("1");
-        ScopedEnvironment socket("PDF_SIGNER_SOCKET_PATH", "/tmp/no-cached-generator-signer.sock");
-        nordiska_pdf_generator* failed_creation = nullptr;
-        require(nordiska_pdf_v2_create_generator(&failed_creation) == NORDISKA_PDF_INVALID_ARGUMENT &&
-                    failed_creation == nullptr,
-                "new handles must validate the latest configuration");
-        require(nordiska_pdf_v2_generate_customer_batch(data, valid_batch_json.size(), batch_save_cb_v2, nullptr) ==
-                    NORDISKA_PDF_INVALID_ARGUMENT,
-                "one-shot configuration behavior must remain unchanged");
-        for (int customer = 10; customer < 13; ++customer) {
-            std::string input = valid_batch_json;
-            const auto start = input.find("\"customer_id\": 1");
-            input.replace(start, std::strlen("\"customer_id\": 1"), "\"customer_id\": " + std::to_string(customer));
-            BatchCapture result;
-            require(nordiska_pdf_v2_generate_customer_batch_with_generator(
-                        handle.get(), reinterpret_cast<const uint8_t*>(input.data()), input.size(), batch_save_cb_v2,
-                        &result) == NORDISKA_PDF_OK,
-                    nordiska_pdf_v1_get_last_error());
-            require(result.customer_id == static_cast<uint64_t>(customer) && result.call_count == 1 &&
-                        result.docs.size() == 2,
-                    "reused components must not leak data between customer batches");
-            require(std::memcmp(result.docs[0].bytes.data(), "%PDF-1.4", 8) == 0,
-                    "handle must retain its original Native renderer");
-            std::fill(input.begin(), input.end(), 'x');
-            require(!result.docs[0].sha256_hex.empty(), "copied output must outlive caller input");
+        std::array<std::array<BatchCapture, 3>, 2> batches;
+        std::array<std::array<int, 3>, 2> statuses;
+        std::array<std::thread, 2> workers;
+        for (size_t version = 0; version < workers.size(); ++version) {
+            workers[version] = std::thread([&, version] {
+                for (size_t call = 0; call < batches[version].size(); ++call) {
+                    std::string input = valid_batch_json;
+                    const auto customer = 100 * (version + 1) + call;
+                    const auto start = input.find("\"customer_id\": 1");
+                    input.replace(start, std::strlen("\"customer_id\": 1"),
+                                  "\"customer_id\": " + std::to_string(customer));
+                    const auto* data = reinterpret_cast<const uint8_t*>(input.data());
+                    auto& batch = batches[version][call];
+                    statuses[version][call] =
+                        version == 0
+                            ? nordiska_pdf_v1_generate_customer_batch(data, input.size(), batch_save_cb, &batch)
+                            : nordiska_pdf_v2_generate_customer_batch(data, input.size(), batch_save_cb_v2, &batch);
+                    std::fill(input.begin(), input.end(), 'x');
+                }
+            });
         }
-        BatchCapture failed;
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(
-                    handle.get(), reinterpret_cast<const uint8_t*>(failing_batch_json.data()),
-                    failing_batch_json.size(), batch_save_cb_v2, &failed) == NORDISKA_PDF_INVALID_INPUT &&
-                    failed.call_count == 0,
-                "reused generator must preserve atomic failure");
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(handle.get(), data, valid_batch_json.size(),
-                                                                       batch_reject_cb_v2,
-                                                                       nullptr) == NORDISKA_PDF_CALLBACK_FAILED,
-                "reused generator must report callback rejection");
-        BatchCapture recovered;
-        require(nordiska_pdf_v1_generate_customer_batch_with_generator(handle.get(), data, valid_batch_json.size(),
-                                                                       batch_save_cb, &recovered) == NORDISKA_PDF_OK &&
-                    recovered.docs.size() == 2 && std::strlen(nordiska_pdf_v1_get_last_error()) == 0,
-                "handle must remain usable with v1 delivery after failures");
-
-        struct RecursiveCall {
-            nordiska_pdf_generator* handle;
-            const uint8_t* data;
-            size_t size;
-        } recursive{handle.get(), data, valid_batch_json.size()};
-        const auto recursive_callback = +[](const nordiska_pdf_batch_view_v2*, void* context) -> int {
-            const auto& call = *static_cast<RecursiveCall*>(context);
-            BatchCapture nested;
-            require(nordiska_pdf_v2_generate_customer_batch_with_generator(call.handle, call.data, call.size,
-                                                                           batch_save_cb_v2,
-                                                                           &nested) == NORDISKA_PDF_INVALID_ARGUMENT &&
-                        nested.call_count == 0,
-                    "recursive use of an active generator handle must fail");
-            return 0;
-        };
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(
-                    handle.get(), data, valid_batch_json.size(), recursive_callback, &recursive) == NORDISKA_PDF_OK &&
-                    std::strlen(nordiska_pdf_v1_get_last_error()) == 0,
-                "outer success must clear a diagnostic from rejected recursive use");
-
-        struct ConcurrentCall {
-            std::promise<void> entered;
-            std::shared_future<void> release;
-        };
-        std::promise<void> release;
-        ConcurrentCall state{.release = release.get_future().share()};
-        auto entered = state.entered.get_future();
-        const auto blocking_callback = +[](const nordiska_pdf_batch_view_v2*, void* context) -> int {
-            auto& state = *static_cast<ConcurrentCall*>(context);
-            state.entered.set_value();
-            state.release.wait();
-            return 0;
-        };
-        auto running = std::async(std::launch::async, [&] {
-            return nordiska_pdf_v2_generate_customer_batch_with_generator(handle.get(), data, valid_batch_json.size(),
-                                                                          blocking_callback, &state);
-        });
-        const auto ready = entered.wait_for(std::chrono::seconds(5));
-        if (ready != std::future_status::ready) {
-            release.set_value();
-            require(false, "concurrency fixture did not reach callback");
+        for (auto& worker : workers) {
+            worker.join();
         }
-        BatchCapture overlap;
-        const auto overlap_status = nordiska_pdf_v2_generate_customer_batch_with_generator(
-            handle.get(), data, valid_batch_json.size(), batch_save_cb_v2, &overlap);
-        release.set_value();
-        require(running.get() == NORDISKA_PDF_OK, "active handle call must finish successfully");
-        require(overlap_status == NORDISKA_PDF_INVALID_ARGUMENT && overlap.call_count == 0,
-                "concurrent same-handle call must be rejected before generation");
-        require(nordiska_pdf_v2_generate_customer_batch_with_generator(handle.get(), data, valid_batch_json.size(),
-                                                                       batch_save_cb_v2, &overlap) == NORDISKA_PDF_OK,
-                "handle must be reusable after concurrent rejection");
-        nordiska_pdf_v2_destroy_generator(nullptr);
+        for (size_t version = 0; version < batches.size(); ++version) {
+            for (size_t call = 0; call < batches[version].size(); ++call) {
+                const auto& batch = batches[version][call];
+                require(statuses[version][call] == NORDISKA_PDF_OK && batch.call_count == 1 &&
+                            batch.customer_id == 100 * (version + 1) + call && batch.docs.size() == 2,
+                        "stateless calls must deliver separate customer batches");
+                require(batch.docs[0].bytes.size() > 8 && std::memcmp(batch.docs[0].bytes.data(), "%PDF-1.4", 8) == 0,
+                        "copied PDF output must outlive each stateless call and its input");
+            }
+        }
     }
 
     // 5. Duplicate document_id rejected
