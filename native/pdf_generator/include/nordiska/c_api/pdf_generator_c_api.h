@@ -10,6 +10,11 @@
  * on the calling thread. Configuration and generator components are resolved
  * per call. Concurrent calls for separate batches are independent.
  *
+ * After batch ingestion, documents are laid out, rendered, optionally signed
+ * and checksummed sequentially in input order. Each document completes before
+ * the next begins. Plain and timestamped signing both wait for the signer
+ * response. The generator dispatches no parallel work within a batch.
+ *
  * Input: json_utf8 must be non-NULL and json_length must be 1..33,554,432 bytes
  * (32 MB). The caller must keep this UTF-8 JSON buffer valid and unmodified until
  * generation returns. No caller input pointers are retained afterward. See
@@ -70,6 +75,12 @@ typedef int (*nordiska_pdf_delivery_callback)(const struct nordiska_pdf_batch_vi
 NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                              nordiska_pdf_delivery_callback callback, void* user_data);
 
+/* Same V1 delivery contract, with pipeline phase measurements. Read the
+ * snapshot after return using the shared get_last_timing helper below. */
+NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch_instrumented(const uint8_t* json_utf8, size_t json_length,
+                                                                          nordiska_pdf_delivery_callback callback,
+                                                                          void* user_data);
+
 /* ========================================================================== */
 /* V2 — PDF delivery with artifact hashes                                     */
 /* ========================================================================== */
@@ -98,6 +109,11 @@ NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json
                                                              nordiska_pdf_delivery_callback_v2 callback,
                                                              void* user_data);
 
+/* Same V2 delivery contract, with pipeline phase measurements and hashes. */
+NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch_instrumented(const uint8_t* json_utf8, size_t json_length,
+                                                                          nordiska_pdf_delivery_callback_v2 callback,
+                                                                          void* user_data);
+
 /* =========================================================================== */
 /* Shared helpers — V1 names retained for compatibility; used by both versions */
 /* =========================================================================== */
@@ -111,6 +127,29 @@ NORDISKA_PDF_API const char* nordiska_pdf_v1_get_last_error(void);
 
 /* Human-readable status name, or "status code does not exist". Never NULL. */
 NORDISKA_PDF_API const char* nordiska_pdf_v1_status_name(int status);
+
+/* Phase timing breakdown for performance instrumentation */
+struct nordiska_pdf_pipeline_timing {
+    double ingest_seconds;
+    double layout_seconds;
+    double render_seconds;
+    double sign_seconds;
+    double signer_call_seconds;
+    double prepare_seconds;
+    double digest_seconds;
+    double checksum_seconds;
+    double total_seconds;
+};
+
+/* Copies timings from the most recent completed instrumented call on this
+ * thread, for either V1 or V2. All fields are elapsed seconds. Before the first
+ * instrumented call, returns zeros. Normal calls do not collect timings or
+ * replace this snapshot. An instrumented failure replaces it with the work
+ * recorded before failure; argument failures produce zeros. NULL is a no-op.
+ * total_seconds sums pipeline phases; it excludes configuration, component
+ * construction and callback delivery. Read this snapshot after generation
+ * returns; during a callback, it still describes the previous completed call. */
+NORDISKA_PDF_API void nordiska_pdf_v1_get_last_timing(struct nordiska_pdf_pipeline_timing* out_timing);
 
 #ifdef __cplusplus
 }

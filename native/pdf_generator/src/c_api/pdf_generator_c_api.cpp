@@ -13,6 +13,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unistd.h>
 #include <vector>
 
@@ -34,6 +35,7 @@ constexpr size_t kMaxJsonPayloadBytes = 32 * 1024 * 1024; // 32 MB (NOR-157)
 // Thread-local diagnostic storage for error reporting
 thread_local std::string g_last_error;
 thread_local const char* g_fallback_static_error = nullptr;
+thread_local nordiska::PipelineTiming g_last_timing{};
 
 void clear_last_error() noexcept {
     g_fallback_static_error = nullptr;
@@ -104,56 +106,39 @@ int map_generator_error(const nordiska::GeneratorError& err) noexcept {
         err.details);
 }
 
-int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_delivery_callback callback,
-                  void* user_data) {
-    std::vector<nordiska_pdf_document_view> document_views;
+// V1 and V2 share delivery bookkeeping; only V2 exposes the artifact hash.
+template <typename Callback>
+int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, Callback callback, void* user_data) {
+    constexpr bool with_hash = std::is_same_v<Callback, nordiska_pdf_delivery_callback_v2>;
+    using DocumentView = std::conditional_t<with_hash, nordiska_pdf_document_view_v2, nordiska_pdf_document_view>;
+    using BatchView = std::conditional_t<with_hash, nordiska_pdf_batch_view_v2, nordiska_pdf_batch_view>;
+    std::vector<DocumentView> document_views;
     document_views.reserve(completed_batch.documents.size());
-
-    for (const nordiska::PdfDocument& doc : completed_batch.documents) {
-        document_views.push_back(nordiska_pdf_document_view{
-            .document_id = doc.document_id.c_str(),
-            .bytes = doc.pdf_bytes.data(),
-            .length = doc.pdf_bytes.size(),
-        });
+    std::vector<std::array<char, 65>> hashes;
+    if constexpr (with_hash) {
+        hashes.resize(completed_batch.documents.size());
     }
 
-    const nordiska_pdf_batch_view batch_view{
-        .customer_id = completed_batch.customer_id,
-        .documents = document_views.data(),
-        .document_count = document_views.size(),
-    };
-
-    const int cb_status = callback(&batch_view, user_data);
-    if (cb_status != 0) {
-        set_last_error("customer batch callback rejected batch with status code: " + std::to_string(cb_status));
-        return NORDISKA_PDF_CALLBACK_FAILED;
-    }
-
-    return NORDISKA_PDF_OK;
-}
-
-int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_delivery_callback_v2 callback,
-                  void* user_data) {
-    std::vector<std::array<char, 65>> hashes(completed_batch.documents.size());
-    std::vector<nordiska_pdf_document_view_v2> document_views;
-    document_views.reserve(completed_batch.documents.size());
-    constexpr char hex[] = "0123456789abcdef";
     for (size_t i = 0; i < completed_batch.documents.size(); ++i) {
         const auto& doc = completed_batch.documents[i];
-        auto& hash = hashes[i];
-        for (size_t j = 0; j < doc.sha256_hash.size(); ++j) {
-            hash[j * 2] = hex[doc.sha256_hash[j] >> 4];
-            hash[j * 2 + 1] = hex[doc.sha256_hash[j] & 0x0f];
-        }
-        hash[64] = '\0';
-        document_views.push_back(nordiska_pdf_document_view_v2{
+        DocumentView view{
             .document_id = doc.document_id.c_str(),
             .bytes = doc.pdf_bytes.data(),
             .length = doc.pdf_bytes.size(),
-            .sha256_hex = hash.data(),
-        });
+        };
+        if constexpr (with_hash) {
+            constexpr char hex[] = "0123456789abcdef";
+            auto& hash = hashes[i];
+            for (size_t j = 0; j < doc.sha256_hash.size(); ++j) {
+                hash[j * 2] = hex[doc.sha256_hash[j] >> 4];
+                hash[j * 2 + 1] = hex[doc.sha256_hash[j] & 0x0f];
+            }
+            hash[64] = '\0';
+            view.sha256_hex = hash.data();
+        }
+        document_views.push_back(view);
     }
-    const nordiska_pdf_batch_view_v2 batch_view{
+    const BatchView batch_view{
         .customer_id = completed_batch.customer_id,
         .documents = document_views.data(),
         .document_count = document_views.size(),
@@ -167,7 +152,8 @@ int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_d
 }
 
 template <typename Callback>
-int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callback callback, void* user_data) {
+int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callback callback, void* user_data,
+                            nordiska::PipelineTiming* timing) {
     clear_last_error(); // clear thread local error before we start
 
     try {
@@ -213,7 +199,7 @@ int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callba
 
         // Generate PDFs
         nordiska::PdfGenerator generator(config);
-        auto batch_result = generator.generate(payload_span);
+        auto batch_result = generator.generate(payload_span, timing);
         if (!batch_result) {
             return map_generator_error(batch_result.error());
         }
@@ -232,16 +218,39 @@ int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callba
     }
 }
 
+template <typename Callback>
+int generate_instrumented_customer_batch(const uint8_t* json_utf8, size_t json_length, Callback callback,
+                                         void* user_data) {
+    // Per-call collection avoids mixing nested instrumented calls. Publish the
+    // snapshot on return so the getter always describes the last completed call.
+    nordiska::PipelineTiming timing{};
+    const int status = generate_customer_batch(json_utf8, json_length, callback, user_data, &timing);
+    g_last_timing = timing;
+    return status;
+}
+
 } // namespace
 
 extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                        nordiska_pdf_delivery_callback callback, void* user_data) {
-    return generate_customer_batch(json_utf8, json_length, callback, user_data);
+    return generate_customer_batch(json_utf8, json_length, callback, user_data, nullptr);
 }
 
 extern "C" int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                        nordiska_pdf_delivery_callback_v2 callback, void* user_data) {
-    return generate_customer_batch(json_utf8, json_length, callback, user_data);
+    return generate_customer_batch(json_utf8, json_length, callback, user_data, nullptr);
+}
+
+extern "C" int nordiska_pdf_v1_generate_customer_batch_instrumented(const uint8_t* json_utf8, size_t json_length,
+                                                                    nordiska_pdf_delivery_callback callback,
+                                                                    void* user_data) {
+    return generate_instrumented_customer_batch(json_utf8, json_length, callback, user_data);
+}
+
+extern "C" int nordiska_pdf_v2_generate_customer_batch_instrumented(const uint8_t* json_utf8, size_t json_length,
+                                                                    nordiska_pdf_delivery_callback_v2 callback,
+                                                                    void* user_data) {
+    return generate_instrumented_customer_batch(json_utf8, json_length, callback, user_data);
 }
 
 extern "C" size_t nordiska_pdf_v1_max_json_bytes(void) {
@@ -276,4 +285,19 @@ extern "C" const char* nordiska_pdf_v1_status_name(int status) {
     default:
         return "status code does not exist";
     }
+}
+
+extern "C" void nordiska_pdf_v1_get_last_timing(nordiska_pdf_pipeline_timing* out_timing) {
+    if (out_timing == nullptr) {
+        return;
+    }
+    out_timing->ingest_seconds = g_last_timing.ingest_seconds;
+    out_timing->layout_seconds = g_last_timing.layout_seconds;
+    out_timing->render_seconds = g_last_timing.render_seconds;
+    out_timing->sign_seconds = g_last_timing.sign_seconds;
+    out_timing->signer_call_seconds = g_last_timing.signer_call_seconds;
+    out_timing->prepare_seconds = g_last_timing.prepare_seconds;
+    out_timing->digest_seconds = g_last_timing.digest_seconds;
+    out_timing->checksum_seconds = g_last_timing.checksum_seconds;
+    out_timing->total_seconds = g_last_timing.total_seconds();
 }

@@ -202,6 +202,23 @@ configuration, constructs its own generator components and releases them when
 the call returns. Concurrent calls generate independent customer batches.
 There is no caller-owned generator handle or create/destroy lifecycle.
 
+Timing collection is explicit. The normal V1 and V2 entry points pass no timing
+collector, so the pipeline skips profiling clock reads and accumulation. Use
+`nordiska_pdf_v1_generate_customer_batch_instrumented` or
+`nordiska_pdf_v2_generate_customer_batch_instrumented` to collect phase timings
+while using the same generation, validation and delivery code. V2 adds the
+artifact hash field to the callback view.
+
+After an instrumented call returns, copy its measurements with
+`nordiska_pdf_v1_get_last_timing`; this shared helper serves both versions.
+It returns the latest completed instrumented call's timings on the calling
+thread. Normal calls leave that snapshot intact. A fresh thread sees zeros;
+an instrumented failure reports work recorded before failure, or zeros when
+arguments fail validation. Totals cover the native pipeline and exclude
+configuration, component construction and callback delivery. Nested
+instrumented calls have separate local collectors; each publishes its snapshot
+when it returns. No environment variable is needed to choose instrumentation.
+
 #### Status Codes (`nordiska_pdf_status`):
 
 - `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
