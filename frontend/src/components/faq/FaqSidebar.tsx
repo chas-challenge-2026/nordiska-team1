@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import HelpCard from "./HelpCard";
+import NewTicketButton from "../inbox/NewTicket";
 
 type FaqSidebarProps = {onLanguageChange: () => void;};
 
@@ -86,6 +87,7 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
                         </a>
                         <p className="text-sm ml-7">{t("faq.faq-sidebar.mail-specs")}</p>
                     </div>
+                   <NewTicketButton /> 
                 </div>
             </article>
         </div>

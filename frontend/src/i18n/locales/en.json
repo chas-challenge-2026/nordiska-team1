@@ -35,7 +35,15 @@
         "from-date": "From date",
         "to-date": "To date",
         "download": "Download",
-        "year": "Year"
+        "year": "Year",
+        "information": "Information",
+        "try-again": "Try again",
+        "send": "Send",
+        "sending": "Sending...",
+        "downloading": "Downloading...",
+        "back": "Back",
+        "error-load": "Could not load content.",
+        "error-action": "Something went wrong. Try again."
     },
     "errors": {
         "loading": "Something went wrong while loading the data.",
@@ -80,6 +88,7 @@
         "withdraws": "Withdraws only",
         "type-deposit": "Deposit",
         "type-withdraw": "Withdrawal",
+        "type-transfer": "Transfer",
         "transactions": "Latest transactions",
         "all-transactions": "Show more transactions",
         "less-transactions": "Show fewer transactions",
@@ -103,7 +112,14 @@
         "search-account": "Search account number",
         "no-account-match": "No accounts match your search.",
         "select-account": "Select at least one account to see transactions.",
-        "no-transactions": "No transactions found."
+        "no-transactions": "No transactions found.",
+        "show-closed": "Show closed accounts",
+        "help-card-search": "transactions deposit withdrawal transfer",
+        "closed": "Closed",
+        "page-title": "Transactions",
+        "filter-subtitle": "Search and filter",
+        "accounts-subtitle": "Show transactions for",
+        "list-title": "Transaction history"
     },
  
 
@@ -385,6 +401,99 @@
         "title": "Something went wrong.",
         "paragraph": "An internal server error occurred. Please try again shortly.",
         "button": "Back to home"
+    },
+    "inbox": {
+        "title": "Inbox",
+        "messages": "Messages",
+        "notifications": "Notifications",
+        "documents": "Documents",
+        "terms": "Terms",
+        "sent": "Sent",
+        "archive": "Archive",
+        "unread": "Unread",
+        "subject": "Subject",
+        "loading": "Loading...",
+        "try-again": "Try again",
+        "no-subject": "(no subject)",
+        "untitled": "(untitled)",
+        "unread-prefix": "Unread: ",
+        "new-prefix": "New: ",
+        "message-count_one": "{{count}} message",
+        "message-count_other": "{{count}} messages",
+        "unread-count": "{{count}} unread",
+        "aria-label-unread": "Inbox, {{count}} unread",
+        "send": "Send",
+        "sending": "Sending...",
+        "mark-read": "Mark as read",
+        "mark-read-aria": "Mark as read: {{title}}",
+        "mark-all-read": "Mark all as read",
+        "download": "Download",
+        "download-aria": "Download {{name}}",
+        "downloading": "Downloading...",
+        "back": "Back",
+        "folders-label": "Folders",
+        "view-message": "View message",
+        "select-message": "Select a message",
+        "select-prompt": "Select a message to read it.",
+        "open-inbox": "Open inbox",
+        "action-required": "Action required",
+        "feed-type": { "thread": "Message", "notification": "Notification", "document": "Document", "term": "Terms" },
+        "status": { "open": "Open", "closed": "Closed" },
+        "empty": {
+            "messages": "No messages.",
+            "notifications": "No notifications.",
+            "new-notifications": "No new notifications.",
+            "documents": "No documents.",
+            "terms": "No terms to accept."
+        },
+        "thread": {
+            "status": "Status",
+            "you": "You",
+            "support": "Support",
+            "reply": "Reply",
+            "reply-sent": "Reply sent.",
+            "archive": "Archive",
+            "restore": "Restore"
+        },
+        "notifications-tab": {
+            "unread-only": "Unread only"
+        },
+        "documents-tab": {
+            "year": "Year",
+            "all-years": "All years",
+            "general": "General documents",
+            "personal": "Your documents"
+        },
+        "terms-tab": {
+            "to-accept": "To accept",
+            "version": "Version {{version}}",
+            "effective-from": "Effective from {{date}}",
+            "accept": "Accept",
+            "accepting": "Accepting...",
+            "accept-aria": "Accept {{title}}"
+        },
+        "ticket": {
+            "new": "New message",
+            "category": "Category",
+            "select-category": "Select category",
+            "message": "Message",
+            "cancel": "Cancel",
+            "close": "Close",
+            "received-heading": "We have received your message",
+            "received-body": "We will reply within {{time}}. You will find the reply in your inbox.",
+            "reply-time": "2 business days",
+            "categories": {
+                "Sparkonto": "Savings account",
+                "Sparmål": "Savings goal",
+                "Skatteunderlag": "Tax statement",
+                "Allmänt": "General"
+            }
+        },
+        "error": {
+            "load": "Could not load content.",
+            "action": "Something went wrong. Try again.",
+            "required-fields": "Fill in subject, category and message."
+        }
     },
     "page-header": {
         "help-center": "Help Center",

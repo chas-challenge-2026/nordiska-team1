@@ -35,7 +35,15 @@
         "from-date": "Från datum",
         "to-date": "Till datum",
         "download": "Ladda ner",
-        "year": "År"
+        "year": "År",
+        "information": "Information",
+        "try-again": "Försök igen",
+        "send": "Skicka",
+        "sending": "Skickar...",
+        "downloading": "Laddar ner...",
+        "back": "Tillbaka",
+        "error-load": "Det gick inte att hämta innehållet.",
+        "error-action": "Något gick fel. Försök igen."
     },
     "errors": {
         "loading": "Någonting gick fel vid hämtning av datan.",
@@ -80,6 +88,7 @@
         "withdraws": "Endast uttag",
         "type-deposit": "Insättning",
         "type-withdraw": "Uttag",
+        "type-transfer": "Överföring",
         "transactions": "Senaste transaktioner",
         "all-transactions": "Visa fler transaktioner",
         "less-transactions": "Visa färre transaktioner",
@@ -103,7 +112,14 @@
         "search-account": "Sök kontonummer",
         "no-account-match": "Inga konton matchar sökningen.",
         "select-account": "Välj minst ett konto för att se transaktioner.",
-        "no-transactions": "Inga transaktioner hittades."
+        "no-transactions": "Inga transaktioner hittades.",
+        "show-closed": "Visa stängda konton",
+        "help-card-search": "transaktioner insättning uttag överföring",
+        "closed": "Stängt",
+        "page-title": "Transaktioner",
+        "filter-subtitle": "Sök och filtrera",
+        "accounts-subtitle": "Visa transaktioner för",
+        "list-title": "Transaktionshistorik"
     },
     "accounts-route": {
         "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
@@ -382,6 +398,81 @@
         "title": "Något gick fel.",
         "paragraph": "Ett internt serverfel uppstod. Försök igen om en stund.",
         "button": "Tillbaka till hem"
+    },
+    "inbox": {
+        "title": "Inkorg",
+        "messages": "Meddelanden",
+        "notifications": "Aviseringar",
+        "documents": "Dokument",
+        "terms": "Villkor",
+        "sent": "Skickat",
+        "archive": "Arkiv",
+        "unread": "Olästa",
+        "subject": "Ämne",
+        "no-subject": "(inget ämne)",
+        "untitled": "(namnlös)",
+        "unread-prefix": "Oläst: ",
+        "new-prefix": "Nytt: ",
+        "message-count_one": "{{count}} meddelande",
+        "message-count_other": "{{count}} meddelanden",
+        "unread-count": "{{count}} olästa",
+        "aria-label-unread": "Inkorg, {{count}} olästa",
+        "mark-read": "Markera som läst",
+        "mark-read-aria": "Markera som läst: {{title}}",
+        "mark-all-read": "Markera alla som lästa",
+        "download-aria": "Ladda ner {{name}}",
+        "folders-label": "Mappar",
+        "view-message": "Visa meddelande",
+        "select-message": "Välj ett meddelande",
+        "select-prompt": "Välj ett meddelande för att läsa det.",
+        "open-inbox": "Öppna inkorgen",
+        "action-required": "Åtgärd krävs",
+        "feed-type": { "thread": "Meddelande", "notification": "Avisering", "document": "Dokument", "term": "Villkor" },
+        "status": { "open": "Öppen", "closed": "Stängd" },
+        "empty": {
+            "messages": "Inga meddelanden.",
+            "notifications": "Inga aviseringar.",
+            "new-notifications": "Inga nya aviseringar.",
+            "documents": "Inga dokument.",
+            "terms": "Inga villkor att godkänna."
+        },
+        "thread": {
+            "status": "Status",
+            "you": "Du",
+            "support": "Kundservice",
+            "reply": "Svara",
+            "reply-sent": "Svaret har skickats.",
+            "archive": "Arkivera",
+            "restore": "Återställ"
+        },
+        "notifications-tab": {
+            "unread-only": "Endast olästa"
+        },
+        "documents-tab": {
+            "all-years": "Alla år",
+            "general": "Allmänna dokument",
+            "personal": "Dina dokument"
+        },
+        "terms-tab": {
+            "to-accept": "Att godkänna",
+            "version": "Version {{version}}",
+            "effective-from": "Gäller från {{date}}",
+            "accept": "Godkänn",
+            "accepting": "Godkänner...",
+            "accept-aria": "Godkänn {{title}}"
+        },
+        "ticket": {
+            "new": "Nytt meddelande",
+            "category": "Kategori",
+            "select-category": "Välj kategori",
+            "message": "Meddelande",
+            "received-heading": "Vi har tagit emot ditt meddelande",
+            "received-body": "Vi svarar inom {{time}}. Du hittar svaret i din inkorg.",
+            "reply-time": "2 arbetsdagar"
+        },
+        "error": {
+            "required-fields": "Fyll i ämne, kategori och meddelande."
+        }
     },
     "page-header": {
         "help-center": "Hjälpcenter",

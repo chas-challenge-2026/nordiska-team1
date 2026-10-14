@@ -1,15 +1,17 @@
 import { useMemo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { Transaction } from '../../services/transactionsService';
+import type { Transaction, TransactionDateGroup } from '../../services/transactionsService';
 import type { Account } from '../../services/accountsService';
-import { formatDate, formatTime, toDateKey } from '../../utils/date';
+import { formatDate, formatTime } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
 import PagePagination from '../PagePagination';
 
 interface TransactionTableProps {
     accounts: Account[];
     transactions: Transaction[];
+    /** Transaktionerna grupperade per datum av backend (GroupByDate) */
+    groups: TransactionDateGroup[];
     totalCount: number;
     totalPages: number;
     page: number;
@@ -22,96 +24,97 @@ interface TransactionTableProps {
     emptyMessage?: string;
 }
 
-function transactionTypeLabel(type: Transaction["type"], t: TFunction): string {
-    return t(type === "deposit" ? "transactions-route.type-deposit" : "transactions-route.type-withdraw");
+function transactionTypeLabel(transaction: Transaction, t: TFunction): string {
+    if (transaction.type === "transfer") return t("transactions-route.type-transfer");
+    if (transaction.type === "deposit") return t("transactions-route.type-deposit");
+    if (transaction.type === "withdrawal") return t("transactions-route.type-withdraw");
+    // Okända typer (t.ex. ränta) märks efter beloppets tecken
+    return t(transaction.amount >= 0 ? "transactions-route.type-deposit" : "transactions-route.type-withdraw");
 }
 
-/** Groups consecutive transactions by local date. Input must be sorted by date. */
-function groupByDate(transactions: Transaction[]): { dateKey: string; items: Transaction[] }[] {
-    const groups: { dateKey: string; items: Transaction[] }[] = [];
-    for (const transaction of transactions) {
-        const dateKey = toDateKey(transaction.createdAt);
-        const last = groups[groups.length - 1];
-        if (last && last.dateKey === dateKey) {
-            last.items.push(transaction);
-        } else {
-            groups.push({ dateKey, items: [transaction] });
-        }
-    }
-    return groups;
-}
-
-
-export default function TransactionTable({ accounts, transactions, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
+export default function TransactionTable({ accounts, transactions, groups, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
     const { t } = useTranslation();
     const listId = useId();
-    const groupedItems = useMemo(() => groupByDate(transactions), [transactions]);
     const accountsById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts])
 
     return (
-        <div className="p-4 flex-1 min-h-0 flex flex-col md:rounded-xl md:mb-10 md:shadow-md md:border md:border-secondary md:bg-white">
-            <h2 className="min-w-0 wrap-break-word text-xl font-semibold sm:text-[26px] border-b-3 border-b-nordiska-orange mb-2">{t("transactions-route.transactions")}</h2>
+        <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-200 md:shadow-sm">
+            {/* CARD HEADER */}
+            <div className="flex min-h-22 flex-col justify-center bg-dark-navy px-4 py-3 text-white sm:px-6">
+                <h2 id={`${listId}-heading`} className="truncate text-base font-bold uppercase tracking-wide sm:text-lg">{t("transactions-route.list-title")}</h2>
+                <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-white/90 sm:mt-1 sm:text-xs" aria-live="polite">
+                    {!isLoading && !isError && t("transactions-route.showing-count", { shown: transactions.length, count: totalCount })}
+                </p>
+            </div>
 
-            {isLoading && <p className="text-sm text-secondary">{t("transactions-route.loading-transactions")}</p>}
-            {isError && <p className="text-sm text-red-700">{t("transactions-route.transactions-error")}</p>}
+            {isLoading && (
+                <div className="flex min-h-40 items-center justify-center px-4" role="status" aria-live="polite">
+                    <p className="text-sm text-secondary">{t("transactions-route.loading-transactions")}</p>
+                </div>
+            )}
+            {isError && (
+                <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
+                    <p className="text-sm font-medium text-red-800">{t("transactions-route.transactions-error")}</p>
+                </div>
+            )}
 
             {!isLoading && !isError && (
-                <>
-                    <p className="shrink-0 text-xs text-secondary mb-3" aria-live="polite">
-                        {t("transactions-route.showing-count", { shown: transactions.length, count: totalCount })}
-                    </p>
-
-                    <div
-                        id={listId}
-                        aria-busy={isPlaceholderData}
-                        className={`flex-1 min-h-0 overflow-y-auto ${isPlaceholderData ? 'opacity-50' : ''}`}
-                    >
-                        {transactions.length === 0 && emptyMessage && (
-                            <p className="py-6 text-center text-sm text-secondary">{emptyMessage}</p>
-                        )}
-                        {groupedItems.map(group => (
-                            <div key={group.dateKey} className="mb-3">
-                                <h4 className="text-xs font-medium text-secondary mb-1 border-b-2 border-gray-200">
-                                    {formatDate(group.items[0].createdAt)}
-                                </h4>
-                                <ul className="divide-y divide-gray-100 px-3">
-                                    {group.items.map(transaction => (
-                                        <li key={transaction.id} className="py-3 flex justify-between items-start">
-                                            <div>
-                                                <p className="text-sm font-medium">{transaction.label || transactionTypeLabel(transaction.type, t)}</p>
-                                                {(() => {
-                                                    const account = accountsById.get(transaction.accountId);
-                                                    return account ? (
-                                                        <p className="text-xs text-secondary">
-                                                            {account.accountName} | {account.accountNumber}
-                                                        </p>
-                                                    ) : null;
-                                                })()}
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-secondary">{formatTime(transaction.createdAt)}</p>
-                                                <p className={`text-sm font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                <div
+                    id={listId}
+                    aria-busy={isPlaceholderData}
+                    className={`flex-1 py-2 sm:p-4 ${isPlaceholderData ? 'opacity-50' : ''}`}
+                >
+                    {transactions.length === 0 && emptyMessage && (
+                        <p className="py-10 text-center text-sm text-secondary">{emptyMessage}</p>
+                    )}
+                    {groups.map(group => (
+                        <div key={group.dateKey} className="mb-4 last:mb-0">
+                            <h3 className="mb-1 border-b-2 border-nordiska-orange px-3 pb-1 text-xs font-medium text-secondary sm:px-5">
+                                {formatDate(`${group.date}T00:00:00`)}
+                            </h3>
+                            <ul className="ml-3 sm:ml-5">
+                                {group.items.map(transaction => {
+                                    const accountNumber = accountsById.get(transaction.accountId)?.accountNumber;
+                                    // Överföringar visas som "från → till" precis som på Översikt
+                                    const targetNumber = transaction.targetAccountId ? accountsById.get(transaction.targetAccountId)?.accountNumber : undefined;
+                                    const accountText = targetNumber
+                                        ? (transaction.amount < 0 ? `${accountNumber} → ${targetNumber}` : `${targetNumber} → ${accountNumber}`)
+                                        : accountNumber;
+                                    return (
+                                        <li key={transaction.id} className="px-3 py-3 odd:bg-white even:bg-light-gray/60 sm:px-5">
+                                            <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
+                                                <span className="min-w-0 wrap-break-word font-semibold">{transaction.label || transactionTypeLabel(transaction, t)}</span>
+                                                <span className={`shrink-0 whitespace-nowrap font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>
                                                     {formatCurrency(transaction.amount, { signed: true })}
-                                                </p>
-                                            </div>
+                                                </span>
+                                            </p>
+                                            <p className="mt-0.5 flex flex-wrap justify-between gap-x-2 gap-y-1 text-[10px] uppercase text-dark-navy/60 sm:text-xs">
+                                                <span>{formatTime(transaction.createdAt)}</span>
+                                                {accountText && (
+                                                    <span className="min-w-0 wrap-break-word text-right">{accountText}</span>
+                                                )}
+                                            </p>
                                         </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                </>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
             )}
-            <PagePagination 
-                page={page}
-                totalPages={totalPages}
-                hasPreviousPage={hasPreviousPage}
-                hasNextPage={hasNextPage}
-                onPrevious={() => onPageChange(page - 1)}
-                onNext={() => onPageChange(page + 1)}
-                onPageChange={onPageChange}
-                isDisabled={isLoading}
-            />
-        </div>
+
+            <div className="border-t-2 border-nordiska-orange px-2 py-3 sm:mx-4">
+                <PagePagination
+                    page={page}
+                    totalPages={totalPages}
+                    hasPreviousPage={hasPreviousPage}
+                    hasNextPage={hasNextPage}
+                    onPrevious={() => onPageChange(page - 1)}
+                    onNext={() => onPageChange(page + 1)}
+                    onPageChange={onPageChange}
+                    isDisabled={isLoading}
+                />
+            </div>
+        </section>
     );
 }

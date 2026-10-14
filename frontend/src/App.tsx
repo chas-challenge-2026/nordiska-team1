@@ -42,11 +42,10 @@ export default function App() {
             <ServiceAlertBanner margin={margin} hidden={hidden}/>
 
             <div className="flex min-h-0 flex-1 flex-col">
-                <ErrorBoundary key={location.pathname}>
+                <ErrorBoundary key={location.pathname.split("/")[1]}>
                     <AppRoutes />
                 </ErrorBoundary>
             </div>
-
             {/* TLLFÄLLIG AVSTÄNING AV INAKTIVITETSKOLL -> Kommentera ut: */}
             {showWarning && (
                 <InactivityWarning
