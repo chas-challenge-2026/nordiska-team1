@@ -490,10 +490,8 @@
         "transfers": "Överföringar"
     },
     "table": {
-        "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
-        "pending-transfers": "Kommande överföringar",
-        "latest-transactions": "Senaste transaktioner"
+        "pending-transfers": "Kommande överföringar"
     },
     "forms": {
         "email": "e-post",
@@ -516,7 +514,10 @@
     },
     "page-transfer": {
         "heading": "Ny överföring",
-        "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
+        "form-card-label": "Betala och överför",
+        "section-accounts": "Konton",
+        "section-details": "Belopp och detaljer",
+        "help-card-search": "överföring betalning",
         "name-label": "Egen notis",
         "name-label-recurring": "Namnge överföringen",
         "name-placeholder": "T.ex. Hyra september",
@@ -569,6 +570,7 @@
             "from-title": "Välj konto",
             "to-title": "Välj mottagare",
             "search-placeholder": "Sök på namn",
+            "group-favorites": "Favoriter",
             "group-own": "Mina konton",
             "group-bg": "BG/PG",
             "group-bank": "Bankkonto",
@@ -591,10 +593,12 @@
             "back-to-transfers": "Tillbaka till överföringar"
         },
         "pending": {
+            "card-label": "Skickade betalningar",
             "arrives": "Beräknas vara framme {{date}}",
             "footnote": "Betalningar till andra banker och BG/PG tar normalt en bankdag."
         },
         "planned": {
+            "card-label": "Kommande dragningar",
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
             "unknown-account": "Okänt konto",
             "actions-label": "Fler alternativ",

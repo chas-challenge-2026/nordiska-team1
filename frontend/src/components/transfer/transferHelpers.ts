@@ -87,5 +87,6 @@ export function toOwnAccount(account: Account): OwnAccount {
         name: account.accountName?.trim() || account.accountType,
         meta: account.accountNumber,
         balance: account.balance,
+        isFavorite: account.isFavorite,
     };
 }

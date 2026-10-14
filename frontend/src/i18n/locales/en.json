@@ -511,10 +511,8 @@
         "transfers": "Transfers"
     },
     "table": {
-        "my-accounts": "My accounts",
         "planned-transactions": "Planned transfers",
-        "pending-transfers": "Upcoming transfers",
-        "latest-transactions": "Latest transactions"
+        "pending-transfers": "Upcoming transfers"
     },
     "forms": {
         "email": "email",
@@ -537,7 +535,10 @@
     },
     "page-transfer": {
         "heading": "New transfer",
-        "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
+        "form-card-label": "Pay and transfer",
+        "section-accounts": "Accounts",
+        "section-details": "Amount and details",
+        "help-card-search": "transfer payment",
         "name-label": "Personal note",
         "name-label-recurring": "Name the transfer",
         "name-placeholder": "E.g. Rent September",
@@ -590,6 +591,7 @@
             "from-title": "Choose Account",
             "to-title": "Choose recipient",
             "search-placeholder": "Search by name",
+            "group-favorites": "Favorites",
             "group-own": "My accounts",
             "group-bg": "BG/PG",
             "group-bank": "Bank account",
@@ -612,10 +614,12 @@
             "back-to-transfers": "Back to transfers"
         },
         "pending": {
+            "card-label": "Sent payments",
             "arrives": "Expected to arrive {{date}}",
             "footnote": "Payments to other banks and BG/PG normally take one banking day."
         },
         "planned": {
+            "card-label": "Scheduled withdrawals",
             "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
             "unknown-account": "Unknown account",
             "actions-label": "More options",

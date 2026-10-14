@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import Table from "../Table";
 import TableRow from "../TableRow";
 import PlannedTransferActionsModal from "./PlannedTransferActionsModal";
 import type { EditPlannedError } from "./PlannedTransferActionsModal";
@@ -50,9 +49,15 @@ export default function PlannedTransfersPanel({
     };
 
     return (
-        <div >
-            <Table tableType="planned" handleClick={() => { }}>
-                <div className="max-h-[420px] overflow-y-auto">
+        <div className="p-3 sm:p-4">
+            {upcomingTransfers.length === 0 ? (
+                <div className="border border-nordiska-blue/50 bg-light-gray/30 p-4 text-center">
+                    <span aria-hidden="true" className="mx-auto block h-10 w-10 bg-nordiska-orange mask-[url('/icons/transfers.svg')] mask-contain mask-center mask-no-repeat" />
+                    <p className="mt-2 text-sm font-semibold text-dark-navy/80">{t("no-planned-state.title")}</p>
+                    <p className="mt-1 text-xs text-dark-navy/70">{t("no-planned-state.description")}</p>
+                </div>
+            ) : (
+                <div className="max-h-[420px] overflow-y-auto pr-1">
                     {upcomingTransfers.map((planned) => (
                         <TableRow
                             key={planned.localId}
@@ -71,8 +76,8 @@ export default function PlannedTransfersPanel({
                         />
                     ))}
                 </div>
-            </Table>
-            <p className="mt-3 max-w-[42ch] text-sm text-secondary">
+            )}
+            <p className="mt-3 ml-1 text-xs text-secondary sm:text-sm">
                 {t("page-transfer.planned.footnote")}
             </p>
 

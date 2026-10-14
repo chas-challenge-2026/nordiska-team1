@@ -61,24 +61,3 @@ export default function PlannedTransfersCard() {
     </OverviewCard>
     );
 }
-
-{/* 
-<Table tableType="planned">
-    {isPending ? (
-        <StatusText text={t("overview-route.loading-planned")} />
-    ) : isError ? (
-        <StatusText text={t("overview-route.planned-error")} isError />
-    ) : upcoming.length === 0 ? (
-        <StatusText text={t("overview-route.no-planned")} />
-    ) : (
-        upcoming.map((tx) => (
-            <TableRow
-                key={tx.id}
-                rowType="planned"
-                plannedDate={formatDate(tx.plannedDate)}
-                plannedName={tx.label || t("overview-route.planned-unnamed")}
-                plannedSum={Math.abs(tx.amount)}
-            />
-        ))
-    )}
-</Table> */}
