@@ -51,10 +51,6 @@ export default function TransferForm({
 
     return (
         <div className="p-3 sm:p-4">
-            <p className="mb-4 ml-1 text-sm text-secondary">
-                {t("page-transfer.help-text")}
-            </p>
-
             {/* ACCOUNTS */}
             <section aria-labelledby="transfer-accounts-heading">
                 <h3 id="transfer-accounts-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">

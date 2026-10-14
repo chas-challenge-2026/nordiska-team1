@@ -516,11 +516,10 @@
     },
     "page-transfer": {
         "heading": "Ny överföring",
-        "form-card-label": "Betala och för över",
+        "form-card-label": "Betala och överför",
         "section-accounts": "Konton",
         "section-details": "Belopp och detaljer",
         "help-card-search": "överföring betalning",
-        "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
         "name-label": "Egen notis",
         "name-label-recurring": "Namnge överföringen",
         "name-placeholder": "T.ex. Hyra september",
