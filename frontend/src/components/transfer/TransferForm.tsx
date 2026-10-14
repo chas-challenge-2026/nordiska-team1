@@ -50,10 +50,10 @@ export default function TransferForm({
     const { t } = useTranslation();
 
     return (
-        <div className="p-3 sm:p-4">
+        <div className="p-3 sm:p-4 [&_input]:rounded-none [&_select]:rounded-none">
             {/* ACCOUNTS */}
             <section aria-labelledby="transfer-accounts-heading">
-                <h3 id="transfer-accounts-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">
+                <h3 id="transfer-accounts-heading" className="mb-2 ml-1 text-sm font-semibold text-dark-navy sm:text-base">
                     {t("page-transfer.section-accounts")}
                 </h3>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
@@ -105,10 +105,10 @@ export default function TransferForm({
 
             {/* DETAILS */}
             <section aria-labelledby="transfer-details-heading" className="mt-4 sm:mt-6">
-                <h3 id="transfer-details-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">
+                <h3 id="transfer-details-heading" className="mb-2 ml-1 text-sm font-semibold text-dark-navy sm:text-base">
                     {t("page-transfer.section-details")}
                 </h3>
-                <div className="flex flex-col gap-4 border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:gap-5 sm:p-4">
+                <div className="flex flex-col gap-4 px-3 sm:gap-5 sm:px-4">
                     <InputField
                         name="transferAmount"
                         type="text"
