@@ -40,6 +40,18 @@ void require(bool condition, const char* message) {
     }
 }
 
+std::array<double, 9> timing_values(const nordiska_pdf_pipeline_timing& timing) {
+    return {timing.ingest_seconds, timing.layout_seconds,      timing.render_seconds,
+            timing.sign_seconds,   timing.signer_call_seconds, timing.prepare_seconds,
+            timing.digest_seconds, timing.checksum_seconds,    timing.total_seconds};
+}
+
+nordiska_pdf_pipeline_timing latest_timing() {
+    nordiska_pdf_pipeline_timing timing{};
+    nordiska_pdf_v1_get_last_timing(&timing);
+    return timing;
+}
+
 class ScopedEnvironment {
   public:
     ScopedEnvironment(const char* name, const char* value) : name_(name) {
@@ -138,6 +150,8 @@ int batch_reject_cb_v2(const struct nordiska_pdf_batch_view_v2*, void*) {
 } // namespace
 
 int main() {
+    require(timing_values(latest_timing()) == std::array<double, 9>{}, "new thread must have zero timings");
+    nordiska_pdf_v1_get_last_timing(nullptr);
     // 1. Status name helper tests (NOR-140)
     require(std::strcmp(nordiska_pdf_v1_status_name(NORDISKA_PDF_OK), "NORDISKA_PDF_OK") == 0,
             "status name OK mismatch");
@@ -468,10 +482,105 @@ int main() {
         require(std::string_view(reinterpret_cast<const char*>(golden_capture.docs[1].bytes.data()), 5) == "%PDF-",
                 "golden doc 1 header must be %PDF-");
 
-        nordiska_pdf_pipeline_timing golden_timing{};
-        nordiska_pdf_v1_get_last_timing(&golden_timing);
-        require(golden_timing.total_seconds >= 0.0, "total timing must be recorded");
-        require(golden_timing.render_seconds >= 0.0, "render timing must be recorded");
+        require(timing_values(latest_timing()) == std::array<double, 9>{},
+                "normal generation must not collect timings");
+    }
+
+    // Both ABI versions share normal/instrumented generation and delivery semantics.
+    {
+        ScopedEnvironment signing("NORDISKA_PDF_ENABLE_SIGNING", "0");
+        ScopedEnvironment engine("NORDISKA_PDF_ENGINE", "native");
+        const auto* data = reinterpret_cast<const uint8_t*>(valid_batch_json.data());
+        const auto exercise = [&](auto normal, auto instrumented, auto callback, auto reject) {
+            BatchCapture empty;
+            require(instrumented(nullptr, 1, callback, &empty) == NORDISKA_PDF_INVALID_ARGUMENT &&
+                        empty.call_count == 0 && timing_values(latest_timing()) == std::array<double, 9>{},
+                    "instrumented argument failure must replace old measurements with zeros");
+            BatchCapture ordinary, profiled;
+            require(normal(data, valid_batch_json.size(), callback, &ordinary) == NORDISKA_PDF_OK,
+                    "normal generation failed");
+            require(timing_values(latest_timing()) == std::array<double, 9>{},
+                    "normal call must leave the timing snapshot untouched");
+            require(instrumented(data, valid_batch_json.size(), callback, &profiled) == NORDISKA_PDF_OK,
+                    nordiska_pdf_v1_get_last_error());
+            require(profiled.call_count == 1 && profiled.customer_id == ordinary.customer_id &&
+                        profiled.docs.size() == ordinary.docs.size(),
+                    "instrumentation must preserve atomic batch delivery");
+            for (size_t i = 0; i < ordinary.docs.size(); ++i) {
+                require(ordinary.docs[i].id == profiled.docs[i].id &&
+                            nordiska::test::same_rendered_pdf(ordinary.docs[i].bytes, profiled.docs[i].bytes),
+                        "normal and instrumented calls must produce equivalent PDFs");
+            }
+            const auto measured = latest_timing();
+            require(measured.ingest_seconds > 0.0 && measured.layout_seconds > 0.0 && measured.render_seconds > 0.0 &&
+                        measured.checksum_seconds > 0.0,
+                    "instrumented call must record pipeline phases");
+            require(measured.prepare_seconds == 0.0 && measured.digest_seconds == 0.0 &&
+                        measured.signer_call_seconds == 0.0,
+                    "unsigned instrumentation must not record signing work");
+            require(measured.total_seconds == measured.ingest_seconds + measured.layout_seconds +
+                                                  measured.render_seconds + measured.sign_seconds,
+                    "total must sum the native pipeline phases");
+            require(timing_values(latest_timing()) == timing_values(measured),
+                    "getter must copy the snapshot without consuming it");
+            BatchCapture subsequent;
+            require(normal(data, valid_batch_json.size(), callback, &subsequent) == NORDISKA_PDF_OK,
+                    "subsequent normal call failed");
+            require(normal(nullptr, 1, callback, &empty) == NORDISKA_PDF_INVALID_ARGUMENT,
+                    "normal argument validation changed");
+            require(timing_values(latest_timing()) == timing_values(measured),
+                    "normal successes and failures must preserve the latest instrumented snapshot");
+            require(instrumented(data, valid_batch_json.size(), reject, nullptr) == NORDISKA_PDF_CALLBACK_FAILED &&
+                        std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+                    "instrumentation must preserve callback rejection diagnostics");
+            require(latest_timing().render_seconds > 0.0, "callback rejection must retain recorded phases");
+            BatchCapture failed;
+            require(instrumented(reinterpret_cast<const uint8_t*>(failing_batch_json.data()), failing_batch_json.size(),
+                                 callback, &failed) == NORDISKA_PDF_INVALID_INPUT &&
+                        failed.call_count == 0,
+                    "instrumented invalid batches must invoke no callbacks");
+            const auto partial = latest_timing();
+            require(partial.ingest_seconds > 0.0 && partial.render_seconds == 0.0 && partial.checksum_seconds == 0.0,
+                    "failed instrumented calls must publish their own partial work without stale later phases");
+        };
+        for (const char* selected : {"haru", "native", "cairo"}) {
+            engine.set(selected);
+            exercise(nordiska_pdf_v1_generate_customer_batch, nordiska_pdf_v1_generate_customer_batch_instrumented,
+                     batch_save_cb, batch_reject_cb);
+            exercise(nordiska_pdf_v2_generate_customer_batch, nordiska_pdf_v2_generate_customer_batch_instrumented,
+                     batch_save_cb_v2, batch_reject_cb_v2);
+        }
+
+        const auto main_snapshot = timing_values(latest_timing());
+        bool isolated = false;
+        std::thread worker([&] {
+            if (timing_values(latest_timing()) != std::array<double, 9>{}) {
+                return;
+            }
+            BatchCapture capture;
+            isolated = nordiska_pdf_v2_generate_customer_batch_instrumented(
+                           data, valid_batch_json.size(), batch_save_cb_v2, &capture) == NORDISKA_PDF_OK &&
+                       latest_timing().render_seconds > 0.0;
+        });
+        worker.join();
+        require(isolated && timing_values(latest_timing()) == main_snapshot,
+                "instrumented snapshots must stay isolated between threads");
+
+        // A nested instrumented callback must not overwrite its parent's collector.
+        engine.set("native");
+        const auto nested_callback = +[](const nordiska_pdf_batch_view*, void*) -> int {
+            const int status =
+                nordiska_pdf_v2_generate_customer_batch_instrumented(nullptr, 1, batch_save_cb_v2, nullptr);
+            return status == NORDISKA_PDF_INVALID_ARGUMENT && timing_values(latest_timing()) == std::array<double, 9>{}
+                       ? 42
+                       : 43;
+        };
+        require(nordiska_pdf_v1_generate_customer_batch_instrumented(data, valid_batch_json.size(), nested_callback,
+                                                                     nullptr) == NORDISKA_PDF_CALLBACK_FAILED &&
+                    std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+                "outer call must preserve callback rejection after nested instrumentation");
+        require(latest_timing().render_seconds > 0.0 && latest_timing().checksum_seconds > 0.0,
+                "latest completed outer call must publish its own measurements after the nested call");
     }
 
     // 9. Thread-local isolation test for nordiska_pdf_v1_get_last_error
