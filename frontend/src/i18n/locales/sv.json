@@ -139,6 +139,10 @@
             "show-accountinfo": "Visa kontoinformation",
             "pick-one-account": "Välj ett konto"
         },
+        "transactions-section": {
+            "title": "Kontots senaste transaktioner",
+            "no-transactions": "Det finns inga transaktioner kopplade till det här kontot"
+        },
         "interest-section": {
             "accured-interest": "Intjänad ränta",
             "accured-interest-info": "Intjänad ränta beräknas från 1 januari varje år.",
