@@ -17,7 +17,7 @@ export default function DesktopLayout() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="flex flex-1 min-h-0 w-full pt-[61px] md:pt-[125px]"
+                        className="flex flex-1 min-h-0 w-full"
                     >
                         <Outlet />
                     </motion.div>
