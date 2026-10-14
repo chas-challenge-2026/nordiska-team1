@@ -114,6 +114,24 @@ struct nordiska_pdf_batch_view {
  */
 typedef int (*nordiska_pdf_delivery_callback)(const struct nordiska_pdf_batch_view* batch, void* user_data);
 
+/* Additive v2 views: v1 views and callbacks retain their original layout. */
+struct nordiska_pdf_document_view_v2 {
+    const char* document_id;
+    const uint8_t* bytes;
+    size_t length;
+    /* Native-computed SHA-256 of the complete delivered PDF: 64 lowercase hex
+     * characters plus a NUL terminator. Valid only during the callback. */
+    const char* sha256_hex;
+};
+
+struct nordiska_pdf_batch_view_v2 {
+    uint64_t customer_id;
+    const struct nordiska_pdf_document_view_v2* documents;
+    size_t document_count;
+};
+
+typedef int (*nordiska_pdf_delivery_callback_v2)(const struct nordiska_pdf_batch_view_v2* batch, void* user_data);
+
 /*
  * Generates an atomic customer PDF batch from a UTF-8 JSON payload.
  *
@@ -153,6 +171,14 @@ typedef int (*nordiska_pdf_delivery_callback)(const struct nordiska_pdf_batch_vi
  */
 NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                              nordiska_pdf_delivery_callback callback, void* user_data);
+
+/* Same input validation, configuration, synchronous delivery, all-or-nothing
+ * guarantee and status codes as v1, with native-computed artifact hashes.
+ * Copy bytes, identifiers and sha256_hex before returning from the callback.
+ * Diagnostics use nordiska_pdf_v1_get_last_error on the calling thread. */
+NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
+                                                             nordiska_pdf_delivery_callback_v2 callback,
+                                                             void* user_data);
 
 /* Resource limit queries for host admission control */
 NORDISKA_PDF_API size_t nordiska_pdf_v1_max_json_bytes(void);

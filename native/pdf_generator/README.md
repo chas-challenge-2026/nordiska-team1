@@ -187,6 +187,16 @@ are case-insensitive; an unset or empty value retains Libharu. Unknown values
 return invalid argument with no delivery callback. Signing configuration is
 independent of the selected renderer.
 
+For callers that need the artifact checksum, use the additive
+`nordiska_pdf_v2_generate_customer_batch` function with
+`nordiska_pdf_delivery_callback_v2`. Each `nordiska_pdf_document_view_v2` includes
+`sha256_hex`, a NUL-terminated 64-character lowercase SHA-256 of the complete
+delivered PDF, including any inserted signature. Copy this string during the
+callback, just as for PDF bytes and identifiers. Status codes, environment
+configuration, atomic delivery and `nordiska_pdf_v1_get_last_error` are shared
+with v1. Existing v1 functions and struct layouts are unchanged. Host callers
+can adopt v2 to avoid rehashing PDF bytes; .NET adoption is a separate change.
+
 #### Status Codes (`nordiska_pdf_status`):
 
 - `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
