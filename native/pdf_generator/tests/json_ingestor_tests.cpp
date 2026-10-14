@@ -255,24 +255,17 @@ int main() {
     require(native_uncomp_res->documents[0].pdf_bytes.size() > native_batch_res->documents[0].pdf_bytes.size(),
             "uncompressed native PDF should be larger than compressed PDF");
 
-    // 14. Verify in-place digital signature slot append across backends
+    // 14. Unsigned golden samples must not carry an empty signature revision.
     for (const auto* batch_res : {&default_batch_res, &cairo_batch_res, &native_batch_res}) {
         require((*batch_res)->documents.size() == 2, "batch must have 2 documents");
         for (const auto& doc : (*batch_res)->documents) {
             const auto& slot = doc.signature_slot;
-            require(slot.offset > 0, "signature slot offset must be non-zero");
-            require(slot.max_length == nordiska::kDefaultSignatureSlotSize,
-                    "signature slot must use configured default hex capacity");
-            require(!slot.is_signed, "initial signature slot must not be marked signed");
-            require(slot.offset + slot.max_length < doc.pdf_bytes.size(), "slot must fit within pdf bytes");
-            require(doc.pdf_bytes[slot.offset - 1] == '<', "preceding byte must be opening '<'");
-            require(doc.pdf_bytes[slot.offset + slot.max_length] == '>', "succeeding byte must be closing '>'");
-            for (size_t i = 0; i < slot.max_length; ++i) {
-                require(doc.pdf_bytes[slot.offset + i] == '0', "slot content must be initialized to '0'");
-            }
+            require(slot.offset == 0 && slot.max_length == 0 && !slot.is_signed,
+                    "unsigned PDF must have no signature slot");
             std::string_view pdf_sv(reinterpret_cast<const char*>(doc.pdf_bytes.data()), doc.pdf_bytes.size());
-            require(pdf_sv.find("/Type /Sig") != std::string_view::npos, "PDF must contain /Type /Sig dictionary");
-            require(pdf_sv.find("/ByteRange [") != std::string_view::npos, "PDF must contain /ByteRange");
+            require(pdf_sv.find("/Type /Sig") == std::string_view::npos,
+                    "unsigned PDF must not contain /Type /Sig dictionary");
+            require(pdf_sv.find("/ByteRange [") == std::string_view::npos, "unsigned PDF must not contain /ByteRange");
         }
     }
 

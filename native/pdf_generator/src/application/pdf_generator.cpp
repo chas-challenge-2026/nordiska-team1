@@ -111,7 +111,8 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
 
         const auto t_render_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         // 2. Render
-        auto render_res = engine_.render(layout, signature_contents_capacity_ + kSignatureUpdateOverhead);
+        const size_t signature_tail = enable_signing_ ? signature_contents_capacity_ + kSignatureUpdateOverhead : 0;
+        auto render_res = engine_.render(layout, signature_tail);
 
         if (timing != nullptr) {
             const auto t_render_end = Clock::now();
@@ -126,30 +127,33 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         std::vector<uint8_t> final_bytes = std::move(*render_res);
 
         const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto slot_result =
-            append_signature_slot(final_bytes, signature_contents_capacity_, timing ? &timing->preparation : nullptr);
-        if (timing) {
-            timing->prepare_seconds += std::chrono::duration<double>(Clock::now() - t_sign_start).count();
-        }
-        if (!slot_result) {
-            return std::unexpected(GeneratorError{std::move(slot_result).error(), doc.document_id});
-        }
-        SignatureSlot slot = *slot_result;
-        const auto t_hash_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto digest = compute_byte_range_digest(final_bytes, slot);
-        if (timing != nullptr) {
-            const auto seconds = std::chrono::duration<double>(Clock::now() - t_hash_start).count();
-            timing->digest_seconds += seconds;
-            timing->hash_seconds += seconds;
-        }
-        if (!digest) {
-            return std::unexpected(GeneratorError{std::move(digest).error(), doc.document_id});
-        }
+        SignatureSlot slot{.max_length = 0};
+        Sha256Digest digest{};
         if (enable_signing_) {
+            auto slot_result = append_signature_slot(final_bytes, signature_contents_capacity_,
+                                                     timing ? &timing->preparation : nullptr);
+            if (timing) {
+                timing->prepare_seconds += std::chrono::duration<double>(Clock::now() - t_sign_start).count();
+            }
+            if (!slot_result) {
+                return std::unexpected(GeneratorError{std::move(slot_result).error(), doc.document_id});
+            }
+            slot = *slot_result;
+            const auto t_hash_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
+            auto digest_result = compute_byte_range_digest(final_bytes, slot);
+            if (timing != nullptr) {
+                const auto seconds = std::chrono::duration<double>(Clock::now() - t_hash_start).count();
+                timing->digest_seconds += seconds;
+                timing->hash_seconds += seconds;
+            }
+            if (!digest_result) {
+                return std::unexpected(GeneratorError{std::move(digest_result).error(), doc.document_id});
+            }
+            digest = *digest_result;
             const SigningContext signing_context{.document_id = doc.document_id, .customer_id = job.customer_id};
             const auto signer_start = timing ? Clock::now() : Clock::time_point{};
             auto signature =
-                signer_->sign_digest(*digest, signing_context, timing ? &timing->signer_call_seconds : nullptr);
+                signer_->sign_digest(digest, signing_context, timing ? &timing->signer_call_seconds : nullptr);
             if (timing) {
                 timing->signer_wrapper_seconds += std::chrono::duration<double>(Clock::now() - signer_start).count();
             }
@@ -183,7 +187,7 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
             .document_id = doc.document_id,
             .pdf_bytes = std::move(final_bytes),
             .sha256_hash = *artifact_hash,
-            .signing_digest = *digest,
+            .signing_digest = digest,
             .signature_slot = slot,
         });
     }
