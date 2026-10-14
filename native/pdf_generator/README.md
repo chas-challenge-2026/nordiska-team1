@@ -180,7 +180,15 @@ const char* nordiska_pdf_v1_get_last_error(void);
 const char* nordiska_pdf_v1_status_name(int status_code);
 ```
 
+The C API uses Libharu by default. Set `NORDISKA_PDF_ENGINE=native`,
+`NORDISKA_PDF_ENGINE=haru` (or `libharu`), or `NORDISKA_PDF_ENGINE=cairo`
+before generation to compare engines without rebuilding the library. Values
+are case-insensitive; an unset or empty value retains Libharu. Unknown values
+return invalid argument with no delivery callback. Signing configuration is
+independent of the selected renderer.
+
 #### Status Codes (`nordiska_pdf_status`):
+
 - `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
 - `1`: `NORDISKA_PDF_INVALID_ARGUMENT` — Null buffer, zero length, or null callback.
 - `2`: `NORDISKA_PDF_INVALID_INPUT` — JSON parse or domain validation error.

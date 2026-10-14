@@ -159,9 +159,21 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
             }
         }
 
+        auto engine = nordiska::PdfEngineKind::Libharu;
+        if (const char* engine_env = std::getenv("NORDISKA_PDF_ENGINE"); engine_env && engine_env[0] != '\0') {
+            if (strcasecmp(engine_env, "native") == 0) {
+                engine = nordiska::PdfEngineKind::Native;
+            } else if (strcasecmp(engine_env, "cairo") == 0) {
+                engine = nordiska::PdfEngineKind::Cairo;
+            } else if (strcasecmp(engine_env, "libharu") != 0 && strcasecmp(engine_env, "haru") != 0) {
+                set_last_error("NORDISKA_PDF_ENGINE must be native, libharu, haru, or cairo");
+                return NORDISKA_PDF_INVALID_ARGUMENT;
+            }
+        }
+
         const nordiska::GeneratorConfig config{
             .ingestor = nordiska::JsonIngestorKind::Simdjson,
-            .engine = nordiska::PdfEngineKind::Libharu, // TODO native is faster (and smaller) but must be tested more
+            .engine = engine,
             .enable_signing = enable_signing,
             .compression = true, // Cut output size by 60% for a 25% performance penalty, huge win
         };

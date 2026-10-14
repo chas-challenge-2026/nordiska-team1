@@ -145,6 +145,11 @@ typedef int (*nordiska_pdf_delivery_callback)(const struct nordiska_pdf_batch_vi
  * Error diagnostics:
  *   When returning non-zero, call `nordiska_pdf_v1_get_last_error(void)` on the
  *   same thread to retrieve a descriptive null-terminated error string.
+ *
+ * Renderer selection:
+ *   NORDISKA_PDF_ENGINE accepts native, libharu (or haru), and cairo,
+ *   case-insensitively. Unset or empty selects Libharu. An unknown value
+ *   returns invalid argument before callback delivery.
  */
 NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                              nordiska_pdf_delivery_callback callback, void* user_data);

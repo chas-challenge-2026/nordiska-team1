@@ -7,10 +7,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -34,6 +36,30 @@ void require(bool condition, const char* message) {
         throw std::runtime_error(message);
     }
 }
+
+class ScopedEnvironment {
+  public:
+    ScopedEnvironment(const char* name, const char* value) : name_(name) {
+        if (const char* original = std::getenv(name)) {
+            original_ = original;
+        }
+        set(value);
+    }
+    ~ScopedEnvironment() {
+        set(original_ ? original_->c_str() : nullptr);
+    }
+    void set(const char* value) const {
+        if (value) {
+            ::setenv(name_, value, 1);
+        } else {
+            ::unsetenv(name_);
+        }
+    }
+
+  private:
+    const char* name_;
+    std::optional<std::string> original_;
+};
 
 struct TestSigner : nordiska::PdfSigner {
     std::string failure_document;
@@ -170,6 +196,45 @@ int main() {
     require(capture.docs[1].id == "account1_tax", "doc 1 id mismatch");
     require(capture.docs[1].bytes.size() > 8, "doc 1 empty bytes");
     require(std::memcmp(capture.docs[1].bytes.data(), "%PDF-1.3", 8) == 0, "doc 1 not a PDF-1.3");
+
+    // #223: select the renderer without rebuilding; legacy defaults stay Libharu.
+    {
+        ScopedEnvironment signing("NORDISKA_PDF_ENABLE_SIGNING", "0");
+        ScopedEnvironment engine_env("NORDISKA_PDF_ENGINE", nullptr);
+        const std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(valid_batch_json.data()),
+                                               valid_batch_json.size());
+        for (const auto& [name, engine] :
+             std::vector<std::pair<const char*, nordiska::PdfEngineKind>>{{nullptr, nordiska::PdfEngineKind::Libharu},
+                                                                          {"", nordiska::PdfEngineKind::Libharu},
+                                                                          {"libharu", nordiska::PdfEngineKind::Libharu},
+                                                                          {"HaRu", nordiska::PdfEngineKind::Libharu},
+                                                                          {"NaTiVe", nordiska::PdfEngineKind::Native},
+                                                                          {"CAIRO", nordiska::PdfEngineKind::Cairo}}) {
+            engine_env.set(name);
+            BatchCapture selected;
+            require(nordiska_pdf_v1_generate_customer_batch(payload.data(), payload.size(), batch_save_cb, &selected) ==
+                        NORDISKA_PDF_OK,
+                    nordiska_pdf_v1_get_last_error());
+            nordiska::PdfGenerator expected(nordiska::GeneratorConfig{.engine = engine});
+            auto generated = expected.generate(payload);
+            require(generated.has_value(), "direct renderer generation failed");
+            require(selected.call_count == 1 && selected.docs.size() == generated->documents.size(),
+                    "selected renderer must deliver the full customer batch");
+            for (size_t i = 0; i < selected.docs.size(); ++i) {
+                require(selected.docs[i].id == generated->documents[i].document_id &&
+                            selected.docs[i].bytes == generated->documents[i].pdf_bytes,
+                        "C API output must match the selected renderer, including Swedish text and geometry");
+            }
+        }
+        engine_env.set("typo");
+        BatchCapture rejected;
+        require(nordiska_pdf_v1_generate_customer_batch(payload.data(), payload.size(), batch_save_cb, &rejected) ==
+                        NORDISKA_PDF_INVALID_ARGUMENT &&
+                    rejected.call_count == 0,
+                "unknown engine must fail before delivery");
+        require(std::string(nordiska_pdf_v1_get_last_error()).find("NORDISKA_PDF_ENGINE") != std::string::npos,
+                "unknown engine diagnostic must identify the setting");
+    }
 
     // 4. All-or-nothing guarantee: document 2 fails -> 0 callbacks invoked
     const std::string failing_batch_json = R"({
