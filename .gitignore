@@ -112,7 +112,8 @@ coverage/
 tmp/
 temp/
 sample_outputs/
-
+/infra/secrets/
+/infra/v2/secrets/
 
 # 7. Claude Code local settings
 .claude/
