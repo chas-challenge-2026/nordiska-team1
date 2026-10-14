@@ -2,6 +2,7 @@
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 #include "nordiska/signing/signature_slot_appender.hpp"
+#include "pdf_test_helpers.hpp"
 
 #include <algorithm>
 #include <arpa/inet.h>
@@ -417,7 +418,8 @@ void test_socket_signer_adapter() {
             require(layout.has_value(), "unsigned fixture layout failed");
             auto rendered = renderer.render(*layout);
             require(rendered.has_value(), "unsigned fixture render failed");
-            require(document.pdf_bytes == *rendered, "unsigned PDF must equal the unmodified renderer output");
+            require(nordiska::test::same_rendered_pdf(document.pdf_bytes, *rendered),
+                    "unsigned PDF must equal the unmodified renderer output apart from creation time");
             const std::string pdf(document.pdf_bytes.begin(), document.pdf_bytes.end());
             require(pdf.find("/ByteRange") == std::string::npos && pdf.find("/Type /Sig") == std::string::npos,
                     "unsigned PDF must not contain an empty signature revision");
