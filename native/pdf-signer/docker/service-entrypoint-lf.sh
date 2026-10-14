@@ -6,29 +6,13 @@ cd /app
 
 export OPENSSL_MODULES=/usr/lib/x86_64-linux-gnu/ossl-modules
 
-PIN_FILE=/run/secrets/pdf_signer_pkcs11_pin
-SO_PIN_FILE=/run/secrets/pdf_signer_pkcs11_so_pin
+: "${PDF_SIGNER_PKCS11_PIN:?PDF_SIGNER_PKCS11_PIN is required}"
+: "${PDF_SIGNER_PKCS11_SO_PIN:?PDF_SIGNER_PKCS11_SO_PIN is required}"
 
-if [ ! -r "$PIN_FILE" ]; then
-  echo "Missing secret: $PIN_FILE" >&2
-  exit 1
-fi
+PIN="$PDF_SIGNER_PKCS11_PIN"
+SO_PIN="$PDF_SIGNER_PKCS11_SO_PIN"
 
-if [ ! -r "$SO_PIN_FILE" ]; then
-  echo "Missing secret: $SO_PIN_FILE" >&2
-  exit 1
-fi
-
-PIN="$(cat "$PIN_FILE")"
-SO_PIN="$(cat "$SO_PIN_FILE")"
-
-if [ -z "$PIN" ] || [ -z "$SO_PIN" ]; then
-  echo "PKCS#11 secrets must not be empty" >&2
-  exit 1
-fi
-
-export PDF_SIGNER_PKCS11_PIN="$PIN"
-
+export PDF_SIGNER_PKCS11_PIN
 
 mkdir -p .dev/softhsm/tokens
 mkdir -p tests/data
