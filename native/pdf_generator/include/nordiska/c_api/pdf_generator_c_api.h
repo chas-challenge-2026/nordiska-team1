@@ -2,70 +2,41 @@
 #define NORDISKA_C_API_PDF_GENERATOR_C_API_H
 
 /*
- * =============================================================================
- * Nordiska Native PDF Generator — C ABI Public Interface
- * =============================================================================
+ * Nordiska Native PDF Generator — C ABI
  *
- * Overview:
- *   High-performance, unmanaged C-compatible library for generating customer-
- *   facing PDF documents (account statements, annual summaries, tax reports).
- *   Designed for direct FFI / P-Invoke integration from .NET and native callers.
+ * Shared contract for V1 and V2
+ * -----------------------------
+ * Each synchronous, stateless call generates one customer's complete PDF batch
+ * on the calling thread. Configuration and generator components are resolved
+ * per call. Concurrent calls for separate batches are independent.
  *
- * Architecture Boundary:
- *   - Presentation-only layer: consumes pre-calculated, host-formatted banking
- *     data. Native code does not compute taxes, interest, balances, or currency
- *     conversions.
- *   - C89 compatible ABI: exposes only primitive types, explicit structs, and
- *     function pointers. No C++ classes, STL types, or exceptions cross this
- *     boundary.
+ * Input: json_utf8 must be non-NULL and json_length must be 1..33,554,432 bytes
+ * (32 MB). The caller must keep this UTF-8 JSON buffer valid and unmodified until
+ * generation returns. No caller input pointers are retained afterward. See
+ * docs/golden_customer_batch_sample.json for the canonical input schema.
+ * Banking values are supplied pre-calculated and formatted by the host.
  *
- * Execution & Concurrency:
- *   - Synchronous on calling thread: each generation call executes entirely on
- *     the caller's thread without internal worker pools or thread hopping.
- *   - Independent customer data: batches remain isolated across calls; concurrent threads
- *     can safely invoke generation for separate customer batches.
+ * Delivery: callback must be non-NULL. It is invoked exactly once after every
+ * document succeeds. Validation, layout, rendering, signing or limit failures
+ * discard the batch and invoke no callback. user_data is forwarded unchanged
+ * and may be NULL. Return 0 from the callback to accept the batch; any other
+ * return value makes generation return status 3 (callback failed).
  *
- * Input Memory Contract (Caller Lifetime Guarantee):
- *   - The caller MUST guarantee that the memory buffer referenced by `json_utf8`
- *     remains allocated, valid, and unmodified for the entire duration of the
- *     synchronous `nordiska_pdf_v1_generate_customer_batch` call.
- *   - Native code inspects and borrows this memory during parsing and will not
- *     retain any pointer, reference, or dependency on `json_utf8` after the call
- *     returns.
+ * Ownership: all batch views, identifiers, PDF bytes and V2 hash strings belong
+ * to native code and are borrowed ONLY for the callback's duration. Copy them
+ * or finish using them before returning. The caller must not free these buffers.
  *
- * Schema & Document Versioning (Ground Truth):
- *   - The JSON payload envelope and document contents are strictly structured
- *     and versioned (using `$schema_version` at root and `version` per document).
- *   - For canonical structure and field definitions, see the ground-truth
- *     golden sample document: `golden_customer_batch_sample.json`
+ * Configuration: NORDISKA_PDF_ENGINE accepts native, libharu (or haru), and
+ * cairo, case-insensitively. Unset or empty selects Libharu. An unknown value
+ * returns status 1 (invalid argument) without invoking the callback.
  *
- * Atomic Customer Batch Contract:
- *   - One invocation represents one customer and one or more documents.
- *   - All-or-nothing guarantee: the batch succeeds or fails as a unit. If any
- *     single document fails validation, layout, rendering, or limits, all
- *     in-progress output is discarded and zero callbacks are invoked.
- *   - Exactly-once callback: upon successful completion of all documents, the
- *     host callback is invoked exactly once with the complete in-memory batch.
+ * Results: generation returns 0 on success and a non-zero status on failure.
+ * Both versions use the shared helpers below for status names, payload limits
+ * and thread-local diagnostics. Error strings remain valid until the next
+ * generation call on the same thread; successful calls leave an empty string.
  *
- * Output Memory Ownership & Buffer Lifetimes:
- *   - Native code retains and owns all batch buffers throughout generation and
- *     callback execution.
- *   - The host callback borrows the batch view and must copy or finish all use
- *     of PDF byte pointers before returning.
- *   - Native frees all memory immediately upon callback return. No pointers
- *     to batch structs or PDF bytes remain valid after the call returns.
- *
- * Error Reporting & Diagnostic Contract:
- *   - Diagnostic details are decoupled from the generation signature and stored
- *     in thread-local storage on the calling thread.
- *   - When `nordiska_pdf_v1_generate_customer_batch` returns a non-zero status code,
- *     the caller may invoke `nordiska_pdf_v1_get_last_error(void)` to retrieve a
- *     null-terminated UTF-8 diagnostic string.
- *   - Lifetime: The error string pointer is valid until the next generation or creation call
- *     on the same calling thread. The caller must not free or mutate it.
- *   - If the previous generation call on the thread succeeded,
- *     `nordiska_pdf_v1_get_last_error(void)` returns an empty string ("").
- * =============================================================================
+ * Boundary: C-compatible primitive types, structs and function pointers only.
+ * No C++ classes, STL types or exceptions cross the ABI.
  */
 
 #include <stddef.h>
@@ -77,50 +48,40 @@
 extern "C" {
 #endif
 
-/* View of an individual completed document within a customer batch */
+/* ========================================================================== */
+/* V1 — PDF delivery                                                          */
+/* ========================================================================== */
+
 struct nordiska_pdf_document_view {
     const char* document_id;
     const uint8_t* bytes;
     size_t length;
 };
 
-/* View of the complete customer batch delivered to the callback */
 struct nordiska_pdf_batch_view {
     uint64_t customer_id;
     const struct nordiska_pdf_document_view* documents;
     size_t document_count;
 };
 
-/*
- * Delivery callback invoked synchronously on the calling thread EXACTLY ONCE
- * upon successful generation of every requested document in the customer batch.
- *
- * Parameters:
- *   batch     - Pointer to the completed customer batch view containing all
- *               rendered document byte views. Memory is owned by native code
- *               and guaranteed valid ONLY for the duration of this callback call.
- *               Native releases all batch memory immediately when this callback
- *               returns. The host must copy or transmit bytes before returning.
- *   user_data - Opaque caller-provided pointer forwarded verbatim from
- *               `nordiska_pdf_v1_generate_customer_batch`. Native code never
- *               dereferences, inspects, or modifies this pointer. Typically
- *               used to route output to a network socket, HTTP stream, or
- *               caller instance handle.
- *
- * Return value:
- *   Return 0 to indicate successful acceptance and delivery.
- *   Return non-zero to indicate callback handoff rejection (maps the API call
- *   return value to NORDISKA_PDF_CALLBACK_FAILED).
- */
 typedef int (*nordiska_pdf_delivery_callback)(const struct nordiska_pdf_batch_view* batch, void* user_data);
 
-/* Additive v2 views: v1 views and callbacks retain their original layout. */
+/* Generate and deliver PDF bytes under the shared contract above. */
+NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
+                                                             nordiska_pdf_delivery_callback callback, void* user_data);
+
+/* ========================================================================== */
+/* V2 — PDF delivery with artifact hashes                                     */
+/* ========================================================================== */
+
+/* Separate V2 views preserve the original V1 struct layouts and callback ABI. */
 struct nordiska_pdf_document_view_v2 {
     const char* document_id;
     const uint8_t* bytes;
     size_t length;
-    /* Native-computed SHA-256 of the complete delivered PDF: 64 lowercase hex
-     * characters plus a NUL terminator. Valid only during the callback. */
+    /* Native-computed SHA-256 of the complete delivered PDF, including any
+     * inserted signature: 64 lowercase hex characters plus a NUL terminator.
+     * Borrowed only during the callback, just like bytes and document_id. */
     const char* sha256_hex;
 };
 
@@ -132,93 +93,23 @@ struct nordiska_pdf_batch_view_v2 {
 
 typedef int (*nordiska_pdf_delivery_callback_v2)(const struct nordiska_pdf_batch_view_v2* batch, void* user_data);
 
-/*
- * Generates an atomic customer PDF batch from a UTF-8 JSON payload.
- *
- * All-or-nothing guarantee:
- *   If any single document fails validation, layout, rendering, or signing,
- *   the entire batch is aborted, zero callbacks are invoked, and an error
- *   status code is returned.
- *
- * Concurrency:
- *   Executes entirely synchronously on the calling thread. No internal
- *   background threads or thread pools are spawned.
- *
- * Parameters:
- *   json_utf8   - Pointer to the UTF-8 encoded JSON payload defining the customer
- *                 batch. Must not be NULL. The caller guarantees this memory
- *                 remains valid, allocated, and unmodified for the duration
- *                 of this call.
- *   json_length - Byte length of `json_utf8`. Must be greater than 0 and less
- *                 than or equal to 32 MB (33,554,432 bytes).
- *   callback    - Delivery callback function to invoke upon batch completion.
- *                 Must not be NULL. Invoked exactly once on success; never
- *                 invoked on failure.
- *   user_data   - Opaque caller pointer passed through unchanged to `callback`.
- *                 May be NULL if the callback does not require caller state.
- *
- * Return value:
- *   Returns 0 on success, or a non-zero status code on failure.
- *
- * Error diagnostics:
- *   When returning non-zero, call `nordiska_pdf_v1_get_last_error(void)` on the
- *   same thread to retrieve a descriptive null-terminated error string.
- *
- * Renderer selection:
- *   NORDISKA_PDF_ENGINE accepts native, libharu (or haru), and cairo,
- *   case-insensitively. Unset or empty selects Libharu. An unknown value
- *   returns invalid argument before callback delivery.
- */
-NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
-                                                             nordiska_pdf_delivery_callback callback, void* user_data);
-
-/* Same input validation, configuration, synchronous delivery, all-or-nothing
- * guarantee and status codes as v1, with native-computed artifact hashes.
- * Copy bytes, identifiers and sha256_hex before returning from the callback.
- * Diagnostics use nordiska_pdf_v1_get_last_error on the calling thread. */
+/* Generate and deliver PDF bytes and hashes under the same shared contract. */
 NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                              nordiska_pdf_delivery_callback_v2 callback,
                                                              void* user_data);
 
-/* Optional reusable generator lifecycle. The opaque handle retains components,
- * never caller input buffers or completed batches. Creation resolves environment
- * configuration (including signing auto-detection and signer path/mode) once.
- * Later environment changes require creating a new handle; one-shot functions
- * continue resolving configuration on each call.
- *
- * create returns the standard status codes, writes NULL on failure and transfers
- * ownership on success. out_generator must point to an empty caller-owned slot.
- * destroy accepts NULL. Destroy only after all use of the handle has finished;
- * the caller must not reuse or destroy a freed handle.
- *
- * Each handle allows one active generation call, including callback delivery.
- * Concurrent or recursive use of the same handle returns invalid argument.
- * Separate handles may be used concurrently. Idle handles may move threads.
- * Generation retains the same validation, callback lifetime, atomic batch and
- * diagnostics contracts as the corresponding one-shot function.
- */
-struct nordiska_pdf_generator;
-NORDISKA_PDF_API int nordiska_pdf_v2_create_generator(struct nordiska_pdf_generator** out_generator);
-NORDISKA_PDF_API void nordiska_pdf_v2_destroy_generator(struct nordiska_pdf_generator* generator);
+/* ========================================================================== */
+/* Shared helpers — V1 names retained for compatibility; used by both versions */
+/* ========================================================================== */
 
-NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch_with_generator(struct nordiska_pdf_generator* generator,
-                                                                            const uint8_t* json_utf8,
-                                                                            size_t json_length,
-                                                                            nordiska_pdf_delivery_callback callback,
-                                                                            void* user_data);
-NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch_with_generator(struct nordiska_pdf_generator* generator,
-                                                                            const uint8_t* json_utf8,
-                                                                            size_t json_length,
-                                                                            nordiska_pdf_delivery_callback_v2 callback,
-                                                                            void* user_data);
-
-/* Resource limit queries for host admission control */
+/* Maximum input length in bytes, for host admission control. */
 NORDISKA_PDF_API size_t nordiska_pdf_v1_max_json_bytes(void);
 
-/* Returns thread-local diagnostic string for last error on calling thread; "" on success. Never NULL */
+/* Diagnostic for the last generation call on this thread; empty on success.
+ * Never NULL. Borrowed until the next generation call; do not free or mutate. */
 NORDISKA_PDF_API const char* nordiska_pdf_v1_get_last_error(void);
 
-/* Returns human-readable status name (e.g. "NORDISKA_PDF_OK"), or "status code does not exist". Never NULL */
+/* Human-readable status name, or "status code does not exist". Never NULL. */
 NORDISKA_PDF_API const char* nordiska_pdf_v1_status_name(int status);
 
 #ifdef __cplusplus

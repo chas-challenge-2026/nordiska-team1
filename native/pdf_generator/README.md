@@ -197,22 +197,10 @@ configuration, atomic delivery and `nordiska_pdf_v1_get_last_error` are shared
 with v1. Existing v1 functions and struct layouts are unchanged. Host callers
 can adopt v2 to avoid rehashing PDF bytes; .NET adoption is a separate change.
 
-For repeated batches, create an opaque generator with
-`nordiska_pdf_v2_create_generator`, use
-`nordiska_pdf_v1_generate_customer_batch_with_generator` or
-`nordiska_pdf_v2_generate_customer_batch_with_generator`, then release it with
-`nordiska_pdf_v2_destroy_generator`. Configuration, signing auto-detection and
-component construction happen once at creation. Repeated handle calls do not
-read environment variables, probe socket permissions or construct generators.
-Each call still returns a separate atomic customer batch and releases its input
-and results before returning. This API reuses components; the signer service
-still receives one connection per signed document.
-
-Create a new handle to adopt changed environment configuration. A handle permits
-one call at a time, including callback delivery; concurrent or recursive use of
-the same handle is rejected. Separate handles can run concurrently. Destroy
-only idle handles after their final use; destroying NULL is safe. One-shot v1
-and v2 behavior remains available for callers that need per-call configuration.
+Both entry points are stateless: each call resolves the current environment
+configuration, constructs its own generator components and releases them when
+the call returns. Concurrent calls generate independent customer batches.
+There is no caller-owned generator handle or create/destroy lifecycle.
 
 #### Status Codes (`nordiska_pdf_status`):
 
