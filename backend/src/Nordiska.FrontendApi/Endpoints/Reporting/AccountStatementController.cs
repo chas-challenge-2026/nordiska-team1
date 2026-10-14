@@ -14,13 +14,16 @@ public sealed class AccountStatementController : ControllerBase
 {
     private readonly IAccountStatementService _service;
     private readonly IAccountStatementQueryService _queries;
+    private readonly IReportInboxSynchronizer? _synchronizer;
 
     public AccountStatementController(
         IAccountStatementService service,
-        IAccountStatementQueryService queries)
+        IAccountStatementQueryService queries,
+        IReportInboxSynchronizer? synchronizer = null)
     {
         _service = service;
         _queries = queries;
+        _synchronizer = synchronizer;
     }
 
     [HttpPost]
@@ -102,6 +105,11 @@ public sealed class AccountStatementController : ControllerBase
             return NotFound();
         }
 
+        if (string.Equals(result.Status, "Completed", StringComparison.OrdinalIgnoreCase) && _synchronizer is not null)
+        {
+            await _synchronizer.SyncAccountStatementAsync(customerId, result.AccountStatementId, cancellationToken);
+        }
+
         return Ok(new AccountStatementJobResponse(
             result.JobId,
             result.AccountStatementId,
@@ -130,6 +138,11 @@ public sealed class AccountStatementController : ControllerBase
         if (document is null)
         {
             return NotFound();
+        }
+
+        if (_synchronizer is not null)
+        {
+            await _synchronizer.SyncAccountStatementAsync(customerId, accountStatementId, cancellationToken);
         }
 
         return File(
