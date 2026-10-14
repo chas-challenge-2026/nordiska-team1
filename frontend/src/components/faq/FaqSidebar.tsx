@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import HelpCard from "./HelpCard";
-import FaqContact from "./FaqContact";
 
 type FaqSidebarProps = {onLanguageChange: () => void;};
 
