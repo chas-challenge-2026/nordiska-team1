@@ -83,6 +83,8 @@ export function useCreateTransaction() {
         mutationFn: createTransaction,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: transactionKey.all });
+            // Saldo och ränta räknas om av backend, så kontona måste hämtas på nytt
+            queryClient.invalidateQueries({ queryKey: accountKey.all });
         },
     })
 }
