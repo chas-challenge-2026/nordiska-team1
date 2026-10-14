@@ -164,8 +164,8 @@ export default function AccountsPage() {
     }
 
     return (
-        <main className="min-h-screen w-full text-dark-navy">
-            <div className="mx-auto w-full max-w-7xl px-2 sm:px-6 sm:py-8 lg:px-1 lg:py-10">
+        <main className="min-h-screen w-full text-dark-navy mt-3 sm:mt-4 md:mt-10">
+            <div className="mx-auto w-full max-w-7xl px-2 ">
                 {/* HEADER */}
                 <AccountsHeader selectedAccountId={selectedAccountId} totalBalance={totalBalance} onCreateAccount={() => setIsCreateAccountOpen(true)} />
 

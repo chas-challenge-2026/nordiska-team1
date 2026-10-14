@@ -35,7 +35,7 @@ export default function PageLink({ title, route, mobile, hamburger = false}: Pag
 
                     {mobile ? (
                     <>
-                    <span aria-hidden="true" className={`mx-auto block h-7 w-7 ${isActive ? "bg-white" : "bg-white/70" } ${mobile} mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5`}/>
+                    <span aria-hidden="true" className={`mx-auto block h-5 w-5 sm:h-7 sm:w-7 ${isActive ? "bg-white" : "bg-white/70" } ${mobile} mask-contain mask-center mask-no-repeat `}/>
                         {title}
                     </>
                     ):(
