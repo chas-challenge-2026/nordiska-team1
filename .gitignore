@@ -128,3 +128,9 @@ temp/
 
 # Local installer script
 /dotnet-install.sh
+
+# Reporting benchmark profiles
+benchmark-flamegraph.txt
+benchmark-speedscope.json
+benchmark.speedscope.json
+*.speedscope.json
