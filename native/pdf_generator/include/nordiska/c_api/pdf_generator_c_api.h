@@ -48,9 +48,9 @@
 extern "C" {
 #endif
 
-/* ========================================================================== */
-/* V1 — PDF delivery                                                          */
-/* ========================================================================== */
+/* =========================================================================== */
+/* V1 — PDF delivery                                                           */
+/* =========================================================================== */
 
 struct nordiska_pdf_document_view {
     const char* document_id;
@@ -98,9 +98,9 @@ NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json
                                                              nordiska_pdf_delivery_callback_v2 callback,
                                                              void* user_data);
 
-/* ========================================================================== */
+/* =========================================================================== */
 /* Shared helpers — V1 names retained for compatibility; used by both versions */
-/* ========================================================================== */
+/* =========================================================================== */
 
 /* Maximum input length in bytes, for host admission control. */
 NORDISKA_PDF_API size_t nordiska_pdf_v1_max_json_bytes(void);
