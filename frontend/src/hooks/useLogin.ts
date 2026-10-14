@@ -5,7 +5,6 @@ import { register, type RegisterCustomerRequest } from "../services/customerServ
 import { createAccount } from "../services/accountsService";
 import { accountKey } from "./useAccounts";
 import { useUserStore } from "../store/userStore";
-import { useEffect } from "react";
 
 // Namn och kontotyp för det sparkonto som skapas automatiskt åt varje ny kund.
 // "Standard" är den enklaste av de kontotyper som är seedade i backend
@@ -69,7 +68,16 @@ export function useBankIdCollect(orderRef: string) {
     const query = useQuery({
         queryKey: ["bankIdCollect", orderRef],
 
-        queryFn: () => bankIdCollect(orderRef!),
+        queryFn: async () => {
+            const res = await bankIdCollect(orderRef!);
+            // Samma som e-postinloggningen: hämta användaren via /auth/me så att role följer med.
+            // Sätts innan COMPLETE returneras så att navigeringen i LoginCard ser rätt roll.
+            if (res.status === "COMPLETE") {
+                const user = await checkSession();
+                setUser(user);
+            }
+            return res;
+        },
 
         enabled: !!orderRef,
         retry: false,
@@ -89,12 +97,6 @@ export function useBankIdCollect(orderRef: string) {
             return 1500;
         },
     });
-
-    useEffect(() => {
-        if (query.data?.status === "COMPLETE" && query.data.customer) {
-            setUser(query.data.customer);
-        }
-    }, [query.data, setUser]);
 
     return query;
 }
