@@ -26,6 +26,7 @@ using Microsoft.OpenApi;
 using Nordiska.Modules.Banking.Application;
 using Nordiska.FrontendApi.BackgroundWorkers;
 using Nordiska.Modules.Inbox.Infrastructure.Db;
+using Nordiska.FrontendApi.Endpoints.Reporting;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
@@ -113,6 +114,7 @@ builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
 builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
+builder.Services.AddScoped<IReportInboxSynchronizer, ReportInboxSynchronizer>();
 
 // Official Microsoft HealthChecks with EF Core database check
 builder.Services.AddHealthChecks()

@@ -101,6 +101,19 @@ public interface IInboxRepository
 
     Task MarkDocumentOpenedAsync(long customerDocumentId, CancellationToken cancellationToken = default);
 
+    Task<CustomerDocument> RegisterCustomerDocumentAsync(
+        long customerId,
+        string documentType,
+        string title,
+        string fileName,
+        string mimeType,
+        string storageKey,
+        long fileSizeBytes,
+        string sha256,
+        string sourceType,
+        string? sourceId = null,
+        CancellationToken cancellationToken = default);
+
     // Terms and Conditions Acceptance (NOR-254)
     Task<IReadOnlyList<(TermAcceptance Acceptance, Term Term)>> GetPendingTermsAsync(
         long customerId,

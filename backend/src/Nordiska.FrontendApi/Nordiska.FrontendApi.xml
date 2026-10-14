@@ -1323,7 +1323,7 @@
             API endpoints for customer inbox, support tickets, and direct messaging threads.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.#ctor(Nordiska.Modules.Inbox.Application.IInboxService)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.#ctor(Nordiska.Modules.Inbox.Application.IInboxService,Nordiska.FrontendApi.Endpoints.Reporting.IReportInboxSynchronizer)">
             <summary>
             API endpoints for customer inbox, support tickets, and direct messaging threads.
             </summary>

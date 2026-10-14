@@ -19,9 +19,12 @@ namespace Nordiska.FrontendApi.Endpoints.Inbox;
 [Authorize]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-public sealed class InboxController(IInboxService service) : ControllerBase
+public sealed class InboxController(
+    IInboxService service,
+    Nordiska.FrontendApi.Endpoints.Reporting.IReportInboxSynchronizer? synchronizer = null) : ControllerBase
 {
     private readonly IInboxService _service = service;
+    private readonly Nordiska.FrontendApi.Endpoints.Reporting.IReportInboxSynchronizer? _synchronizer = synchronizer;
 
     /// <summary>
     /// Returns every count needed by the inbox badges and filters.
@@ -748,6 +751,10 @@ public sealed class InboxController(IInboxService service) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var customerId = User.GetRequiredCustomerId();
+        if (_synchronizer is not null)
+        {
+            await _synchronizer.SyncAllCustomerReportsAsync(customerId, cancellationToken);
+        }
         var documents = await _service.GetDocumentsAsync(customerId, parameters, cancellationToken);
         return Ok(documents);
     }
