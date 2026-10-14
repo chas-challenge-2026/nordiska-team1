@@ -149,6 +149,10 @@
             "show-accountinfo": "Show account information",
             "pick-one-account": "Select an account"
         },
+        "transactions-section": {
+            "title": "Recent account transactions",
+            "no-transactions": "There are no transactions associated with this account"
+        },
         "interest-section": {
             "accured-interest": "Interest earned",
             "accured-interest-info": "Interest earned is calculated from January 1 each year.",
