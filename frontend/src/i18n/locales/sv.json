@@ -89,6 +89,8 @@
         "type-deposit": "Insättning",
         "type-withdraw": "Uttag",
         "type-transfer": "Överföring",
+        "type-interest": "Ränteutbetalning",
+        "type-tax": "Skatt",
         "transactions": "Senaste transaktioner",
         "all-transactions": "Visa fler transaktioner",
         "less-transactions": "Visa färre transaktioner",

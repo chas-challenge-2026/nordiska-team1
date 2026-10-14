@@ -89,6 +89,8 @@
         "type-deposit": "Deposit",
         "type-withdraw": "Withdrawal",
         "type-transfer": "Transfer",
+        "type-interest": "Interest payment",
+        "type-tax": "Tax",
         "transactions": "Latest transactions",
         "all-transactions": "Show more transactions",
         "less-transactions": "Show fewer transactions",
