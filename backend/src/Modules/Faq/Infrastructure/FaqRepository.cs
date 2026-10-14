@@ -68,6 +68,17 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         return entry?.ToResponse();
     }
 
+    public async Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(
+        string language,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedLanguage = string.IsNullOrWhiteSpace(language) ? "sv" : language.Trim().ToLowerInvariant();
+        
+        var entries = await db.FaqEntries.AsNoTracking().Where(entry => entry.Language.ToLower() == normalizedLanguage).OrderBy(entry => entry.Id).ToListAsync(cancellationToken);
+
+        return entries.Select(entry => entry.ToResponse()).ToList();
+    }
+
     public async Task<IReadOnlyCollection<FaqEntryResponse>> SearchAsync(
         SearchFaqRequest request,
         CancellationToken cancellationToken = default)
@@ -315,4 +326,4 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
-}
+}
