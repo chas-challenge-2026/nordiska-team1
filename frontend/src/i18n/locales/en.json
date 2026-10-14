@@ -88,6 +88,7 @@
         "withdraws": "Withdraws only",
         "type-deposit": "Deposit",
         "type-withdraw": "Withdrawal",
+        "type-transfer": "Transfer",
         "transactions": "Latest transactions",
         "all-transactions": "Show more transactions",
         "less-transactions": "Show fewer transactions",
@@ -111,7 +112,14 @@
         "search-account": "Search account number",
         "no-account-match": "No accounts match your search.",
         "select-account": "Select at least one account to see transactions.",
-        "no-transactions": "No transactions found."
+        "no-transactions": "No transactions found.",
+        "show-closed": "Show closed accounts",
+        "help-card-search": "transactions deposit withdrawal transfer",
+        "closed": "Closed",
+        "page-title": "Transactions",
+        "filter-subtitle": "Search and filter",
+        "accounts-subtitle": "Show transactions for",
+        "list-title": "Transaction history"
     },
  
 
