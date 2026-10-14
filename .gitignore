@@ -113,7 +113,6 @@ tmp/
 temp/
 sample_outputs/
 
-treeclimber*
 
 # 7. Claude Code local settings
 .claude/
