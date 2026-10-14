@@ -394,13 +394,40 @@ void test_socket_signer_adapter() {
     }
 
     config.enable_signing = false;
-    nordiska::PdfGenerator deferred(config);
-    nordiska::PipelineTiming deferred_timing;
-    auto result = deferred.generate(payload, &deferred_timing);
-    require(deferred_timing.hash_seconds > 0.0 && deferred_timing.signer_call_seconds == 0.0,
-            "deferred mode must time hashing without recording an external call");
-    require(result.has_value(), "deferred mode generation failed");
-    require(!result->documents[0].signature_slot.is_signed, "deferred document marked signed");
+    for (auto engine :
+         {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
+        config.engine = engine;
+        nordiska::PdfGenerator unsigned_generator(config);
+        nordiska::PipelineTiming timing;
+        auto result = unsigned_generator.generate(payload, &timing);
+        require(result.has_value(), "unsigned generation failed without signer service");
+        require(timing.checksum_seconds > 0.0 && timing.hash_seconds == timing.checksum_seconds,
+                "unsigned generation must only hash the final artifact");
+        require(timing.prepare_seconds == 0.0 && timing.digest_seconds == 0.0 && timing.signer_call_seconds == 0.0 &&
+                    timing.insert_seconds == 0.0,
+                "unsigned generation must skip all signature preparation and signing");
+
+        nordiska::JsonIngestor ingestor;
+        auto job = ingestor.ingest(payload);
+        require(job.has_value(), "unsigned fixture ingestion failed");
+        nordiska::PdfEngine renderer(engine);
+        for (size_t i = 0; i < result->documents.size(); ++i) {
+            const auto& document = result->documents[i];
+            auto layout = nordiska::LayoutBuilder::build(job->documents[i]);
+            require(layout.has_value(), "unsigned fixture layout failed");
+            auto rendered = renderer.render(*layout);
+            require(rendered.has_value(), "unsigned fixture render failed");
+            require(document.pdf_bytes == *rendered, "unsigned PDF must equal the unmodified renderer output");
+            const std::string pdf(document.pdf_bytes.begin(), document.pdf_bytes.end());
+            require(pdf.find("/ByteRange") == std::string::npos && pdf.find("/Type /Sig") == std::string::npos,
+                    "unsigned PDF must not contain an empty signature revision");
+            require(!document.signature_slot.is_signed && document.signature_slot.max_length == 0 &&
+                        document.signing_digest == nordiska::Sha256Digest{},
+                    "unsigned metadata must not describe a prepared signature");
+            require(document.sha256_hash == independent_hash(document.pdf_bytes),
+                    "unsigned artifact checksum mismatch");
+        }
+    }
 
     ::unsetenv("PDF_SIGNER_SOCKET_PATH");
 }
