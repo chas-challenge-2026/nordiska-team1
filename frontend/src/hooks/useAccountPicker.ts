@@ -39,9 +39,11 @@ export function useAccountPicker({
 
     const buildGroups = (): AccountPickerGroup[] => {
         // Saldo visas bara för egna konton, aldrig för externa mottagare.
+        // Sorteras i bokstavsordning inom varje grupp ("sv" så att Å, Ä, Ö hamnar sist).
         const wrap = (accounts: TransferAccount[]) =>
             accounts
                 .filter((a) => matchesSearch(a, query))
+                .sort((a, b) => a.name.localeCompare(b.name, "sv", { sensitivity: "base" }))
                 .map((a) => ({
                     id: a.id,
                     name: a.name,
