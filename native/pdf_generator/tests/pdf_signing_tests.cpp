@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <arpa/inet.h>
 #include <atomic>
+#include <cerrno>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -101,6 +102,10 @@ class MockUnixSignerServer {
         return seen_digests_;
     }
 
+    bool oversized_reply_disconnected() const {
+        return oversized_reply_disconnected_.load();
+    }
+
     void clear_digests() {
         seen_digests_.clear();
     }
@@ -179,11 +184,19 @@ class MockUnixSignerServer {
         uint8_t resp_hdr[8];
         std::memcpy(resp_hdr, &status_net, 4);
         std::memcpy(resp_hdr + 4, &hex_len_net, 4);
-        const ssize_t w1 = ::write(fd, resp_hdr, sizeof(resp_hdr));
+        const ssize_t w1 = ::send(fd, resp_hdr, sizeof(resp_hdr), MSG_NOSIGNAL);
         (void)w1;
         if (!hex.empty()) {
-            const ssize_t w2 = ::write(fd, hex.data(), hex.size());
-            (void)w2;
+            if (rep == MockSignerReply::TooLarge) {
+                // The client rejects the length header and closes without reading the body.
+                // Wait for that close to exercise the broken-pipe path deterministically.
+                char unused;
+                (void)::recv(fd, &unused, sizeof(unused), 0);
+            }
+            const ssize_t w2 = ::send(fd, hex.data(), hex.size(), MSG_NOSIGNAL);
+            if (rep == MockSignerReply::TooLarge) {
+                oversized_reply_disconnected_ = (w2 < 0 && errno == EPIPE);
+            }
         }
     }
 
@@ -192,6 +205,7 @@ class MockUnixSignerServer {
     std::atomic<bool> running_{false};
     std::atomic<MockSignerReply> reply_{MockSignerReply::Normal};
     std::atomic<size_t> request_count_{0};
+    std::atomic<bool> oversized_reply_disconnected_{false};
     std::vector<nordiska::Sha256Digest> seen_digests_;
     std::thread server_thread_;
 };
@@ -368,6 +382,8 @@ void test_socket_signer_adapter() {
         require(std::get<nordiska::SigningError>(result.error().details).kind == expected_kind,
                 "signer failures must map to expected SigningErrorKind");
     }
+
+    require(server.oversized_reply_disconnected(), "oversized reply must exercise a disconnected peer");
 
     // Test socket connection failure when server is stopped
     server.stop();

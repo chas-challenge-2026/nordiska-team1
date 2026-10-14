@@ -109,7 +109,8 @@ bool read_exact(int fd, uint8_t* buffer, size_t len) {
 bool write_exact(int fd, const uint8_t* buffer, size_t len) {
     size_t total_written = 0;
     while (total_written < len) {
-        const ssize_t n = ::write(fd, buffer + total_written, len - total_written);
+        // A disconnected signer must return an I/O error without terminating the host process.
+        const ssize_t n = ::send(fd, buffer + total_written, len - total_written, MSG_NOSIGNAL);
         if (n <= 0) {
             return false;
         }
