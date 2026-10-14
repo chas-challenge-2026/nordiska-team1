@@ -52,23 +52,27 @@ export function useAccountPicker({
                     selected: a.id === selectedId,
                 }));
 
+        // Favoritmarkerade konton (från /accounts) visas överst och inte igen under Mina konton.
+        const favoriteGroups: AccountPickerGroup[] = [
+            {
+                title: t("page-transfer.modal.group-favorites"),
+                items: wrap(ownAccounts.filter((a) => a.isFavorite)),
+            },
+            {
+                title: t("page-transfer.modal.group-own"),
+                items: wrap(ownAccounts.filter((a) => !a.isFavorite)),
+            },
+        ];
+
         let groups: AccountPickerGroup[] = [];
 
         if (modal === "from") {
-            groups = [
-                {
-                    title: t("page-transfer.modal.group-own"),
-                    items: wrap(ownAccounts),
-                },
-            ];
+            groups = favoriteGroups;
         } else if (modal === "to") {
             const bgAccounts = customs.filter((c) => c.kind === "bg");
             const bankAccounts = customs.filter((c) => c.kind === "bank");
             groups = [
-                {
-                    title: t("page-transfer.modal.group-own"),
-                    items: wrap(ownAccounts),
-                },
+                ...favoriteGroups,
                 {
                     title: t("page-transfer.modal.group-bg"),
                     items: wrap(bgAccounts),

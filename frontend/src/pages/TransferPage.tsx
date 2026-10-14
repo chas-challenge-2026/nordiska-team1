@@ -47,10 +47,7 @@ export default function TransferPage() {
     const { pendingTransfers, addPending } = usePendingTransfers();
 
     const [name, setName] = useState("");
-    // undefined = inget valt än (första kontot är default), null = nollställt.
-    const [selectedFromId, setFromId] = useState<string | null | undefined>(
-        undefined,
-    );
+    const [fromId, setFromId] = useState<string | null>(null);
     const [toId, setToId] = useState<string | null>(null);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
@@ -59,11 +56,6 @@ export default function TransferPage() {
     const [step, setStep] = useState<Step>("form");
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
-
-    const fromId =
-        selectedFromId === undefined
-            ? (ownAccounts[0]?.id ?? null)
-            : selectedFromId;
 
     const { allAccounts, openFromModal, openToModal, closeAll, pickerProps } =
         useAccountPicker({ ownAccounts, fromId, toId, setFromId, setToId });

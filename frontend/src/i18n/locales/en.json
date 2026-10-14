@@ -593,6 +593,7 @@
             "from-title": "Choose Account",
             "to-title": "Choose recipient",
             "search-placeholder": "Search by name",
+            "group-favorites": "Favorites",
             "group-own": "My accounts",
             "group-bg": "BG/PG",
             "group-bank": "Bank account",
