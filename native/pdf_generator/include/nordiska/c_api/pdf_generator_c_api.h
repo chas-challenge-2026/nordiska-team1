@@ -22,7 +22,7 @@
  * Execution & Concurrency:
  *   - Synchronous on calling thread: each generation call executes entirely on
  *     the caller's thread without internal worker pools or thread hopping.
- *   - Independent call isolation: stateless across calls; concurrent threads
+ *   - Independent customer data: batches remain isolated across calls; concurrent threads
  *     can safely invoke generation for separate customer batches.
  *
  * Input Memory Contract (Caller Lifetime Guarantee):
@@ -61,7 +61,7 @@
  *   - When `nordiska_pdf_v1_generate_customer_batch` returns a non-zero status code,
  *     the caller may invoke `nordiska_pdf_v1_get_last_error(void)` to retrieve a
  *     null-terminated UTF-8 diagnostic string.
- *   - Lifetime: The error string pointer is valid until the next generation call
+ *   - Lifetime: The error string pointer is valid until the next generation or creation call
  *     on the same calling thread. The caller must not free or mutate it.
  *   - If the previous generation call on the thread succeeded,
  *     `nordiska_pdf_v1_get_last_error(void)` returns an empty string ("").
@@ -179,6 +179,38 @@ NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json
 NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
                                                              nordiska_pdf_delivery_callback_v2 callback,
                                                              void* user_data);
+
+/* Optional reusable generator lifecycle. The opaque handle retains components,
+ * never caller input buffers or completed batches. Creation resolves environment
+ * configuration (including signing auto-detection and signer path/mode) once.
+ * Later environment changes require creating a new handle; one-shot functions
+ * continue resolving configuration on each call.
+ *
+ * create returns the standard status codes, writes NULL on failure and transfers
+ * ownership on success. out_generator must point to an empty caller-owned slot.
+ * destroy accepts NULL. Destroy only after all use of the handle has finished;
+ * the caller must not reuse or destroy a freed handle.
+ *
+ * Each handle allows one active generation call, including callback delivery.
+ * Concurrent or recursive use of the same handle returns invalid argument.
+ * Separate handles may be used concurrently. Idle handles may move threads.
+ * Generation retains the same validation, callback lifetime, atomic batch and
+ * diagnostics contracts as the corresponding one-shot function.
+ */
+struct nordiska_pdf_generator;
+NORDISKA_PDF_API int nordiska_pdf_v2_create_generator(struct nordiska_pdf_generator** out_generator);
+NORDISKA_PDF_API void nordiska_pdf_v2_destroy_generator(struct nordiska_pdf_generator* generator);
+
+NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch_with_generator(struct nordiska_pdf_generator* generator,
+                                                                            const uint8_t* json_utf8,
+                                                                            size_t json_length,
+                                                                            nordiska_pdf_delivery_callback callback,
+                                                                            void* user_data);
+NORDISKA_PDF_API int nordiska_pdf_v2_generate_customer_batch_with_generator(struct nordiska_pdf_generator* generator,
+                                                                            const uint8_t* json_utf8,
+                                                                            size_t json_length,
+                                                                            nordiska_pdf_delivery_callback_v2 callback,
+                                                                            void* user_data);
 
 /* Resource limit queries for host admission control */
 NORDISKA_PDF_API size_t nordiska_pdf_v1_max_json_bytes(void);
