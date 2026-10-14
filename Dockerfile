@@ -122,7 +122,7 @@ USER $APP_UID
 ENTRYPOINT ["dotnet", "Nordiska.Reporting.Worker.dll"]
 
 # Stage 8: Backend-only Web API runtime for local frontend development
-FROM runtime-base AS api
+FROM runtime-base AS app
 
 COPY --from=backend-builder /app/publish .
 
