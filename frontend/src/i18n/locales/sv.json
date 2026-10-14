@@ -88,6 +88,7 @@
         "withdraws": "Endast uttag",
         "type-deposit": "Insättning",
         "type-withdraw": "Uttag",
+        "type-transfer": "Överföring",
         "transactions": "Senaste transaktioner",
         "all-transactions": "Visa fler transaktioner",
         "less-transactions": "Visa färre transaktioner",
@@ -111,7 +112,14 @@
         "search-account": "Sök kontonummer",
         "no-account-match": "Inga konton matchar sökningen.",
         "select-account": "Välj minst ett konto för att se transaktioner.",
-        "no-transactions": "Inga transaktioner hittades."
+        "no-transactions": "Inga transaktioner hittades.",
+        "show-closed": "Visa stängda konton",
+        "help-card-search": "transaktioner insättning uttag överföring",
+        "closed": "Stängt",
+        "page-title": "Transaktioner",
+        "filter-subtitle": "Sök och filtrera",
+        "accounts-subtitle": "Visa transaktioner för",
+        "list-title": "Transaktionshistorik"
     },
     "accounts-route": {
         "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
