@@ -10,6 +10,10 @@ namespace Nordiska.Modules.Faq.Application;
 
 public interface IFaqRepository
 {
+
+    Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(
+       string language,
+       CancellationToken cancellationToken = default);
     Task<FaqEntryResponse?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default);
@@ -87,6 +91,7 @@ public sealed class FaqService(
 
     private const int PopularFallbackCount = 3;
     private const int PopularWindowDays = 30;
+    private const int MinimumBestMatchScore = 3;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
 
     public async Task<int> CreateAsync(
@@ -153,6 +158,41 @@ public sealed class FaqService(
         }
 
         return entry;
+    }
+
+    public async Task<FaqRankedMatch?> GetBestMatchAsync(
+        string? query,
+        string? language,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedQuery = FaqSearchQuery.Normalize(query ?? string.Empty);
+        if (normalizedQuery.Length == 0)
+        {
+            return null;
+        }
+
+        var normalizedLanguage = string.IsNullOrWhiteSpace(language)
+            ? "sv"
+            : Normalize(language);
+
+        var cacheKey = $"faq:best-match:{normalizedLanguage}|{normalizedQuery}";
+        if (cache.TryGetValue(
+            cacheKey,
+            out IReadOnlyList<FaqRankedMatch>? cached) &&
+            cached is not null)
+        {
+            return cached.FirstOrDefault(match => match.Score >= MinimumBestMatchScore);
+        }
+
+        var changeToken = cacheInvalidator.GetChangeToken();
+        var candidates = await repository.GetSearchCandidatesAsync(
+            normalizedLanguage,
+            cancellationToken);
+
+        var ranked = FaqSearchRanker.Rank(candidates, normalizedQuery);
+
+        cache.Set(cacheKey, ranked, CreateEntryOptions(changeToken));
+        return ranked.FirstOrDefault(match => match.Score >= MinimumBestMatchScore);
     }
 
     // lang is null when the caller doesn't care which language the entry is in
