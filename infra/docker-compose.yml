@@ -17,8 +17,8 @@ services:
       NORDISKA_REPORTING_WORKER_PASSWORD: ${NORDISKA_REPORTING_WORKER_PASSWORD:?Set NORDISKA_REPORTING_WORKER_PASSWORD in infra/v2/.env}
     volumes:
       - postgres_v2_data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
-      - ./postgres/permissions/post-migration-permissions.sql:/opt/nordiska/post-migration-permissions.sql:ro
+      - ./v2/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./v2/postgres/permissions/post-migration-permissions.sql:/opt/nordiska/post-migration-permissions.sql:ro
     expose:
       - "5432"
     healthcheck:
@@ -120,5 +120,6 @@ services:
 volumes:
   postgres_v2_data:
   report_documents:
+    name: ${NORDISKA_REPORT_DOCUMENTS_VOLUME:-nordiska-v2_report_documents}
   pdf_signer_socket:
 

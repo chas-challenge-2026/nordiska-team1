@@ -113,6 +113,7 @@ tmp/
 temp/
 /infra/secrets/
 /infra/v2/secrets/
+/infra/v2/.synthetic-data.lock
 
 # 7. Claude Code local settings
 .claude/

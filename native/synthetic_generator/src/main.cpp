@@ -254,8 +254,14 @@ int generate_main(int argc, char** argv) {
                     }
                 }
 
-                std::string fname = "Kalle";
-                std::string lname = "Svensson";
+                // A separate random stream varies names without changing the banking workload.
+                FastRng names(stable_seed(cfg.master_seed, c) ^ 0x8f3d51c2a7b649e0ULL);
+                static constexpr const char* first_names[]{"Anna", "Erik", "Maria", "Lars", "Sara", "Johan", "Emma", "Anders",
+                    "Linnea", "Mohammed", "Fatima", "Nils", "Sofia", "Ali", "Elin", "Oscar"};
+                static constexpr const char* last_names[]{"Andersson", "Johansson", "Karlsson", "Nilsson", "Eriksson", "Larsson",
+                    "Olsson", "Persson", "Svensson", "Gustafsson", "Lindberg", "Berg", "Ahmed", "Lindstrom", "Hassan", "Nyberg"};
+                std::string fname = first_names[names.randint(0, 15)];
+                std::string lname = last_names[names.randint(0, 15)];
                 std::string full_name = fname + " " + lname;
                 std::string email = std::format("cust{}@nordiska-demo.se", c);
                 std::string norm_email = std::format("CUST{}@NORDISKA-DEMO.SE", c);

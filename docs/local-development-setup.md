@@ -57,11 +57,11 @@ dotnet run --project .\backend\tools\Nordiska.DevSetup\Nordiska.DevSetup.csproj 
 ### 3. Verify the containers
 
 ```powershell
-cd .\infra\v2
-docker compose ps
+cd .\infra
+docker compose --env-file v2/.env ps
 ```
 
-The `api`, `reporting-worker` and `db` containers should be running.
+The `app`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -107,11 +107,11 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 ### 3. Verify the containers
 
 ```shell
-cd ./infra/v2
-docker compose ps
+cd ./infra
+docker compose --env-file v2/.env ps
 ```
 
-The `api`, `reporting-worker` and `db` containers should be running.
+The `app`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -157,11 +157,11 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 ### 3. Verify the containers
 
 ```shell
-cd ./infra/v2
-docker compose ps
+cd ./infra
+docker compose --env-file v2/.env ps
 ```
 
-The `api`, `reporting-worker` and `db` containers should be running.
+The `app`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -179,7 +179,7 @@ The standard local Docker environment keeps the existing combined frontend and b
 
 | Container | Address | Responsibility |
 |---|---|---|
-| `api` | `http://localhost:8080` | Combined React frontend and .NET backend API |
+| `app` | `http://localhost:8080` | Combined React frontend and .NET backend API |
 | `reporting-worker` | No public port | Native PDF generation and job processing |
 | `db` | `localhost:5433` | PostgreSQL database |
 
@@ -191,7 +191,7 @@ After DevSetup has been run once, frontend developers can run this from the `fro
 npm run setup:local-backend
 ```
 
-The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts only `db`, the backend-only `api` on `http://localhost:5031`, and `reporting-worker`. It never overwrites an existing `.env.local`, does not start Vite and does not change the standard combined Docker environment on `http://localhost:8080`.
+The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts only `db`, the backend-only `app` on `http://localhost:5031`, and `reporting-worker`. It never overwrites an existing `.env.local`, does not start Vite and uses the same local Compose project as the standard combined environment. Switching databases with the synthetic manager preserves this backend-only configuration.
 
 The first run can take a few minutes because Docker builds both the .NET API and the native C++ PDF generator; later builds normally reuse the Docker cache.
 
@@ -203,18 +203,20 @@ Start the frontend separately:
 npm run dev
 ```
 
-Run the remaining Docker commands below from `infra/v2`.
+Compose files live in `infra/`, while DevSetup keeps local secrets in `infra/v2/.env`. Run the remaining Docker commands below from `infra`; pass `--env-file v2/.env` explicitly.
+
+For synthetic workloads, see [the synthetic database manager](../tools/synthetic/README.md).
 
 ### Start the environment
 
 ```shell
-docker compose up -d
+docker compose --env-file v2/.env up -d
 ```
 
 ### Stop the environment
 
 ```shell
-docker compose down
+docker compose --env-file v2/.env down
 ```
 
 This stops the containers without deleting the database or generated PDF files.
@@ -222,37 +224,37 @@ This stops the containers without deleting the database or generated PDF files.
 ### Rebuild the environment
 
 ```shell
-docker compose up -d --build
+docker compose --env-file v2/.env up -d --build
 ```
 
 ### Show container status
 
 ```shell
-docker compose ps
+docker compose --env-file v2/.env ps
 ```
 
 ### Follow API logs
 
 ```shell
-docker compose logs -f api
+docker compose --env-file v2/.env logs -f app
 ```
 
 ### Follow frontend logs
 
 ```shell
-docker compose logs -f frontend
+docker compose --env-file v2/.env logs -f frontend
 ```
 
 ### Follow Reporting Worker logs
 
 ```shell
-docker compose logs -f reporting-worker
+docker compose --env-file v2/.env logs -f reporting-worker
 ```
 
 ### Show the latest Reporting Worker logs
 
 ```shell
-docker compose logs --tail=50 reporting-worker
+docker compose --env-file v2/.env logs --tail=50 reporting-worker
 ```
 
 [Back to top](#local-development-setup)
@@ -268,7 +270,7 @@ Run DevSetup:
 - When database permissions change
 - When new required environment variables are added
 
-For normal restarts, running `docker compose up -d` from `infra/v2` is enough.
+For normal restarts, running `docker compose --env-file v2/.env up -d` from `infra` is enough.
 
 ---
 
@@ -311,8 +313,8 @@ If the local database and generated PDF files can be deleted, reset the local en
 ```powershell
 docker compose --project-name nordiska-v2 `
   --env-file infra/v2/.env `
-  -f infra/v2/docker-compose.yml `
-  -f infra/v2/docker-compose.override.yml `
+  -f infra/docker-compose.yml `
+  -f infra/docker-compose.override.yml `
   down -v
 ```
 
@@ -321,8 +323,8 @@ docker compose --project-name nordiska-v2 `
 ```shell
 docker compose --project-name nordiska-v2 \
   --env-file infra/v2/.env \
-  -f infra/v2/docker-compose.yml \
-  -f infra/v2/docker-compose.override.yml \
+  -f infra/docker-compose.yml \
+  -f infra/docker-compose.override.yml \
   down -v
 ```
 
@@ -354,8 +356,8 @@ dotnet run --project backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj --
 After the first successful setup, normal development only requires:
 
 ```shell
-cd infra/v2
-docker compose up -d
+cd infra
+docker compose --env-file v2/.env up -d
 ```
 
 </div>

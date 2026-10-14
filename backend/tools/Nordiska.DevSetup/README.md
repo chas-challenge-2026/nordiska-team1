@@ -8,7 +8,7 @@ Run the commands from the repository root. The paths below work in Windows Power
 dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- .
 ```
 
-Creates the local secrets, starts PostgreSQL, applies migrations and permissions, and verifies the database connection.
+Creates or preserves local secrets in `infra/v2/.env`, starts PostgreSQL, applies migrations and permissions, and verifies the database connection.
 
 ## Set up and start everything
 
@@ -17,6 +17,8 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 ```
 
 Performs the complete database setup and then builds and starts the full Docker environment.
+
+Compose files are in `infra/`; DevSetup passes the local `infra/v2/.env` explicitly. Generated secrets include the PDF signer PINs; existing values are preserved. For a separate fake workload and database switching, use [the synthetic manager](../../../tools/synthetic/README.md).
 
 ## Repair database passwords
 

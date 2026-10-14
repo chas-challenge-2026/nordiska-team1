@@ -715,7 +715,9 @@ internal static class SecretGenerator
         "NORDISKA_API_PASSWORD",
         "NORDISKA_REPORTING_WORKER_PASSWORD",
         "NORDISKA_JWT_SECRET",
-        "NORDISKA_AUDIT_SIGNING_KEY"
+        "NORDISKA_AUDIT_SIGNING_KEY",
+        "PDF_SIGNER_PKCS11_PIN",
+        "PDF_SIGNER_PKCS11_SO_PIN"
     ];
 
     private static readonly HashSet<string> SecretVariableSet =
@@ -1430,7 +1432,7 @@ internal static class DatabaseSetup
         string? input = null,
         bool showOutputOnSuccess = true)
     {
-        var directory = Path.Combine(root, "infra", "v2");
+        var directory = Path.Combine(root, "infra");
 
         if (!Directory.Exists(directory))
         {
@@ -1445,7 +1447,7 @@ internal static class DatabaseSetup
             [
                 "compose",
                 "--project-name", "nordiska-v2",
-                "--env-file", ".env",
+                "--env-file", "v2/.env",
                 "-f", "docker-compose.yml",
                 "-f", "docker-compose.override.yml",
                 .. arguments

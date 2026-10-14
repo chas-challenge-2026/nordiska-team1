@@ -26,12 +26,12 @@ export async function setupLocalBackend({
     execute = spawnSync,
 }) {
     const frontendDirectory = join(repoRoot, "frontend");
-    const infrastructureDirectory = join(repoRoot, "infra", "v2");
+    const infrastructureDirectory = join(repoRoot, "infra");
 
     const environmentStatus = await ensureFrontendEnvironment(frontendDirectory);
 
     try {
-        await access(join(infrastructureDirectory, ".env"));
+        await access(join(infrastructureDirectory, "v2", ".env"));
     } catch (error) {
         if (error?.code === "ENOENT") {
             throw new Error(
@@ -49,7 +49,7 @@ export async function setupLocalBackend({
             "--project-name",
             "nordiska-v2",
             "--env-file",
-            ".env",
+            "v2/.env",
             "-f",
             "docker-compose.yml",
             "-f",
@@ -58,7 +58,7 @@ export async function setupLocalBackend({
             "-d",
             "--build",
             "db",
-            "api",
+            "app",
             "reporting-worker",
         ],
         {

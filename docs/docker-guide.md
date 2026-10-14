@@ -134,7 +134,7 @@ docker compose up --build
 * **Solution:**
   1. If you ran `DevSetup` previously, run:
   ```bash
-  docker compose -f infra/v2/docker-compose.yml down
+  docker compose --env-file infra/v2/.env -f infra/docker-compose.yml -f infra/docker-compose.override.yml down
   ```
   2. Or check and stop any remaining container:
   ```bash

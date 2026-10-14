@@ -40,14 +40,22 @@ sql nordiska_v2 'UPDATE banking."AspNetRoles" SET "Id"=17 WHERE "NormalizedName"
 # its psql/pg_dump/COPY commands run against the real isolated PostgreSQL container.
 mkdir -p "$test_dir/repo/infra/v2" "$test_dir/repo/tools/synthetic" "$test_dir/bin"
 cp "$repo_root/tools/synthetic/nordiska-synthetic-linux-x86_64" "$test_dir/repo/tools/synthetic/manager"
-touch "$test_dir/repo/infra/v2/docker-compose.yml"
+touch "$test_dir/repo/infra/docker-compose.yml"
 printf 'NORDISKA_DATABASE=nordiska_v2\n' > "$test_dir/repo/infra/v2/.env"
 export SYNTHETIC_TEST_DOCKER="$real_docker" SYNTHETIC_TEST_CONTAINER="$container"
 cat > "$test_dir/bin/docker" <<'PROXY'
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ $1 == compose ]]; then
-  if [[ " $* " == *' ps --quiet db '* ]]; then echo "$SYNTHETIC_TEST_CONTAINER"; fi
+  if [[ " $* " == *' ps --quiet db '* ]]; then echo "$SYNTHETIC_TEST_CONTAINER";
+  elif [[ " $* " == *' ps --quiet '* ]]; then echo synthetic-service-mock; fi
+  exit 0
+fi
+if [[ $1 == inspect && ${@: -1} == synthetic-service-mock ]]; then
+  if [[ " $* " == *'Config.Env'* ]]; then
+    value=$(sed -n 's/^NORDISKA_DATABASE=//p' "${BASH_SOURCE[0]%/bin/docker}/repo/infra/v2/.env")
+    echo "ConnectionStrings__ReportingDatabase=Host=db;Database=$value;Password=isolated"
+  fi
   exit 0
 fi
 exec "$SYNTHETIC_TEST_DOCKER" "$@"
@@ -56,8 +64,10 @@ chmod +x "$test_dir/bin/docker"
 cli="$test_dir/repo/tools/synthetic/manager"
 PATH="$test_dir/bin:$PATH" "$cli" --customers 10000 --threads 4 --year 2025 --seed 42 > "$test_dir/seed.log" 2>&1 || { cat "$test_dir/seed.log"; exit 1; }
 [[ $(sql nordiska_synthetic 'SELECT COUNT(*) FROM banking.customers;') == 10000 ]]
+[[ $(sql nordiska_synthetic 'SELECT COUNT(DISTINCT "Name") FROM banking.customers;') -gt 100 ]]
 [[ $(sql nordiska_synthetic 'SELECT COUNT(*) FROM banking."AspNetUserRoles" WHERE "RoleId"=17;') == 10000 ]]
 PATH="$test_dir/bin:$PATH" "$cli" --switch nordiska_synthetic > /dev/null
+grep -q '^NORDISKA_REPORT_DOCUMENTS_VOLUME=nordiska-v2_synthetic_report_documents$' "$test_dir/repo/infra/v2/.env"
 PATH="$test_dir/bin:$PATH" "$cli" --customers 3 --threads 2 --year 2025 --seed 42 --append --stress-text > "$test_dir/append.log" 2>&1 || { cat "$test_dir/append.log"; exit 1; }
 grep -q '^NORDISKA_DATABASE=nordiska_v2$' "$test_dir/repo/infra/v2/.env"
 [[ $(sql nordiska_synthetic 'SELECT COUNT(*) FROM banking.customers;') == 10003 ]]
