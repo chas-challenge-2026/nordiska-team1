@@ -4,13 +4,18 @@
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/rendering/utf8_to_cp1252.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
+#include "pdf_test_helpers.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <openssl/sha.h>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -35,6 +40,30 @@ void require(bool condition, const char* message) {
     }
 }
 
+class ScopedEnvironment {
+  public:
+    ScopedEnvironment(const char* name, const char* value) : name_(name) {
+        if (const char* original = std::getenv(name)) {
+            original_ = original;
+        }
+        set(value);
+    }
+    ~ScopedEnvironment() {
+        set(original_ ? original_->c_str() : nullptr);
+    }
+    void set(const char* value) const {
+        if (value) {
+            ::setenv(name_, value, 1);
+        } else {
+            ::unsetenv(name_);
+        }
+    }
+
+  private:
+    const char* name_;
+    std::optional<std::string> original_;
+};
+
 struct TestSigner : nordiska::PdfSigner {
     std::string failure_document;
     explicit TestSigner(std::string failure = "") : failure_document(std::move(failure)) {}
@@ -54,6 +83,7 @@ struct BatchCapture {
     struct DocCopy {
         std::string id;
         std::vector<uint8_t> bytes;
+        std::string sha256_hex;
     };
     std::vector<DocCopy> docs;
 };
@@ -73,6 +103,35 @@ int batch_save_cb(const struct nordiska_pdf_batch_view* batch, void* user_data) 
 }
 
 int batch_reject_cb(const struct nordiska_pdf_batch_view*, void*) {
+    return 42;
+}
+
+int batch_save_cb_v2(const struct nordiska_pdf_batch_view_v2* batch, void* user_data) {
+    auto* capture = static_cast<BatchCapture*>(user_data);
+    ++capture->call_count;
+    capture->customer_id = batch->customer_id;
+    for (size_t i = 0; i < batch->document_count; ++i) {
+        const auto& doc = batch->documents[i];
+        require(doc.sha256_hex != nullptr && std::strlen(doc.sha256_hex) == 64, "v2 hash must have 64 characters");
+        std::array<unsigned char, SHA256_DIGEST_LENGTH> digest;
+        require(SHA256(doc.bytes, doc.length, digest.data()) != nullptr, "independent SHA-256 failed");
+        constexpr char hex[] = "0123456789abcdef";
+        std::string expected;
+        for (auto byte : digest) {
+            expected += hex[byte >> 4];
+            expected += hex[byte & 0x0f];
+        }
+        require(expected == doc.sha256_hex, "v2 hash must match the complete callback PDF bytes");
+        capture->docs.push_back({
+            .id = doc.document_id,
+            .bytes = std::vector<uint8_t>(doc.bytes, doc.bytes + doc.length),
+            .sha256_hex = doc.sha256_hex,
+        });
+    }
+    return 0;
+}
+
+int batch_reject_cb_v2(const struct nordiska_pdf_batch_view_v2*, void*) {
     return 42;
 }
 
@@ -171,6 +230,88 @@ int main() {
     require(capture.docs[1].bytes.size() > 8, "doc 1 empty bytes");
     require(std::memcmp(capture.docs[1].bytes.data(), "%PDF-1.3", 8) == 0, "doc 1 not a PDF-1.3");
 
+    // #223: select the renderer without rebuilding; legacy defaults stay Libharu.
+    {
+        ScopedEnvironment signing("NORDISKA_PDF_ENABLE_SIGNING", "0");
+        ScopedEnvironment engine_env("NORDISKA_PDF_ENGINE", nullptr);
+        const std::span<const uint8_t> payload(reinterpret_cast<const uint8_t*>(valid_batch_json.data()),
+                                               valid_batch_json.size());
+        for (const auto& [name, engine] :
+             std::vector<std::pair<const char*, nordiska::PdfEngineKind>>{{nullptr, nordiska::PdfEngineKind::Libharu},
+                                                                          {"", nordiska::PdfEngineKind::Libharu},
+                                                                          {"libharu", nordiska::PdfEngineKind::Libharu},
+                                                                          {"HaRu", nordiska::PdfEngineKind::Libharu},
+                                                                          {"NaTiVe", nordiska::PdfEngineKind::Native},
+                                                                          {"CAIRO", nordiska::PdfEngineKind::Cairo}}) {
+            engine_env.set(name);
+            BatchCapture selected;
+            require(nordiska_pdf_v1_generate_customer_batch(payload.data(), payload.size(), batch_save_cb, &selected) ==
+                        NORDISKA_PDF_OK,
+                    nordiska_pdf_v1_get_last_error());
+            nordiska::PdfGenerator expected(nordiska::GeneratorConfig{.engine = engine});
+            auto generated = expected.generate(payload);
+            require(generated.has_value(), "direct renderer generation failed");
+            require(selected.call_count == 1 && selected.docs.size() == generated->documents.size(),
+                    "selected renderer must deliver the full customer batch");
+            for (size_t i = 0; i < selected.docs.size(); ++i) {
+                require(
+                    selected.docs[i].id == generated->documents[i].document_id &&
+                        nordiska::test::same_rendered_pdf(selected.docs[i].bytes, generated->documents[i].pdf_bytes),
+                    "C API output must match the selected renderer, including Swedish text and geometry");
+            }
+        }
+        engine_env.set("typo");
+        BatchCapture rejected;
+        require(nordiska_pdf_v1_generate_customer_batch(payload.data(), payload.size(), batch_save_cb, &rejected) ==
+                        NORDISKA_PDF_INVALID_ARGUMENT &&
+                    rejected.call_count == 0,
+                "unknown engine must fail before delivery");
+        require(std::string(nordiska_pdf_v1_get_last_error()).find("NORDISKA_PDF_ENGINE") != std::string::npos,
+                "unknown engine diagnostic must identify the setting");
+    }
+
+    // #220: v2 adds artifact hashes while leaving v1 callbacks and layouts intact.
+    {
+        ScopedEnvironment signing("NORDISKA_PDF_ENABLE_SIGNING", "0");
+        ScopedEnvironment engine("NORDISKA_PDF_ENGINE", "haru");
+        const auto* data = reinterpret_cast<const uint8_t*>(valid_batch_json.data());
+        require(nordiska_pdf_v2_generate_customer_batch(nullptr, 1, batch_save_cb_v2, nullptr) ==
+                    NORDISKA_PDF_INVALID_ARGUMENT,
+                "v2 must reject null input");
+        require(nordiska_pdf_v2_generate_customer_batch(data, 0, batch_save_cb_v2, nullptr) ==
+                    NORDISKA_PDF_INVALID_ARGUMENT,
+                "v2 must reject zero input length");
+        require(nordiska_pdf_v2_generate_customer_batch(data, valid_batch_json.size(), nullptr, nullptr) ==
+                    NORDISKA_PDF_INVALID_ARGUMENT,
+                "v2 must reject null callback");
+        require(nordiska_pdf_v2_generate_customer_batch(data, nordiska_pdf_v1_max_json_bytes() + 1, batch_save_cb_v2,
+                                                        nullptr) == NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED,
+                "v2 must enforce the existing payload limit before reading input");
+        require(nordiska_pdf_v2_generate_customer_batch(data, valid_batch_json.size(), batch_reject_cb_v2, nullptr) ==
+                    NORDISKA_PDF_CALLBACK_FAILED,
+                "v2 must report callback rejection");
+        require(std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+                "v2 must share thread-local diagnostics");
+        for (const char* selected : {"haru", "native", "cairo"}) {
+            engine.set(selected);
+            BatchCapture v1, v2;
+            require(nordiska_pdf_v1_generate_customer_batch(data, valid_batch_json.size(), batch_save_cb, &v1) == 0,
+                    "v1 compatibility generation failed");
+            require(nordiska_pdf_v2_generate_customer_batch(data, valid_batch_json.size(), batch_save_cb_v2, &v2) == 0,
+                    nordiska_pdf_v1_get_last_error());
+            require(std::strlen(nordiska_pdf_v1_get_last_error()) == 0, "v2 success must clear prior diagnostic");
+            require(v2.customer_id == v1.customer_id && v2.call_count == 1 && v2.docs.size() == v1.docs.size(),
+                    "v2 must preserve batch delivery semantics");
+            for (size_t i = 0; i < v2.docs.size(); ++i) {
+                require(v2.docs[i].id == v1.docs[i].id &&
+                            nordiska::test::same_rendered_pdf(v2.docs[i].bytes, v1.docs[i].bytes),
+                        "v2 must preserve v1 document output");
+                require(v2.docs[i].sha256_hex.size() == 64, "copied hash must remain valid after return");
+            }
+            require(v2.docs[0].sha256_hex != v2.docs[1].sha256_hex, "different PDFs must expose their own hashes");
+        }
+    }
+
     // 4. All-or-nothing guarantee: document 2 fails -> 0 callbacks invoked
     const std::string failing_batch_json = R"({
         "customer_id": 1,
@@ -205,9 +346,55 @@ int main() {
                                                 failing_batch_json.size(), batch_save_cb, &fail_capture);
     require(batch_fail == NORDISKA_PDF_INVALID_INPUT, "unsupported kind should return invalid-input");
     require(fail_capture.call_count == 0, "callback MUST NOT be called on failure");
+    BatchCapture fail_capture_v2;
+    require(nordiska_pdf_v2_generate_customer_batch(reinterpret_cast<const uint8_t*>(failing_batch_json.data()),
+                                                    failing_batch_json.size(), batch_save_cb_v2,
+                                                    &fail_capture_v2) == NORDISKA_PDF_INVALID_INPUT &&
+                fail_capture_v2.call_count == 0,
+            "v2 must preserve all-or-nothing delivery on invalid second document");
     require(std::strlen(nordiska_pdf_v1_get_last_error()) > 0, "error message must be provided on failure");
     require(std::string(nordiska_pdf_v1_get_last_error()).find("unsupported_unknown_kind") != std::string::npos,
             "error diagnostic must identify unsupported kind");
+
+    // Stateless v1 and v2 calls must isolate customers during concurrent use.
+    {
+        ScopedEnvironment signing("NORDISKA_PDF_ENABLE_SIGNING", "0");
+        ScopedEnvironment engine("NORDISKA_PDF_ENGINE", "native");
+        std::array<std::array<BatchCapture, 3>, 2> batches;
+        std::array<std::array<int, 3>, 2> statuses;
+        std::array<std::thread, 2> workers;
+        for (size_t version = 0; version < workers.size(); ++version) {
+            workers[version] = std::thread([&, version] {
+                for (size_t call = 0; call < batches[version].size(); ++call) {
+                    std::string input = valid_batch_json;
+                    const auto customer = 100 * (version + 1) + call;
+                    const auto start = input.find("\"customer_id\": 1");
+                    input.replace(start, std::strlen("\"customer_id\": 1"),
+                                  "\"customer_id\": " + std::to_string(customer));
+                    const auto* data = reinterpret_cast<const uint8_t*>(input.data());
+                    auto& batch = batches[version][call];
+                    statuses[version][call] =
+                        version == 0
+                            ? nordiska_pdf_v1_generate_customer_batch(data, input.size(), batch_save_cb, &batch)
+                            : nordiska_pdf_v2_generate_customer_batch(data, input.size(), batch_save_cb_v2, &batch);
+                    std::fill(input.begin(), input.end(), 'x');
+                }
+            });
+        }
+        for (auto& worker : workers) {
+            worker.join();
+        }
+        for (size_t version = 0; version < batches.size(); ++version) {
+            for (size_t call = 0; call < batches[version].size(); ++call) {
+                const auto& batch = batches[version][call];
+                require(statuses[version][call] == NORDISKA_PDF_OK && batch.call_count == 1 &&
+                            batch.customer_id == 100 * (version + 1) + call && batch.docs.size() == 2,
+                        "stateless calls must deliver separate customer batches");
+                require(batch.docs[0].bytes.size() > 8 && std::memcmp(batch.docs[0].bytes.data(), "%PDF-1.4", 8) == 0,
+                        "copied PDF output must outlive each stateless call and its input");
+            }
+        }
+    }
 
     // 5. Duplicate document_id rejected
     const std::string dup_batch_json = R"({

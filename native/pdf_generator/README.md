@@ -180,7 +180,30 @@ const char* nordiska_pdf_v1_get_last_error(void);
 const char* nordiska_pdf_v1_status_name(int status_code);
 ```
 
+The C API uses Libharu by default. Set `NORDISKA_PDF_ENGINE=native`,
+`NORDISKA_PDF_ENGINE=haru` (or `libharu`), or `NORDISKA_PDF_ENGINE=cairo`
+before generation to compare engines without rebuilding the library. Values
+are case-insensitive; an unset or empty value retains Libharu. Unknown values
+return invalid argument with no delivery callback. Signing configuration is
+independent of the selected renderer.
+
+For callers that need the artifact checksum, use the additive
+`nordiska_pdf_v2_generate_customer_batch` function with
+`nordiska_pdf_delivery_callback_v2`. Each `nordiska_pdf_document_view_v2` includes
+`sha256_hex`, a NUL-terminated 64-character lowercase SHA-256 of the complete
+delivered PDF, including any inserted signature. Copy this string during the
+callback, just as for PDF bytes and identifiers. Status codes, environment
+configuration, atomic delivery and `nordiska_pdf_v1_get_last_error` are shared
+with v1. Existing v1 functions and struct layouts are unchanged. Host callers
+can adopt v2 to avoid rehashing PDF bytes; .NET adoption is a separate change.
+
+Both entry points are stateless: each call resolves the current environment
+configuration, constructs its own generator components and releases them when
+the call returns. Concurrent calls generate independent customer batches.
+There is no caller-owned generator handle or create/destroy lifecycle.
+
 #### Status Codes (`nordiska_pdf_status`):
+
 - `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
 - `1`: `NORDISKA_PDF_INVALID_ARGUMENT` — Null buffer, zero length, or null callback.
 - `2`: `NORDISKA_PDF_INVALID_INPUT` — JSON parse or domain validation error.

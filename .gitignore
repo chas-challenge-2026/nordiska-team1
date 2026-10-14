@@ -111,6 +111,8 @@ postgres_data/
 coverage/
 tmp/
 temp/
+sample_outputs/
+
 
 # 7. Claude Code local settings
 .claude/

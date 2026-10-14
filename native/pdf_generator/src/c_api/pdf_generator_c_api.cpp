@@ -2,6 +2,7 @@
 
 #include "nordiska/application/pdf_generator.hpp"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -57,7 +58,7 @@ void set_last_error_static(const char* message) noexcept {
 }
 
 std::expected<void, int> validate_boundary_arguments(const uint8_t* json_utf8, size_t json_length,
-                                                     nordiska_pdf_delivery_callback callback) noexcept {
+                                                     bool has_callback) noexcept {
     if (json_utf8 == nullptr) {
         set_last_error("json_utf8 must not be null");
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
@@ -66,7 +67,7 @@ std::expected<void, int> validate_boundary_arguments(const uint8_t* json_utf8, s
         set_last_error("json_length must be greater than zero");
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
-    if (callback == nullptr) {
+    if (!has_callback) {
         set_last_error("callback must not be null");
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
@@ -133,14 +134,46 @@ int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_d
     return NORDISKA_PDF_OK;
 }
 
-} // namespace
+int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, nordiska_pdf_delivery_callback_v2 callback,
+                  void* user_data) {
+    std::vector<std::array<char, 65>> hashes(completed_batch.documents.size());
+    std::vector<nordiska_pdf_document_view_v2> document_views;
+    document_views.reserve(completed_batch.documents.size());
+    constexpr char hex[] = "0123456789abcdef";
+    for (size_t i = 0; i < completed_batch.documents.size(); ++i) {
+        const auto& doc = completed_batch.documents[i];
+        auto& hash = hashes[i];
+        for (size_t j = 0; j < doc.sha256_hash.size(); ++j) {
+            hash[j * 2] = hex[doc.sha256_hash[j] >> 4];
+            hash[j * 2 + 1] = hex[doc.sha256_hash[j] & 0x0f];
+        }
+        hash[64] = '\0';
+        document_views.push_back(nordiska_pdf_document_view_v2{
+            .document_id = doc.document_id.c_str(),
+            .bytes = doc.pdf_bytes.data(),
+            .length = doc.pdf_bytes.size(),
+            .sha256_hex = hash.data(),
+        });
+    }
+    const nordiska_pdf_batch_view_v2 batch_view{
+        .customer_id = completed_batch.customer_id,
+        .documents = document_views.data(),
+        .document_count = document_views.size(),
+    };
+    const int cb_status = callback(&batch_view, user_data);
+    if (cb_status != 0) {
+        set_last_error("customer batch callback rejected batch with status code: " + std::to_string(cb_status));
+        return NORDISKA_PDF_CALLBACK_FAILED;
+    }
+    return NORDISKA_PDF_OK;
+}
 
-extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
-                                                       nordiska_pdf_delivery_callback callback, void* user_data) {
+template <typename Callback>
+int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callback callback, void* user_data) {
     clear_last_error(); // clear thread local error before we start
 
     try {
-        auto val_res = validate_boundary_arguments(json_utf8, json_length, callback);
+        auto val_res = validate_boundary_arguments(json_utf8, json_length, callback != nullptr);
         if (!val_res) {
             return val_res.error();
         }
@@ -161,9 +194,21 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
             }
         }
 
+        auto engine = nordiska::PdfEngineKind::Libharu;
+        if (const char* engine_env = std::getenv("NORDISKA_PDF_ENGINE"); engine_env && engine_env[0] != '\0') {
+            if (strcasecmp(engine_env, "native") == 0) {
+                engine = nordiska::PdfEngineKind::Native;
+            } else if (strcasecmp(engine_env, "cairo") == 0) {
+                engine = nordiska::PdfEngineKind::Cairo;
+            } else if (strcasecmp(engine_env, "libharu") != 0 && strcasecmp(engine_env, "haru") != 0) {
+                set_last_error("NORDISKA_PDF_ENGINE must be native, libharu, haru, or cairo");
+                return NORDISKA_PDF_INVALID_ARGUMENT;
+            }
+        }
+
         const nordiska::GeneratorConfig config{
             .ingestor = nordiska::JsonIngestorKind::Simdjson,
-            .engine = nordiska::PdfEngineKind::Libharu, // TODO native is faster (and smaller) but must be tested more
+            .engine = engine,
             .enable_signing = enable_signing,
             .compression = true, // Cut output size by 60% for a 25% performance penalty, huge win
         };
@@ -187,6 +232,18 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
         set_last_error_static("Unknown native document batch generation error");
         return NORDISKA_PDF_INTERNAL_ERROR;
     }
+}
+
+} // namespace
+
+extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
+                                                       nordiska_pdf_delivery_callback callback, void* user_data) {
+    return generate_customer_batch(json_utf8, json_length, callback, user_data);
+}
+
+extern "C" int nordiska_pdf_v2_generate_customer_batch(const uint8_t* json_utf8, size_t json_length,
+                                                       nordiska_pdf_delivery_callback_v2 callback, void* user_data) {
+    return generate_customer_batch(json_utf8, json_length, callback, user_data);
 }
 
 extern "C" size_t nordiska_pdf_v1_max_json_bytes(void) {
@@ -224,7 +281,9 @@ extern "C" const char* nordiska_pdf_v1_status_name(int status) {
 }
 
 extern "C" void nordiska_pdf_v1_get_last_timing(nordiska_pdf_pipeline_timing* out_timing) {
-    if (out_timing == nullptr) return;
+    if (out_timing == nullptr) {
+        return;
+    }
     out_timing->ingest_seconds = g_last_timing.ingest_seconds;
     out_timing->layout_seconds = g_last_timing.layout_seconds;
     out_timing->render_seconds = g_last_timing.render_seconds;

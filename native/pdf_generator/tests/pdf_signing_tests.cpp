@@ -2,10 +2,12 @@
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 #include "nordiska/signing/signature_slot_appender.hpp"
+#include "pdf_test_helpers.hpp"
 
 #include <algorithm>
 #include <arpa/inet.h>
 #include <atomic>
+#include <cerrno>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -101,6 +103,10 @@ class MockUnixSignerServer {
         return seen_digests_;
     }
 
+    bool oversized_reply_disconnected() const {
+        return oversized_reply_disconnected_.load();
+    }
+
     void clear_digests() {
         seen_digests_.clear();
     }
@@ -179,11 +185,19 @@ class MockUnixSignerServer {
         uint8_t resp_hdr[8];
         std::memcpy(resp_hdr, &status_net, 4);
         std::memcpy(resp_hdr + 4, &hex_len_net, 4);
-        const ssize_t w1 = ::write(fd, resp_hdr, sizeof(resp_hdr));
+        const ssize_t w1 = ::send(fd, resp_hdr, sizeof(resp_hdr), MSG_NOSIGNAL);
         (void)w1;
         if (!hex.empty()) {
-            const ssize_t w2 = ::write(fd, hex.data(), hex.size());
-            (void)w2;
+            if (rep == MockSignerReply::TooLarge) {
+                // The client rejects the length header and closes without reading the body.
+                // Wait for that close to exercise the broken-pipe path deterministically.
+                char unused;
+                (void)::recv(fd, &unused, sizeof(unused), 0);
+            }
+            const ssize_t w2 = ::send(fd, hex.data(), hex.size(), MSG_NOSIGNAL);
+            if (rep == MockSignerReply::TooLarge) {
+                oversized_reply_disconnected_ = (w2 < 0 && errno == EPIPE);
+            }
         }
     }
 
@@ -192,6 +206,7 @@ class MockUnixSignerServer {
     std::atomic<bool> running_{false};
     std::atomic<MockSignerReply> reply_{MockSignerReply::Normal};
     std::atomic<size_t> request_count_{0};
+    std::atomic<bool> oversized_reply_disconnected_{false};
     std::vector<nordiska::Sha256Digest> seen_digests_;
     std::thread server_thread_;
 };
@@ -369,6 +384,8 @@ void test_socket_signer_adapter() {
                 "signer failures must map to expected SigningErrorKind");
     }
 
+    require(server.oversized_reply_disconnected(), "oversized reply must exercise a disconnected peer");
+
     // Test socket connection failure when server is stopped
     server.stop();
     {
@@ -378,13 +395,41 @@ void test_socket_signer_adapter() {
     }
 
     config.enable_signing = false;
-    nordiska::PdfGenerator deferred(config);
-    nordiska::PipelineTiming deferred_timing;
-    auto result = deferred.generate(payload, &deferred_timing);
-    require(deferred_timing.hash_seconds > 0.0 && deferred_timing.signer_call_seconds == 0.0,
-            "deferred mode must time hashing without recording an external call");
-    require(result.has_value(), "deferred mode generation failed");
-    require(!result->documents[0].signature_slot.is_signed, "deferred document marked signed");
+    for (auto engine :
+         {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
+        config.engine = engine;
+        nordiska::PdfGenerator unsigned_generator(config);
+        nordiska::PipelineTiming timing;
+        auto result = unsigned_generator.generate(payload, &timing);
+        require(result.has_value(), "unsigned generation failed without signer service");
+        require(timing.checksum_seconds > 0.0 && timing.hash_seconds == timing.checksum_seconds,
+                "unsigned generation must only hash the final artifact");
+        require(timing.prepare_seconds == 0.0 && timing.digest_seconds == 0.0 && timing.signer_call_seconds == 0.0 &&
+                    timing.insert_seconds == 0.0,
+                "unsigned generation must skip all signature preparation and signing");
+
+        nordiska::JsonIngestor ingestor;
+        auto job = ingestor.ingest(payload);
+        require(job.has_value(), "unsigned fixture ingestion failed");
+        nordiska::PdfEngine renderer(engine);
+        for (size_t i = 0; i < result->documents.size(); ++i) {
+            const auto& document = result->documents[i];
+            auto layout = nordiska::LayoutBuilder::build(job->documents[i]);
+            require(layout.has_value(), "unsigned fixture layout failed");
+            auto rendered = renderer.render(*layout);
+            require(rendered.has_value(), "unsigned fixture render failed");
+            require(nordiska::test::same_rendered_pdf(document.pdf_bytes, *rendered),
+                    "unsigned PDF must equal the unmodified renderer output apart from creation time");
+            const std::string pdf(document.pdf_bytes.begin(), document.pdf_bytes.end());
+            require(pdf.find("/ByteRange") == std::string::npos && pdf.find("/Type /Sig") == std::string::npos,
+                    "unsigned PDF must not contain an empty signature revision");
+            require(!document.signature_slot.is_signed && document.signature_slot.max_length == 0 &&
+                        document.signing_digest == nordiska::Sha256Digest{},
+                    "unsigned metadata must not describe a prepared signature");
+            require(document.sha256_hash == independent_hash(document.pdf_bytes),
+                    "unsigned artifact checksum mismatch");
+        }
+    }
 
     ::unsetenv("PDF_SIGNER_SOCKET_PATH");
 }

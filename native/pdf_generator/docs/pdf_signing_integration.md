@@ -99,9 +99,12 @@ limitation, separate from the generator's tested signature construction.
 
 ## Usage and verification
 
-Signing remains opt-in for the C++ configuration and CLI. The existing v1 C ABI
-continues to return prepared, unsigned documents; its configuration remains
-unchanged and its struct layout is not extended by this work.
+Signing remains opt-in for the C++ configuration and CLI. When signing is
+disabled, generation returns the renderer output without a signature revision
+or a byte-range digest. It still computes the SHA-256 checksum of the final
+artifact. The signature slot has zero capacity and the signing digest is zero.
+The standalone signature preparation functions remain available for callers
+that explicitly need deferred signing. The v1 C ABI layout is unchanged.
 
 ```sh
 cmake --build --preset default
@@ -119,7 +122,7 @@ explicit-length output without a null terminator, and error cleanup. This double
 is linked only into that test executable, never the production CLI/library.
 
 Other tests cover multiple capacities, exact fit, oversized/malformed results,
-unchanged covered bytes, artifact checksums, deferred mode, and all three engines.
+unchanged covered bytes, artifact checksums, unsigned mode, and all three engines.
 Real detached CAdES signatures generated with a temporary self-signed test
 certificate are embedded and decoded back out of each renderer's PDF. OpenSSL
 verifies them and rejects a tampered covered byte; certificate-chain trust is
