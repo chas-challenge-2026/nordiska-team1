@@ -50,7 +50,7 @@ export default function TransferForm({
     const { t } = useTranslation();
 
     return (
-        <div className="p-3 sm:p-4 [&_input]:rounded-none [&_select]:rounded-none">
+        <div className="p-3 sm:p-4">
             {/* ACCOUNTS */}
             <section aria-labelledby="transfer-accounts-heading">
                 <h3 id="transfer-accounts-heading" className="mb-2 ml-1 text-sm font-semibold text-dark-navy sm:text-base">
