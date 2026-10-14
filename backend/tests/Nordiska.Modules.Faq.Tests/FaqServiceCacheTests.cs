@@ -24,6 +24,7 @@ public class FaqServiceCacheTests
         public int PatchCalls { get; private set; }
         public int GetRelatedCalls { get; private set; }
         public int GetPopularCalls { get; private set; }
+        public int GetSearchCandidatesCalls { get; private set; }
         public Dictionary<Guid, List<Guid>> Relations { get; } = new();
 
         public FakeFaqRepo(IEnumerable<FaqEntryResponse>? seed = null)
@@ -66,6 +67,14 @@ public class FaqServiceCacheTests
             SearchCalls++;
             IReadOnlyCollection<FaqEntryResponse> result = _store.ToList();
             return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(string language, CancellationToken cancellationToken = default)
+        {
+            GetSearchCandidatesCalls++;
+            var normalizedLanguage = string.IsNullOrWhiteSpace(language) ? "sv" : language.Trim().ToLowerInvariant();
+            var result = _store.Where(entry => entry.Lang.ToLower() == normalizedLanguage).OrderBy(entry => entry.Id).ToList();
+            return Task.FromResult((IReadOnlyCollection<FaqEntryResponse>)result);
         }
 
         public Task<PagedResult<FaqEntryResponse>> QueryPagedAsync(FaqQueryParameters parameters, CancellationToken cancellationToken = default)
@@ -176,6 +185,21 @@ public class FaqServiceCacheTests
     private static FaqEntryResponse Entry(int id, string lang = "sv", string category = "General", Guid? relationId = null, int helpful = 0) =>
         new(id, $"Question {id}?", $"Answer {id}", category, helpful, new[] { "tag1" }, relationId ?? Guid.NewGuid(), lang, DateTime.UtcNow);
 
+    private static FaqEntryResponse SearchEntry(
+        int id,
+        string question,
+        string answer = "",
+        string category = "",
+        IReadOnlyList<string>? keywords = null)
+        => new(
+            id,
+            question,
+            answer,
+            category,
+            0,
+            keywords ?? Array.Empty<string>(),
+            Guid.NewGuid());
+
     private class FakeSearchLogRepo : IFaqSearchLogRepository
     {
         public Task AddRangeAsync(IReadOnlyCollection<FaqSearchLog> logs, CancellationToken cancellationToken = default)
@@ -245,6 +269,63 @@ public class FaqServiceCacheTests
         await service.SearchAsync(new SearchFaqRequest(Keyword: "konto"));
 
         Assert.Equal(3, repo.SearchCalls);
+    }
+
+    [Fact]
+    public async Task GetBestMatch_ReturnsHighestRankedCandidateAboveMinimumScore()
+    {
+        var questionMatch = SearchEntry(1, "alpha account question");
+        var keywordMatch = SearchEntry(2, "unrelated question", keywords: new[] { "alpha" });
+        var repo = new FakeFaqRepo(new[] { keywordMatch, questionMatch });
+        var service = CreateService(repo);
+
+        var result = await service.GetBestMatchAsync("alpha", "sv");
+
+        Assert.NotNull(result);
+        Assert.Equal(questionMatch.Id, result.Entry.Id);
+        Assert.Equal(5, result.Score);
+        Assert.Equal(1, repo.GetSearchCandidatesCalls);
+    }
+
+    [Fact]
+    public async Task GetBestMatch_AnswerOnlyMatchBelowMinimumScoreReturnsNullAndIsCached()
+    {
+        var repo = new FakeFaqRepo(new[]
+        {
+            SearchEntry(1, "unrelated question", answer: "The answer mentions alpha.")
+        });
+        var service = CreateService(repo);
+
+        var first = await service.GetBestMatchAsync("alpha", "sv");
+        var second = await service.GetBestMatchAsync("alpha", "sv");
+
+        Assert.Null(first);
+        Assert.Null(second);
+        Assert.Equal(1, repo.GetSearchCandidatesCalls);
+    }
+
+    [Fact]
+    public async Task GetBestMatch_NoMatchReturnsNull()
+    {
+        var repo = new FakeFaqRepo(new[] { SearchEntry(1, "unrelated question") });
+        var service = CreateService(repo);
+
+        var result = await service.GetBestMatchAsync("alpha", "sv");
+
+        Assert.Null(result);
+        Assert.Equal(1, repo.GetSearchCandidatesCalls);
+    }
+
+    [Fact]
+    public async Task GetBestMatch_BlankQueryDoesNotFetchCandidates()
+    {
+        var repo = new FakeFaqRepo(new[] { SearchEntry(1, "alpha question") });
+        var service = CreateService(repo);
+
+        var result = await service.GetBestMatchAsync("   ", "sv");
+
+        Assert.Null(result);
+        Assert.Equal(0, repo.GetSearchCandidatesCalls);
     }
 
     [Fact]
