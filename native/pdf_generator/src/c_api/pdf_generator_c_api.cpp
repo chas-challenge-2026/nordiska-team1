@@ -33,10 +33,12 @@ constexpr size_t kMaxJsonPayloadBytes = 32 * 1024 * 1024; // 32 MB (NOR-157)
 // Thread-local diagnostic storage for error reporting
 thread_local std::string g_last_error;
 thread_local const char* g_fallback_static_error = nullptr;
+thread_local nordiska::PipelineTiming g_last_timing{};
 
 void clear_last_error() noexcept {
     g_fallback_static_error = nullptr;
     g_last_error.clear();
+    g_last_timing = {};
 }
 
 void set_last_error(std::string_view message) noexcept {
@@ -168,7 +170,7 @@ extern "C" int nordiska_pdf_v1_generate_customer_batch(const uint8_t* json_utf8,
 
         // Generate PDFs
         nordiska::PdfGenerator generator(config);
-        auto batch_result = generator.generate(payload_span);
+        auto batch_result = generator.generate(payload_span, &g_last_timing);
         if (!batch_result) {
             return map_generator_error(batch_result.error());
         }
@@ -219,4 +221,17 @@ extern "C" const char* nordiska_pdf_v1_status_name(int status) {
     default:
         return "status code does not exist";
     }
+}
+
+extern "C" void nordiska_pdf_v1_get_last_timing(nordiska_pdf_pipeline_timing* out_timing) {
+    if (out_timing == nullptr) return;
+    out_timing->ingest_seconds = g_last_timing.ingest_seconds;
+    out_timing->layout_seconds = g_last_timing.layout_seconds;
+    out_timing->render_seconds = g_last_timing.render_seconds;
+    out_timing->sign_seconds = g_last_timing.sign_seconds;
+    out_timing->signer_call_seconds = g_last_timing.signer_call_seconds;
+    out_timing->prepare_seconds = g_last_timing.prepare_seconds;
+    out_timing->digest_seconds = g_last_timing.digest_seconds;
+    out_timing->checksum_seconds = g_last_timing.checksum_seconds;
+    out_timing->total_seconds = g_last_timing.total_seconds();
 }

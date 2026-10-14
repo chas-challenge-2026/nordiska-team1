@@ -91,6 +91,19 @@ struct nordiska_pdf_batch_view {
     size_t document_count;
 };
 
+/* Phase timing breakdown for performance instrumentation */
+struct nordiska_pdf_pipeline_timing {
+    double ingest_seconds;
+    double layout_seconds;
+    double render_seconds;
+    double sign_seconds;
+    double signer_call_seconds;
+    double prepare_seconds;
+    double digest_seconds;
+    double checksum_seconds;
+    double total_seconds;
+};
+
 /*
  * Delivery callback invoked synchronously on the calling thread EXACTLY ONCE
  * upon successful generation of every requested document in the customer batch.
@@ -157,6 +170,9 @@ NORDISKA_PDF_API const char* nordiska_pdf_v1_get_last_error(void);
 
 /* Returns human-readable status name (e.g. "NORDISKA_PDF_OK"), or "status code does not exist". Never NULL */
 NORDISKA_PDF_API const char* nordiska_pdf_v1_status_name(int status);
+
+/* Returns the pipeline phase timings for the most recent customer batch call on this thread */
+NORDISKA_PDF_API void nordiska_pdf_v1_get_last_timing(struct nordiska_pdf_pipeline_timing* out_timing);
 
 #ifdef __cplusplus
 }

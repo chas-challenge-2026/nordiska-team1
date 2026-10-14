@@ -280,6 +280,11 @@ int main() {
         require(golden_capture.docs[1].bytes.size() > 500, "golden doc 1 must be real PDF bytes");
         require(std::string_view(reinterpret_cast<const char*>(golden_capture.docs[1].bytes.data()), 5) == "%PDF-",
                 "golden doc 1 header must be %PDF-");
+
+        nordiska_pdf_pipeline_timing golden_timing{};
+        nordiska_pdf_v1_get_last_timing(&golden_timing);
+        require(golden_timing.total_seconds >= 0.0, "total timing must be recorded");
+        require(golden_timing.render_seconds >= 0.0, "render timing must be recorded");
     }
 
     // 9. Thread-local isolation test for nordiska_pdf_v1_get_last_error
