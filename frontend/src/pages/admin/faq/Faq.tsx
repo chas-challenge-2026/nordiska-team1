@@ -27,6 +27,12 @@ export default function FaqAdmin() {
                 >
                     Redigera
                 </NavLink>
+                <NavLink 
+                    to="/admin/faq/stats"
+                    className={({ isActive }) =>`font-semibold border-5 rounded-md p-4 m-2 cursor-pointer text-center ${isActive ? "bg-gray-400" : "bg-white"} hover:bg-gray-400`}
+                >
+                    Statistik
+                </NavLink>
                 <NavLink to="/admin/faq/delete"
                     className={({ isActive }) => `font-semibold border-5 rounded-md p-4 m-2 cursor-pointer border-red-500 text-center ${isActive ? "bg-gray-400" : "bg-white"} hover:bg-gray-400`}
                 >

@@ -5,6 +5,7 @@ const styles = {
     outline: "rounded border border-primary-blue px-3 py-1 text-xs font-semibold text-primary-blue",
     "outline-light": "rounded border border-white px-3 py-1 text-xs font-semibold text-white",
     link: "text-primary-blue underline",
+    subtle: "text-sm text-primary-blue underline underline-offset-2 hover:text-dark-navy",
 };
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {

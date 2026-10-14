@@ -29,6 +29,7 @@ import AdminInbox from "../pages/admin/inbox/AdminInbox";
 import OperationalMessage from "../pages/admin/OperationalMessage";
 import OperationalMessagesList from "../components/admin/drift/OperationalMessagesList";
 import CreateOperationalMessage from "../components/admin/drift/CreateOperationalMessage";
+import FaqStatistics from "../pages/admin/faq/FaqStatistics";
 
 export default function AppRoutes() {
     return (
@@ -69,6 +70,7 @@ export default function AppRoutes() {
                     <Route path="admin/faq" element={<FaqAdmin />}>
                         <Route path="create" element={<CreateAndUpdateFaq />} />
                         <Route path="edit" element={<EditFaq />} />
+                        <Route path="stats" element={<FaqStatistics />} />
                         <Route path="edit/form" element={<CreateAndUpdateFaq />} />
                         <Route path="delete" element={<DeleteFaq />} />
                     </Route>
