@@ -8,6 +8,7 @@ import FaqFilterInfo from "../components/faq/FaqFilterInfo";
 import FaqList from "../components/faq/FaqList";
 import FaqSidebar from "../components/faq/FaqSidebar";
 import PagePagination from "../components/PagePagination";
+import FaqContact from "../components/faq/FaqContact";
 
 type FeedbackAction = "increase" | "decrease";
 
@@ -93,7 +94,7 @@ export default function FaqPage() {
             onCategoryChange={handleCategoryChange}
         />
   
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-scroll px-3 py-4 sm:px-5 lg:grid-cols-[2fr_1fr] lg:gap-5">
+        <div className="sm:grid min-h-0 flex flex-col flex-1 sm:grid-cols-1 sm:grid-rows-[1fr_7%] gap-4 overflow-scroll px-3 py-4 sm:px-5 lg:grid-cols-[2fr_1fr] lg:gap-5">
             <section className="flex min-w-0 flex-2 flex-col bg-white p-4 shadow-md sm:p-5 ">
                 <FaqFilterInfo
                     category={category}
@@ -132,6 +133,7 @@ export default function FaqPage() {
             </section>
 
             <FaqSidebar onLanguageChange={handleLanguageChange} />
+            <FaqContact />
         </div>
     </main>
     );

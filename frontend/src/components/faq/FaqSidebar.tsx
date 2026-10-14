@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import HelpCard from "./HelpCard";
-import NewTicketButton from "../inbox/NewTicket";
+import FaqContact from "./FaqContact";
 
 type FaqSidebarProps = {onLanguageChange: () => void;};
 
@@ -57,38 +57,6 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
                 <HelpCard
                     items={helpfulArticles}
                 />
-            </article>
-
-            {/* ----- KONTAKT ----- */}
-            {/* ------------------- */}
-            <article className="bg-white p-4 shadow-md sm:p-5">
-                <div className="border-b border-nordiska-orange pb-1 mb-3">
-                    <h2 className="font-semibold text-lg text-nordiska-blue">{t("faq.faq-sidebar.no-answer-title")}</h2>
-                </div>
-
-                <p className="text-sm text-dark-navy font-medium whitespace-pre-line mb-5">{t("faq.faq-sidebar.contact-us")}</p>
-
-                <div className="flex flex-col gap-3 text-dark-navy">
-                    <div>
-                        <a href="tel:0771123456" className="group flex items-center">
-                            <img className="h-5 w-5 mr-2 bg-primary-blue mask-[url('/icons/phone.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-nordiska-blue"/>
-                            <span className="font-semibold text-md cursor-pointer text-primary-blue group-hover:text-nordiska-blue">
-                                0771-123 456
-                            </span>
-                        </a>
-                        <p className="text-sm ml-7">{t("faq.faq-sidebar.phone-specs")}</p>
-                    </div>
-                    <div>
-                        <a href="mailto:support@nordiska.se" className="group flex items-center">
-                            <img className="h-5 w-5 mr-2 bg-primary-blue mask-[url('/icons/envelope.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-nordiska-blue"/>
-                            <span className="font-semibold text-md cursor-pointer text-primary-blue group-hover:text-nordiska-blue">
-                                support@nordiska.se
-                            </span>
-                        </a>
-                        <p className="text-sm ml-7">{t("faq.faq-sidebar.mail-specs")}</p>
-                    </div>
-                   <NewTicketButton /> 
-                </div>
             </article>
         </div>
     );

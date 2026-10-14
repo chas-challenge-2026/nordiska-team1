@@ -473,7 +473,7 @@
             "accept-aria": "Accept {{title}}"
         },
         "ticket": {
-            "new": "New message",
+            "new": "Create a ticket",
             "category": "Category",
             "select-category": "Select category",
             "message": "Message",

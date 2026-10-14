@@ -23,8 +23,8 @@ export default function NewTicketButton({ onCreated, className }: NewTicketButto
 
     return (
         <>
-            <InboxButton className={className} onClick={() => setIsOpen(true)}>
-                <span aria-hidden="true">+ </span>{t("inbox.ticket.new")}
+            <InboxButton variant="subtle" className={`py-2 ${className ?? ""}`} onClick={() => setIsOpen(true)}>
+                {t("inbox.ticket.new")}
             </InboxButton>
 
             <Modal

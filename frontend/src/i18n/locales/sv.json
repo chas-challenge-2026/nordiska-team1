@@ -462,7 +462,7 @@
             "accept-aria": "Godkänn {{title}}"
         },
         "ticket": {
-            "new": "Nytt meddelande",
+            "new": "Skapa ett ärende",
             "category": "Kategori",
             "select-category": "Välj kategori",
             "message": "Meddelande",
