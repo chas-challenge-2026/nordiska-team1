@@ -108,7 +108,7 @@ export default function TransferForm({
                 <h3 id="transfer-details-heading" className="mb-2 ml-1 text-sm font-semibold text-dark-navy sm:text-base">
                     {t("page-transfer.section-details")}
                 </h3>
-                <div className="flex flex-col gap-4 px-3 sm:gap-5 sm:px-4">
+                <div className="flex flex-col gap-4 border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:gap-5 sm:p-4">
                     <InputField
                         name="transferAmount"
                         type="text"

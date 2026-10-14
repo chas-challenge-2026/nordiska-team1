@@ -511,10 +511,8 @@
         "transfers": "Transfers"
     },
     "table": {
-        "my-accounts": "My accounts",
         "planned-transactions": "Planned transfers",
-        "pending-transfers": "Upcoming transfers",
-        "latest-transactions": "Latest transactions"
+        "pending-transfers": "Upcoming transfers"
     },
     "forms": {
         "email": "email",

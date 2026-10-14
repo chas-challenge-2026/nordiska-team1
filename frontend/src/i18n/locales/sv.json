@@ -490,10 +490,8 @@
         "transfers": "Överföringar"
     },
     "table": {
-        "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
-        "pending-transfers": "Kommande överföringar",
-        "latest-transactions": "Senaste transaktioner"
+        "pending-transfers": "Kommande överföringar"
     },
     "forms": {
         "email": "e-post",
