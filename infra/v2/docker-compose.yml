@@ -40,15 +40,15 @@ services:
         condition: service_healthy
     environment:
       ConnectionStrings__DefaultConnection: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       ConnectionStrings__BankingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       ConnectionStrings__FaqDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       ConnectionStrings__InboxDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       Jwt__SecretKey: ${NORDISKA_JWT_SECRET:?Set NORDISKA_JWT_SECRET in infra/v2/.env}
       Jwt__Issuer: NordiskaSparbanken
       Jwt__Audience: NordiskaSparbankenPortal
@@ -73,7 +73,7 @@ services:
         condition: service_healthy
     environment:
       ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
       NORDISKA_PDF_ENABLE_SIGNING: "0"
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
@@ -102,7 +102,7 @@ services:
       NORDISKA_PDF_ENABLE_SIGNING: "1"
       PDF_OUTPUT_DIRECTORY: /var/lib/nordiska/report-documents
       ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       PDF_SIGNER_PKCS11_PROVIDER: pkcs11
       PDF_SIGNER_PKCS11_MODULE: /usr/lib/softhsm/libsofthsm2.so
       PDF_SIGNER_PKCS11_URI: "pkcs11:token=key-load-dev;object=pdf-signer-test;type=private"
