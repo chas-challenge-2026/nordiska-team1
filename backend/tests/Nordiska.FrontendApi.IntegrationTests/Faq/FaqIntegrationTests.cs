@@ -93,6 +93,46 @@ public class FaqIntegrationTests : IAsyncLifetime
         results.Select(r => r.Id).Should().NotContain(otherId);
     }
 
+     [PostgresFact]
+    public async Task BestMatch_ReturnsHighestRankedFaq()
+    {
+        var marker = "rank" + Guid.NewGuid().ToString("N")[..10];
+
+        var questionMatchId = await SeedFaqEntryAsync(
+            question: $"How do I use {marker}?",
+            answer: "A detailed answer.",
+            category: "General",
+            keywords: "account");
+
+        await SeedFaqEntryAsync(
+            question: "A general account question?",
+            answer: "Another answer.",
+            category: "General",
+            keywords: marker);
+
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync(
+            $"/api/faq/best-match?q={Uri.EscapeDataString(marker)}&lang=sv");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<FaqEntryResponse>();
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(questionMatchId);
+    }
+
+    [PostgresFact]
+    public async Task BestMatch_NoMatch_ReturnsNoContent()
+    {
+        var query = "zznomatch" + Guid.NewGuid().ToString("N");
+
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync(
+            $"/api/faq/best-match?q={Uri.EscapeDataString(query)}&lang=sv");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
     [PostgresFact]
     public async Task Create_WithFaqManagePermission_PersistsEntryToDatabase()
     {
