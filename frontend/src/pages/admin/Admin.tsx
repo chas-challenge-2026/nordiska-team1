@@ -8,6 +8,11 @@ import { isAxiosError } from "axios";
 
 export default function Admin(){
     const navigate = useNavigate();
+    const user = useUserStore((state) => state.user);
+
+    if(user?.role === "Customer") {navigate("/")}
+    const setUser = useUserStore((state) => state.setUser);
+    const clearUser = useUserStore((state) => state.logout);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -16,10 +21,6 @@ export default function Admin(){
     
     const { mutate: loginUser, isPending } = useLogin();
     const { mutate } = useLogout();
-
-    const user = useUserStore((state) => state.user);
-    const setUser = useUserStore((state) => state.setUser);
-    const clearUser = useUserStore((state) => state.logout);
 
     function handleLogout() {
         mutate(undefined, {

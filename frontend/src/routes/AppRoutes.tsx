@@ -39,8 +39,6 @@ export default function AppRoutes() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/inactive" element={<LandingPage inactive />} />
             <Route path="/logged-out" element={<LandingPage loggedOut />} />
-
-            <Route path="*" element={<PageNotFound />} />
             <Route path="/error-500" element={<ServerError />} />
 
             {/* PROTECTED CUSTOMER ROUTES HÄR */}
@@ -54,27 +52,28 @@ export default function AppRoutes() {
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/accounts" element={<AccountsPage />} />
                     <Route path="/inbox/:threadId?" element={<InboxPage />} />
+                    <Route path="*" element={<PageNotFound />} />
                 </Route>
             </Route>
 
+            {/* ADMIN LOG IN */}
+            <Route path="/admin" element={<Admin />} />
+
             {/* PROTECTED ADMIN ROUTES HÄR */}
             <Route element={<AdminRoute />}>
-                <Route path="/admin">
-                    <Route index element={<Admin />} />
-
-                    <Route path="operational-message" element={<OperationalMessage />}>
+                    <Route path="admin/operational-message" element={<OperationalMessage />}>
                         <Route index element={<OperationalMessagesList />} />
                         <Route path="create" element={<CreateOperationalMessage />} />
                     </Route>
 
-                    <Route path="faq" element={<FaqAdmin />}>
+                    <Route path="admin/faq" element={<FaqAdmin />}>
                         <Route path="create" element={<CreateAndUpdateFaq />} />
                         <Route path="edit" element={<EditFaq />} />
                         <Route path="edit/form" element={<CreateAndUpdateFaq />} />
                         <Route path="delete" element={<DeleteFaq />} />
                     </Route>
-                    <Route path="inbox" element={<AdminInbox />} />
-                </Route>
+                    
+                    <Route path="admin/inbox" element={<AdminInbox />} />
             </Route>
         </Routes>
     );
