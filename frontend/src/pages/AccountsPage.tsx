@@ -14,11 +14,16 @@ import AccountsNavigation from "../components/accounts/AccountNavigation";
 import InterestSection from "../components/accounts/InterestSection";
 import CloseAccountModal from "../components/accounts/CloseAccountModal";
 import SavingsGoalSection from "../components/accounts/SavingsGoalSection";
+import AccountRecentTransactions from "../components/accounts/AccountRecentTransactions";
 
 import HelpCard from "../components/faq/HelpCard";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
 import { useSearchParams } from "react-router";
 import AccountStatementBtn from "../components/reports/AccountStatementButton";
+import { Reorder } from "motion/react";
+import DraggableSection from "../components/accounts/DraggableSection";
+
+export type SectionId = "transactions" | "savings" | "interest";
 
 export default function AccountsPage() {
     const { t } = useTranslation();
@@ -41,9 +46,7 @@ export default function AccountsPage() {
 
     useEffect(() => {
         return () => {
-            if (favoriteErrorTimeout.current) {
-                clearTimeout(favoriteErrorTimeout.current);
-            }
+            if (favoriteErrorTimeout.current) {clearTimeout(favoriteErrorTimeout.current);}
         };
     }, []);
 
@@ -65,6 +68,55 @@ export default function AccountsPage() {
     const totalBalance = accounts?.reduce((sum, account) => sum + account.balance, 0) ?? 0;
     const canClose = expandedAccount?.balance === 0;
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
+
+    const DEFAULT_ORDER: SectionId[] = ["transactions","savings","interest",];
+
+    const sections = {
+        transactions: (
+            <>{expandedAccount &&
+            <AccountRecentTransactions accountId={expandedAccount?.id}/>
+            }</>
+        ),
+        interest: (
+            <>{expandedAccount &&
+                <InterestSection accruedInterestYtd={expandedAccount?.accruedInterestYtd} estimatedYearEndInterest={expandedAccount?.estimatedYearEndInterest} />
+            }</>
+
+        ),
+        savings: (
+            <>{expandedAccount &&
+                <SavingsGoalSection
+                    savingGoal={existingSavingGoal}
+                    accountAmount={expandedAccount?.balance}
+                    onDeposit={() => {
+                        navigate("/transfer")
+                    }}
+                    onEdit={(newGoal) => {
+                        setIsSavingGoalOpen(true);
+                        setNewGoal(newGoal);
+                    }}
+                />
+            }</>
+        )
+    }
+
+    const [sectionOrders, setSectionOrders] = useState<Record<number, SectionId[]>>(() => {
+        try {
+            return JSON.parse(localStorage.getItem("account-section-orders") ?? "{}");
+        } catch {
+            return {};
+        }
+    });
+
+    const accountId = expandedAccount?.id;
+    const sectionOrder = accountId ? sectionOrders[accountId] ?? DEFAULT_ORDER : DEFAULT_ORDER;
+
+    function handleReorder(newOrder: SectionId[]) {
+        if (!accountId) return;
+        const updatedOrders = {...sectionOrders,[accountId]: newOrder,};
+        setSectionOrders(updatedOrders);
+        localStorage.setItem("account-section-orders",JSON.stringify(updatedOrders));
+    }
 
     function handleOpenConfirm() {
         reset();
@@ -161,36 +213,22 @@ export default function AccountsPage() {
                                         </div>
                                     </div>
 
-                                    {/* DIVIDER */}
-                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
-
-                                    {/* INTEREST SECTION */}
-                                    <InterestSection accruedInterestYtd={expandedAccount.accruedInterestYtd} estimatedYearEndInterest={expandedAccount.estimatedYearEndInterest} />
-
-                                    {/* DIVIDER */}
-                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
-
-                                    {/* SAVINGS GOAL */}
-                                    <section aria-labelledby="savings-goal-heading" className="mt-4 sm:mt-6">
-                                        <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
-
-                                        <div className="border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:p-4">
-                                            <SavingsGoalSection
-                                                savingGoal={existingSavingGoal}
-                                                accountAmount={expandedAccount.balance}
-                                                onDeposit={() => {
-                                                    navigate("/transfer")
-                                                }}
-                                                onEdit={(newGoal) => {
-                                                    setIsSavingGoalOpen(true);
-                                                    setNewGoal(newGoal);
-                                                }}
-                                            />
-                                        </div>
-                                    </section>
+                                    {/* SAVING, TRANSACTIONS, INTEREST SECTIONS */}
+                                    <Reorder.Group
+                                        axis="y"
+                                        values={sectionOrder}
+                                        onReorder={handleReorder}
+                                        className="flex flex-col"
+                                    >
+                                        {sectionOrder.map((id) => (
+                                            <DraggableSection key={id} id={id}>
+                                                {sections[id]}
+                                            </DraggableSection>
+                                        ))}
+                                    </Reorder.Group>
 
                                     {/* DIVIDER */}
-                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
+                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-8" />
 
                                     {/* OTHER ACTIONS */}
                                     <h2 id="account-actions-heading" className="mt-4 mb-1 ml-1 text-base font-semibold text-dark-navy sm:mt-6 sm:text-xl">{t("accounts-route.actions")}</h2>
@@ -235,7 +273,7 @@ export default function AccountsPage() {
                     </section>
 
                     {/* HELP / RELATED ARTICLES */}
-                    <aside aria-label={t("generic.help")} className="hidden min-w-0 border border-gray-200 bg-white md:shadow-sm xl:block">
+                    <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block">
                         <div className="min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white">
                             <p className="mt-2 truncate text-right text-sm uppercase text-white/80">{t("generic.help-center")}</p>
                             <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
