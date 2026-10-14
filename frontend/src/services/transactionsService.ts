@@ -18,6 +18,7 @@ export interface TransactionParams {
     AccountIds?: number[];
     Type?: Transaction["type"];
     IsPlanned?: boolean;
+    GroupByDate?: boolean;
     FromDate?: string;
     ToDate?: string;
     MinAmount?: number;
@@ -58,22 +59,45 @@ export interface PagedResult<T> {
     hasPreviousPage: boolean;
 }
 
-export async function getTransactions(input: TransactionParams): Promise<PagedResult<Transaction>> {
-    const res = await axiosInstance.get("/transactions", { params: input, paramsSerializer: { indexes: null } });
+/** Transaktioner för ett datum, grupperade av backend (date/dateKey är YYYY-MM-DD i UTC). */
+export interface TransactionDateGroup {
+    date: string;
+    dateKey: string;
+    items: Transaction[];
+}
+
+export interface TransactionsResult extends PagedResult<Transaction> {
+    /** Finns bara när GroupByDate: true skickas med */
+    groups?: TransactionDateGroup[];
+}
+
+export async function getTransactions(
+    input: TransactionParams,
+): Promise<TransactionsResult> {
+    const res = await axiosInstance.get("/transactions", {
+        params: input,
+        paramsSerializer: { indexes: null },
+    });
     return res.data;
 }
 
-export async function createTransaction(payload: NewTransaction): Promise<Transaction> {
+export async function createTransaction(
+    payload: NewTransaction,
+): Promise<Transaction> {
     const res = await axiosInstance.post("/transactions", payload);
     return res.data;
 }
 
-export async function transferFunds(payload: TransferPayload): Promise<Transaction> {
+export async function transferFunds(
+    payload: TransferPayload,
+): Promise<Transaction> {
     const res = await axiosInstance.post("/transactions/transfer", payload);
     return res.data;
 }
 
-export async function createPlannedTransaction(payload: PlannedTransactionPayload): Promise<Transaction> {
+export async function createPlannedTransaction(
+    payload: PlannedTransactionPayload,
+): Promise<Transaction> {
     const res = await axiosInstance.post("/transactions/planned", payload);
     return res.data;
 }
