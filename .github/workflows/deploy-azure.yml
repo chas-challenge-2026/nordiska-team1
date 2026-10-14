@@ -30,6 +30,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          target: final
           push: true
           tags: |
             ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-sparbanken:latest
