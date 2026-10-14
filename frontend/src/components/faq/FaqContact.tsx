@@ -6,7 +6,7 @@ export default function FaqContact() {
 
     return (
         <article className="flex flex-col gap-2 sm:gap-5 sm:flex-row sm:justify-between sm:items-center bg-white pl-4 pt-2 pb-2 shadow-md sm:p-5 sm:col-span-2 ">
-            <p className="text-xs">Ifall du inte hittar svar på din fråga kan du använda dessa kontaktvägar!</p>
+            <p className="text-xs">{t("faq.faq-sidebar.contact-us")}</p>
             <div>
                 <a href="tel:0771123456" className="group flex items-center">
                     <img className="h-5 w-5 mr-2 bg-primary-blue mask-[url('/icons/phone.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-nordiska-blue" />
