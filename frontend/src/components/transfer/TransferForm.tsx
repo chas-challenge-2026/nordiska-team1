@@ -3,7 +3,7 @@ import InputField from "../forms/InputField";
 import AccountTriggerButton from "./AccountTriggerButton";
 import RecurrenceFields from "./RecurrenceFields";
 import type { RecurrenceFieldsValue } from "./RecurrenceFields";
-import { formatSek } from "./transferHelpers";
+import { formatCurrency } from "../../utils/currency";
 import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
 
 type TransferFormProps = {
@@ -71,7 +71,7 @@ export default function TransferForm({
                         }
                         balance={
                             fromAccount
-                                ? `${formatSek(fromAccount.balance)} sek`
+                                ? formatCurrency(fromAccount.balance)
                                 : undefined
                         }
                         onClick={onOpenFromModal}
@@ -92,7 +92,7 @@ export default function TransferForm({
                         }
                         balance={
                             toAccount?.own
-                                ? `${formatSek(toAccount.balance)} sek`
+                                ? formatCurrency(toAccount.balance)
                                 : undefined
                         }
                         onClick={onOpenToModal}

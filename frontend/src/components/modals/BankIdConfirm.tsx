@@ -102,7 +102,7 @@ export default function BankIdConfirm({
                         {t("page-transfer.bankid.amount")}
                     </span>
                     <span className="text-xl font-bold text-dark-navy">
-                        {amountFormatted} sek
+                        {amountFormatted}
                     </span>
                 </div>
                 <div className="h-px bg-[#EEF1F4]" />
