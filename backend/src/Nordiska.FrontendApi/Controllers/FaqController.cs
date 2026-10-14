@@ -507,4 +507,24 @@ public sealed class FaqController(FaqService service) : ControllerBase
         var userAgent = Request.Headers.UserAgent.ToString();
         return $"{ip}|{userAgent}";
     }
+
+[HttpGet("best-match")]
+[AllowAnonymous]
+[ProducesResponseType(typeof(FaqEntryResponse), StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status204NoContent)]
+[ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+public async Task<ActionResult<FaqEntryResponse>> BestMatch(
+    [FromQuery, Required, StringLength(500)] string q,
+    [FromQuery, StringLength(10)] string? lang,
+    CancellationToken cancellationToken)
+{
+    var match = await service.GetBestMatchAsync(q, lang, cancellationToken);
+
+    if (match is null)
+    {
+        return NoContent();
+    }
+
+    return Ok(match.Entry);
+}
 }
