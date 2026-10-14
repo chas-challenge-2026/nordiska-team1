@@ -10,6 +10,11 @@
  * on the calling thread. Configuration and generator components are resolved
  * per call. Concurrent calls for separate batches are independent.
  *
+ * After batch ingestion, documents are laid out, rendered, optionally signed
+ * and checksummed sequentially in input order. Each document completes before
+ * the next begins. Plain and timestamped signing both wait for the signer
+ * response. The generator dispatches no parallel work within a batch.
+ *
  * Input: json_utf8 must be non-NULL and json_length must be 1..33,554,432 bytes
  * (32 MB). The caller must keep this UTF-8 JSON buffer valid and unmodified until
  * generation returns. No caller input pointers are retained afterward. See
