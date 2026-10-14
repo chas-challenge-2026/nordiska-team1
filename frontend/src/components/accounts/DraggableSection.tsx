@@ -17,6 +17,8 @@ export default function DraggableSection({id,children,}: DraggableSectionProps) 
             dragControls={dragControls}
             className="relative"
         >
+        <div className="relative mt-4 flex items-center pb-3 sm:mt-6 bg-white">
+            <span className="h-0 flex-1 border-b-2 border-nordiska-orange" />
             <button
                 type="button"
                 aria-label="Flytta sektion"
@@ -25,14 +27,14 @@ export default function DraggableSection({id,children,}: DraggableSectionProps) 
                     event.stopPropagation();
                     dragControls.start(event.nativeEvent);
                 }}
-                className="flex w-full mt-4 pb-3 sm:mt-6 sm:pb-3 items-center cursor-grab touch-none active:cursor-grabbing bg-white"
+                className="mx-2 flex shrink-0 mt-4 pb-3 sm:mt-6 sm:pb-3 items-center cursor-grab touch-none active:cursor-grabbing bg-white"
             >
-                <span className="h-0 flex-1 border-b-2 border-nordiska-orange" />
                 <span className="box-content rounded-md border border-nordiska-orange px-1">
                     <span aria-hidden="true" className="block h-4 w-4 bg-primary-blue/80 mask-[url('/icons/grip.svg')] mask-contain mask-center mask-no-repeat  sm:h-4 sm:w-4" />
                 </span>
-                <span className="h-0 flex-1 border-b-2 border-nordiska-orange" />
             </button>
+            <span className="h-0 flex-1 border-b-2 border-nordiska-orange" />
+        </div>
             {children}
         </Reorder.Item>
     );
