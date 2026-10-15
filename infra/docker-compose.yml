@@ -27,6 +27,19 @@ services:
       timeout: 5s
       retries: 12
 
+  migrator:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      target: migrator
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MIGRATION_CONNECTION_STRING: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD}
+
   app:
     build:
       context: ../
@@ -38,6 +51,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       ConnectionStrings__DefaultConnection: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
@@ -73,6 +88,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       ConnectionStrings__ReportingDatabase: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
@@ -99,6 +116,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
 
     environment:
       NORDISKA_PDF_ENABLE_SIGNING: "1"
