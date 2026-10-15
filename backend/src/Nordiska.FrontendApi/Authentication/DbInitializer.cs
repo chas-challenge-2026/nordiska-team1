@@ -92,6 +92,17 @@ public class DbInitializer
         {
             await userManager.RemoveFromRoleAsync(anna, "Admin");
         }
+
+        // 3. Ensure official bilingual FAQ entries exist across all environments (Development, Staging, Production)
+        try
+        {
+            await SeedFaqAsync(scope.ServiceProvider);
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetService<Microsoft.Extensions.Logging.ILogger<DbInitializer>>();
+            logger?.LogWarning(ex, "Could not seed FAQ entries during startup: {Message}", ex.Message);
+        }
     }
 
     public static async Task SeedAsync(IServiceProvider serviceProvider, Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
@@ -569,7 +580,7 @@ public class DbInitializer
         }
     }
 
-    private static async Task SeedFaqAsync(IServiceProvider serviceProvider)
+    public static async Task SeedFaqAsync(IServiceProvider serviceProvider)
     {
         var faqDb = serviceProvider.GetService<FaqDbContext>();
         if (faqDb == null || !await faqDb.Database.CanConnectAsync())
@@ -770,7 +781,7 @@ public class DbInitializer
 
         foreach (var pair in faqPairs)
         {
-            var existingSv = await faqDb.FaqEntries.FirstOrDefaultAsync(f => f.Question == pair.SvQ && f.Language == "sv");
+            var existingSv = await faqDb.FaqEntries.FirstOrDefaultAsync(f => (f.Question == pair.SvQ || f.RelationId == pair.RelationId) && f.Language == "sv");
             if (existingSv == null)
             {
                 faqDb.FaqEntries.Add(FaqEntry.Create(pair.SvQ, pair.SvA, pair.SvCat, pair.SvKey, "sv", pair.RelationId));
@@ -780,7 +791,7 @@ public class DbInitializer
                 existingSv.ReviseEntry(pair.SvQ, pair.SvA, pair.SvCat, pair.SvKey, "sv");
             }
 
-            var existingEn = await faqDb.FaqEntries.FirstOrDefaultAsync(f => f.Question == pair.EnQ && f.Language == "en");
+            var existingEn = await faqDb.FaqEntries.FirstOrDefaultAsync(f => (f.Question == pair.EnQ || f.RelationId == pair.RelationId) && f.Language == "en");
             if (existingEn == null)
             {
                 faqDb.FaqEntries.Add(FaqEntry.Create(pair.EnQ, pair.EnA, pair.EnCat, pair.EnKey, "en", pair.RelationId));
