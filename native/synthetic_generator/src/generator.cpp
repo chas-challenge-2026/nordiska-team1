@@ -1,75 +1,13 @@
 #include "generator.hpp"
 
 #include <array>
+#include <charconv>
 #include <cmath>
-#include <format>
 #include <string_view>
 #include <algorithm>
+#include <stdexcept>
 
 namespace nordiska::synthetic {
-
-static constexpr std::array<std::string_view, 48> FIRST_NAMES = {
-    "Anna", "Erik", "Karin", "Johan", "Maria", "Karl", "Sara", "Anders",
-    "Emma", "Mikael", "Astrid", "Per", "Elin", "Lars", "Linnea", "Fredrik",
-    "Ida", "Gustav", "Maja", "Daniel", "Sofia", "Magnus", "Hanna", "Oskar",
-    "Clara", "Niklas", "Ebba", "Alexander", "Agnes", "Stefan", "Ingrid",
-    "Henrik", "Alma", "Viktor", "Svea", "Emil", "Signe", "Christian",
-    "Alva", "Andreas", "Lovisa", "Jonas", "Frida", "Marcus", "Klara",
-    "Filip", "Matilda", "Simon"
-};
-
-static constexpr std::array<std::string_view, 31> LAST_NAMES = {
-    "Andersson", "Johansson", "Karlsson", "Nilsson", "Eriksson", "Larsson",
-    "Olsson", "Persson", "Svensson", "Gustafsson", "Pettersson", "Jonsson",
-    "Jansson", "Hansson", "Bengtsson", "Jönsson", "Lindqvist", "Lindgren",
-    "Bergström", "Axelsson", "Lundberg", "Forsberg", "Sandberg", "Ekström",
-    "Hedlund", "Holm", "Nyström", "Öberg", "Söderberg", "Nordström", "Lundqvist"
-};
-
-static constexpr std::array<std::string_view, 13> COMPANIES = {
-    "Volvo Group AB", "Ericsson AB", "Spotify AB", "H&M Hennes & Mauritz",
-    "Scania AB", "Region Stockholm", "Region Skåne", "Göteborgs Stad",
-    "Klarna Bank AB", "IKEA AB", "SEB Group", "Nordea Bank Abp", "SVT AB"
-};
-
-static constexpr std::array<std::string_view, 9> MERCHANTS_GROCERY = {
-    "ICA Supermarket", "ICA Kvantum", "ICA Maxi", "Coop Konsum",
-    "Stora Coop", "Hemköp City", "Willys", "Lidl", "City Gross"
-};
-
-static constexpr std::array<std::string_view, 12> MERCHANTS_RETAIL = {
-    "Systembolaget", "Apoteket Hjärtat", "Kronans Apotek", "Pressbyrån",
-    "7-Eleven", "Espresso House", "Clas Ohlson", "IKEA Barkarby",
-    "Elgiganten", "XXL Sport", "Kjell & Company", "Stadium"
-};
-
-static constexpr std::array<std::string_view, 8> MERCHANTS_COMMUTE = {
-    "SL Spärr Stockholm", "SL Månadskort", "SJ Regionaltåg", "Västtrafik",
-    "Skånetrafiken", "Circle K Drivmedel", "OKQ8 Bensin", "Preem Station"
-};
-
-static constexpr std::array<std::string_view, 12> BILLS_AND_SERVICES = {
-    "Hyra Heimstaden", "Hyra Wallenstam", "Ellevio AB Elnät", "Vattenfall Kund",
-    "Telia Sverige", "Tele2 Mobil", "If Skadeförsäkring", "Trygg-Hansa",
-    "Klarna Månadsfaktura", "Spotify Prenumeration", "Netflix", "SATS Gymkort"
-};
-
-struct AccountTypeConfig {
-    std::string_view type;
-    std::string_view name;
-    double rate;
-};
-
-static constexpr std::array<AccountTypeConfig, 5> ACCOUNT_CONFIGS = {{
-    {"flex", "Sparkonto Flex", 0.035000},
-    {"fix", "Fasträntekonto Fix", 0.041000},
-    {"standard", "Standard Sparkonto", 0.025000},
-    {"saving", "Högräntekonto Förmån", 0.035000},
-    {"premium", "Premium Sparkonto", 0.040000}
-}};
-
-static constexpr std::string_view COMMON_PASSWORD_HASH =
-    "AQAAAAEAACcQAAAAEPI/M0/zVJYqy70AD5XmxCGusa4f003trDYZVeUzZHaVGSFDDNwRIMlWeLlSS6WCqg==";
 
 static inline uint64_t rotl(const uint64_t x, int k) {
     return (x << k) | (x >> (64 - k));
@@ -132,23 +70,75 @@ int luhn_checksum(std::string_view digits) {
     return (10 - (total % 10)) % 10;
 }
 
-std::string generate_personnummer(FastRng& rng) {
-    int year = static_cast<int>(rng.randint(1930, 2007));
-    int month = static_cast<int>(rng.randint(1, 12));
-    int max_days = 28;
-    if (month != 2) {
-        max_days = (month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31;
+// A small immutable date table avoids calendar conversion in the hot path.
+static constexpr auto PERSONAL_NUMBER_DATES = [] {
+    std::array<std::array<char, 8>, personal_number_date_count> result{};
+    size_t index = 0;
+    const int first_year = int(std::chrono::year_month_day{personal_number_first_date}.year());
+    const int end_year = int(std::chrono::year_month_day{personal_number_end_date}.year());
+    for (int year = first_year; year < end_year; ++year) {
+        for (unsigned month = 1; month <= 12; ++month) {
+            const auto last = std::chrono::year_month_day_last{
+                std::chrono::year{year}, std::chrono::month_day_last{std::chrono::month{month}}};
+            for (unsigned day = 1; day <= unsigned(last.day()); ++day) {
+                unsigned digits = year * 10000 + month * 100 + day;
+                auto& date = result[index++];
+                for (int digit = 7; digit >= 0; --digit) {
+                    date[digit] = '0' + digits % 10;
+                    digits /= 10;
+                }
+            }
+        }
     }
-    int day = static_cast<int>(rng.randint(1, max_days));
-    int individual = static_cast<int>(rng.randint(100, 999));
+    return result;
+}();
+static_assert(personal_number_capacity == 37'620'000);
 
-    char luhn_buf[10];
-    snprintf(luhn_buf, sizeof(luhn_buf), "%02d%02d%02d%03d", year % 100, month, day, individual);
-    int check = luhn_checksum(std::string_view(luhn_buf, 9));
+std::string generate_personnummer(uint64_t seed, uint64_t ordinal) {
+    if (ordinal >= personal_number_capacity)
+        throw std::out_of_range("Personal-number capacity exhausted (37,620,000 customers)");
+    const auto position = (seed % personal_number_capacity + ordinal) % personal_number_capacity;
+    std::string result(12, '0');
+    const auto& date = PERSONAL_NUMBER_DATES[position / 1000];
+    std::copy(date.begin(), date.end(), result.begin());
+    auto individual = position % 1000;
+    for (int digit = 10; digit >= 8; --digit) {
+        result[digit] = '0' + individual % 10;
+        individual /= 10;
+    }
+    result[11] = '0' + luhn_checksum(std::string_view(result).substr(2, 9));
+    return result;
+}
 
-    char full_buf[14];
-    snprintf(full_buf, sizeof(full_buf), "%04d%02d%02d%03d%d", year, month, day, individual, check);
-    return std::string(full_buf, 12);
+void PersonalNumberSequence::reserve(std::string_view value) {
+    if (cursor_ != 0) throw std::logic_error("Reserve existing identities before generating new ones");
+    if (value.size() != 12 || !std::all_of(value.begin(), value.end(), [](char c) { return c >= '0' && c <= '9'; })) return;
+    auto number = [&](size_t start, size_t count) {
+        unsigned result = 0;
+        for (size_t i = start; i < start + count; ++i) result = result * 10 + value[i] - '0';
+        return result;
+    };
+    const auto date = std::chrono::year{int(number(0, 4))}/number(4, 2)/number(6, 2);
+    if (!date.ok() || luhn_checksum(value.substr(2, 9)) != value[11] - '0') return;
+    const auto days = std::chrono::sys_days{date};
+    if (days < personal_number_first_date || days >= personal_number_end_date) return;
+    const auto position = (days - personal_number_first_date).count() * 1000 + number(8, 3);
+    if (occupied_.empty()) occupied_.resize((personal_number_capacity + 63) / 64);
+    auto& word = occupied_[position / 64];
+    const auto bit = uint64_t{1} << (position % 64);
+    if (!(word & bit)) { word |= bit; ++reserved_; }
+}
+
+std::string PersonalNumberSequence::next() {
+    if (remaining() == 0) throw std::out_of_range("Personal-number capacity exhausted (37,620,000 customers)");
+    while (cursor_ < personal_number_capacity) {
+        const auto ordinal = cursor_++;
+        const auto position = (seed_ + ordinal) % personal_number_capacity;
+        if (!occupied_.empty() && (occupied_[position / 64] & (uint64_t{1} << (position % 64)))) continue;
+        ++issued_;
+        return generate_personnummer(seed_, ordinal);
+    }
+    throw std::out_of_range("Personal-number capacity exhausted (37,620,000 customers)");
 }
 
 int64_t pareto_sample(FastRng& rng, double x_min, double alpha, double x_max) {
@@ -157,6 +147,39 @@ int64_t pareto_sample(FastRng& rng, double x_min, double alpha, double x_max) {
     double val = x_min / std::pow(1.0 - u, 1.0 / alpha);
     double clamped = std::clamp(std::floor(val), x_min, x_max);
     return static_cast<int64_t>(clamped);
+}
+
+int64_t monthly_interest_cents(int64_t opening_balance_cents,
+                               std::span<const int64_t> daily_changes_cents,
+                               int annual_rate_basis_points, int days_in_year) {
+    if (daily_changes_cents.empty() || daily_changes_cents.size() > 31 ||
+        annual_rate_basis_points < 0 || (days_in_year != 365 && days_in_year != 366))
+        throw std::invalid_argument("Invalid monthly interest period or annual rate");
+    int64_t balance = opening_balance_cents;
+    int64_t balance_days = 0;
+    for (auto change : daily_changes_cents) {
+        balance += change;
+        balance_days += std::max<int64_t>(0, balance);
+    }
+    // Keep daily accrual unrounded; round only the month's payout to whole öre.
+    const int64_t denominator = 10000LL * days_in_year;
+    return (balance_days * annual_rate_basis_points + denominator / 2) / denominator;
+}
+
+void append_ledger_row(std::string& output, int64_t id, int64_t account_id,
+                       std::string_view type, double amount, std::string_view label,
+                       std::string_view date) {
+    char buffer[128];
+    auto integer = [&](int64_t value) {
+        auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
+        output.append(buffer, result.ptr); output += '\t';
+    };
+    integer(id); integer(account_id);
+    output += type; output += '\t';
+    auto result = std::to_chars(buffer, buffer + sizeof(buffer), amount, std::chars_format::fixed, 2);
+    if (result.ec != std::errc{}) throw std::runtime_error("Ledger amount formatting failed");
+    output.append(buffer, result.ptr); output += '\t'; output += label;
+    output += "\t\\N\tf\t"; output += date; output += '\n';
 }
 
 } // namespace nordiska::synthetic
