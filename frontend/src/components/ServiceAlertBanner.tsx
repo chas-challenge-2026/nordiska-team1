@@ -15,7 +15,7 @@ export default function ServiceAlertBanner({margin = false, hidden= false}: Serv
 
     return (
         <div 
-            className={`${hideBanner} fixed left-0 ${topMargin} z-50 flex w-full items-center justify-between gap-4 bg-nordiska-orange py-1 md:px-4 sm:py-2`}>
+            className={`${hideBanner} ${topMargin} sticky z-50 flex w-full items-center justify-between gap-4 bg-nordiska-orange py-1 md:px-4 sm:py-2`}>
             <p className="flex-1 text-center text-xs md:text-sm lg:text-base text-black font-montserrat">
                 {alert.message
                     ? alert.message

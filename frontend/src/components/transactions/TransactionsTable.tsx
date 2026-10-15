@@ -1,17 +1,18 @@
-import { useMemo, useId } from 'react';
+import { useMemo, useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { Transaction, TransactionDateGroup } from '../../services/transactionsService';
+import type { Transaction } from '../../services/transactionsService';
 import type { Account } from '../../services/accountsService';
 import { formatDate, formatTime } from '../../utils/date';
 import { formatCurrency } from '../../utils/currency';
+import type { TransactionRowGroup } from '../../utils/transactions';
 import PagePagination from '../PagePagination';
 
 interface TransactionTableProps {
     accounts: Account[];
-    transactions: Transaction[];
-    /** Transaktionerna grupperade per datum av backend (GroupByDate) */
-    groups: TransactionDateGroup[];
+    /** Raderna för aktuell sida, grupperade per datum (interna överföringar redan ihopslagna) */
+    groups: TransactionRowGroup[];
+    shownCount: number;
     totalCount: number;
     totalPages: number;
     page: number;
@@ -25,17 +26,29 @@ interface TransactionTableProps {
 }
 
 function transactionTypeLabel(transaction: Transaction, t: TFunction): string {
-    if (transaction.type === "transfer") return t("transactions-route.type-transfer");
-    if (transaction.type === "deposit") return t("transactions-route.type-deposit");
-    if (transaction.type === "withdrawal") return t("transactions-route.type-withdraw");
-    // Okända typer (t.ex. ränta) märks efter beloppets tecken
-    return t(transaction.amount >= 0 ? "transactions-route.type-deposit" : "transactions-route.type-withdraw");
+    switch (transaction.type) {
+        case "transfer": return t("transactions-route.type-transfer");
+        case "deposit": return t("transactions-route.type-deposit");
+        case "withdrawal": return t("transactions-route.type-withdraw");
+        case "interest": return t("transactions-route.type-interest");
+        case "tax": return t("transactions-route.type-tax");
+        // Okända typer märks efter beloppets tecken
+        default: return t(transaction.amount >= 0 ? "transactions-route.type-deposit" : "transactions-route.type-withdraw");
+    }
 }
 
-export default function TransactionTable({ accounts, transactions, groups, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
+export default function TransactionTable({ accounts, groups, shownCount, totalCount, totalPages, page, hasNextPage, hasPreviousPage, isPlaceholderData, onPageChange, isLoading, isError, emptyMessage }: TransactionTableProps) {
     const { t } = useTranslation();
     const listId = useId();
     const accountsById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts])
+    // Stängda konton visas överstrukna med "(stängt konto)"
+    const accountNumber = (id?: number): ReactNode => {
+        const account = id ? accountsById.get(id) : undefined;
+        if (!account) return undefined;
+        if (account.status !== "closed") return account.accountNumber;
+        return <><s>{account.accountNumber}</s> ({t("transactions-route.closed-account")})</>;
+    };
+
 
     return (
         <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-200 md:shadow-sm">
@@ -43,7 +56,7 @@ export default function TransactionTable({ accounts, transactions, groups, total
             <div className="flex min-h-22 flex-col justify-center bg-dark-navy px-4 py-3 text-white sm:px-6">
                 <h2 id={`${listId}-heading`} className="truncate text-base font-bold uppercase tracking-wide sm:text-lg">{t("transactions-route.list-title")}</h2>
                 <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-white/90 sm:mt-1 sm:text-xs" aria-live="polite">
-                    {!isLoading && !isError && t("transactions-route.showing-count", { shown: transactions.length, count: totalCount })}
+                    {!isLoading && !isError && t("transactions-route.showing-count", { shown: shownCount, count: totalCount })}
                 </p>
             </div>
 
@@ -64,32 +77,44 @@ export default function TransactionTable({ accounts, transactions, groups, total
                     aria-busy={isPlaceholderData}
                     className={`flex-1 py-2 sm:p-4 ${isPlaceholderData ? 'opacity-50' : ''}`}
                 >
-                    {transactions.length === 0 && emptyMessage && (
+                    {shownCount === 0 && emptyMessage && (
                         <p className="py-10 text-center text-sm text-secondary">{emptyMessage}</p>
                     )}
                     {groups.map(group => (
                         <div key={group.dateKey} className="mb-4 last:mb-0">
                             <h3 className="mb-1 border-b-2 border-nordiska-orange px-3 pb-1 text-xs font-medium text-secondary sm:px-5">
-                                {formatDate(`${group.date}T00:00:00`)}
+                                {formatDate(group.date)}
                             </h3>
-                            <ul className="ml-3 sm:ml-5">
-                                {group.items.map(transaction => {
-                                    const accountNumber = accountsById.get(transaction.accountId)?.accountNumber;
-                                    // Överföringar visas som "från → till" precis som på Översikt
-                                    const targetNumber = transaction.targetAccountId ? accountsById.get(transaction.targetAccountId)?.accountNumber : undefined;
-                                    const accountText = targetNumber
-                                        ? (transaction.amount < 0 ? `${accountNumber} → ${targetNumber}` : `${targetNumber} → ${accountNumber}`)
-                                        : accountNumber;
+                            <ul>
+                                {group.rows.map(row => {
+                                    let key: string | number, tx: Transaction, accountText: ReactNode, amountText: string, amountClass: string;
+
+                                    if (row.kind === "transfer") {
+                                        // Hel intern överföring: svart belopp utan tecken, som på Översikt
+                                        key = row.id;
+                                        tx = row.tx;
+                                        accountText = <>{accountNumber(row.fromAccountId)} → {accountNumber(row.toAccountId)}</>;
+                                        amountText = formatCurrency(row.amount);
+                                        amountClass = 'text-dark-navy';
+                                    } else {
+                                        key = row.tx.id;
+                                        tx = row.tx;
+                                        const own = accountNumber(tx.accountId);
+                                        // Ensamt överföringsben visas som "från → till"
+                                        const other = accountNumber(tx.targetAccountId);
+                                        accountText = other ? (tx.amount < 0 ? <>{own} → {other}</> : <>{other} → {own}</>) : own;
+                                        amountText = formatCurrency(tx.amount, { signed: true });
+                                        amountClass = tx.amount < 0 ? 'text-red-700' : 'text-green-700';
+                                    }
+
                                     return (
-                                        <li key={transaction.id} className="px-3 py-3 odd:bg-white even:bg-light-gray/60 sm:px-5">
+                                        <li key={key} className="px-3 py-3 odd:bg-white even:bg-light-gray/60 sm:px-5">
                                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
-                                                <span className="min-w-0 wrap-break-word font-semibold">{transaction.label || transactionTypeLabel(transaction, t)}</span>
-                                                <span className={`shrink-0 whitespace-nowrap font-medium ${transaction.amount < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                                                    {formatCurrency(transaction.amount, { signed: true })}
-                                                </span>
+                                                <span className="min-w-0 wrap-break-word font-semibold">{tx.label || transactionTypeLabel(tx, t)}</span>
+                                                <span className={`shrink-0 whitespace-nowrap font-medium ${amountClass}`}>{amountText}</span>
                                             </p>
                                             <p className="mt-0.5 flex flex-wrap justify-between gap-x-2 gap-y-1 text-[10px] uppercase text-dark-navy/60 sm:text-xs">
-                                                <span>{formatTime(transaction.createdAt)}</span>
+                                                <span>{formatTime(tx.createdAt)}</span>
                                                 {accountText && (
                                                     <span className="min-w-0 wrap-break-word text-right">{accountText}</span>
                                                 )}

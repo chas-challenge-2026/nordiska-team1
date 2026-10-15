@@ -2,8 +2,8 @@
 # Reproducible generation/ingestion measurements. Only test-owned PostgreSQL is written.
 set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-source_dir=${SYNTHETIC_BENCH_SOURCE:-$repo_root/native/synthetic_generator}
-binary=${SYNTHETIC_BENCH_BINARY:-$repo_root/tools/synthetic/nordiska-synthetic-linux-x86_64}
+source_dir=${SYNTHETIC_BENCH_SOURCE:-$repo_root/tools/syntheticDB}
+binary=${SYNTHETIC_BENCH_BINARY:-$repo_root/tools/syntheticDB/nordiska-synthetic-linux-x86_64}
 output=${SYNTHETIC_BENCH_OUTPUT:-$(mktemp -d /tmp/nordiska-synthetic-benchmark.XXXXXX)}
 mkdir -p "$output"
 output=$(cd "$output" && pwd)

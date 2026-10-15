@@ -30,6 +30,9 @@ param faqSearchLogSalt string
 @description('Initial container image to deploy (default: placeholder image until first CI/CD build)')
 param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
+@description('Initial reporting worker container image to deploy')
+param workerContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+
 // ---------------------------------------------------------------------------
 // 1. Log Analytics Workspace (Required for Container Apps Environment)
 // ---------------------------------------------------------------------------
@@ -154,6 +157,12 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       ]
     }
     template: {
+      volumes: [
+        {
+          name: 'report-documents'
+          storageType: 'EmptyDir'
+        }
+      ]
       containers: [
         {
           name: 'nordiska-app'
@@ -162,6 +171,12 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
+          volumeMounts: [
+            {
+              volumeName: 'report-documents'
+              mountPath: '/var/lib/nordiska/report-documents'
+            }
+          ]
           env: [
             {
               name: 'ASPNETCORE_ENVIRONMENT'
@@ -211,12 +226,44 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'FaqSearchLog__Salt'
               secretRef: 'faq-search-log-salt'
             }
+            {
+              name: 'ReportDocumentStorage__RootPath'
+              value: '/var/lib/nordiska/report-documents'
+            }
+          ]
+        }
+        {
+          name: 'nordiska-reporting-worker'
+          image: workerContainerImage
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          volumeMounts: [
+            {
+              volumeName: 'report-documents'
+              mountPath: '/var/lib/nordiska/report-documents'
+            }
+          ]
+          env: [
+            {
+              name: 'ConnectionStrings__ReportingDatabase'
+              secretRef: 'db-connection'
+            }
+            {
+              name: 'NORDISKA_PDF_ENABLE_SIGNING'
+              value: '0'
+            }
+            {
+              name: 'ReportDocumentStorage__RootPath'
+              value: '/var/lib/nordiska/report-documents'
+            }
           ]
         }
       ]
       scale: {
         minReplicas: 1
-        maxReplicas: 2
+        maxReplicas: 1
       }
     }
   }

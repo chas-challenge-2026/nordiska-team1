@@ -83,7 +83,7 @@ static std::string run(const Args& args, const std::string* input = nullptr) {
     return trim(output);
 }
 static fs::path repo_root() {
-    // Resolve the real executable, including root compatibility symlinks.
+    // Locate the checkout from the executable directory.
     fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
     while (!current.empty()) {
         if (fs::exists(current / "infra/docker-compose.yml")) return current;
@@ -111,8 +111,9 @@ static std::string format_count(std::string value) {
     return value;
 }
 static fs::path local_env(const fs::path& infra) {
-    auto env = infra / "v2/.env";
-    if (!fs::is_regular_file(env)) throw std::runtime_error("infra/v2/.env is missing; run DevSetup first");
+    auto env = infra / ".env";
+    if (!fs::is_regular_file(env)) env = infra / "v2/.env";
+    if (!fs::is_regular_file(env)) throw std::runtime_error("infra/.env is missing (legacy infra/v2/.env was also checked); run DevSetup first");
     return env;
 }
 
@@ -135,9 +136,10 @@ class DatabaseManager {
     OperationLock lock;
     std::vector<fs::path> files;
     size_t worker_count = 1;
+    std::string app_service = "app";
     static inline const std::regex selection{R"(^[ \t]*NORDISKA_DATABASE[ \t]*=[ \t]*(.*)$)"};
     std::vector<std::string> services(const std::string& name) {
-        std::istringstream rows(compose({"ps", "--quiet", name}));
+        std::istringstream rows(compose({"ps", "--quiet", name == "app" ? app_service : name}));
         std::vector<std::string> result;
         std::string id;
         while (rows >> id) result.push_back(id);
@@ -238,7 +240,7 @@ class DatabaseManager {
     void recreate() {
         compose({"up", "-d", "--no-deps", "--force-recreate", "--wait", "--wait-timeout", "180",
                  "--scale", "reporting-worker=" + std::to_string(worker_count),
-                 "app", "reporting-worker", "pdf-signer"});
+                 app_service, "reporting-worker", "pdf-signer"});
         for (auto name : {"app", "reporting-worker", "pdf-signer"}) {
             auto ids = services(name);
             if (ids.empty()) throw std::runtime_error(std::string(name) + " did not start");
@@ -296,11 +298,16 @@ public:
     };
     std::string container;
     DatabaseManager() : infra(repo_root() / "infra"), env(local_env(infra)),
-                        lock(env.parent_path() / ".synthetic-data.lock"),
+                        lock(infra.parent_path() / "tools/syntheticDB/.synthetic-data.lock"),
                         files{infra / "docker-compose.yml", infra / "docker-compose.override.yml"} {
         container = service("db");
         if (container.empty()) throw std::runtime_error("The nordiska-v2 db service is not running; run DevSetup start-stack first");
         auto app = service("app");
+        if (app.empty()) {
+            app = run({"docker", "ps", "--filter", "label=com.docker.compose.project=nordiska-v2",
+                       "--filter", "label=com.docker.compose.service=api", "--format", "{{.ID}}"});
+            if (!app.empty()) app_service = "api";
+        }
         if (!app.empty()) {
             auto labels = run({"docker", "inspect", "--format",
                 "{{index .Config.Labels \"com.docker.compose.project.config_files\"}}", app});
@@ -356,6 +363,16 @@ public:
         Args args{"docker", "compose", "--project-name", "nordiska-v2", "--project-directory", infra.string(),
                   "--env-file", env.string()};
         for (const auto& file : files) { args.push_back("-f"); args.push_back(file.string()); }
+        auto overrides = read_file(infra.parent_path() / "tools/syntheticDB/compose.override.yml");
+        if (app_service == "api") {
+            const auto key = overrides.find("\n  app:");
+            if (key == std::string::npos) throw std::runtime_error("Missing app service in tool Compose override");
+            overrides.replace(key, 7, "\n  api:");
+        }
+        TempFile override_file;
+        override_file.write(overrides);
+        args.push_back("-f");
+        args.push_back(override_file.path.string());
         args.insert(args.end(), tail.begin(), tail.end());
         return run(args);
     }
@@ -524,7 +541,7 @@ public:
         auto app = service("app");
         auto current = app.empty() ? "not running" : runtime_database(app);
         std::cout << "\nApp database NOW: " << database_label(current) << '\n'
-                  << "Saved database selection in infra/v2/.env: " << database_label(requested);
+                  << "Saved database selection in " << fs::relative(env, infra.parent_path()).string() << ": " << database_label(requested);
         if (current == requested) std::cout << " (applied)\n";
         else std::cout << " (NOT APPLIED to the app)\n";
         bool mismatch = current != requested;
@@ -590,7 +607,7 @@ static int64_t number(const std::string& value, const std::string& option) {
 }
 static void help() {
     std::cout << R"(Nordiska synthetic database manager — native Linux release
-Usage: ./tools/synthetic/nordiska-synthetic-linux-x86_64 [options]
+Usage: ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 [options]
   --customers N   Replace synthetic data with N customers (1..37,620,000)
   --seed N        Random seed (default: 42)
   --year N        Reporting year (default: 2025; allowed: 2000..2100)
@@ -610,15 +627,15 @@ Usage: ./tools/synthetic/nordiska-synthetic-linux-x86_64 [options]
   --version       Show native release version
 
 With no arguments: interactive menu in a terminal, otherwise status.
-Local Compose: infra/docker-compose.yml; secrets/selection: infra/v2/.env.
+Local Compose: infra/docker-compose.yml; secrets/selection: infra/.env (legacy infra/v2/.env supported).
 Synthetic PDFs use a separate volume; normal PDFs are preserved.
 Personal numbers count from the seed through valid dates 1905-01-01..2007-12-31,
 using individual numbers 000..999 and a calculated Luhn checksum.
 Everyone is aged 18..120 at the end of 2025. Oversized requests fail before DB changes.
 
 Standard benchmark setup:
-  ./tools/synthetic/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4
-  ./tools/synthetic/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic
+  ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4
+  ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic
 )";
 }
 

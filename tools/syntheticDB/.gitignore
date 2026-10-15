@@ -2,3 +2,10 @@
 __pycache__/
 *.py[cod]
 /nordiska-synthetic-linux-x86_64.next
+
+# Local C++ build output.
+build/
+bin/
+*.o
+*.a
+/.synthetic-data.lock

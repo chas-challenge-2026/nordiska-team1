@@ -5,7 +5,7 @@ Prepare the local stack with [DevSetup](../../docs/local-development-setup.md), 
 ## Interactive setup
 
 ```bash
-./tools/synthetic/nordiska-synthetic-linux-x86_64
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64
 ```
 
 The title shows the active database; the table shows both databases' customer, account, transaction and document counts and size. The switch action follows the running app: **Switch to SYNTHETIC DB** or **Switch back to NORMAL DB**. Select it to switch immediately; a spinner stays active through service recreation and verification.
@@ -23,16 +23,16 @@ The menu uses subtle colors for selection, active environment and operation resu
 ## Set up 10,000 customers from the command line
 
 ```bash
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4 &&
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic &&
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --status
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4 &&
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic &&
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --status
 ```
 
 This creates a separate database and connects the app, reporting worker and PDF signer to it. **It replaces previous synthetic data; your normal `nordiska_v2` database and its PDFs are preserved.** The synthetic database uses its own PDF volume.
 
 For creation of 10,000 customers or more, the tool keeps the initial 500-customer sample fully indexed, then rebuilds eligible ledger query indexes after bulk loading. Primary keys and foreign keys remain enabled. Completion includes index rebuilding, sequence updates and database statistics. Append and smaller runs keep all indexes. Use `--keep-indexes` to compare the original ingestion path. See [measured results](maintainer-notes.md#performance-measurements).
 
-Compose files are in `infra/`. Local secrets and selection stay in `infra/v2/.env`, which the tool passes explicitly to Compose. Switching recreates all three services, checks their running database settings and rolls back if the switch fails. The backend-only configuration for local frontend development is preserved when active.
+Compose files are in `infra/`. Local secrets and selection stay in `infra/.env` (legacy `infra/v2/.env` is also supported), which the tool passes explicitly to Compose. Switching recreates all three services, checks their running database settings and rolls back if the switch fails. Database switching uses the tool’s `compose.override.yml` without changing shared infrastructure files. The backend-only configuration for local frontend development is preserved when active.
 
 The standard seed simulates customer activity during 2025:
 
@@ -45,7 +45,7 @@ These are benchmark fixtures: all accounts use Flex with a 3.5% annual rate, dai
 ## Get a customer login
 
 ```bash
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --get-random-customer
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --get-random-customer
 ```
 
 Prints a random eligible customer's name, email, password (`password123`), customer ID and personal number from the **running app's database**, labeled NORMAL or SYNTHETIC. The menu has the same action. Use the frontend's manual email/password login. The command never switches databases or resets passwords; an offline app or absence of eligible customers produces an error.
@@ -57,7 +57,7 @@ The synthetic database has the same schema and uses the same app features as the
 ## Return to the normal database
 
 ```bash
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --switch nordiska_v2
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_v2
 ```
 
 The services reconnect to the normal database and its original PDF volume. Synthetic data and PDFs remain available for later use. Reset and delete affect only the synthetic database; they retain PDF files, and replacement seeding can leave old synthetic PDFs unreferenced. Use **Delete synthetic documents** (or `--delete-documents`) to reclaim retained synthetic PDF storage.

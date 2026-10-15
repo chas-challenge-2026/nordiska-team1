@@ -14,13 +14,15 @@ public sealed class InboxService(
     IValidator<CreateThreadRequest> createThreadValidator,
     IValidator<ReplyThreadRequest> replyThreadValidator,
     IValidator<StaffReplyRequest> staffReplyValidator,
-    IValidator<CreateAdminThreadRequest> createAdminThreadValidator) : IInboxService
+    IValidator<CreateAdminThreadRequest> createAdminThreadValidator,
+    Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : IInboxService
 {
     private readonly IInboxRepository _repository = repository;
     private readonly IValidator<CreateThreadRequest> _createThreadValidator = createThreadValidator;
     private readonly IValidator<ReplyThreadRequest> _replyThreadValidator = replyThreadValidator;
     private readonly IValidator<StaffReplyRequest> _staffReplyValidator = staffReplyValidator;
     private readonly IValidator<CreateAdminThreadRequest> _createAdminThreadValidator = createAdminThreadValidator;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration? _configuration = configuration;
 
     public async Task<PagedResult<ThreadSummaryResponse>> GetThreadsAsync(
         long customerId,
@@ -600,9 +602,27 @@ public sealed class InboxService(
         }
 
         byte[] content;
-        if (!string.IsNullOrWhiteSpace(doc.StorageKey) && File.Exists(doc.StorageKey))
+        string? resolvedPath = null;
+        if (!string.IsNullOrWhiteSpace(doc.StorageKey))
         {
-            content = await File.ReadAllBytesAsync(doc.StorageKey, cancellationToken);
+            if (File.Exists(doc.StorageKey))
+            {
+                resolvedPath = doc.StorageKey;
+            }
+            else
+            {
+                var rootPath = _configuration?["ReportDocumentStorage:RootPath"] ?? "/var/lib/nordiska/report-documents";
+                var candidate = Path.Combine(rootPath, doc.StorageKey.TrimStart('/', '\\'));
+                if (File.Exists(candidate))
+                {
+                    resolvedPath = candidate;
+                }
+            }
+        }
+
+        if (resolvedPath is not null)
+        {
+            content = await File.ReadAllBytesAsync(resolvedPath, cancellationToken);
         }
         else
         {
@@ -623,6 +643,35 @@ public sealed class InboxService(
             Content: content,
             Sha256: computedHash,
             IsChecksumValid: isValid);
+    }
+
+    public async Task<long> RegisterCustomerDocumentAsync(
+        long customerId,
+        string documentType,
+        string title,
+        string fileName,
+        string mimeType,
+        string storageKey,
+        long fileSizeBytes,
+        string sha256,
+        string sourceType,
+        string? sourceId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var customerDoc = await _repository.RegisterCustomerDocumentAsync(
+            customerId,
+            documentType,
+            title,
+            fileName,
+            mimeType,
+            storageKey,
+            fileSizeBytes,
+            sha256,
+            sourceType,
+            sourceId,
+            cancellationToken);
+
+        return customerDoc.Id;
     }
 
     private static byte[] GenerateFallbackPdf(Nordiska.Modules.Documents.Domain.Document doc)

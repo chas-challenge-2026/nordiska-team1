@@ -4,6 +4,7 @@
 .env
 .env.*
 !.env.example
+!.env.template
 *.local
 *.secret
 .dev/
@@ -113,7 +114,6 @@ tmp/
 temp/
 /infra/secrets/
 /infra/v2/secrets/
-/infra/v2/.synthetic-data.lock
 
 # 7. Claude Code local settings
 .claude/

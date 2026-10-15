@@ -58,10 +58,10 @@ dotnet run --project .\backend\tools\Nordiska.DevSetup\Nordiska.DevSetup.csproj 
 
 ```powershell
 cd .\infra
-docker compose --env-file v2/.env ps
+docker compose ps
 ```
 
-The `app`, `reporting-worker` and `db` containers should be running.
+The `api`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -108,10 +108,10 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 
 ```shell
 cd ./infra
-docker compose --env-file v2/.env ps
+docker compose ps
 ```
 
-The `app`, `reporting-worker` and `db` containers should be running.
+The `api`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -158,10 +158,10 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 
 ```shell
 cd ./infra
-docker compose --env-file v2/.env ps
+docker compose ps
 ```
 
-The `app`, `reporting-worker` and `db` containers should be running.
+The `api`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -179,7 +179,7 @@ The standard local Docker environment keeps the existing combined frontend and b
 
 | Container | Address | Responsibility |
 |---|---|---|
-| `app` | `http://localhost:8080` | Combined React frontend and .NET backend API |
+| `api` | `http://localhost:8080` | Combined React frontend and .NET backend API |
 | `reporting-worker` | No public port | Native PDF generation and job processing |
 | `db` | `localhost:5433` | PostgreSQL database |
 
@@ -191,7 +191,7 @@ After DevSetup has been run once, frontend developers can run this from the `fro
 npm run setup:local-backend
 ```
 
-The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts only `db`, the backend-only `app` on `http://localhost:5031`, and `reporting-worker`. It never overwrites an existing `.env.local`, does not start Vite and uses the same local Compose project as the standard combined environment. Switching databases with the synthetic manager preserves this backend-only configuration.
+The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts only `db`, the backend-only `api` on `http://localhost:5031`, and `reporting-worker`. It never overwrites an existing `.env.local`, does not start Vite and does not change the standard combined Docker environment on `http://localhost:8080`.
 
 The first run can take a few minutes because Docker builds both the .NET API and the native C++ PDF generator; later builds normally reuse the Docker cache.
 
@@ -203,20 +203,49 @@ Start the frontend separately:
 npm run dev
 ```
 
-Compose files live in `infra/`, while DevSetup keeps local secrets in `infra/v2/.env`. Run the remaining Docker commands below from `infra`; pass `--env-file v2/.env` explicitly.
+### Running projects separately (Local Native Development)
 
-For synthetic workloads, see [the synthetic database manager](../tools/synthetic/README.md).
+If you prefer running the .NET API and React frontend directly on your host machine without rebuilding Docker containers:
+
+1. **Start only the PostgreSQL database in Docker:**
+   ```shell
+   cd infra
+   docker compose up -d db
+   ```
+   *(PostgreSQL is exposed on `localhost:5433`)*
+
+2. **Run Backend API locally (.NET):**
+   ```shell
+   cd backend/src/Nordiska.FrontendApi
+   dotnet run
+   ```
+   *(API is available on `http://localhost:5031` with Scalar at `http://localhost:5031/scalar/v1`)*
+
+3. **Run Frontend locally (Vite):**
+   ```shell
+   cd frontend
+   npm run dev
+   ```
+   *(Frontend is available on `http://localhost:5173`)*
+
+4. **Run Reporting Worker locally (optional, for PDF and async report generation):**
+   ```shell
+   cd backend/src/Nordiska.Reporting.Worker
+   dotnet run
+   ```
+
+Run the remaining Docker commands below from `infra`.
 
 ### Start the environment
 
 ```shell
-docker compose --env-file v2/.env up -d
+docker compose up -d
 ```
 
 ### Stop the environment
 
 ```shell
-docker compose --env-file v2/.env down
+docker compose down
 ```
 
 This stops the containers without deleting the database or generated PDF files.
@@ -224,37 +253,37 @@ This stops the containers without deleting the database or generated PDF files.
 ### Rebuild the environment
 
 ```shell
-docker compose --env-file v2/.env up -d --build
+docker compose up -d --build
 ```
 
 ### Show container status
 
 ```shell
-docker compose --env-file v2/.env ps
+docker compose ps
 ```
 
 ### Follow API logs
 
 ```shell
-docker compose --env-file v2/.env logs -f app
+docker compose logs -f api
 ```
 
 ### Follow frontend logs
 
 ```shell
-docker compose --env-file v2/.env logs -f frontend
+docker compose logs -f frontend
 ```
 
 ### Follow Reporting Worker logs
 
 ```shell
-docker compose --env-file v2/.env logs -f reporting-worker
+docker compose logs -f reporting-worker
 ```
 
 ### Show the latest Reporting Worker logs
 
 ```shell
-docker compose --env-file v2/.env logs --tail=50 reporting-worker
+docker compose logs --tail=50 reporting-worker
 ```
 
 [Back to top](#local-development-setup)
@@ -270,7 +299,7 @@ Run DevSetup:
 - When database permissions change
 - When new required environment variables are added
 
-For normal restarts, running `docker compose --env-file v2/.env up -d` from `infra` is enough.
+For normal restarts, running `docker compose up -d` from `infra` is enough.
 
 ---
 
@@ -284,7 +313,7 @@ Example:
 password authentication failed for user "nordiska_migrator"
 ```
 
-This usually means that `infra/v2/.env` contains different passwords from an already initialized PostgreSQL Docker volume.
+This usually means that `infra/.env` contains different passwords from an already initialized PostgreSQL Docker volume.
 
 Do not delete only `.env`. PostgreSQL keeps the role passwords stored in the persistent volume, while DevSetup would generate different replacement values.
 
@@ -312,7 +341,7 @@ If the local database and generated PDF files can be deleted, reset the local en
 
 ```powershell
 docker compose --project-name nordiska-v2 `
-  --env-file infra/v2/.env `
+  --env-file infra/.env `
   -f infra/docker-compose.yml `
   -f infra/docker-compose.override.yml `
   down -v
@@ -322,7 +351,7 @@ docker compose --project-name nordiska-v2 `
 
 ```shell
 docker compose --project-name nordiska-v2 \
-  --env-file infra/v2/.env \
+  --env-file infra/.env \
   -f infra/docker-compose.yml \
   -f infra/docker-compose.override.yml \
   down -v
@@ -357,7 +386,7 @@ After the first successful setup, normal development only requires:
 
 ```shell
 cd infra
-docker compose --env-file v2/.env up -d
+docker compose up -d
 ```
 
 </div>

@@ -49,6 +49,7 @@
         "loading": "Någonting gick fel vid hämtning av datan.",
         "no-user": "Kan inte hitta användare.",
         "report": "Det gick inte att skapa rapporten. Försök igen.",
+        "timeout": "Tog för lång tid att ladda",
         "generic": "Något gick fel. Försök igen senare."
     },
     "aria-label": {
@@ -89,6 +90,8 @@
         "type-deposit": "Insättning",
         "type-withdraw": "Uttag",
         "type-transfer": "Överföring",
+        "type-interest": "Ränteutbetalning",
+        "type-tax": "Skatt",
         "transactions": "Senaste transaktioner",
         "all-transactions": "Visa fler transaktioner",
         "less-transactions": "Visa färre transaktioner",
@@ -108,7 +111,6 @@
         "selected-of": "{{selected}} av {{total}} valda",
         "show-count_one": "Visa {{count}} transaktion",
         "show-count_other": "Visa {{count}} transaktioner",
-        "deselect-all": "Avmarkera alla",
         "search-account": "Sök kontonummer",
         "no-account-match": "Inga konton matchar sökningen.",
         "select-account": "Välj minst ett konto för att se transaktioner.",
@@ -116,12 +118,15 @@
         "show-closed": "Visa stängda konton",
         "help-card-search": "transaktioner insättning uttag överföring",
         "closed": "Stängt",
+        "closed-account": "stängt konto",
         "page-title": "Transaktioner",
         "filter-subtitle": "Sök och filtrera",
         "accounts-subtitle": "Visa transaktioner för",
         "list-title": "Transaktionshistorik"
     },
     "accounts-route": {
+        "info": "Kontoinformation",
+        "overview": "Saldo & Åtgärder",
         "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
         "account-type": "Kontotyp",
         "account-type-saving": "Sparkonto",
@@ -146,6 +151,10 @@
             "pick-account": "Välj konto",
             "show-accountinfo": "Visa kontoinformation",
             "pick-one-account": "Välj ett konto"
+        },
+        "transactions-section": {
+            "title": "Kontots senaste transaktioner",
+            "no-transactions": "Det finns inga transaktioner kopplade till det här kontot"
         },
         "interest-section": {
             "accured-interest": "Intjänad ränta",
@@ -274,7 +283,7 @@
 
         "account-card":{
             "title": "Saldo",
-            "description": "Här visas saldo för favoritmarkerade konton",
+            "description": "Totalt saldo och saldon för favoritmarkerade konton",
             "description-no-favorites": "Favoritmarkera konton för att visa saldo här",
             "pending": "Laddar dina konton",
             "error": "Det gick inte att ladda dina konton",
@@ -291,7 +300,7 @@
             "transfer-type-transfer": "Överföring",
             "transfer-type-transfer-group": "Överföring",
             "transfer-type-deposit": "Insättning",
-            "transfer-type-withdrawl": "Uttag",
+            "transfer-type-withdrawal": "Uttag",
             "transfer-type-interest": "Ränteutbetalning",
             "transfer-type-tax": "Skatt"
         },
@@ -462,7 +471,7 @@
             "accept-aria": "Godkänn {{title}}"
         },
         "ticket": {
-            "new": "Nytt meddelande",
+            "new": "Skapa ett ärende",
             "category": "Kategori",
             "select-category": "Välj kategori",
             "message": "Meddelande",
@@ -490,10 +499,8 @@
         "transfers": "Överföringar"
     },
     "table": {
-        "my-accounts": "Mina konton",
         "planned-transactions": "Planerade överföringar",
-        "pending-transfers": "Kommande överföringar",
-        "latest-transactions": "Senaste transaktioner"
+        "pending-transfers": "Kommande överföringar"
     },
     "forms": {
         "email": "e-post",
@@ -516,7 +523,10 @@
     },
     "page-transfer": {
         "heading": "Ny överföring",
-        "help-text": "Fyll i uppgifterna nedan. Du hinner alltid granska överföringen innan den genomförs.",
+        "form-card-label": "Betala och överför",
+        "section-accounts": "Konton",
+        "section-details": "Belopp och detaljer",
+        "help-card-search": "överföring betalning",
         "name-label": "Egen notis",
         "name-label-recurring": "Namnge överföringen",
         "name-placeholder": "T.ex. Hyra september",
@@ -569,6 +579,7 @@
             "from-title": "Välj konto",
             "to-title": "Välj mottagare",
             "search-placeholder": "Sök på namn",
+            "group-favorites": "Favoriter",
             "group-own": "Mina konton",
             "group-bg": "BG/PG",
             "group-bank": "Bankkonto",
@@ -591,10 +602,12 @@
             "back-to-transfers": "Tillbaka till överföringar"
         },
         "pending": {
+            "card-label": "Skickade betalningar",
             "arrives": "Beräknas vara framme {{date}}",
             "footnote": "Betalningar till andra banker och BG/PG tar normalt en bankdag."
         },
         "planned": {
+            "card-label": "Kommande dragningar",
             "footnote": "Kommande överföringar dras klockan 06:00 på angivet datum.",
             "unknown-account": "Okänt konto",
             "actions-label": "Fler alternativ",
@@ -688,7 +701,9 @@
         }
     },
     "faq-page": {
-        "categories-error": "Kunde inte hämta kategorier"
+        "categories-error": "Kunde inte hämta kategorier",
+        "no-match-title": "Det verkar som att du sökte efter något som vi inte har ett svar på än.",
+        "no-match-action": "Skapa gärna ett ärende så hjälper vi dig så snart som möjligt."
     },
     "help-card": {
         "related": "Relaterat",

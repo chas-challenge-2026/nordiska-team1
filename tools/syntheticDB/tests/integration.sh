@@ -25,8 +25,8 @@ source_db=$("$real_docker" ps --filter label=com.docker.compose.project=nordiska
   -e NORDISKA_MIGRATOR_PASSWORD=isolated-migrator-password \
   -e NORDISKA_API_PASSWORD=isolated-api-password \
   -e NORDISKA_REPORTING_WORKER_PASSWORD=isolated-worker-password \
-  -v "$repo_root/infra/v2/postgres/init:/docker-entrypoint-initdb.d:ro" \
-  -v "$repo_root/infra/v2/postgres/permissions/post-migration-permissions.development.sql:/opt/nordiska/post-migration-permissions.sql:ro" \
+  -v "$repo_root/infra/postgres/init:/docker-entrypoint-initdb.d:ro" \
+  -v "$repo_root/infra/postgres/permissions/post-migration-permissions.development.sql:/opt/nordiska/post-migration-permissions.sql:ro" \
   postgres:15-bookworm > /dev/null
 sql() { "$real_docker" exec "$container" psql -h 127.0.0.1 -U nordiska_bootstrap -d "$1" -v ON_ERROR_STOP=1 -At -c "$2"; }
 ready=false
@@ -42,11 +42,12 @@ sql nordiska_v2 'UPDATE banking."AspNetRoles" SET "Id"=17 WHERE "NormalizedName"
 
 # The copied release resolves this disposable checkout. Compose discovery is mocked;
 # its psql/pg_dump/COPY commands run against the real isolated PostgreSQL container.
-mkdir -p "$test_dir/repo/infra/v2" "$test_dir/repo/tools/synthetic" "$test_dir/bin"
-cp "$repo_root/tools/synthetic/nordiska-synthetic-linux-x86_64" "$test_dir/repo/tools/synthetic/manager"
+mkdir -p "$test_dir/repo/infra/v2" "$test_dir/repo/tools/syntheticDB" "$test_dir/bin"
+cp "$repo_root/tools/syntheticDB/nordiska-synthetic-linux-x86_64" "$test_dir/repo/tools/syntheticDB/manager"
+cp "$repo_root/tools/syntheticDB/compose.override.yml" "$test_dir/repo/tools/syntheticDB/compose.override.yml"
 touch "$test_dir/repo/infra/docker-compose.yml"
 printf 'NORDISKA_DATABASE=nordiska_v2\n' > "$test_dir/repo/infra/v2/.env"
-export SYNTHETIC_TEST_PROXY="$repo_root/tools/synthetic/tests/helpers/psql-session-proxy.py"
+export SYNTHETIC_TEST_PROXY="$repo_root/tools/syntheticDB/tests/helpers/psql-session-proxy.py"
 export SYNTHETIC_TEST_DOCKER="$real_docker" SYNTHETIC_TEST_CONTAINER="$container"
 export SYNTHETIC_TEST_BATCH_LOG="$test_dir/complete-batches.log"
 export SYNTHETIC_TEST_INDEX_LOG="$test_dir/committed-indexes.log"
@@ -79,7 +80,7 @@ fi
 exec "$SYNTHETIC_TEST_DOCKER" "$@"
 PROXY
 chmod +x "$test_dir/bin/docker"
-cli="$test_dir/repo/tools/synthetic/manager"
+cli="$test_dir/repo/tools/syntheticDB/manager"
 PATH="$test_dir/bin:$PATH" "$cli" --customers 10000 --threads 4 --year 2025 --seed 42 > "$test_dir/seed.log" 2>&1 || { cat "$test_dir/seed.log"; exit 1; }
 python3 - "$test_dir/seed.log" "$test_dir/complete-batches.log" "$test_dir/committed-indexes.log" <<'PYTEST'
 from pathlib import Path
@@ -111,7 +112,7 @@ PYTEST
 check_interest() {
   local result
   result=$("$real_docker" exec -i "$container" psql -X -U nordiska_bootstrap -d nordiska_synthetic \
-    -At -v ON_ERROR_STOP=1 -v fixture_year="$1" < "$repo_root/tools/synthetic/tests/helpers/verify-interest.sql")
+    -At -v ON_ERROR_STOP=1 -v fixture_year="$1" < "$repo_root/tools/syntheticDB/tests/helpers/verify-interest.sql")
   [[ $result == 0 ]] || { echo "Daily interest or tax disagrees with the independent SQL reference: $result months" >&2; exit 1; }
   [[ $(sql nordiska_synthetic 'SELECT COUNT(*) FROM banking.ledger_entries WHERE "Type" IN ('"'interest','tax'"') AND "CreatedAt"::date<>(date_trunc('"'month'"',"CreatedAt")+interval '"'1 month - 1 day'"')::date;') == 0 ]]
   [[ $(sql nordiska_synthetic 'SELECT COUNT(*) FROM banking.ledger_entries WHERE "Type"='"'interest'"';') == $((12 * $(sql nordiska_synthetic 'SELECT COUNT(*) FROM banking.savings_accounts;'))) ]]
@@ -186,7 +187,7 @@ if "$real_docker" image inspect "$app_image" > /dev/null 2>&1; then
     -e AuditLogging__SigningKey=isolated-login-test-audit-key-at-least-32-characters \
     -e ActiveLogin__BankId__Environment=Simulated "$app_image" > /dev/null
   address=$("$real_docker" port "$app_container" 8080/tcp)
-  python3 "$repo_root/tools/synthetic/tests/helpers/login-api.py" "http://$address" "$test_dir/login.log" || {
+  python3 "$repo_root/tools/syntheticDB/tests/helpers/login-api.py" "http://$address" "$test_dir/login.log" || {
     "$real_docker" logs --tail 40 "$app_container" >&2
     exit 1
   }

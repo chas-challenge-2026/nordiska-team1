@@ -4,25 +4,25 @@ For everyday setup and switching back, use [the quick-start guide](README.md).
 
 The tool clones the prepared V2 schema, account types, roles and FAQ entries, applies V2 database permissions, and streams customers, accounts and ledger entries into PostgreSQL. Customer role IDs are resolved by name. The database container is selected through the `nordiska-v2` Compose project's `db` service.
 
-Compose files live in `infra/`; local secrets remain in `infra/v2/.env`. Switching atomically saves `NORDISKA_DATABASE` and `NORDISKA_REPORT_DOCUMENTS_VOLUME`, then recreates `app`, `reporting-worker` and `pdf-signer`. It preserves the worker replica count and verifies every running service replica uses the selected database. The backend-only configuration on port 5031 is preserved when active. A failed switch restores the previous running app database and the exact previous environment file, including when they were initially mismatched; rollback failure is reported. Other secrets and comments are preserved. The checkout lock prevents overlapping tool operations.
+Compose files live in `infra/`; local secrets remain in `infra/.env` (legacy `infra/v2/.env` is also supported). Switching atomically saves `NORDISKA_DATABASE` and `NORDISKA_REPORT_DOCUMENTS_VOLUME`, then recreates `app`, `reporting-worker` and `pdf-signer`. It preserves the worker replica count and verifies every running service replica uses the selected database. Database switching uses the tool’s `compose.override.yml` without changing shared infrastructure files. The backend-only configuration on port 5031 is preserved when active. A failed switch restores the previous running app database and the exact previous environment file, including when they were initially mismatched; rollback failure is reported. Other secrets and comments are preserved. The checkout lock prevents overlapping tool operations.
 
 ## Workload options
 
 ```bash
 # Add customers using the same native engine
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --customers 500 --append --seed 43 --year 2025 --threads 4
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 500 --append --seed 43 --year 2025 --threads 4
 
 # Replace the dataset with long transaction descriptions
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --customers 50 --stress-text --year 2025 --threads 4
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 50 --stress-text --year 2025 --threads 4
 
 # Generate without Docker or database writes (generator performance only)
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --benchmark --customers 10000 --seed 42 --year 2025 --threads 4
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --benchmark --customers 10000 --seed 42 --year 2025 --threads 4
 
 # Reset to an empty cloned schema or delete the synthetic database
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --reset
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --drop
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --reset
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --drop
 
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --help
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --help
 ```
 
 Command-line seeding requires an explicit `--customers` argument. With no arguments in a terminal, the tool opens its native arrow-key menu; otherwise it displays status. `--menu` / `--tui` opens the menu explicitly and supports numbered choices with redirected input. The compact main screen shows actual running app state and both database inventories. Its single switch action changes direction with the running app. Creation is available only when the synthetic database is missing. Its customer-count menu offers 100, 1000, 10k, 100k, 1m, 10m, MAX (derived from the personal-number capacity, currently 37,620,000) and a validated custom amount (1–37,620,000). After choosing a count, the settings screen offers an editable seed and Start creation. Seed values are validated as nonnegative signed 64-bit integers, default to 42 and are reused during the current manager session. Esc from settings/custom input returns to the count menu; Esc there returns to the main screen. Other generation options use their defaults and remain configurable through the CLI. Creation stays in the foreground without pause/resume or checkpoints. Live progress uses a structured callback from the native generator. The first min(500, requested) customers, including roles, accounts, ledger rows and sequence updates, commit before the initial total-completion estimate. Those customers count toward the requested total. The same worker pool then continues the rest of the run; measurement never restarts ingestion. The pool schedules 16 customers per work block, retains two reusable blocks per worker and applies backpressure when those buffers are occupied. Workers are capped at 64 (and the requested population); each block has four reusable COPY buffers. Creation computes personal numbers directly from seed and ordinal, without locks, retries or a growing set. Append reads existing identities into a fixed bitmap (about 4.5 MiB) and assigns skipped identities while scheduling blocks.
@@ -56,14 +56,14 @@ Reset, delete and replacement seeding retain both PDF volumes. Old synthetic fil
 The release is version **1.3.0**, statically linked for Linux x86-64 and stored with its SHA-256 checksum. It does not depend on the host's Python, C++ runtime or shared libraries.
 
 ```bash
-./tools/synthetic/nordiska-synthetic-linux-x86_64 --version
-(cd tools/synthetic && sha256sum -c nordiska-synthetic-linux-x86_64.sha256)
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --version
+(cd tools/syntheticDB && sha256sum -c nordiska-synthetic-linux-x86_64.sha256)
 ```
 
-Maintainers rebuild after changing [the C++ source](../../native/synthetic_generator/src/manager.cpp):
+Maintainers rebuild after changing [the C++ source](src/manager.cpp):
 
 ```bash
-./tools/synthetic/build-linux-release.sh
+./tools/syntheticDB/build-linux-release.sh
 ```
 
 The script uses a pinned GCC 14 container to build with C++23, release optimizations and static linking, then replaces the binary and updates its checksum. Only Docker is required on the build host. Commit the source, release binary and checksum together. This release targets Linux x86-64; other platforms require their own native build.
@@ -72,19 +72,19 @@ The script uses a pinned GCC 14 container to build with C++23, release optimizat
 
 ```bash
 # Native unit tests: identity domain, daily interest and ledger formatting
-./tools/synthetic/tests/run.sh --native
+./tools/syntheticDB/tests/run.sh --native
 
 # CLI and management regressions; Docker is mocked and no database is touched
-./tools/synthetic/tests/run.sh
+./tools/syntheticDB/tests/run.sh
 
 # Verify actual Compose paths and database/PDF-volume selections without starting services
-python3 tools/synthetic/tests/compose-config.py
+python3 tools/syntheticDB/tests/compose-config.py
 
 # Reads the prepared V2 schema/reference data and tests in a disposable PostgreSQL container
-./tools/synthetic/tests/integration.sh
+./tools/syntheticDB/tests/integration.sh
 
 # Real switching/rollback and PDF isolation in a disposable Compose stack
-./tools/synthetic/tests/switch-integration.sh
+./tools/syntheticDB/tests/switch-integration.sh
 ```
 
 Regression checks cover argument validation, current Compose discovery, workflow preservation, exact environment rollback, running-container verification, pending database selection and actual PDF mount reporting, reset/delete ordering, failed-dump preservation and COPY failure reporting. PTY tests exercise the 80x24 screen, actual state, hidden actions, one-step switches, spinner animation, refreshed switch direction, details/Esc navigation, creation cancellation, selection preservation and terminal restoration. The Compose configuration check verifies both frontend workflows, actual bind paths and PDF-volume isolation using fixture credentials. Test helpers require Python 3; the tool itself does not. Private PostgreSQL mocks/observers, API-login validation and the independent SQL interest reference live under `tests/helpers/`. The benchmark runner is separate from regression tests and writes generated results outside the checkout by default; result snapshots are not part of the source tree.
@@ -109,7 +109,7 @@ These historical measurements use the earlier simplified interest fixture. The c
 To repeat generation and real ingestion separately:
 
 ```bash
-bash tools/synthetic/benchmark.sh
+bash tools/syntheticDB/benchmark.sh
 ```
 
 This builds a standalone native driver with the same pinned compiler, reads only development schema/reference data, and writes to a test-owned PostgreSQL container. Results (timings, CPU metadata, counts, WAL/checkpoint statistics and transport/COPY/index experiments) remain in the printed temporary directory. It never switches services or writes to `nordiska_v2`. Set `SYNTHETIC_BENCH_OUTPUT`, `SYNTHETIC_BENCH_GENERATION_SIZES`, `SYNTHETIC_BENCH_INGESTION_SIZES`, `SYNTHETIC_BENCH_THREADS` or `SYNTHETIC_BENCH_INDEX_MODES` to choose result storage and sizes. Use `SYNTHETIC_BENCH_SOURCE` and `SYNTHETIC_BENCH_BINARY` together to compare a saved source/release baseline. Run comparisons sequentially on the same storage; record system load, seed, year, threads, actual row counts and finalization. There is no guarantee of identical database throughput at larger scales: indexes, WAL, checkpoints and storage matter.
@@ -119,7 +119,7 @@ To compare the complete ingestion paths while holding generation threads fixed:
 ```bash
 SYNTHETIC_BENCH_THREADS=4 \
 SYNTHETIC_BENCH_INDEX_MODES='keep-indexes optimized' \
-bash tools/synthetic/benchmark.sh
+bash tools/syntheticDB/benchmark.sh
 ```
 
 Both modes include final sequence updates and ANALYZE; optimized mode also includes restoring query indexes. The complete 500-customer initial sample retains all indexes in both modes.

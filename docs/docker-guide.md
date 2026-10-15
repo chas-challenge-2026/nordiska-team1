@@ -86,7 +86,7 @@ Seeded test accounts available out of the box:
 | **Port** | `5433` for the v2 local Docker setup |
 | **Database** | `nordiska_v2` |
 | **Username** | `nordiska_migrator` |
-| **Password** | The value of `NORDISKA_MIGRATOR_PASSWORD` in `infra/v2/.env` |
+| **Password** | The value of `NORDISKA_MIGRATOR_PASSWORD` in `infra/.env` |
 
 ### How to Authenticate via BankID Simulator (in Scalar):
 
@@ -130,11 +130,11 @@ docker compose up --build
 <details>
 <summary><b>Problem 1: Bind for 127.0.0.1:5433 failed: port is already allocated</b></summary>
 
-* **Cause:** A previous PostgreSQL instance from `DevSetup` (`infra/v2`) or another container is already running on port 5433 (or 5432).
+* **Cause:** A previous PostgreSQL instance from `DevSetup` (`infra`) or another container is already running on port 5433 (or 5432).
 * **Solution:**
   1. If you ran `DevSetup` previously, run:
   ```bash
-  docker compose --env-file infra/v2/.env -f infra/docker-compose.yml -f infra/docker-compose.override.yml down
+  docker compose -f infra/docker-compose.yml down
   ```
   2. Or check and stop any remaining container:
   ```bash

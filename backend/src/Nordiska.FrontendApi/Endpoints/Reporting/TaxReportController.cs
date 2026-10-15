@@ -16,13 +16,16 @@ public sealed class TaxReportController : ControllerBase
 {
     private readonly IAnnualTaxReportService _service;
     private readonly IAnnualTaxReportQueryService _queries;
+    private readonly IReportInboxSynchronizer? _synchronizer;
 
     public TaxReportController(
         IAnnualTaxReportService service,
-        IAnnualTaxReportQueryService queries)
+        IAnnualTaxReportQueryService queries,
+        IReportInboxSynchronizer? synchronizer = null)
     {
         _service = service;
         _queries = queries;
+        _synchronizer = synchronizer;
     }
 
 
@@ -87,6 +90,11 @@ public sealed class TaxReportController : ControllerBase
             return NotFound();
         }
 
+        if (string.Equals(result.Status, "Completed", StringComparison.OrdinalIgnoreCase) && _synchronizer is not null)
+        {
+            await _synchronizer.SyncTaxReportAsync(customerId, result.TaxReportId, cancellationToken);
+        }
+
         return Ok(result);
     }
 
@@ -108,6 +116,11 @@ public sealed class TaxReportController : ControllerBase
         if (document is null)
         {
             return NotFound();
+        }
+
+        if (_synchronizer is not null)
+        {
+            await _synchronizer.SyncTaxReportAsync(customerId, taxReportId, cancellationToken);
         }
 
         return File(

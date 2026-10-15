@@ -90,7 +90,7 @@ export default function TableRow(props: RowProps) {
         }
         case "planned":
             return (
-                <div className={`${ROW_CLASS} pb-4`}>
+                <div className="min-w-0 border-b border-primary-blue/40 px-2 py-3 font-montserrat text-dark-navy last:border-b-0">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 flex-1 justify-between gap-2 text-sm font-bold sm:text-[15px]">
                             <span className="min-w-0 truncate">{props.plannedName}</span>

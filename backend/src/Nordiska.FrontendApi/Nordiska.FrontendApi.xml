@@ -28,6 +28,24 @@
             </summary>
             <param name="response">The current HTTP response.</param>
         </member>
+        <member name="T:Nordiska.FrontendApi.Authentication.BCryptPasswordHasher`1">
+            <summary>
+            BCrypt-based implementation of <see cref="T:Microsoft.AspNetCore.Identity.IPasswordHasher`1"/> using BCrypt.Net-Next.
+            Conforms to DoD requirement for BCrypt passwords with backward-compatible verification for legacy Identity hashes.
+            </summary>
+            <typeparam name="TUser">The user type being hashed.</typeparam>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.BCryptPasswordHasher`1.HashPassword(`0,System.String)">
+            <summary>
+            Hashes the provided password using BCrypt with Enhanced hashing (pre-hashed with SHA-384 to support any password length).
+            </summary>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.BCryptPasswordHasher`1.VerifyHashedPassword(`0,System.String,System.String)">
+            <summary>
+            Verifies the provided password against the hashed password.
+            Supports BCrypt hashes ($2a$, $2b$, $2y$) and falls back to legacy ASP.NET Core Identity PBKDF2 hashes.
+            </summary>
+        </member>
         <member name="T:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions">
             <summary>
             Helpers for reading the logged in customer from the JWT claims.
@@ -1323,7 +1341,7 @@
             API endpoints for customer inbox, support tickets, and direct messaging threads.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.#ctor(Nordiska.Modules.Inbox.Application.IInboxService)">
+        <member name="M:Nordiska.FrontendApi.Endpoints.Inbox.InboxController.#ctor(Nordiska.Modules.Inbox.Application.IInboxService,Nordiska.FrontendApi.Endpoints.Reporting.IReportInboxSynchronizer)">
             <summary>
             API endpoints for customer inbox, support tickets, and direct messaging threads.
             </summary>

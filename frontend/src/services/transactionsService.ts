@@ -3,7 +3,7 @@ import axiosInstance from "./axiosInstance";
 export interface Transaction {
     id: number;
     accountId: number;
-    type: "deposit" | "withdrawal" | "transfer";
+    type: "deposit" | "withdrawal" | "transfer" | "interest" | "tax";
     amount: number;
     createdAt: string;
     label?: string;
@@ -11,6 +11,8 @@ export interface Transaction {
     isPlanned?: boolean;
     plannedDate?: string;
     repeating?: string;
+    /** Delas av båda benen i en överföring mellan egna konton */
+    correlationId?: string | null;
 }
 
 export interface TransactionParams {

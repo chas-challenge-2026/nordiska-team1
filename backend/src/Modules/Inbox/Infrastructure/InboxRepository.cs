@@ -624,6 +624,101 @@ public sealed class InboxRepository(InboxDbContext dbContext) : IInboxRepository
         }
     }
 
+    public async Task<CustomerDocument> RegisterCustomerDocumentAsync(
+        long customerId,
+        string documentType,
+        string title,
+        string fileName,
+        string mimeType,
+        string storageKey,
+        long fileSizeBytes,
+        string sha256,
+        string sourceType,
+        string? sourceId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var doc = await _dbContext.Documents.FirstOrDefaultAsync(
+            d => d.StorageKey == storageKey,
+            cancellationToken);
+
+        if (doc is null)
+        {
+            doc = new Document(
+                documentType: documentType,
+                title: title,
+                fileName: fileName,
+                mimeType: mimeType,
+                storageKey: storageKey,
+                fileSizeBytes: fileSizeBytes,
+                sha256: sha256,
+                sourceType: sourceType,
+                sourceId: sourceId);
+
+            _dbContext.Documents.Add(doc);
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                _dbContext.Entry(doc).State = EntityState.Detached;
+                doc = await _dbContext.Documents.FirstAsync(
+                    d => d.StorageKey == storageKey,
+                    cancellationToken);
+            }
+        }
+
+        var customerDoc = await _dbContext.CustomerDocuments.FirstOrDefaultAsync(
+            cd => cd.CustomerId == customerId && cd.DocumentId == doc.Id,
+            cancellationToken);
+
+        if (customerDoc is null)
+        {
+            customerDoc = new CustomerDocument(doc.Id, customerId);
+            _dbContext.CustomerDocuments.Add(customerDoc);
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                _dbContext.Entry(customerDoc).State = EntityState.Detached;
+                customerDoc = await _dbContext.CustomerDocuments.FirstAsync(
+                    cd => cd.CustomerId == customerId && cd.DocumentId == doc.Id,
+                    cancellationToken);
+            }
+
+            var feedExists = await _dbContext.FeedItems.AnyAsync(
+                f => f.CustomerId == customerId && f.ItemType == FeedItemType.Document && f.SourceId == doc.Id,
+                cancellationToken);
+
+            if (!feedExists)
+            {
+                var feedItem = new FeedItem(
+                    customerId,
+                    FeedItemType.Document,
+                    doc.Id,
+                    doc.Title,
+                    doc.FileName,
+                    FeedPriority.Normal,
+                    false,
+                    customerDoc.PublishedAt);
+
+                _dbContext.FeedItems.Add(feedItem);
+                try
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException)
+                {
+                    // Ignore concurrent feed item conflict
+                }
+            }
+        }
+
+        return customerDoc;
+    }
+
     public async Task<IReadOnlyList<(TermAcceptance Acceptance, Term Term)>> GetPendingTermsAsync(
         long customerId,
         CancellationToken cancellationToken = default)

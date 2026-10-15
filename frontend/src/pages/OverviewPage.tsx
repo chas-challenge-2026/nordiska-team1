@@ -63,52 +63,39 @@ export default function OverviewPage() {
     }
 
     return (
-        <div className="flex flex-1 w-full bg-nordiska-bg px-3 py-5 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
-            <div className="mx-auto w-full sm:px-6 sm:max-w-lg lg:max-w-4xl xl:max-w-5xl">
-
-                {/* REDIGERA LAYOUT  */}
-                <div className={`flex flex-wrap items-center justify-between gap-0.5 md:gap-3 px-1 font-montserrat ${isEditing ? "mb-5" : "mb-3"}`}>
-                    {/* hjälptext */}
-                    <p id="overview-edit-instructions" className="min-w-0 flex-1 text-sm text-secondary sm:text-[1em]">
-                        {isEditing ? t("overview-route.edit-instructions") : t("overview-route.viewing-instruction")}
-                    </p>
-                    {/* knappar */}
-                    <div className="flex w-full shrink-0 justify-end gap-2 sm:w-auto sm:gap-3">
-                        {isEditing && (
-                            <button
-                                type="button"
-                                onClick={handleReset}
-                                className="group flex cursor-pointer items-center rounded-lg border-secondary px-2 py-1 text-xs uppercase tracking-wider text-secondary/70 shadow-md outline-1 outline-secondary/40 transition hover:bg-primary-blue hover:text-white sm:text-sm"
-                            ><>
-                                <span aria-hidden="true" className="lg:mr-1.5 block h-4 w-4 bg-secondary/50 mask-[url('/icons/reset.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-white sm:h-4 sm:w-4" />
-                                <span className="hidden lg:inline">{t("overview-route.edit-reset")}</span>
-                            </></button>
-                        )}
+        <div className="flex flex-col items-center flex-1 w-full bg-nordiska-bg px-3 py-5 sm:px-6 sm:py-8">
+            <div className="flex items-center gap-3 justify-bewteen mx-auto w-full sm:px-6 sm:max-w-lg lg:max-w-4xl xl:max-w-5xl mb-2">
+                <p id="overview-edit-instructions" className="min-w-0 flex-1 text-xs text-secondary md:text-sm">{isEditing ? t("overview-route.edit-instructions") : t("overview-route.viewing-instruction")}</p>
+                <div className={`flex shrink-0 items-center gap-2 ${isEditing ? "mb-5" : ""}`}>
+                    {isEditing && (
                         <button
                             type="button"
-                            onClick={isEditing ? handleDone : handleStartEditing}
-                            disabled={updateOverviewLayout.isPending}
-                            aria-pressed={isEditing}
-                            className={`group ml-3 sm:ml-0 flex cursor-pointer items-center rounded-lg px-2 py-1 text-xs uppercase tracking-wider shadow-md transition sm:text-sm
-                                ${isEditing
-                                    ? "border border-primary-blue bg-primary-blue text-white hover:bg-white/70 hover:text-primary-blue"
-                                    : "border border-secondary/40 bg-0 text-secondary/70 hover:bg-primary-blue hover:text-white"
-                                }`}
+                            onClick={handleReset}
+                            className="group flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-secondary/40 px-0 py-0 text-xs uppercase tracking-wider text-secondary/70 shadow-md transition hover:bg-primary-blue hover:text-white sm:h-7 sm:w-auto sm:justify-start sm:px-2"
                         >
-                            {isEditing
-                                ? <>
-                                <span aria-hidden="true" className="lg:mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/done.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-primary-blue sm:h-4.5 sm:w-4.5" />
-                                <span className="hidden lg:inline">{t("overview-route.edit-done")}</span>
-                                </>
-                                : <>
-                                <span aria-hidden="true" className="lg:mr-1.5 block h-4 w-4 bg-secondary/50 mask-[url('/icons/grip.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-white sm:h-4.5 sm:w-4.5" />
-                                <span className="hidden lg:inline">{t("overview-route.edit-start")}</span>
-                                </>
-                            }
+                            <span aria-hidden="true" className="block size-4 bg-secondary/50 mask-[url('/icons/reset.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-white" />
+                            <span className="hidden md:inline sm:ml-1.5">{t("overview-route.edit-reset")}</span>
                         </button>
-                    </div>
-                </div>
+                    )}
 
+                    <button
+                        type="button"
+                        onClick={isEditing ? handleDone : handleStartEditing}
+                        disabled={updateOverviewLayout.isPending}
+                        aria-pressed={isEditing}
+                        className={`group flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg px-0 py-0 text-xs uppercase tracking-wider shadow-md transition sm:h-7 sm:w-auto sm:justify-start sm:px-2 ${isEditing ? "border border-primary-blue bg-primary-blue text-white hover:bg-white/70 hover:text-primary-blue" : "border border-secondary/40 text-secondary/70 hover:bg-primary-blue hover:text-white"}`}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className={`block size-4 mask-contain mask-center mask-no-repeat sm:size-[18px] md:mr-1.5 ${isEditing ? "bg-white group-hover:bg-primary-blue" : "bg-secondary/50 group-hover:bg-white"}`}
+                            style={{maskImage: `url('/icons/${isEditing ? "done" : "grip"}.svg')`,}}
+                        />
+                        <span className="hidden md:inline"> {isEditing ? t("overview-route.edit-done") : t("overview-route.edit-start")} </span>
+                    </button>
+                </div>
+            </div>
+
+            <div className="mx-auto w-full sm:px-6 sm:max-w-lg lg:max-w-4xl xl:max-w-5xl">
                 <p aria-live="polite" className="sr-only"> {announcement} </p>
 
                 <Reorder.Group

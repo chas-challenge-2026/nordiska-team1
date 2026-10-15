@@ -31,11 +31,11 @@ export async function setupLocalBackend({
     const environmentStatus = await ensureFrontendEnvironment(frontendDirectory);
 
     try {
-        await access(join(infrastructureDirectory, "v2", ".env"));
+        await access(join(infrastructureDirectory, ".env"));
     } catch (error) {
         if (error?.code === "ENOENT") {
             throw new Error(
-                "infra/v2/.env is missing. Run Nordiska.DevSetup once before starting the local backend.",
+                "infra/.env is missing. Run Nordiska.DevSetup once before starting the local backend.",
             );
         }
 
@@ -49,7 +49,7 @@ export async function setupLocalBackend({
             "--project-name",
             "nordiska-v2",
             "--env-file",
-            "v2/.env",
+            ".env",
             "-f",
             "docker-compose.yml",
             "-f",
@@ -58,7 +58,7 @@ export async function setupLocalBackend({
             "-d",
             "--build",
             "db",
-            "app",
+            "api",
             "reporting-worker",
         ],
         {

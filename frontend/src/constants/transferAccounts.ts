@@ -8,6 +8,7 @@ export type OwnAccount = {
     name: string;
     meta: string;
     balance: number;
+    isFavorite: boolean;
 };
 
 export type Payee = {

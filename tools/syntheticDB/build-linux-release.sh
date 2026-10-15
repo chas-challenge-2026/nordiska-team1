@@ -3,11 +3,11 @@
 set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 compiler_image=gcc@sha256:5e927c284bf55a7dc796262e311a0703344f62f41f5621eb56843111b1d37e15
-release_dir="$repo_root/tools/synthetic"
+release_dir="$repo_root/tools/syntheticDB"
 binary=nordiska-synthetic-linux-x86_64
 docker run --rm --platform linux/amd64 --network none \
   --user "$(id -u):$(id -g)" \
-  -v "$repo_root/native/synthetic_generator:/src:ro" \
+  -v "$repo_root/tools/syntheticDB:/src:ro" \
   -v "$release_dir:/release" \
   "$compiler_image" \
   bash -c 'set -euo pipefail

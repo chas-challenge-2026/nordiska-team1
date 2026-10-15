@@ -7,6 +7,7 @@ import {
 } from "../../hooks/useReports";
 import Modal from "../modals/Modal";
 import ActionButton from "../accounts/ActionButton";
+import { ReportTimeoutError } from "../../services/reportsTimeout";
 
 type TaxReportBtnProps = {
     accountId?: number;
@@ -41,6 +42,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
         initiate.isError || status.isError || reportStatus === "Failed" || downloadFailed;
     const isBusy =
         initiate.isPending || (jobId !== undefined && !isReady && !isFailed) || isDownloading;
+    const timedOut = status.error instanceof ReportTimeoutError;
 
     useEffect(() => {
         if (taxReportId === undefined || !isReady || downloadedReportId.current === taxReportId) return;
@@ -104,7 +106,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
                     </label>
                     {isFailed && (
                         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700">
-                            {t("errors.report")}
+                            {t(timedOut ? "errors.timeout" : "errors.report")}
                         </p>
                     )}
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

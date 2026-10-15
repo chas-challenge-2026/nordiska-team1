@@ -19,9 +19,11 @@ cleanup() {
   rm -rf -- "$test_dir"
 }
 trap cleanup EXIT
-mkdir -p "$infra/v2" "$test_dir/repo/tools/synthetic" "$test_dir/bin"
-cp "$repo_root/tools/synthetic/nordiska-synthetic-linux-x86_64" "$test_dir/repo/tools/synthetic/manager"
-printf 'NORDISKA_DATABASE=nordiska_v2\n# preserved test comment\n' > "$infra/v2/.env"
+mkdir -p "$infra/v2" "$test_dir/repo/tools/syntheticDB" "$test_dir/bin"
+cp "$repo_root/tools/syntheticDB/nordiska-synthetic-linux-x86_64" "$test_dir/repo/tools/syntheticDB/manager"
+cp "$repo_root/tools/syntheticDB/compose.override.yml" "$test_dir/repo/tools/syntheticDB/compose.override.yml"
+sed -i 's/name: ${NORDISKA_REPORT_DOCUMENTS_VOLUME/name: ${SYNTHETIC_TEST_PROJECT}_${NORDISKA_REPORT_DOCUMENTS_VOLUME/' "$test_dir/repo/tools/syntheticDB/compose.override.yml"
+printf 'NORDISKA_DATABASE=nordiska_v2\nNORDISKA_API_PASSWORD=isolated-switch-test\nNORDISKA_REPORTING_WORKER_PASSWORD=isolated-switch-test\n# preserved test comment\n' > "$infra/v2/.env"
 cat > "$infra/docker-compose.yml" <<'COMPOSE'
 services:
   db:
@@ -42,7 +44,7 @@ services:
     entrypoint: ["sleep", "infinity"]
     stop_grace_period: 1s
     environment:
-      ConnectionStrings__ReportingDatabase: Host=db;Database=${NORDISKA_DATABASE};Password=isolated-switch-test
+      ConnectionStrings__ReportingDatabase: Host=db;Port=5432;Database=${NORDISKA_DATABASE};Username=nordiska_api;Password=isolated-switch-test
     volumes:
       - report_documents:/var/lib/nordiska/report-documents
   reporting-worker: *runtime
@@ -93,7 +95,7 @@ db=$(compose ps --quiet db)
 "$real_docker" exec "$db" psql -U nordiska_bootstrap -d postgres -v ON_ERROR_STOP=1 \
   -c 'CREATE DATABASE nordiska_synthetic;' > /dev/null
 compose exec -T app sh -c 'printf normal > /var/lib/nordiska/report-documents/normal-marker'
-cli="$test_dir/repo/tools/synthetic/manager"
+cli="$test_dir/repo/tools/syntheticDB/manager"
 # Saved selection differs from the actual app. Failed switching must restore
 # actual NORMAL services while retaining the exact saved selection.
 sed -i 's/^NORDISKA_DATABASE=.*/NORDISKA_DATABASE=nordiska_synthetic/' "$infra/v2/.env"
@@ -103,7 +105,7 @@ if PATH="$test_dir/bin:$PATH" "$cli" --switch nordiska_synthetic > "$test_dir/st
   echo 'Expected a stale-selection switch failure' >&2; exit 1
 fi
 cmp "$test_dir/before-stale-switch" "$infra/v2/.env"
-compose exec -T app sh -c 'test "$ConnectionStrings__ReportingDatabase" = "Host=db;Database=nordiska_v2;Password=isolated-switch-test"'
+compose exec -T app sh -c 'test "$ConnectionStrings__ReportingDatabase" = "Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=isolated-switch-test"'
 [[ $(compose exec -T app cat /var/lib/nordiska/report-documents/normal-marker) == normal ]]
 PATH="$test_dir/bin:$PATH" "$cli" --switch nordiska_synthetic > "$test_dir/switch.log" 2>&1 || { cat "$test_dir/switch.log"; exit 1; }
 [[ $(compose exec -T app sh -c 'test ! -f /var/lib/nordiska/report-documents/normal-marker && printf isolated') == isolated ]]
@@ -143,7 +145,7 @@ compose exec -T app sh -c 'mkdir -p /var/lib/nordiska/report-documents/old; prin
 PATH="$test_dir/bin:$PATH" "$cli" --delete-documents > "$test_dir/documents.log" 2>&1 || { cat "$test_dir/documents.log"; exit 1; }
 cmp "$test_dir/before-documents" "$infra/v2/.env"
 [[ $(compose ps --quiet reporting-worker | wc -l) == 2 ]]
-compose exec -T app sh -c 'test "$ConnectionStrings__ReportingDatabase" = "Host=db;Database=nordiska_synthetic;Password=isolated-switch-test"'
+compose exec -T app sh -c 'test "$ConnectionStrings__ReportingDatabase" = "Host=db;Port=5432;Database=nordiska_synthetic;Username=nordiska_api;Password=isolated-switch-test"'
 compose exec -T app test ! -e /var/lib/nordiska/report-documents/synthetic-marker
 compose exec -T app test ! -e /var/lib/nordiska/report-documents/.orphan
 compose exec -T app test ! -e /var/lib/nordiska/report-documents/old

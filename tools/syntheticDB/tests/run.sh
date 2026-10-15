@@ -3,7 +3,7 @@
 set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
 usage() {
-  printf '%s\n' 'Usage: tools/synthetic/tests/run.sh [--cli|--native]' \
+  printf '%s\n' 'Usage: tools/syntheticDB/tests/run.sh [--cli|--native]' \
     '  --cli     CLI and terminal regressions with mocked Docker (default)' \
     '  --native  Identity, daily-interest and formatting tests in the pinned compiler container'
 }
@@ -18,33 +18,40 @@ trap 'rm -rf -- "$test_dir"' EXIT
 if [[ ${1:---cli} == --native ]]; then
   docker run --rm --platform linux/amd64 --network none \
     --user "$(id -u):$(id -g)" \
-    -v "$repo_root/native/synthetic_generator:/src:ro" \
+    -v "$repo_root/tools/syntheticDB:/src:ro" \
     -v "$test_dir:/test" \
     gcc@sha256:5e927c284bf55a7dc796262e311a0703344f62f41f5621eb56843111b1d37e15 \
     bash -c 'set -euo pipefail
       for test_name in identity interest ledger-format; do
         g++ -std=c++23 -O3 -I /src/include /src/src/generator.cpp \
-          "/src/tests/$test_name.cpp" -o "/test/$test_name"
+          "/src/tests/native/$test_name.cpp" -o "/test/$test_name"
         "/test/$test_name"
         printf "PASS: %s\n" "$test_name"
       done'
   exit 0
 fi
-export SYNTHETIC_SESSION_MOCK="$repo_root/tools/synthetic/tests/helpers/psql-session-mock.py"
+export SYNTHETIC_SESSION_MOCK="$repo_root/tools/syntheticDB/tests/helpers/psql-session-mock.py"
 export TEST_REPO="$test_dir/repo" TEST_STATE="$test_dir/state"
-mkdir -p "$TEST_REPO/infra/v2" "$TEST_REPO/tools/synthetic" "$TEST_STATE" "$test_dir/bin"
-cp "$repo_root/tools/synthetic/nordiska-synthetic-linux-x86_64" "$TEST_REPO/tools/synthetic/manager"
-cli="$TEST_REPO/tools/synthetic/manager"
+mkdir -p "$TEST_REPO/infra/v2" "$TEST_REPO/tools/syntheticDB" "$TEST_STATE" "$test_dir/bin"
+cp "$repo_root/tools/syntheticDB/nordiska-synthetic-linux-x86_64" "$TEST_REPO/tools/syntheticDB/manager"
+cp "$repo_root/tools/syntheticDB/compose.override.yml" "$TEST_REPO/tools/syntheticDB/compose.override.yml"
+cli="$TEST_REPO/tools/syntheticDB/manager"
 touch "$TEST_REPO/infra/docker-compose.yml"
 cat > "$test_dir/bin/docker" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
+fixture_env="$TEST_REPO/infra/.env"
+[[ -f "$fixture_env" ]] || fixture_env="$TEST_REPO/infra/v2/.env"
 printf '%s\n' "$*" >> "$TEST_STATE/calls"
 if [[ $1 == volume && $2 == ls ]]; then
   if [[ -f "$TEST_STATE/pdf-files" || -f "$TEST_STATE/synthetic-volume" ]]; then echo nordiska-v2_synthetic_report_documents; fi
   exit 0
 fi
 if [[ $1 == ps ]]; then
+  if [[ " $* " == *'label=com.docker.compose.service=api'* ]]; then
+    [[ ! -f "$TEST_STATE/legacy-api" ]] || echo fake-app
+    exit 0
+  fi
   [[ ! -f "$TEST_STATE/unknown-volume-user" ]] || echo foreign-container
   exit 0
 fi
@@ -60,7 +67,8 @@ if [[ $1 == stop ]]; then touch "$TEST_STATE/stopped-${@: -1}"; exit 0; fi
 if [[ $1 == start ]]; then rm -f "$TEST_STATE/stopped-${@: -1}"; exit 0; fi
 if [[ $1 == compose ]]; then
   if [[ " $* " == *' ps --quiet db '* ]]; then echo fake-db
-  elif [[ " $* " == *' ps --quiet app '* ]]; then [[ -f "$TEST_STATE/no-app" ]] || echo fake-app
+  elif [[ " $* " == *' ps --quiet app '* ]]; then [[ -f "$TEST_STATE/no-app" || -f "$TEST_STATE/legacy-api" ]] || echo fake-app
+  elif [[ " $* " == *' ps --quiet api '* ]]; then [[ ! -f "$TEST_STATE/legacy-api" ]] || echo fake-app
   elif [[ " $* " == *' ps --quiet reporting-worker '* ]]; then
     echo fake-worker
     [[ ! -f "$TEST_STATE/workers-two" ]] || echo fake-worker-2
@@ -74,7 +82,7 @@ if [[ $1 == compose ]]; then
     touch "$TEST_STATE/recreated"
     [[ ! -f "$TEST_STATE/slow-up" ]] || sleep 0.6
   fi
-  [[ ${NORDISKA_DATABASE:?} == "$(sed -n 's/^NORDISKA_DATABASE=//p' "$TEST_REPO/infra/v2/.env")" ]] || exit 1
+  [[ ${NORDISKA_DATABASE:?} == "$(sed -n 's/^NORDISKA_DATABASE=//p' "$fixture_env")" ]] || exit 1
   exit 0
 fi
 if [[ $1 == inspect ]]; then
@@ -84,7 +92,7 @@ if [[ $1 == inspect ]]; then
     exit 0
   fi
   if [[ " $* " == *'.Mounts'* ]]; then
-    selection=$(sed -n 's/^NORDISKA_DATABASE=//p' "$TEST_REPO/infra/v2/.env")
+    selection=$(sed -n 's/^NORDISKA_DATABASE=//p' "$fixture_env")
     [[ ! -f "$TEST_STATE/running-database" ]] || selection=$(cat "$TEST_STATE/running-database")
     [[ ! -f "$TEST_STATE/runtime-normal" ]] || selection=nordiska_v2
     [[ ! -f "$TEST_STATE/runtime-synthetic" ]] || selection=nordiska_synthetic
@@ -98,7 +106,7 @@ if [[ $1 == inspect ]]; then
     exit 0
   fi
   if [[ " $* " == *'Config.Env'* ]]; then
-    selection=$(sed -n 's/^NORDISKA_DATABASE=//p' "$TEST_REPO/infra/v2/.env")
+    selection=$(sed -n 's/^NORDISKA_DATABASE=//p' "$fixture_env")
     [[ ! -f "$TEST_STATE/running-database" ]] || selection=$(cat "$TEST_STATE/running-database")
     [[ ! -f "$TEST_STATE/runtime-normal" ]] || selection=nordiska_v2
     [[ ! -f "$TEST_STATE/runtime-synthetic" ]] || selection=nordiska_synthetic
@@ -206,7 +214,7 @@ NORDISKA_DATABASE=ignored-shell-override "$cli" --switch nordiska_synthetic > /d
 grep -q '^NORDISKA_DATABASE=nordiska_synthetic$' "$TEST_REPO/infra/v2/.env"
 grep -q '^NORDISKA_API_PASSWORD=keep-this-value$' "$TEST_REPO/infra/v2/.env"
 grep -q '^# keep this comment$' "$TEST_REPO/infra/v2/.env"
-grep -q 'docker-compose.frontend-local.yml up .*app reporting-worker pdf-signer' "$TEST_STATE/calls"
+grep -q 'docker-compose.frontend-local.yml .*up .*app reporting-worker pdf-signer' "$TEST_STATE/calls"
 grep -q -- '--scale reporting-worker=2' "$TEST_STATE/calls"
 cp "$TEST_REPO/infra/v2/.env" "$test_dir/before-switch"
 touch "$TEST_STATE/fail-up-once"
@@ -481,7 +489,7 @@ echo 'PASS: deletion checks running services even with stale normal selection'
 
 reset_fixture
 touch "$TEST_STATE/exists"
-python3 "$repo_root/tools/synthetic/tests/menu-pty.py" "$cli"
+python3 "$repo_root/tools/syntheticDB/tests/menu-pty.py" "$cli"
 
 reset_fixture
 cp "$TEST_REPO/infra/v2/.env" "$test_dir/before-login"
@@ -573,3 +581,17 @@ expect_failure --delete-documents --switch nordiska_synthetic
 expect_failure --delete-documents --benchmark
 ! grep -q 'DROP DATABASE' "$TEST_STATE/calls"
 echo 'PASS: orphan-only cleanup leaves normal services running and rejects ambiguous CLI actions'
+
+reset_fixture
+touch "$TEST_STATE/exists" "$TEST_STATE/frontend-local" "$TEST_STATE/legacy-api"
+"$cli" --switch nordiska_synthetic > /dev/null
+grep -q 'up .*api reporting-worker pdf-signer' "$TEST_STATE/calls"
+echo 'PASS: develop frontend-local api service is discovered and recreated'
+
+reset_fixture
+cp "$TEST_REPO/infra/v2/.env" "$TEST_REPO/infra/.env"
+touch "$TEST_STATE/exists"
+"$cli" --switch nordiska_synthetic > /dev/null
+grep -q '^NORDISKA_DATABASE=nordiska_synthetic$' "$TEST_REPO/infra/.env"
+grep -q '^NORDISKA_DATABASE=nordiska_v2$' "$TEST_REPO/infra/v2/.env"
+echo 'PASS: develop infra/.env takes precedence over the legacy environment file'

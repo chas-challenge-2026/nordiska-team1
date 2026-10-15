@@ -33,6 +33,7 @@ public interface IInboxService
     Task<PagedResult<DocumentResponse>> GetDocumentsAsync(long customerId, DocumentQueryParameters parameters, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<GeneralDocumentResponse>> GetGeneralDocumentsAsync(CancellationToken cancellationToken = default);
     Task<DocumentDownloadResult?> DownloadDocumentAsync(long customerId, long documentId, CancellationToken cancellationToken = default);
+    Task<long> RegisterCustomerDocumentAsync(long customerId, string documentType, string title, string fileName, string mimeType, string storageKey, long fileSizeBytes, string sha256, string sourceType, string? sourceId = null, CancellationToken cancellationToken = default);
 
     // Terms and Conditions Acceptance (NOR-254)
     Task<IReadOnlyList<PendingTermResponse>> GetPendingTermsAsync(long customerId, CancellationToken cancellationToken = default);
