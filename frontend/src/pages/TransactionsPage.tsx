@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useMemo, type ReactNode } from 'react';
 import TransactionTable from '../components/transactions/TransactionsTable';
 import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
@@ -65,6 +65,10 @@ export default function TransactionsPage() {
     // Stängda konton döljs som standard men kan visas via kontoväljaren
     const [showClosed, setShowClosed] = useState(false);
     const accounts = showClosed ? allAccounts : allAccounts?.filter(a => a.status === "active");
+    const closedAccountIds = useMemo(
+        () => new Set(allAccounts?.filter(a => a.status === "closed").map(a => a.id)),
+        [allAccounts],
+    );
 
     const [selectedAccountIds, setSelectedAccountIds] = useState<number[] | null>(null);
     const effectiveSelectedIds = selectedAccountIds ?? accounts?.map(a => a.id) ?? [];
@@ -101,7 +105,7 @@ export default function TransactionsPage() {
     const {
         groups, shownCount, totalCount, totalPages, hasNextPage, hasPreviousPage,
         isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData,
-    } = useTransactionRows(transactionFilters, page, pageSize, !!accounts && effectiveSelectedIds.length > 0);
+    } = useTransactionRows(transactionFilters, page, pageSize, closedAccountIds, !!accounts && effectiveSelectedIds.length > 0);
 
     const activeFilterCount = [filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length;
     const accountBadge = accounts && effectiveSelectedIds.length < accounts.length ? effectiveSelectedIds.length : 0;
@@ -140,9 +144,8 @@ export default function TransactionsPage() {
     const handleShowClosedChange = (show: boolean) => {
         setShowClosed(show);
         // Stängda konton läggs till eller tas bort ur urvalet, resten av urvalet behålls
-        const closedIds = allAccounts?.filter(a => a.status === "closed").map(a => a.id) ?? [];
-        const withoutClosed = effectiveSelectedIds.filter(id => !closedIds.includes(id));
-        setSelectedAccountIds(show ? [...withoutClosed, ...closedIds] : withoutClosed);
+        const withoutClosed = effectiveSelectedIds.filter(id => !closedAccountIds.has(id));
+        setSelectedAccountIds(show ? [...withoutClosed, ...closedAccountIds] : withoutClosed);
         setPage(1);
     };
 

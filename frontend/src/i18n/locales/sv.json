@@ -118,6 +118,7 @@
         "show-closed": "Visa stängda konton",
         "help-card-search": "transaktioner insättning uttag överföring",
         "closed": "Stängt",
+        "closed-account": "stängt konto",
         "page-title": "Transaktioner",
         "filter-subtitle": "Sök och filtrera",
         "accounts-subtitle": "Visa transaktioner för",

@@ -1,4 +1,4 @@
-import { useMemo, useId } from 'react';
+import { useMemo, useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { Transaction } from '../../services/transactionsService';
@@ -41,7 +41,13 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
     const { t } = useTranslation();
     const listId = useId();
     const accountsById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts])
-    const accountNumber = (id?: number) => (id ? accountsById.get(id)?.accountNumber : undefined);
+    // Stängda konton visas överstrukna med "(stängt konto)"
+    const accountNumber = (id?: number): ReactNode => {
+        const account = id ? accountsById.get(id) : undefined;
+        if (!account) return undefined;
+        if (account.status !== "closed") return account.accountNumber;
+        return <><s>{account.accountNumber}</s> ({t("transactions-route.closed-account")})</>;
+    };
 
 
     return (
@@ -81,14 +87,14 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
                             </h3>
                             <ul className="ml-3 sm:ml-5">
                                 {group.rows.map(row => {
-                                    let key: string | number, tx: Transaction, accountText: string | undefined, amountText: string, amountClass: string;
+                                    let key: string | number, tx: Transaction, accountText: ReactNode, amountText: string, amountClass: string;
 
                                     if (row.kind === "transfer") {
                                         // Hel intern överföring: svart belopp utan tecken, som på Översikt
                                         key = row.id;
-                                        tx = row.from;
-                                        accountText = `${accountNumber(row.from.accountId)} → ${accountNumber(row.to.accountId)}`;
-                                        amountText = formatCurrency(Math.abs(row.from.amount));
+                                        tx = row.tx;
+                                        accountText = <>{accountNumber(row.fromAccountId)} → {accountNumber(row.toAccountId)}</>;
+                                        amountText = formatCurrency(row.amount);
                                         amountClass = 'text-dark-navy';
                                     } else {
                                         key = row.tx.id;
@@ -96,7 +102,7 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
                                         const own = accountNumber(tx.accountId);
                                         // Ensamt överföringsben visas som "från → till"
                                         const other = accountNumber(tx.targetAccountId);
-                                        accountText = other ? (tx.amount < 0 ? `${own} → ${other}` : `${other} → ${own}`) : own;
+                                        accountText = other ? (tx.amount < 0 ? <>{own} → {other}</> : <>{other} → {own}</>) : own;
                                         amountText = formatCurrency(tx.amount, { signed: true });
                                         amountClass = tx.amount < 0 ? 'text-red-700' : 'text-green-700';
                                     }

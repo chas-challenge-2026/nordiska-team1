@@ -118,6 +118,7 @@
         "show-closed": "Show closed accounts",
         "help-card-search": "transactions deposit withdrawal transfer",
         "closed": "Closed",
+        "closed-account": "closed account",
         "page-title": "Transactions",
         "filter-subtitle": "Search and filter",
         "accounts-subtitle": "Show transactions for",

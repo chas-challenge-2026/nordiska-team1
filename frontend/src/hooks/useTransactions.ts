@@ -47,7 +47,7 @@ async function getAllTransactions(filters: TransactionFilterParams): Promise<Tra
  * och delar upp raderna i sidor lokalt. Backend paginerar varje ben för sig, så
  * pagineringen måste ske efter sammanslagningen för att ge rätt antal rader per sida.
  */
-export function useTransactionRows(filters: TransactionFilterParams, page: number, pageSize: number, enabled = true) {
+export function useTransactionRows(filters: TransactionFilterParams, page: number, pageSize: number, closedAccountIds: ReadonlySet<number>, enabled = true) {
     const query = useQuery({
         queryKey: [...transactionKey.all, "all", filters] as const,
         queryFn: () => getAllTransactions(filters),
@@ -57,7 +57,7 @@ export function useTransactionRows(filters: TransactionFilterParams, page: numbe
     });
 
     const items = enabled ? query.data : undefined;
-    const rows = useMemo(() => mergeTransferPairs(items ?? []), [items]);
+    const rows = useMemo(() => mergeTransferPairs(items ?? [], closedAccountIds), [items, closedAccountIds]);
     const groups = useMemo(() => groupRowsByDate(rows.slice((page - 1) * pageSize, page * pageSize)), [rows, page, pageSize]);
 
     const totalCount = rows.length;
