@@ -52,15 +52,15 @@ export default function TransferDone({
     const isFailure = phase === "failure";
 
     return (
-        <div className="py-2 pb-6">
+        <div className="p-3 pb-6 sm:p-6">
             {isProcessing && (
                 <div>
                     <p className="m-0 text-sm font-semibold text-secondary">
                         {t("page-transfer.done.processing")}
                     </p>
                     <div className="mt-6 flex max-w-full items-center gap-2 sm:max-w-[520px] sm:gap-4">
-                        <div className="min-w-0 flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
-                            <div className="text-xs tracking-[0.08em] text-secondary uppercase">
+                        <div className="min-w-0 flex-1 border border-primary-blue/40 bg-primary-blue/10 px-4 py-3.5">
+                            <div className="text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
                                 {t("generic.from")}
                             </div>
                             <div className="truncate text-[15px] font-bold text-dark-navy">
@@ -70,8 +70,8 @@ export default function TransferDone({
                         <div className="relative h-0.5 w-10 flex-none bg-[#E5EAF0] sm:w-28">
                             <div className="absolute -top-1 left-0 h-2.5 w-2.5 animate-[dot-travel_1.8s_ease-in-out_infinite] rounded-full bg-nordiska-orange" />
                         </div>
-                        <div className="min-w-0 flex-1 rounded-lg border border-[#E5EAF0] bg-white px-4 py-3.5">
-                            <div className="text-xs tracking-[0.08em] text-secondary uppercase">
+                        <div className="min-w-0 flex-1 border border-primary-blue/40 bg-primary-blue/10 px-4 py-3.5">
+                            <div className="text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
                                 {t("generic.to")}
                             </div>
                             <div className="truncate text-[15px] font-bold text-dark-navy">
@@ -134,12 +134,12 @@ export default function TransferDone({
                     </div>
 
                     {!isFailure && (
-                        <div className="mt-6 flex max-w-full flex-col gap-3 rounded-lg border border-[#E5EAF0] px-5 py-4.5 sm:max-w-[520px]">
+                        <div className="mt-6 flex max-w-full flex-col gap-3 border border-nordiska-blue/50 bg-light-gray/30 px-4 py-4 sm:max-w-[520px] sm:px-5">
                             <SummaryRow
                                 label={t("page-transfer.bankid.amount")}
-                                value={`${summary.amount} sek`}
+                                value={summary.amount}
                             />
-                            <div className="h-px bg-[#EEF1F4]" />
+                            <div aria-hidden="true" className="border-b-2 border-nordiska-orange" />
                             <SummaryRow
                                 label={t("generic.from")}
                                 value={summary.fromName}
@@ -166,7 +166,7 @@ export default function TransferDone({
                     <button
                         type="button"
                         onClick={onReset}
-                        className="mt-9 cursor-pointer rounded-md border-0 bg-nordiska-blue px-6 py-3 text-sm font-bold text-white hover:bg-login-bg"
+                        className="mt-6 inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-nordiska-blue"
                     >
                         {t(
                             isFailure

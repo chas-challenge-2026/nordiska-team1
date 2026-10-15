@@ -1,0 +1,25 @@
+# Applied by the tool; keeps database switching out of shared infrastructure files.
+services:
+  app:
+    environment:
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__BankingDatabase: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__FaqDatabase: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__InboxDatabase: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+  reporting-worker:
+    environment:
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+  pdf-signer:
+    environment:
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+volumes:
+  report_documents:
+    name: ${NORDISKA_REPORT_DOCUMENTS_VOLUME:-nordiska-v2_report_documents}

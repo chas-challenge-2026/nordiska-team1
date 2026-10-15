@@ -9,88 +9,50 @@ type pageProps = {
 
 export default function LandingPage({ inactive = false, loggedOut = false }: pageProps) {
     const { t } = useTranslation();
-    // const navigate = useNavigate();
 
     useEffect(() => {
-        if (inactive || loggedOut) {
-            document.title=t("loggedout-route.doc-title")
-        } else {
-            document.title="Nordiska."
-        }
+        if (inactive || loggedOut) {document.title=t("loggedout-route.doc-title")} 
+        else {document.title="Nordiska."}
     },[t, loggedOut, inactive])
 
-    // useEffect(() => {
-    //     if (!loggedOut) return;
-    //     const timer = setTimeout(() => navigate("/welcome"), 5000);
-    //     return () => clearTimeout(timer);
-    // }, [loggedOut, navigate]);
-
     return (
-        // <main className="relative h-screen overflow-hidden  border-nordiska-blue bg-nordiska-blue">
-        <main className="relative min-h-screen border-nordiska-blue bg-nordiska-blue">
-            {/* ----- BAKGRUND ----- */}
-            <div
-                aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 top-[70px] bg-[url('/images/mountain_view.webp')] bg-cover bg-center opacity-65 md:top-[120px]"
-            />
-            {/* ----- INNEHÅLL ----- */}
-            <section aria-labelledby="page-title" className="relative z-10 flex min-h-[calc(100vh-120px)] items-center px-6 py-12 sm:px-10 lg:px-15 mt-[70px]">
-                <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 text-white lg:ml-[10%] lg:gap-10">
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-nordiska-blue">
+        {/* ----- BAKGRUND ----- */}
+        <div aria-hidden="true" className="absolute inset-0 bg-[url('/images/mountain_view.webp')] bg-cover bg-center opacity-65"/>
+        {/* ----- INNEHÅLL ----- */}
+        <section aria-labelledby="page-title" className="relative z-10 flex min-h-0 flex-1 items-center px-6 py-6 sm:px-10 lg:px-15">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 text-white lg:ml-[10%] lg:gap-10">
 
-                    <h1 id="page-title" className="max-w-5xl font-montserrat-alternates text-4xl text-shadow-lg/90 font-bold leading-tight sm:text-5xl md:text-6xl lg:text-7xl">
-                        {loggedOut
-                            ? `${t("loggedout-route.title")}`
-                            : inactive
-                                ? `${t("inactivity-route.title")}.`
-                                : `${t("welcome-route.title")}.`
-                        }
-                    </h1>
-
-                    <p className="max-w-3xl font-montserrat text-base leading-relaxed text-shadow-lg/90 sm:text-lg lg:text-xl -mt-8">
-                        {loggedOut
-                            ? `${t("loggedout-route.paragraph")}`
-                            : inactive
-                                ? t("inactivity-route.paragraph")
-                                : t("welcome-route.paragraph")
-                        }
-                    </p>
-
-                    {/* {!loggedOut && ( */}
-                        <Link
-                            to="/login"
-                            className="group flex min-h-14 w-full max-w-xl items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] shadow-xl/30 bg-nordiska-blue px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-login-bg focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl text-shadow-lg/40"
-                        >
-                            <span>
-                                {inactive || loggedOut 
-                                    ? t("inactivity-route.button")
-                                    : t("welcome-route.button")
-                                }
-                            </span>
-                            <img
-                                aria-hidden="true"
-                                src="/icons/arrow-right.svg"
-                                alt=""
-                                className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"
-                            />
-                        </Link>
-                    {/* )} */}
-
-                    {!loggedOut && !inactive && (
-                        <Link
-                            to="/register"
-                            className="group -mt-4 flex min-h-14 w-full max-w-xl items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] border-2 border-nordiska-blue px-6 py-4 backdrop-blur-sm font-montserrat text-lg font-bold transition-colors hover:bg-white/10 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:-mt-6 lg:text-2xl"
-                        >
-                            <span>{t("welcome-route.register-button")}</span>
-                            <img
-                                aria-hidden="true"
-                                src="/icons/arrow-right.svg"
-                                alt=""
-                                className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"
-                            />
-                        </Link>
-                    )}
-                </div>
-            </section>
-        </main>
+                <h1 id="page-title" className="max-w-5xl font-montserrat-alternates text-4xl text-shadow-lg/90 font-bold leading-tight sm:text-5xl md:text-6xl lg:text-7xl">
+                    {loggedOut
+                        ? `${t("loggedout-route.title")}`
+                        : inactive
+                            ? `${t("inactivity-route.title")}.`
+                            : `${t("welcome-route.title")}.`
+                    }
+                </h1>
+                <p className="max-w-3xl font-montserrat text-base leading-relaxed text-shadow-lg/90 sm:text-lg lg:text-xl -mt-8">
+                    {loggedOut
+                        ? `${t("loggedout-route.paragraph")}`
+                        : inactive
+                            ? t("inactivity-route.paragraph")
+                            : t("welcome-route.paragraph")
+                    }
+                </p>
+                   
+                <Link to="/login" className="group flex min-h-14 w-full max-w-sm items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] shadow-xl/30 bg-nordiska-blue px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-login-bg focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl text-shadow-lg/40">
+                    <span>{inactive || loggedOut ? t("inactivity-route.button") : t("welcome-route.button")}</span>
+                    <img aria-hidden="true" src="/icons/arrow-right.svg" className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"/>
+                </Link>
+               
+                {!loggedOut && !inactive && (
+                    <Link to="/register" className="group -mt-4 flex min-h-14 w-full max-w-sm items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] border-2 border-nordiska-blue px-6 py-4 backdrop-blur-sm font-montserrat text-lg font-bold transition-colors hover:bg-white/10 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:-mt-6 lg:text-2xl">
+                        <span>{t("welcome-route.register-button")}</span>
+                        <img aria-hidden="true" src="/icons/arrow-right.svg" className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"/>
+                    </Link>
+                )}
+            </div>
+        </section>
+    </main>
     );
 };

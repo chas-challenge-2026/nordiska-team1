@@ -73,6 +73,9 @@ ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA faq
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA reporting
     GRANT SELECT, INSERT, UPDATE ON TABLES TO nordiska_api;
 
+ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA reporting
+    GRANT SELECT, INSERT, UPDATE ON TABLES TO nordiska_reporting_worker;
+
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA inbox
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO nordiska_api;
 
@@ -84,6 +87,9 @@ ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA faq
 
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA reporting
     GRANT USAGE ON SEQUENCES TO nordiska_api;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA reporting
+    GRANT USAGE ON SEQUENCES TO nordiska_reporting_worker;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE nordiska_migrator IN SCHEMA inbox
     GRANT USAGE ON SEQUENCES TO nordiska_api;

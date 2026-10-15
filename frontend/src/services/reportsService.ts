@@ -1,4 +1,5 @@
 import axiosInstance from "./axiosInstance";
+import { assertNotTimedOut } from "./reportsTimeout";
 
 export type ReportStatus = "Pending" | "Processing" | "Completed" | "Failed";
 
@@ -42,6 +43,7 @@ export async function initiateTaxReport(accountId: number, taxYear?: number): Pr
 
 export async function checkTaxReportStatus(jobId: number): Promise<TaxReportJobStatus> {
     const res = await axiosInstance.get(`/reports/tax/jobs/${jobId}`);
+    assertNotTimedOut(res.data, res.headers["date"]);
     return res.data;
 }
 
@@ -56,6 +58,7 @@ export async function initiateAccountStatement(accountId: number, fromDate: stri
 
 export async function checkAccountStatementStatus(jobId: number): Promise<AccountStatementJobStatus> {
     const res = await axiosInstance.get(`/reports/account-statements/jobs/${jobId}`);
+    assertNotTimedOut(res.data, res.headers["date"]);
     return res.data;
 }
 

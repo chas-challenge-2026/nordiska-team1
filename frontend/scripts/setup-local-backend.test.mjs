@@ -64,7 +64,7 @@ test("starts only the database, API and reporting worker Docker services", async
 
     try {
         const frontendDirectory = join(directory, "frontend");
-        const infrastructureDirectory = join(directory, "infra", "v2");
+        const infrastructureDirectory = join(directory, "infra");
         await mkdir(frontendDirectory, { recursive: true });
         await mkdir(infrastructureDirectory, { recursive: true });
         await writeFile(
@@ -98,8 +98,9 @@ test("starts only the database, API and reporting worker Docker services", async
                     "-d",
                     "--build",
                     "db",
-                    "api",
+                    "app",
                     "reporting-worker",
+                    "pdf-signer",
                 ],
                 options: {
                     cwd: infrastructureDirectory,
@@ -118,7 +119,7 @@ test("requires DevSetup before starting Docker when the backend environment is m
     try {
         const frontendDirectory = join(directory, "frontend");
         await mkdir(frontendDirectory, { recursive: true });
-        await mkdir(join(directory, "infra", "v2"), { recursive: true });
+        await mkdir(join(directory, "infra"), { recursive: true });
         await writeFile(
             join(frontendDirectory, ".env.example"),
             "VITE_API_BASE_URL=http://localhost:5031/api\n",

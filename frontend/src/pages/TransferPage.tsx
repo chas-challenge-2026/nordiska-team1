@@ -2,12 +2,11 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
-import PendingTransfersPanel from "../components/transfer/PendingTransfersPanel";
 import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase, TransferSummary } from "../components/TransferDone";
+import { formatCurrency } from "../utils/currency";
 import {
-    formatSek,
     parseAmount,
     todayIso,
     shouldSimulateFailure,
@@ -25,6 +24,9 @@ import { usePlannedTransfers } from "../hooks/usePlannedTransfers";
 import { useAccountPicker } from "../hooks/useAccountPicker";
 import { useRecurrence } from "../hooks/useRecurrence";
 import { usePendingTransfers } from "../hooks/usePendingTransfers";
+import TransferCard from "../components/transfer/TransferCard";
+import HelpCard from "../components/faq/HelpCard";
+import HelpCardBubble from "../components/faq/HelpCardBubble";
 
 type Step = "form" | "bankid" | "done";
 
@@ -42,12 +44,10 @@ export default function TransferPage() {
     const { addLocalPlanned, createPlanned, panelProps } =
         usePlannedTransfers(ownAccounts);
     const { pendingTransfers, addPending } = usePendingTransfers();
+    if (pendingTransfers.length > 0) console.log(pendingTransfers); // fular till denna
 
     const [name, setName] = useState("");
-    // undefined = inget valt än (första kontot är default), null = nollställt.
-    const [selectedFromId, setFromId] = useState<string | null | undefined>(
-        undefined,
-    );
+    const [fromId, setFromId] = useState<string | null>(null);
     const [toId, setToId] = useState<string | null>(null);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
@@ -56,11 +56,6 @@ export default function TransferPage() {
     const [step, setStep] = useState<Step>("form");
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
-
-    const fromId =
-        selectedFromId === undefined
-            ? (ownAccounts[0]?.id ?? null)
-            : selectedFromId;
 
     const { allAccounts, openFromModal, openToModal, closeAll, pickerProps } =
         useAccountPicker({ ownAccounts, fromId, toId, setFromId, setToId });
@@ -81,7 +76,7 @@ export default function TransferPage() {
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
     const doneSummary: TransferSummary = {
-        amount: formatSek(amountValue),
+        amount: formatCurrency(amountValue),
         fromName: fromAccount?.name ?? "",
         fromMeta: fromAccount?.meta ?? "",
         toName: toAccount?.name ?? "",
@@ -211,65 +206,90 @@ export default function TransferPage() {
     };
 
     return (
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-20 md:pb-6 lg:p-10 bg-light-gray">
-            <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <main className="w-full text-dark-navy">
+            <div className="mx-auto w-full max-w-7xl px-2 pt-4 pb-20 sm:px-6 sm:pt-8 md:pb-8 lg:px-1 lg:py-10">
+                {/* MAIN CONTENT */}
+                <div className="flex flex-col gap-5 lg:flex-row">
+                    {/* TRANSFER FORM, sets row height */}
+                    <TransferCard
+                        className="lg:flex-[1.4]"
+                        id="transfer-form-heading"
+                        label={t("page-transfer.form-card-label")}
+                        title={t("page-transfer.heading")}
+                    >
+                        {(step === "form" || step === "bankid") && (
+                            <TransferForm
+                                fromAccount={fromAccount}
+                                toAccount={toAccount}
+                                onOpenFromModal={openFromModal}
+                                onOpenToModal={openToModal}
+                                amount={amount}
+                                onAmountChange={setAmount}
+                                over={over}
+                                date={date}
+                                onDateChange={setDate}
+                                recurring={recurring}
+                                onRecurringChange={recurrence.setRecurring}
+                                recurrence={recurrence.fieldProps}
+                                name={name}
+                                onNameChange={setName}
+                                isExternal={isExternal}
+                                canSubmit={canSubmit}
+                                ctaHint={ctaHint}
+                                onSubmit={handleSubmit}
+                            />
+                        )}
 
-                <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
-                    {(step === "form" || step === "bankid") && (
-                        <TransferForm
-                            fromAccount={fromAccount}
-                            toAccount={toAccount}
-                            onOpenFromModal={openFromModal}
-                            onOpenToModal={openToModal}
-                            amount={amount}
-                            onAmountChange={setAmount}
-                            over={over}
-                            date={date}
-                            onDateChange={setDate}
-                            recurring={recurring}
-                            onRecurringChange={recurrence.setRecurring}
-                            recurrence={recurrence.fieldProps}
-                            name={name}
-                            onNameChange={setName}
-                            isExternal={isExternal}
-                            canSubmit={canSubmit}
-                            ctaHint={ctaHint}
-                            onSubmit={handleSubmit}
-                        />
-                    )}
+                        {step === "done" && (
+                            <TransferDone
+                                phase={transferPhase}
+                                summary={doneSummary}
+                                onReset={handleReset}
+                            />
+                        )}
+                    </TransferCard>
 
-                    {step === "done" && (
-                        <TransferDone
-                            phase={transferPhase}
-                            summary={doneSummary}
-                            onReset={handleReset}
-                        />
-                    )}
-                </div>
+                    {/* PLANNED AND PENDING TRANSFERS, stretched by row, contributes no height */}
+                    <div className="flex min-w-0 lg:flex-1">
+                        <div className="flex w-full flex-col gap-5 lg:h-0 lg:min-h-full">
+                            <TransferCard
+                                id="planned-transfers-heading"
+                                label={t("page-transfer.planned.card-label")}
+                                title={t("table.planned-transactions")}
+                            >
+                                <PlannedTransfersPanel {...panelProps} />
+                            </TransferCard>
 
-                <div className="flex min-w-0 flex-col gap-5">
-                    <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
-                        <PlannedTransfersPanel {...panelProps} />
+                        </div>
                     </div>
 
-                    {pendingTransfers.length > 0 && (
-                        <div className="px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-8 lg:pb-10 rounded-xl shadow-md border border-secondary bg-white">
-                            <PendingTransfersPanel pendingTransfers={pendingTransfers} />
+                    {/* HELP / RELATED ARTICLES */}
+                    <aside aria-label={t("generic.help")} className="hidden min-w-0 shrink-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block xl:w-60">
+                        <div className="min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white">
+                            <p className="mt-2 truncate text-right text-sm uppercase text-white/80">{t("generic.help-center")}</p>
+                            <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
                         </div>
-                    )}
-                </div>
-            </div>
 
-            <TransferModals
-                {...pickerProps}
-                showBankId={step === "bankid"}
-                fromAccount={fromAccount}
-                toAccount={toAccount}
-                amountValue={amountValue}
-                date={date}
-                onApprove={startTransfer}
-                onCancelBankId={() => setStep("form")}
-            />
-        </div>
+                        <div className="p-4">
+                            <HelpCard searchTerms={t("page-transfer.help-card-search")} removeHeading numOfHits={12} />
+                        </div>
+                    </aside>
+                </div>
+
+                <TransferModals
+                    {...pickerProps}
+                    showBankId={step === "bankid"}
+                    fromAccount={fromAccount}
+                    toAccount={toAccount}
+                    amountValue={amountValue}
+                    date={date}
+                    onApprove={startTransfer}
+                    onCancelBankId={() => setStep("form")}
+                />
+
+                {/* HELP BUBBLE */}
+                <HelpCardBubble searchTerms={t("page-transfer.help-card-search")} numOfHits={6} />
+            </div>
+        </main>
     );
 }

@@ -9,11 +9,14 @@ import {
 import type { FeedItemTypes } from "../../types/inbox";
 import { inboxKeys } from "./inboxKeys";
 
+const UNREAD_COUNT_POLL_MS = 60_000;
+
 // all unread in one big response.
 export function useInboxCounts() {
     return useQuery({
         queryKey: inboxKeys.unreadCount(),
         queryFn: getUnreadCount,
+        refetchInterval: (query) => (query.state.status === "error" ? false : UNREAD_COUNT_POLL_MS),
     });
 }
 

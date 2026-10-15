@@ -23,6 +23,12 @@
           "FSharp.Core": "10.1.201"
         }
       },
+      "BCrypt.Net-Next": {
+        "type": "Direct",
+        "requested": "[4.2.0, )",
+        "resolved": "4.2.0",
+        "contentHash": "gwLD2KfCuwQesP17aVh4h6lpiMPEVt5Lbpndo0ej903hNUUTtyxt3ARdDjmuydBRTAUICc7OVKVbaOvc6SQYXA=="
+      },
       "FluentValidation": {
         "type": "Direct",
         "requested": "[11.6.0, )",

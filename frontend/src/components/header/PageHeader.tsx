@@ -83,7 +83,7 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
                                 duration: 0.5,
                                 ease: "easeOut",
                             }}
-                            className={`fixed top-0 z-[1001] w-screen md:h-[120px] h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}
+                            className={`sticky top-0 z-[1001] w-full md:h-[120px] h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}
                         >
 
                             {/* ----- LOGO ----- */}
@@ -124,18 +124,18 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
 
                     ) : ( // ----- PROTECTED HEADER -----
                         <>
-                            <header className={`fixed z-[1001] w-screen grid grid-cols-[1fr_2fr_1fr] items-end h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
+                            <header className={`sticky top-0 z-[1001] w-full grid grid-cols-[2fr_1fr_2fr] items-end h-[60px] md:h-[75px] flex items-end justify-between ${headerBackground} pt-0 px-5 pb-2 md:pb-3`}>
 
                                 {/* ----- LOGO ----- */}
                                 <section className="flex min-w-0 justify-start">
-                                    <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer text-shadow-lg/50`}>
+                                    <a href="/" title={t("page-header.home")} className={`font-montserrat-alternates text-3xl text-white font-bold tracking-wider whitespace-nowrap cursor-pointer text-shadow-lg/50 ${menuOpen ? "opacity-20" : ""}`}>
                                         nordiska<span className={dotColor}>.</span>
                                     </a>
                                 </section>
 
                                 {/* ----- NAVIGATION ----- */}
                                 <div className="min-w-0">
-                                    <nav className="hidden md:flex justify-center gap-4 lg:gap-8">
+                                    <nav onClick={() => setMenuOpen(false)} className={`hidden lg:flex justify-center gap-4 lg:gap-8 ${menuOpen ? "opacity-20" : ""}`}>
                                         <PageLink title={t("page-navigation.overview")} route="/" />
                                         <PageLink title={t("page-navigation.accounts")} route="/accounts" />
                                         <PageLink title={t("page-navigation.transactions")} route="/transactions" />
@@ -144,14 +144,8 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
                                 </div>
 
                                 {/* ----- INBOX, HELP & MENU ----- */}
-                                <section className="flex min-w-0 justify-end gap-0.5 mb-0.5">
-                                    <InboxDropdown
-                                        open={inboxOpen}
-                                        onOpenChange={(next) => {
-                                            setInboxOpen(next);
-                                            if (next) closeMenu();
-                                        }}
-                                    />
+                                <section className="flex min-w-0 justify-end mb-0.5 lg:gap-1">
+                                    
 
                                     {/* HELP ICON */}
                                     {!menuOpen && (
@@ -179,6 +173,18 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
                                                 </Link>
                                             )
                                     )}
+
+
+                                    {!menuOpen && 
+                                        <InboxDropdown
+                                            open={inboxOpen}
+                                            onOpenChange={(next) => {
+                                                setInboxOpen(next);
+                                                if (next) closeMenu();
+                                            }}
+                                        />
+                                    }
+                                    
 
                                     {/* MENU BTN */}
                                     <button

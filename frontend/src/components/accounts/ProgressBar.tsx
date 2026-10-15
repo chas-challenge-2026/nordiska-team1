@@ -81,17 +81,17 @@ export default function ProgressBar(props: ProgressBarProps) {
                     {props.type === "time" ? (
                         <>
                             <span>{elapsed === 0 ? t("progress-bar.just-started") : t("progress-bar.days-elapsed", { count: elapsed })}</span>
+                            <p className="mt-1 px-1 text-right text-sm text-dark-navy/80">{t("progress-bar.percentage", { percentage })}</p>
                             <span>{t("progress-bar.days-remaining", { count: remaining })}</span>
                         </>
                     ) : (
                         <>
                             <span>{t("progress-bar.amount-achieved", { amount: props.current - props.start })}</span>
+                            <p className="mt-1 px-1 text-right text-sm text-dark-navy/80">{t("progress-bar.percentage", { percentage })}</p>
                             <span>{t("progress-bar.amount-remaining", { amount: Math.max(0, props.target - props.current) })}</span>
                         </>
                     )}
                 </div>
-
-                <p className="mt-1 px-1 text-right text-sm text-dark-navy/80">{t("progress-bar.percentage", { percentage })}</p>
             </div>
         </div>
     );

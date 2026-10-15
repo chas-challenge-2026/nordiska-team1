@@ -10,7 +10,7 @@ export default function AdminRoute() {
     if (isCheckingSession) { return null; }
     if (loggedOutDueToInactivity) { return <Navigate to="/inactive" replace />;}
     if (loggedOut) { return <Navigate to="/logged-out" replace />;}
-    if (!user) {return <Outlet/>;}
+    if (!user) {return <Navigate to="/admin" replace />;}
     if (user?.role !== "Admin") { return <Navigate to="/" replace />}
 
     return <Outlet />

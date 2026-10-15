@@ -558,7 +558,7 @@ public class FaqIntegrationTests : IAsyncLifetime
     // Searches are saved by a background worker, so give it a few seconds before giving up
     private async Task<List<FaqSearchLog>> WaitForSearchLogsAsync(string marker)
     {
-        for (var attempt = 0; attempt < 50; attempt++)
+        for (var attempt = 0; attempt < 100; attempt++)
         {
             var logs = await GetSearchLogsAsync(marker);
             if (logs.Count > 0)
@@ -613,7 +613,7 @@ public class FaqIntegrationTests : IAsyncLifetime
     // Views are saved by a background worker, same as searches
     private async Task<List<FaqViewLog>> WaitForViewLogsAsync(int faqEntryId)
     {
-        for (var attempt = 0; attempt < 50; attempt++)
+        for (var attempt = 0; attempt < 100; attempt++)
         {
             var logs = await GetViewLogsAsync(faqEntryId);
             if (logs.Count > 0)

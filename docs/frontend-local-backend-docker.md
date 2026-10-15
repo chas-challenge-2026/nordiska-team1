@@ -60,20 +60,20 @@ Detta startar databasen, API:t och Reporting Worker. Native PDF-generatorn byggs
 
 ```powershell
 docker compose --project-name nordiska-v2 `
-  --env-file infra/v2/.env `
-  -f infra/v2/docker-compose.yml `
-  -f infra/v2/docker-compose.frontend-local.yml `
-  up -d --build db api reporting-worker
+  --env-file infra/.env `
+  -f infra/docker-compose.yml `
+  -f infra/docker-compose.frontend-local.yml `
+  up -d --build db app reporting-worker
 ```
 
 ### macOS/Linux
 
 ```bash
 docker compose --project-name nordiska-v2 \
-  --env-file infra/v2/.env \
-  -f infra/v2/docker-compose.yml \
-  -f infra/v2/docker-compose.frontend-local.yml \
-  up -d --build db api reporting-worker
+  --env-file infra/.env \
+  -f infra/docker-compose.yml \
+  -f infra/docker-compose.frontend-local.yml \
+  up -d --build db app reporting-worker
 ```
 
 ---
@@ -81,14 +81,14 @@ docker compose --project-name nordiska-v2 \
 ## 4. Bekräfta att containrarna körs
 
 ```shell
-docker compose --project-name nordiska-v2 --env-file infra/v2/.env -f infra/v2/docker-compose.yml -f infra/v2/docker-compose.frontend-local.yml ps
+docker compose --project-name nordiska-v2 --env-file infra/.env -f infra/docker-compose.yml -f infra/docker-compose.frontend-local.yml ps
 ```
 
 Följande tre tjänster ska visas:
 
 ```text
 db
-api
+app
 reporting-worker
 ```
 

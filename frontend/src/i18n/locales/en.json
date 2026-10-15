@@ -49,6 +49,7 @@
         "loading": "Something went wrong while loading the data.",
         "no-user": "Could not find user.",
         "report": "Could not create the report. Try again.",
+        "timeout": "Took too long to load.",
         "generic": "Something went wrong. Try again later."
     },
     "aria-label": {
@@ -89,6 +90,8 @@
         "type-deposit": "Deposit",
         "type-withdraw": "Withdrawal",
         "type-transfer": "Transfer",
+        "type-interest": "Interest payment",
+        "type-tax": "Tax",
         "transactions": "Latest transactions",
         "all-transactions": "Show more transactions",
         "less-transactions": "Show fewer transactions",
@@ -108,7 +111,6 @@
         "selected-of": "{{selected}} of {{total}} selected",
         "show-count_one": "Show {{count}} transaction",
         "show-count_other": "Show {{count}} transactions",
-        "deselect-all": "Deselect all",
         "search-account": "Search account number",
         "no-account-match": "No accounts match your search.",
         "select-account": "Select at least one account to see transactions.",
@@ -116,6 +118,7 @@
         "show-closed": "Show closed accounts",
         "help-card-search": "transactions deposit withdrawal transfer",
         "closed": "Closed",
+        "closed-account": "closed account",
         "page-title": "Transactions",
         "filter-subtitle": "Search and filter",
         "accounts-subtitle": "Show transactions for",
@@ -124,6 +127,8 @@
  
 
     "accounts-route": {
+        "info": "Account Information",
+        "overview": "Balance & Actions",
         "favorite-error": "You can have a maximum of 4 favorite accounts. Remove a favorite to add a new one.",
         "account-type": "Account type",
         "account-type-saving": "Savings account",
@@ -148,6 +153,10 @@
             "pick-account": "Select account",
             "show-accountinfo": "Show account information",
             "pick-one-account": "Select an account"
+        },
+        "transactions-section": {
+            "title": "Recent account transactions",
+            "no-transactions": "There are no transactions associated with this account"
         },
         "interest-section": {
             "accured-interest": "Interest earned",
@@ -275,7 +284,7 @@
 
     "account-card": {
         "title": "Balance",
-        "description": "Here are the balances of your favorite accounts",
+        "description": "Total balance and balances for favorite accounts",
         "description-no-favorites": "Mark account as favorite to show balance here",
         "pending": "Loading your accounts",
         "error": "Oops... Something went wrong",
@@ -473,7 +482,7 @@
             "accept-aria": "Accept {{title}}"
         },
         "ticket": {
-            "new": "New message",
+            "new": "Create a ticket",
             "category": "Category",
             "select-category": "Select category",
             "message": "Message",
@@ -511,10 +520,8 @@
         "transfers": "Transfers"
     },
     "table": {
-        "my-accounts": "My accounts",
         "planned-transactions": "Planned transfers",
-        "pending-transfers": "Upcoming transfers",
-        "latest-transactions": "Latest transactions"
+        "pending-transfers": "Upcoming transfers"
     },
     "forms": {
         "email": "email",
@@ -537,7 +544,10 @@
     },
     "page-transfer": {
         "heading": "New transfer",
-        "help-text": "Fill in the details below. You'll always get to review the transfer before it's carried out.",
+        "form-card-label": "Pay and transfer",
+        "section-accounts": "Accounts",
+        "section-details": "Amount and details",
+        "help-card-search": "transfer payment",
         "name-label": "Personal note",
         "name-label-recurring": "Name the transfer",
         "name-placeholder": "E.g. Rent September",
@@ -590,6 +600,7 @@
             "from-title": "Choose Account",
             "to-title": "Choose recipient",
             "search-placeholder": "Search by name",
+            "group-favorites": "Favorites",
             "group-own": "My accounts",
             "group-bg": "BG/PG",
             "group-bank": "Bank account",
@@ -612,10 +623,12 @@
             "back-to-transfers": "Back to transfers"
         },
         "pending": {
+            "card-label": "Sent payments",
             "arrives": "Expected to arrive {{date}}",
             "footnote": "Payments to other banks and BG/PG normally take one banking day."
         },
         "planned": {
+            "card-label": "Scheduled withdrawals",
             "footnote": "Upcoming transfers are withdrawn at 06:00 on the specified date.",
             "unknown-account": "Unknown account",
             "actions-label": "More options",
@@ -707,12 +720,13 @@
         }
     },
     "faq-page": {
-        "categories-error": "Could not retrieve categories"
+        "categories-error": "Could not retrieve categories",
+        "no-match-title": "It looks like you searched for something we don't have an answer to yet.",
+        "no-match-action": "Please submit a support request, and we'll help you as soon as possible."
     },
     "help-card": {
         "related": "Related",
         "information": "More information",
         "load-error": "Could not load related questions."
-
     }
 }

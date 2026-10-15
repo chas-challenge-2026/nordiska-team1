@@ -5,8 +5,8 @@ export default function LoginPage() {
     const { t } = useTranslation();
 
     return (
-    <main className="min-h-screen w-full bg-login-bg border-t-70 border-login-bg lg:border-t-25">
-        <div className="flex lg:min-h-screen flex-col justify-start px-6 py-10 sm:px-10 md:grid md:grid-cols-2 md:items-center md:px-0">
+    <main className="h-full w-full bg-login-bg border-login-bg ">
+        <div className="flex lg:h-full flex-col justify-start px-6 py-10 sm:px-10 md:grid md:grid-cols-2 md:items-center md:px-0">
 
             <section className="mb-8 text-white md:mb-0 md:flex md:flex-col md:items-end md:pr-12">
                 <div className="md:text-right">
