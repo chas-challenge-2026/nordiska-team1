@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import HelpCard from '../components/faq/HelpCard';
 import HelpCardBubble from '../components/faq/HelpCardBubble';
+import { useSearchParams } from "react-router";
 
 const initialFilters: TransactionFilters = {
     search: '',
@@ -59,6 +60,16 @@ function SheetTrigger({ label, count, onClick, children }: { label: string; coun
 
 export default function TransactionsPage() {
     const { t } = useTranslation();
+
+    const [searchParams] = useSearchParams();
+    const initialSearch = searchParams.get("search") ?? "";
+    const initialDateFrom = searchParams.get("dateFrom") ?? "";
+    const initialDateTo = searchParams.get("dateTo") ?? "";
+    const initialAccountIds = searchParams.get("accountIds")
+        ?.split(",")
+        .map(Number)
+        .filter(id => Number.isInteger(id) && id > 0) ?? null;
+
     // Alla konton hämtas så att transaktioner från stängda konton fortfarande kan visas
     const { data: allAccounts, isLoading: accountsLoading, isError: accountsError } = useGetAccounts();
 
@@ -71,10 +82,15 @@ export default function TransactionsPage() {
     );
 
     // Tom lista betyder "Alla konton", annars visas bara de ibockade kontona
-    const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
-    const effectiveSelectedIds = selectedAccountIds.length > 0 ? selectedAccountIds : accounts?.map(a => a.id) ?? [];
+    const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>(initialAccountIds ?? []);
+    const effectiveSelectedIds = selectedAccountIds?.length > 0 ? selectedAccountIds : accounts?.map(a => a.id) ?? [];
 
-    const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
+    const [filters, setFilters] = useState<TransactionFilters>(() => ({
+        ...initialFilters,
+        search: initialSearch,
+        dateFrom: initialDateFrom,
+        dateTo: initialDateTo,
+    }));
     const [openSheet, setOpenSheet] = useState<'filter' | 'accounts' | null>(null);
     const closeSheet = () => setOpenSheet(null);
     const [page, setPage] = useState(1);
@@ -88,7 +104,7 @@ export default function TransactionsPage() {
         setPage(1);
     }
 
-    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     useEffect(() => () => clearTimeout(searchTimeoutRef.current), []);
