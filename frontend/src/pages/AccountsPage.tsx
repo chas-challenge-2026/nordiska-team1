@@ -2,20 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import axios from "axios";
-
 import { useGetAccounts, useCloseAccount, useGetAllSavingsGoals, useUpdateFavoriteAccount } from "../hooks/useAccounts";
 import { formatCurrency } from "../utils/currency";
-
 import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import ActionButton from "../components/accounts/ActionButton";
 import HandleSavingsGoalModal from "../components/accounts/HandleSavingGoalModal";
-// import AccountsHeader from "../components/accounts/AccountsHeader";
 import AccountsNavigation from "../components/accounts/AccountNavigation";
 import InterestSection from "../components/accounts/InterestSection";
 import CloseAccountModal from "../components/accounts/CloseAccountModal";
 import SavingsGoalSection from "../components/accounts/SavingsGoalSection";
 import AccountRecentTransactions from "../components/accounts/AccountRecentTransactions";
-
 import HelpCard from "../components/faq/HelpCard";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
 import { useSearchParams } from "react-router";
@@ -23,7 +19,6 @@ import AccountStatementBtn from "../components/reports/AccountStatementButton";
 import { Reorder } from "motion/react";
 import DraggableSection from "../components/accounts/DraggableSection";
 import TotalBalanceAndBtns from "../components/accounts/TotalBalanceAndBtns";
-// import TaxReportBtn from "../components/reports/TaxReportButton";
 
 export type SectionId = "transactions" | "savings" | "interest";
 
@@ -178,20 +173,15 @@ export default function AccountsPage() {
                             />
                         </div>
 
-
                 <div className="grid grid-cols-1 gap-5 min-[991px]:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] min-[1200px]:grid-cols-[280px_minmax(0,1fr)_240px]">
 
                     {/* ------------------------------- */}
                     {/* --------- COL VÄNSTER --------- */}
                     {/* ------------------------------- */}
-
                     <div className="flex min-w-0 flex-col gap-5">
-                        
-
                         {/* ACCOUNT NAVIGATION */}
                         <AccountsNavigation accounts={sortedAccounts} accountsLoading={accountsLoading} accountsError={accountsError} selectedAccountId={selectedAccountId} expandedAccount={expandedAccount} onSelectAccount={setSelectedAccount} />
                     </div>
-
 
                     {/* ------------------------------ */}
                     {/* --------- COL MITTEN --------- */}
@@ -300,8 +290,6 @@ export default function AccountsPage() {
                     <div className="hidden min-[1200px]:flex min-[1200px]:flex-col min-[1200px]:gap-5">
                        
                         <TotalBalanceAndBtns selectedAccountId={selectedAccountId} totalBalance={totalBalance} onCreateAccount={() => setIsCreateAccountOpen(true)} />
-                        
-                        
 
                         {/* HELP / RELATED ARTICLES */}
                         <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm md:block">
@@ -318,7 +306,6 @@ export default function AccountsPage() {
                         </aside>
                     </div>
                 </div>
-
 
                 {/* --------------------------- */}
                 {/* --------- MODALER --------- */}
