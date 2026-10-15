@@ -700,7 +700,9 @@
         }
     },
     "faq-page": {
-        "categories-error": "Kunde inte hämta kategorier"
+        "categories-error": "Kunde inte hämta kategorier",
+        "no-match-title": "Det verkar som att du sökte efter något som vi inte har ett svar på än.",
+        "no-match-action": "Skapa gärna ett ärende så hjälper vi dig så snart som möjligt."
     },
     "help-card": {
         "related": "Relaterat",
