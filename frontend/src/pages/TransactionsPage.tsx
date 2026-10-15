@@ -99,13 +99,18 @@ export default function TransactionsPage() {
         SearchTerm: debouncedSearch || undefined,
         FromDate: filters.dateFrom ? startOfLocalDay(filters.dateFrom) : undefined,
         ToDate: filters.dateTo ? endOfLocalDay(filters.dateTo) : undefined,
-        Type: filters.type === 'all' ? undefined : filters.type,
+        // Typfiltret skickas inte till backend: överföringar har typen "transfer" och skulle
+        // annars aldrig räknas som insättning/uttag. Filtreringen sker i useTransactionRows.
     };
 
     const {
         groups, shownCount, totalCount, totalPages, hasNextPage, hasPreviousPage,
         isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData,
-    } = useTransactionRows(transactionFilters, page, pageSize, closedAccountIds, !!accounts && effectiveSelectedIds.length > 0);
+    } = useTransactionRows(transactionFilters, page, pageSize, {
+        closedAccountIds,
+        direction: filters.type === 'all' ? undefined : filters.type,
+        enabled: !!accounts && effectiveSelectedIds.length > 0,
+    });
 
     const activeFilterCount = [filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length;
     const accountBadge = accounts && effectiveSelectedIds.length < accounts.length ? effectiveSelectedIds.length : 0;
