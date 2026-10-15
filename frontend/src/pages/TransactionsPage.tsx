@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useMemo, type ReactNode } from 'react';
 import TransactionTable from '../components/transactions/TransactionsTable';
 import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
@@ -65,9 +65,14 @@ export default function TransactionsPage() {
     // Stängda konton döljs som standard men kan visas via kontoväljaren
     const [showClosed, setShowClosed] = useState(false);
     const accounts = showClosed ? allAccounts : allAccounts?.filter(a => a.status === "active");
+    const closedAccountIds = useMemo(
+        () => new Set(allAccounts?.filter(a => a.status === "closed").map(a => a.id)),
+        [allAccounts],
+    );
 
-    const [selectedAccountIds, setSelectedAccountIds] = useState<number[] | null>(null);
-    const effectiveSelectedIds = selectedAccountIds ?? accounts?.map(a => a.id) ?? [];
+    // Tom lista betyder "Alla konton", annars visas bara de ibockade kontona
+    const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
+    const effectiveSelectedIds = selectedAccountIds.length > 0 ? selectedAccountIds : accounts?.map(a => a.id) ?? [];
 
     const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
     const [openSheet, setOpenSheet] = useState<'filter' | 'accounts' | null>(null);
@@ -95,16 +100,21 @@ export default function TransactionsPage() {
         SearchTerm: debouncedSearch || undefined,
         FromDate: filters.dateFrom ? startOfLocalDay(filters.dateFrom) : undefined,
         ToDate: filters.dateTo ? endOfLocalDay(filters.dateTo) : undefined,
-        Type: filters.type === 'all' ? undefined : filters.type,
+        // Typfiltret skickas inte till backend: överföringar har typen "transfer" och skulle
+        // annars aldrig räknas som insättning/uttag. Filtreringen sker i useTransactionRows.
     };
 
     const {
         groups, shownCount, totalCount, totalPages, hasNextPage, hasPreviousPage,
         isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData,
-    } = useTransactionRows(transactionFilters, page, pageSize, !!accounts && effectiveSelectedIds.length > 0);
+    } = useTransactionRows(transactionFilters, page, pageSize, {
+        closedAccountIds,
+        direction: filters.type === 'all' ? undefined : filters.type,
+        enabled: !!accounts && effectiveSelectedIds.length > 0,
+    });
 
     const activeFilterCount = [filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length;
-    const accountBadge = accounts && effectiveSelectedIds.length < accounts.length ? effectiveSelectedIds.length : 0;
+    const accountBadge = selectedAccountIds.length;
 
     const handleSheetReset = () => {
         setFilters(f => ({ ...initialFilters, search: f.search }));
@@ -139,10 +149,12 @@ export default function TransactionsPage() {
 
     const handleShowClosedChange = (show: boolean) => {
         setShowClosed(show);
-        // Stängda konton läggs till eller tas bort ur urvalet, resten av urvalet behålls
-        const closedIds = allAccounts?.filter(a => a.status === "closed").map(a => a.id) ?? [];
-        const withoutClosed = effectiveSelectedIds.filter(id => !closedIds.includes(id));
-        setSelectedAccountIds(show ? [...withoutClosed, ...closedIds] : withoutClosed);
+        // Med "Alla konton" ingår stängda konton automatiskt. Med enskilda konton valda
+        // läggs de stängda till eller tas bort ur urvalet, resten av urvalet behålls.
+        if (selectedAccountIds.length > 0) {
+            const withoutClosed = selectedAccountIds.filter(id => !closedAccountIds.has(id));
+            setSelectedAccountIds(show ? [...withoutClosed, ...closedAccountIds] : withoutClosed);
+        }
         setPage(1);
     };
 
@@ -205,7 +217,7 @@ export default function TransactionsPage() {
                     <div className='hidden min-w-0 flex-col gap-5 self-start lg:flex'>
                         <AccountSelector
                             accounts={accounts ?? []}
-                            selectedIds={effectiveSelectedIds}
+                            selectedIds={selectedAccountIds}
                             onChange={handleAccountsChange}
                             isLoading={accountsLoading}
                             isError={accountsError}
@@ -263,19 +275,14 @@ export default function TransactionsPage() {
                         />
                     }
                     footer={
-                        <>
-                            <button type='button' onClick={() => handleAccountsChange([])} className='px-2 py-2.5 text-sm font-semibold text-primary-blue'>
-                                {t("transactions-route.deselect-all")}
-                            </button>
-                            <button type='button' onClick={closeSheet} className='flex-1 rounded-lg bg-primary-blue py-3 text-sm font-semibold text-white'>
-                                {t("transactions-route.show-count", { count: totalCount })}
-                            </button>
-                        </>
+                        <button type='button' onClick={closeSheet} className='flex-1 rounded-lg bg-primary-blue py-3 text-sm font-semibold text-white'>
+                            {t("transactions-route.show-count", { count: totalCount })}
+                        </button>
                     }
                 >
                     <AccountSelector
                         accounts={accounts ?? []}
-                        selectedIds={effectiveSelectedIds}
+                        selectedIds={selectedAccountIds}
                         onChange={handleAccountsChange}
                         isLoading={accountsLoading}
                         isError={accountsError}

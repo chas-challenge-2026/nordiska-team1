@@ -18,7 +18,8 @@ interface AccountSelectorProps {
 export default function AccountSelector({ accounts, selectedIds, onChange, isLoading, isError, showClosed, onShowClosedChange, variant = 'panel' }: AccountSelectorProps) {
     const { t } = useTranslation();
     const isSheet = variant === 'sheet';
-    const allSelected = accounts.length > 0 && selectedIds.length === accounts.length;
+    // Inga enskilt valda konton betyder "Alla konton"
+    const allSelected = selectedIds.length === 0;
 
     const [query, setQuery] = useState('');
     const [initialSelected] = useState(() => new Set(selectedIds));
@@ -60,8 +61,9 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
         );
     };
 
-    const toggleAll = () => {
-        onChange(allSelected ? [] : accounts.map(a => a.id));
+    // Fungerar som en radioknapp: rensar de enskilda valen och går inte att bocka ur
+    const selectAll = () => {
+        if (!allSelected) onChange([]);
     };
 
     const toggleOne = (id: number) => {
@@ -101,7 +103,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                             />
                         )}
                         <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 text-sm font-semibold ${isSheet ? '' : 'px-4'}`}>
-                            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer accent-primary-blue" />
+                            <input type="checkbox" checked={allSelected} onChange={selectAll} className="cursor-pointer accent-primary-blue" />
                             {t("transactions-route.all-accounts")}
                         </label>
                     </div>

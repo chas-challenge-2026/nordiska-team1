@@ -2,8 +2,11 @@ import type { Transaction } from "../services/transactionsService";
 
 export type TransactionRow =
     | { kind: "single"; tx: Transaction }
-    /** Båda benen i en överföring mellan egna konton, visas som en rad */
-    | { kind: "transfer"; id: string; from: Transaction; to: Transaction };
+    /**
+     * Överföring mellan egna konton, visas som en rad. Antingen båda benen ihopslagna
+     * eller ett ensamt ben där motparten är ett stängt konto. tx är benet som visar etikett och tid.
+     */
+    | { kind: "transfer"; id: string; tx: Transaction; fromAccountId: number; toAccountId: number; amount: number };
 
 export interface TransactionRowGroup {
     dateKey: string;
@@ -24,9 +27,10 @@ function isOtherLeg(tx: Transaction, other: Transaction): boolean {
 
 /**
  * Slår ihop överföringar vars båda ben finns i listan till en rad.
- * Saknas det andra benet (t.ex. när man filtrerat på ett konto) visas benet som vanligt.
+ * Saknas det andra benet (t.ex. när man filtrerat på ett konto) visas benet som vanligt,
+ * utom när motparten är ett stängt konto. Då visas det ändå som en överföring.
  */
-export function mergeTransferPairs(items: Transaction[]): TransactionRow[] {
+export function mergeTransferPairs(items: Transaction[], closedAccountIds: ReadonlySet<number> = new Set()): TransactionRow[] {
     const rows: TransactionRow[] = [];
     const merged = new Set<number>();
 
@@ -38,12 +42,25 @@ export function mergeTransferPairs(items: Transaction[]): TransactionRow[] {
             : undefined;
 
         if (!other) {
-            rows.push({ kind: "single", tx });
+            const target = tx.type === "transfer" ? tx.targetAccountId : undefined;
+            if (target !== undefined && closedAccountIds.has(target)) {
+                const [fromAccountId, toAccountId] = tx.amount < 0 ? [tx.accountId, target] : [target, tx.accountId];
+                rows.push({ kind: "transfer", id: `transfer-${tx.id}`, tx, fromAccountId, toAccountId, amount: Math.abs(tx.amount) });
+            } else {
+                rows.push({ kind: "single", tx });
+            }
             continue;
         }
 
         const [from, to] = tx.amount < 0 ? [tx, other] : [other, tx];
-        rows.push({ kind: "transfer", id: `transfer-${from.id}-${to.id}`, from, to });
+        rows.push({
+            kind: "transfer",
+            id: `transfer-${from.id}-${to.id}`,
+            tx: from,
+            fromAccountId: from.accountId,
+            toAccountId: to.accountId,
+            amount: Math.abs(from.amount),
+        });
         merged.add(tx.id);
         merged.add(other.id);
     }
@@ -52,7 +69,7 @@ export function mergeTransferPairs(items: Transaction[]): TransactionRow[] {
 }
 
 export function rowDate(row: TransactionRow): string {
-    return row.kind === "transfer" ? row.from.createdAt : row.tx.createdAt;
+    return row.tx.createdAt;
 }
 
 function localDateKey(iso: string): string {
