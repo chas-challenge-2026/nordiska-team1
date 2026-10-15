@@ -1,4 +1,3 @@
-
 import { useEffect, useState} from "react";
 import { useTranslation } from "react-i18next";
 import OverviewCard from "./OverviewCard";
@@ -6,6 +5,7 @@ import { formatCurrency } from "../../utils/currency";
 import { useNavigate } from "react-router";
 import { useGetAllSavingsGoals, useGetAccounts } from "../../hooks/useAccounts";
 import type { SavingGoal } from "../../services/accountsService";
+import { LoadingState, ErrorState } from "../StatusMessage";
 
 type SavingsGoalWithBalance = SavingGoal & {
     currentAmount: number;
@@ -156,9 +156,6 @@ export default function SavingsGoalsCard() {
                                         strokeLinejoin="round"
                                     />
                                     </svg>
-                                {/* <span className="block text-[10px] text-white/75">{validSelectedIds.length}/{MAX_SELECTED}</span> */}
-                           
-                            {/* <span aria-hidden="true" className="text-sm">{isDropdownOpen ? "⌃" : "⌄"}</span> */}
                         </button>
 
                         {isDropdownOpen && (
@@ -190,9 +187,9 @@ export default function SavingsGoalsCard() {
 
                 <div className="flex flex-1 flex-col p-2 sm:p-3">
                     {goalsLoading || accountsLoading ? (
-                        <p className="py-8 text-center text-sm text-secondary" role="status">{t("overview-route.savings-card.loadin")}</p>
+                        <LoadingState message={t("overview-route.savings-card.loading")} />
                     ) : goalsError || accountsError ? (
-                        <p className="py-8 text-center text-sm text-red-700" role="alert">{t("overview-route.savings-card.error")}</p>
+                        <ErrorState message={t("overview-route.savings-card.error")} />
                     ) : activeGoals.length === 0 ? (
                         <NoSavingGoalState />
                     ) : selectedGoals.length > 0 ? (
