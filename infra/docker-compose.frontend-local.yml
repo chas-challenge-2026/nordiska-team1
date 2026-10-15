@@ -18,7 +18,7 @@ services:
     profiles:
       - full-docker
     build:
-      context: ../..
+      context: ../
       dockerfile: Dockerfile
       target: frontend-development
     restart: unless-stopped
@@ -31,7 +31,7 @@ services:
       VITE_API_BASE_URL: http://localhost:5031/api
       CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ../../frontend:/app/frontend
+      - ../frontend:/app/frontend
       - frontend_node_modules:/app/frontend/node_modules
     ports:
       - "127.0.0.1:5173:5173"
