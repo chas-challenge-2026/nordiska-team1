@@ -5,12 +5,16 @@ type TransferCardProps = {
     label: string;
     title: string;
     children: ReactNode;
+    className?: string;
 };
 
 /** Kort med mörkblå header, samma stil som korten på kontosidan. */
-export default function TransferCard({ id, label, title, children }: TransferCardProps) {
+export default function TransferCard({ id, label, title, className, children }: TransferCardProps) {
     return (
-        <section aria-labelledby={id} className="min-w-0 overflow-hidden bg-white md:border md:border-gray-200 md:shadow-sm">
+        <section
+            aria-labelledby={id}
+            className={`flex min-h-0 min-w-0 flex-col overflow-hidden bg-white md:border md:border-gray-200 md:shadow-sm ${className ?? ""}`}
+        >
             {/* CARD HEADER */}
             <div className="flex min-h-22 items-center bg-dark-navy px-3 py-3 text-white sm:px-6">
                 <div className="min-w-0">
@@ -19,7 +23,7 @@ export default function TransferCard({ id, label, title, children }: TransferCar
                 </div>
             </div>
 
-            {children}
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </section>
     );
 }

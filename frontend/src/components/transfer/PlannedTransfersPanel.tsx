@@ -49,7 +49,10 @@ export default function PlannedTransfersPanel({
     };
 
     return (
-        <div className="p-3 sm:p-4">
+        <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
+            <p className="mt-3 ml-1 shrink-0 text-xs text-secondary sm:text-sm">
+                {t("page-transfer.planned.footnote")}
+            </p>
             {upcomingTransfers.length === 0 ? (
                 <div className="border border-nordiska-blue/50 bg-light-gray/30 p-4 text-center">
                     <span aria-hidden="true" className="mx-auto block h-10 w-10 bg-nordiska-orange mask-[url('/icons/transfers.svg')] mask-contain mask-center mask-no-repeat" />
@@ -57,7 +60,7 @@ export default function PlannedTransfersPanel({
                     <p className="mt-1 text-xs text-dark-navy/70">{t("no-planned-state.description")}</p>
                 </div>
             ) : (
-                <div className="max-h-[420px] overflow-y-auto pr-1">
+                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     {upcomingTransfers.map((planned) => (
                         <TableRow
                             key={planned.localId}
@@ -77,9 +80,6 @@ export default function PlannedTransfersPanel({
                     ))}
                 </div>
             )}
-            <p className="mt-3 ml-1 text-xs text-secondary sm:text-sm">
-                {t("page-transfer.planned.footnote")}
-            </p>
 
             {displayedTransfer && (
                 <PlannedTransferActionsModal

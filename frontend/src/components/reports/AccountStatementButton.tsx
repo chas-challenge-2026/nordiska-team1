@@ -7,6 +7,7 @@ import {
 } from "../../hooks/useReports";
 import Modal from "../modals/Modal";
 import ActionButton from "../accounts/ActionButton";
+import { ReportTimeoutError } from "../../services/reportsTimeout";
 
 type AccountStatementBtnProps = {
     accountId?: number;
@@ -40,6 +41,7 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
     const isBusy =
         initiate.isPending || (jobId !== undefined && !isReady && !isFailed) || isDownloading;
     const isRangeValid = fromDate !== "" && toDate !== "" && fromDate <= toDate;
+    const isTimedOut = status.error instanceof ReportTimeoutError;
 
     useEffect(() => {
         if (accountStatementId === undefined || !isReady || downloadedStatementId.current === accountStatementId) return;
@@ -116,7 +118,7 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
                     </div>
                     {isFailed && (
                         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700">
-                            {t("errors.report")}
+                            {t(isTimedOut ? "errors.timeout" : "errors.report")}
                         </p>
                     )}
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
