@@ -135,7 +135,7 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
 
                                 {/* ----- NAVIGATION ----- */}
                                 <div className="min-w-0">
-                                    <nav className={`hidden lg:flex justify-center gap-4 lg:gap-8 ${menuOpen ? "opacity-20" : ""}`}>
+                                    <nav onClick={() => setMenuOpen(false)} className={`hidden lg:flex justify-center gap-4 lg:gap-8 ${menuOpen ? "opacity-20" : ""}`}>
                                         <PageLink title={t("page-navigation.overview")} route="/" />
                                         <PageLink title={t("page-navigation.accounts")} route="/accounts" />
                                         <PageLink title={t("page-navigation.transactions")} route="/transactions" />
