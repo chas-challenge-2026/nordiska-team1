@@ -49,7 +49,7 @@
         "loading": "Something went wrong while loading the data.",
         "no-user": "Could not find user.",
         "report": "Could not create the report. Try again.",
-        "timeout": "Took to long to load.",
+        "timeout": "Took too long to load.",
         "generic": "Something went wrong. Try again later."
     },
     "aria-label": {
