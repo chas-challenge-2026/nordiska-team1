@@ -85,7 +85,7 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
                             <h3 className="mb-1 border-b-2 border-nordiska-orange px-3 pb-1 text-xs font-medium text-secondary sm:px-5">
                                 {formatDate(group.date)}
                             </h3>
-                            <ul className="ml-3 sm:ml-5">
+                            <ul>
                                 {group.rows.map(row => {
                                     let key: string | number, tx: Transaction, accountText: ReactNode, amountText: string, amountClass: string;
 
