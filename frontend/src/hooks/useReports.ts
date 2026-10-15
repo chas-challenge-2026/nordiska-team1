@@ -8,6 +8,7 @@ import {
     fetchAccountStatementPdf,
     type ReportStatus,
 } from "../services/reportsService";
+import { ReportTimeoutError } from "../services/reportsTimeout";
 
 const TERMINAL_STATUSES: ReportStatus[] = ["Completed", "Failed"];
 const POLL_INTERVAL_MS = 2000;
@@ -40,6 +41,7 @@ export function useReportStatus(jobId: number | undefined) {
         queryKey: ["reports", "tax", "jobs", jobId],
         queryFn: () => checkTaxReportStatus(jobId!),
         enabled: jobId !== undefined,
+        retry: (failureCount, error) => !(error instanceof ReportTimeoutError) && failureCount < 3,
         refetchInterval: (query) =>
             getPollInterval(query.state.status === "error", query.state.data?.status),
     });
@@ -64,6 +66,7 @@ export function useAccountStatementStatus(jobId: number | undefined) {
         queryKey: ["reports", "account-statements", "jobs", jobId],
         queryFn: () => checkAccountStatementStatus(jobId!),
         enabled: jobId !== undefined,
+        retry: (failureCount, error) => !(error instanceof ReportTimeoutError) && failureCount < 3,
         refetchInterval: (query) =>
             getPollInterval(query.state.status === "error", query.state.data?.status),
     });
