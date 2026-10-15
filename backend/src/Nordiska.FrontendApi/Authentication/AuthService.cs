@@ -245,11 +245,17 @@ public class AuthService : IAuthService
         var staffMember = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email.ToLower() == login.ToLower());
         if (staffMember != null && staffMember.IsActive)
         {
-            var passwordHasher = new PasswordHasher<StaffMember>();
+            var passwordHasher = new BCryptPasswordHasher<StaffMember>();
             var verifyResult = passwordHasher.VerifyHashedPassword(staffMember, staffMember.PasswordHash, request.Password);
             if (verifyResult == PasswordVerificationResult.Failed)
             {
                 return InvalidCredentials();
+            }
+
+            if (verifyResult == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                staffMember.PasswordHash = passwordHasher.HashPassword(staffMember, request.Password);
+                await _db.SaveChangesAsync();
             }
 
             var staffToken = await _jwtProvider.Generate(staffMember);

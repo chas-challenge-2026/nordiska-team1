@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
@@ -163,7 +164,7 @@ public class AdminUsersController : ControllerBase
             IsActive = true
         };
 
-        var passwordHasher = new PasswordHasher<StaffMember>();
+        var passwordHasher = new BCryptPasswordHasher<StaffMember>();
         newStaff.PasswordHash = passwordHasher.HashPassword(newStaff, request.Password);
 
         _db.StaffMembers.Add(newStaff);
@@ -275,7 +276,7 @@ public class AdminUsersController : ControllerBase
             return NotFound(new { message = $"Användare med id {id} hittades inte." });
         }
 
-        var passwordHasher = new PasswordHasher<StaffMember>();
+        var passwordHasher = new BCryptPasswordHasher<StaffMember>();
         staff.PasswordHash = passwordHasher.HashPassword(staff, request.NewPassword);
         staff.UpdatedAt = DateTime.UtcNow;
 
