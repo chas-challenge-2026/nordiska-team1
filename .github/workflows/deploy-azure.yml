@@ -25,15 +25,27 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build and push Web App Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
+          target: final
           push: true
           tags: |
             ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-sparbanken:latest
             ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-sparbanken:${{ github.sha }}
+
+      - name: Build and push Reporting Worker Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: reporting-worker
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-reporting-worker:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-reporting-worker:${{ github.sha }}
 
       - name: Log in to Azure
         uses: azure/login@v2
@@ -67,6 +79,7 @@ jobs:
         with:
           imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-sparbanken:${{ github.sha }}
           containerAppName: nordiska-sparbanken
+          containerName: nordiska-sparbanken
           resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP || 'rg-nordiska-prod' }}
 
       - name: Deployment status summary

@@ -20,28 +20,29 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
 
     if (!savingGoal) {
         return (
-            <div className="flex flex-col items-center justify-center pb-2">
-                <div className="mt-5 flex w-28 items-center justify-center">
-                    <span aria-hidden="true" className="block h-11 w-11 bg-nordiska-orange mask-[url('/icons/target.svg')] mask-contain mask-center mask-no-repeat sm:h-15 sm:w-15" />
+            <section aria-labelledby="savings-goal-heading">
+                <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
+
+                <div className="border border-nordiska-blue/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
+                    <div className="mt-5 flex w-28 items-center justify-center">
+                        <span aria-hidden="true" className="block h-11 w-11 bg-nordiska-orange mask-[url('/icons/target.svg')] mask-contain mask-center mask-no-repeat sm:h-15 sm:w-15" />
+                    </div>
+                    <p className="mt-1 text-center text-sm font-semibold text-dark-navy/80 sm:text-lg">{t("accounts-route.savings-goal.no-goal-title")}</p>
+                    <p className="mt-1 px-2 text-center text-xs text-dark-navy/80 sm:px-10 sm:text-base xl:text-sm">
+                        {t("accounts-route.savings-goal.no-goal-info")}
+                        <span className="sm:block">{" "}{t("accounts-route.savings-goal.no-goal-info-span")}</span>
+                    </p>
+                    <div className="mt-5">
+                        <ActionButton
+                            style="regular"
+                            onClick={() => onEdit(false)}
+                            ariaLabel={t("accounts-route.savings-goal.create-savingsgoal")}
+                            prefixIcon="/icons/target.svg"
+                            title={t("accounts-route.savings-goal.create-savingsgoal")}
+                        />
+                    </div>
                 </div>
-
-                <p className="mt-1 text-center text-sm font-semibold text-dark-navy/80 sm:text-lg">{t("accounts-route.savings-goal.no-goal-title")}</p>
-
-                <p className="mt-1 px-2 text-center text-xs text-dark-navy/80 sm:px-10 sm:text-base xl:text-sm">
-                    {t("accounts-route.savings-goal.no-goal-info")}
-                    <span className="sm:block">{" "}{t("accounts-route.savings-goal.no-goal-info-span")}</span>
-                </p>
-
-                <div className="mt-5">
-                    <ActionButton
-                        style="regular"
-                        onClick={() => onEdit(false)}
-                        ariaLabel={t("accounts-route.savings-goal.create-savingsgoal")}
-                        prefixIcon="/icons/target.svg"
-                        title={t("accounts-route.savings-goal.create-savingsgoal")}
-                    />
-                </div>
-            </div>
+            </section>
         );
     }
 
@@ -76,7 +77,9 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
     };
 
     return (
-        <>
+        <section aria-labelledby="savings-goal-heading" className="bg-white -mt-1">
+            <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
+            <div className="border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:p-4">
             <div className="mb-2 flex flex-col items-start justify-between">
                 <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.your-goal")}</p>
                 <p className="mb-2 max-w-full break-words text-xl font-bold text-dark-navy sm:text-xl">{savingGoal.title}</p>
@@ -111,7 +114,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
                             <>
                                 <div className="w-full min-w-0">
                                     <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.progress-label")}</p>
-                                    <p className="break-words text-lg font-semibold text-dark-navy sm:text-xl">{getProgressMessage()}</p>
+                                    <p className="mt-1 break-words text-xs leading-5 sm:text-base font-medium">{getProgressMessage()}</p>
                                 </div>
 
                                 <button type="button" onClick={onDeposit} className="group inline-flex min-w-0 max-w-[60%] flex-1 cursor-pointer items-center justify-center rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-primary-blue transition hover:bg-primary-blue hover:text-white sm:w-auto sm:flex-none sm:text-sm max-sm:w-full max-sm:max-w-full max-sm:flex-none">
@@ -136,7 +139,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
             )}
 
             {!isCompleted ? (
-                <div className="mt-10 flex justify-end gap-3 sm:gap-5 max-sm:flex-col max-sm:items-stretch">
+                <div className="mt-6 flex justify-end gap-3 sm:gap-5 max-sm:flex-col max-sm:items-stretch">
                     <ActionButton
                         style="regular"
                         onClick={() => onEdit(false)}
@@ -146,7 +149,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
                     />
                 </div>
             ) : (
-                <div className="mt-8 flex justify-end gap-3 sm:gap-5 max-sm:flex-col max-sm:items-stretch">
+                <div className="mt-6 flex justify-end gap-3 sm:gap-5 max-sm:flex-col max-sm:items-stretch">
                     <ActionButton
                         style="light"
                         onClick={() => onEdit(true)}
@@ -166,6 +169,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
                     />
                 </div>
             )}
-        </>
+            </div>
+        </section>
     );
 }

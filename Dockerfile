@@ -139,7 +139,22 @@ USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]
 
-# Stage 9: Existing combined Web API + React runtime
+# Stage 8b: Backwards-compatible alias for local scripts or compose targeting 'api'
+FROM app AS api
+
+# Stage 9: Database Migrator (Devtools) for isolated schema migrations
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migrator
+WORKDIR /src
+COPY backend/Directory.Build.props backend/Directory.Packages.props ./backend/
+COPY backend/dotnet-tools.json ./backend/
+COPY backend/src/ ./backend/src/
+COPY backend/scripts/migrate-database.sh ./backend/scripts/
+RUN chmod +x ./backend/scripts/migrate-database.sh
+WORKDIR /src/backend
+RUN dotnet tool restore
+ENTRYPOINT ["/src/backend/scripts/migrate-database.sh"]
+
+# Stage 10: Existing combined Web API + React runtime (Default build target)
 FROM runtime-base AS final
 
 COPY --from=backend-builder /app/publish .
@@ -157,15 +172,3 @@ ENV ReportDocumentStorage__RootPath=/var/lib/nordiska/report-documents
 USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]
-
-# Stage 10: Database Migrator (Devtools) for isolated schema migrations
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migrator
-WORKDIR /src
-COPY backend/Directory.Build.props backend/Directory.Packages.props ./backend/
-COPY backend/dotnet-tools.json ./backend/
-COPY backend/src/ ./backend/src/
-COPY backend/scripts/migrate-database.sh ./backend/scripts/
-RUN chmod +x ./backend/scripts/migrate-database.sh
-WORKDIR /src/backend
-RUN dotnet tool restore
-ENTRYPOINT ["/src/backend/scripts/migrate-database.sh"]

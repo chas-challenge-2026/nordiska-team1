@@ -66,14 +66,46 @@ public sealed class TaxReportControllerTests
         Assert.Equal("arsbesked-2025.pdf", file.FileDownloadName);
     }
 
+    [Fact]
+    public async Task GetStatus_WhenCompleted_CallsSynchronizer()
+    {
+        var status = new AnnualTaxReportJobStatus(
+            JobId: 7,
+            TaxReportId: 12,
+            Status: "Completed",
+            CreatedAt: DateTimeOffset.UtcNow,
+            CompletedAt: DateTimeOffset.UtcNow,
+            Error: null);
+
+        var queries = new Mock<IAnnualTaxReportQueryService>();
+        queries
+            .Setup(query => query.GetStatusAsync(
+                42,
+                7,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(status);
+
+        var synchronizer = new Mock<IReportInboxSynchronizer>();
+
+        TaxReportController controller = CreateController(queries.Object, synchronizer.Object);
+
+        await controller.GetStatus(7, CancellationToken.None);
+
+        synchronizer.Verify(
+            s => s.SyncTaxReportAsync(42, 12, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
     private static TaxReportController CreateController(
-        IAnnualTaxReportQueryService queries)
+        IAnnualTaxReportQueryService queries,
+        IReportInboxSynchronizer? synchronizer = null)
     {
         var service = new Mock<IAnnualTaxReportService>();
 
         var controller = new TaxReportController(
             service.Object,
-            queries);
+            queries,
+            synchronizer);
 
         controller.ControllerContext = new ControllerContext
         {

@@ -11,13 +11,6 @@ export function shouldSimulateFailure(transferName: string) {
     return transferName.trim().toLowerCase().includes("fail");
 }
 
-export function formatSek(amount: number) {
-    return amount.toLocaleString("sv-SE", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-}
-
 export function parseAmount(raw: string) {
     const parsed = parseFloat(raw.replace(/\s/g, "").replace(",", "."));
     return Number.isFinite(parsed) ? parsed : 0;
@@ -87,5 +80,6 @@ export function toOwnAccount(account: Account): OwnAccount {
         name: account.accountName?.trim() || account.accountType,
         meta: account.accountNumber,
         balance: account.balance,
+        isFavorite: account.isFavorite,
     };
 }

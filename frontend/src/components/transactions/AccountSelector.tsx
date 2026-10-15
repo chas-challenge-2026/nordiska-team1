@@ -18,7 +18,8 @@ interface AccountSelectorProps {
 export default function AccountSelector({ accounts, selectedIds, onChange, isLoading, isError, showClosed, onShowClosedChange, variant = 'panel' }: AccountSelectorProps) {
     const { t } = useTranslation();
     const isSheet = variant === 'sheet';
-    const allSelected = accounts.length > 0 && selectedIds.length === accounts.length;
+    // Inga enskilt valda konton betyder "Alla konton"
+    const allSelected = selectedIds.length === 0;
 
     const [query, setQuery] = useState('');
     const [initialSelected] = useState(() => new Set(selectedIds));
@@ -30,8 +31,39 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
         return [...filtered].sort((a, b) => Number(initialSelected.has(b.id)) - Number(initialSelected.has(a.id)));
     }, [accounts, query, isSheet, initialSelected]);
 
-    const toggleAll = () => {
-        onChange(allSelected ? [] : accounts.map(a => a.id));
+    const activeAccounts = visibleAccounts.filter(a => a.status !== "closed");
+    const closedAccounts = visibleAccounts.filter(a => a.status === "closed");
+
+    const renderAccount = (acc: Account) => {
+        const isSelected = selectedIds.includes(acc.id);
+        return (
+            <li key={acc.id}>
+                <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 ${isSheet ? '' : 'px-4'} ${isSelected ? 'bg-primary-blue/10' : 'bg-white hover:bg-primary-blue/10'}`}>
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleOne(acc.id)}
+                        className="cursor-pointer accent-primary-blue"
+                    />
+                    <span className="min-w-0">
+                        <span className="block truncate text-xs text-dark-navy">
+                            {acc.accountNumber} • <span className="font-semibold">{formatCurrency(acc.balance)}</span>
+                        </span>
+                        <span className="mt-0.5 block truncate text-sm font-semibold">
+                            {acc.accountName || t(`accounts-route.account-type-${acc.accountType}`)}
+                            {acc.status === "closed" && (
+                                <span className="ml-1 text-xs font-normal text-secondary">({t("transactions-route.closed")})</span>
+                            )}
+                        </span>
+                    </span>
+                </label>
+            </li>
+        );
+    };
+
+    // Fungerar som en radioknapp: rensar de enskilda valen och går inte att bocka ur
+    const selectAll = () => {
+        if (!allSelected) onChange([]);
     };
 
     const toggleOne = (id: number) => {
@@ -71,55 +103,33 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                             />
                         )}
                         <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 text-sm font-semibold ${isSheet ? '' : 'px-4'}`}>
-                            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer accent-primary-blue" />
+                            <input type="checkbox" checked={allSelected} onChange={selectAll} className="cursor-pointer accent-primary-blue" />
                             {t("transactions-route.all-accounts")}
                         </label>
                     </div>
 
                     <fieldset>
                         <legend className="sr-only">{t("transactions-route.account-select")}</legend>
-                        <ul>
-                            {visibleAccounts.map(acc => {
-                                const isSelected = selectedIds.includes(acc.id);
-                                return (
-                                    <li key={acc.id}>
-                                        <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 ${isSheet ? '' : 'px-4'} ${isSelected ? 'bg-primary-blue/10' : 'bg-white hover:bg-primary-blue/10'}`}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={() => toggleOne(acc.id)}
-                                                className="cursor-pointer accent-primary-blue"
-                                            />
-                                            <span className="min-w-0">
-                                                <span className="block truncate text-xs text-dark-navy">
-                                                    {acc.accountNumber} • <span className="font-semibold">{formatCurrency(acc.balance)}</span>
-                                                </span>
-                                                <span className="mt-0.5 block truncate text-sm font-semibold">
-                                                    {acc.accountName || t(`accounts-route.account-type-${acc.accountType}`)}
-                                                    {acc.status === "closed" && (
-                                                        <span className="ml-1 text-xs font-normal text-secondary">({t("transactions-route.closed")})</span>
-                                                    )}
-                                                </span>
-                                            </span>
-                                        </label>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                        <ul>{activeAccounts.map(renderAccount)}</ul>
                         {isSheet && visibleAccounts.length === 0 && (
                             <p className="py-4 text-center text-sm text-secondary">{t("transactions-route.no-account-match")}</p>
                         )}
-                    </fieldset>
 
-                    <label className={`flex cursor-pointer items-center gap-3 py-3 text-sm ${isSheet ? '' : 'px-4'}`}>
-                        <input
-                            type="checkbox"
-                            checked={showClosed}
-                            onChange={e => onShowClosedChange(e.target.checked)}
-                            className="cursor-pointer accent-primary-blue"
-                        />
-                        {t("transactions-route.show-closed")}
-                    </label>
+                        <label className={`flex cursor-pointer items-center gap-3 py-3 text-sm ${isSheet ? '' : 'px-4'} ${showClosed && closedAccounts.length > 0 ? 'border-b border-primary-blue/40' : ''}`}>
+                            <input
+                                type="checkbox"
+                                checked={showClosed}
+                                onChange={e => onShowClosedChange(e.target.checked)}
+                                className="cursor-pointer accent-primary-blue"
+                            />
+                            {t("transactions-route.show-closed")}
+                        </label>
+
+                        {/* Stängda konton listas under sin egen ruta så att det syns var de kommer ifrån */}
+                        {showClosed && closedAccounts.length > 0 && (
+                            <ul>{closedAccounts.map(renderAccount)}</ul>
+                        )}
+                    </fieldset>
                 </>
             )}
         </div>

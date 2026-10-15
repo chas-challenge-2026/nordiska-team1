@@ -5,7 +5,7 @@ import type { AccountPickerGroup } from "../modals/AccountPickerModal";
 import AddAccountForm from "../modals/AddAccountForm";
 import type { NewAccountValues } from "../modals/AddAccountForm";
 import BankIdConfirm from "../modals/BankIdConfirm";
-import { formatSek } from "./transferHelpers";
+import { formatCurrency } from "../../utils/currency";
 import type { TransferAccount } from "../../constants/transferAccounts";
 
 export type ModalKind = "from" | "to" | null;
@@ -102,7 +102,7 @@ export default function TransferModals({
                     widthClassName="w-full max-w-[480px]"
                 >
                     <BankIdConfirm
-                        amountFormatted={formatSek(amountValue)}
+                        amountFormatted={formatCurrency(amountValue)}
                         toName={toAccount.name}
                         toMeta={toAccount.meta}
                         fromName={fromAccount ? fromAccount.name : ""}

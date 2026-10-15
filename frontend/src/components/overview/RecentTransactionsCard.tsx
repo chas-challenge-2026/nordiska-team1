@@ -5,15 +5,31 @@ import { formatDate, formatTime, toTimestamp } from "../../utils/date";
 import { useTransactions } from "../../hooks/useTransactions";
 import { formatCurrency } from "../../utils/currency";
 import { useGetAccounts } from "../../hooks/useAccounts";
+import { useNavigate } from "react-router";
+import { type Transaction } from "../../services/transactionsService";
 
 const MAX_ROWS = 5;
 
+type TransferGroup = {
+    id: string;
+    type: "transfer-group";
+    createdAt: string;
+    label?: string;
+    from: number;
+    to: number;
+    amount: number;
+    transactions: Transaction[];
+};
+
+type RecentTransaction = Transaction | TransferGroup;
+
 export default function RecentTransactionsCard() {
     const { t } = useTranslation();
-    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 10, AccountIds: [] });
+    const navigate = useNavigate();
+    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 14, AccountIds: [] });
     const { data: accounts } = useGetAccounts();
 
-    const result = [];
+    const result: RecentTransaction[] = [];
     const processedTransfers = new Set<number>();
 
     const recent = (transactions?.items ?? [])
@@ -60,6 +76,18 @@ export default function RecentTransactionsCard() {
         return account?.accountNumber ?? "";
     };
 
+    const handleTransactionClick = (tx: RecentTransaction) => {
+        const params = new URLSearchParams();
+        const date = new Date(tx.createdAt).toLocaleDateString("sv-SE");
+        params.set("dateFrom", date);
+        params.set("dateTo", date);
+
+        if (tx.label) {params.set("search", tx.label);}
+        const accountIds = tx.type === "transfer-group" ? tx.transactions.map(transaction => transaction.accountId) : [tx.accountId];
+        params.set("accountIds", [...new Set(accountIds)].join(","));
+        navigate(`/transactions?${params.toString()}`);
+    };
+
     return (
     <OverviewCard>
         <div className="flex h-full flex-col">
@@ -82,8 +110,13 @@ export default function RecentTransactionsCard() {
                 <div className="flex flex-1 flex-col overflow-hidden">
 
                     {/* TRANSFER ROWS */}
-                    {result.slice(0, MAX_ROWS).map((tx) => (
-                        <div key={tx.id} className="flex flex-col flex-1 justify-center border-b-2 border-nordiska-orange px-3 py-2 odd:bg-light-gray/80 even:bg-white last:border-0 sm:px-5">
+                    {result.slice(0, MAX_ROWS).map((tx, index) => (
+                        <button 
+                            key={tx.id}
+                            type="button"
+                            onClick={() => handleTransactionClick(tx)}
+                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 ${index === 3 ? "last:border-0" : "border-b-2"}`}
+                            >
         
                             {/* NAMN & SUMMA */}
                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
@@ -104,7 +137,8 @@ export default function RecentTransactionsCard() {
                                     }
                                 </span>
                             </p>
-                        </div>
+                        </button>
+                    
                     ))}
                 </div>
                 </section>
