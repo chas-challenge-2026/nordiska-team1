@@ -358,7 +358,9 @@ internal static class Program
         if (batchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
 
-        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        var envPath = Path.Combine(root, "infra", ".env");
+        if (!File.Exists(envPath))
+            envPath = Path.Combine(root, "infra", "v2", ".env");
         if (!File.Exists(envPath))
             throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
 
@@ -483,7 +485,9 @@ internal static class Program
         if (delayMs < 0)
             throw new ArgumentOutOfRangeException(nameof(delayMs), "Delay must be zero or greater.");
 
-        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        var envPath = Path.Combine(root, "infra", ".env");
+        if (!File.Exists(envPath))
+            envPath = Path.Combine(root, "infra", "v2", ".env");
         if (!File.Exists(envPath))
             throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
 
@@ -615,7 +619,9 @@ internal static class Program
 
         if (accountId == 0)
         {
-            var envPath = Path.Combine(root, "infra", "v2", ".env");
+            var envPath = Path.Combine(root, "infra", ".env");
+            if (!File.Exists(envPath))
+                envPath = Path.Combine(root, "infra", "v2", ".env");
             if (!File.Exists(envPath))
                 throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
 
