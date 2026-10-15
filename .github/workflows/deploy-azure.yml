@@ -72,38 +72,15 @@ jobs:
           ./backend/scripts/migrate-database.sh "$AZURE_MIGRATOR_CONNECTION_STRING"
 
       - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v2
         if: env.AZURE_CREDENTIALS != ''
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-          RG: ${{ secrets.AZURE_RESOURCE_GROUP || 'rg-nordiska-prod' }}
-          APP_IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-sparbanken:${{ github.sha }}
-          WORKER_IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-reporting-worker:${{ github.sha }}
-        run: |
-          # 1. Update Web App container
-          az containerapp update \
-            --name nordiska-sparbanken \
-            --resource-group "$RG" \
-            --container-name nordiska-app \
-            --image "$APP_IMAGE"
-
-          # 2. Add or update reporting worker container
-          if az containerapp show --name nordiska-sparbanken --resource-group "$RG" --query "properties.template.containers[?name=='nordiska-reporting-worker']" -o tsv | grep -q 'nordiska-reporting-worker'; then
-            echo "Updating existing nordiska-reporting-worker container..."
-            az containerapp container set \
-              --name nordiska-sparbanken \
-              --resource-group "$RG" \
-              --container-name nordiska-reporting-worker \
-              --image "$WORKER_IMAGE"
-          else
-            echo "Adding new nordiska-reporting-worker container..."
-            az containerapp container add \
-              --name nordiska-sparbanken \
-              --resource-group "$RG" \
-              --container-name nordiska-reporting-worker \
-              --image "$WORKER_IMAGE" \
-              --cpu 0.25 --memory 0.5Gi \
-              --set-env-vars NORDISKA_PDF_ENABLE_SIGNING=0 ReportDocumentStorage__RootPath=/var/lib/nordiska/report-documents ConnectionStrings__ReportingDatabase=secretref:db-connection
-          fi
+        with:
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/nordiska-sparbanken:${{ github.sha }}
+          containerAppName: nordiska-sparbanken
+          containerName: nordiska-sparbanken
+          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP || 'rg-nordiska-prod' }}
 
       - name: Deployment status summary
         run: |
