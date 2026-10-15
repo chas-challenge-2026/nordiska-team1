@@ -776,6 +776,7 @@
         "dependencies": {
           "ActiveLogin.Authentication.BankId.AspNetCore": "[11.1.3, )",
           "ActiveLogin.Identity.Swedish": "[3.2.0, )",
+          "BCrypt.Net-Next": "[4.2.0, )",
           "FluentValidation": "[11.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[8.0.30, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[8.0.30, )",
@@ -821,6 +822,12 @@
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
           "Nordiska.Modules.Banking": "[1.0.0, )"
         }
+      },
+      "BCrypt.Net-Next": {
+        "type": "CentralTransitive",
+        "requested": "[4.2.0, )",
+        "resolved": "4.2.0",
+        "contentHash": "gwLD2KfCuwQesP17aVh4h6lpiMPEVt5Lbpndo0ej903hNUUTtyxt3ARdDjmuydBRTAUICc7OVKVbaOvc6SQYXA=="
       },
       "FluentValidation": {
         "type": "CentralTransitive",

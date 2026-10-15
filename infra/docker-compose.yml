@@ -10,11 +10,11 @@ services:
     environment:
       POSTGRES_DB: nordiska_v2
       POSTGRES_USER: nordiska_bootstrap
-      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD:?Set POSTGRES_BOOTSTRAP_PASSWORD in infra/v2/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_BOOTSTRAP_PASSWORD}
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
-      NORDISKA_MIGRATOR_PASSWORD: ${NORDISKA_MIGRATOR_PASSWORD:?Set NORDISKA_MIGRATOR_PASSWORD in infra/v2/.env}
-      NORDISKA_API_PASSWORD: ${NORDISKA_API_PASSWORD:?Set NORDISKA_API_PASSWORD in infra/v2/.env}
-      NORDISKA_REPORTING_WORKER_PASSWORD: ${NORDISKA_REPORTING_WORKER_PASSWORD:?Set NORDISKA_REPORTING_WORKER_PASSWORD in infra/v2/.env}
+      NORDISKA_MIGRATOR_PASSWORD: ${NORDISKA_MIGRATOR_PASSWORD}
+      NORDISKA_API_PASSWORD: ${NORDISKA_API_PASSWORD}
+      NORDISKA_REPORTING_WORKER_PASSWORD: ${NORDISKA_REPORTING_WORKER_PASSWORD}
     volumes:
       - postgres_v2_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -27,6 +27,19 @@ services:
       timeout: 5s
       retries: 12
 
+  migrator:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      target: migrator
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MIGRATION_CONNECTION_STRING: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_migrator;Password=${NORDISKA_MIGRATOR_PASSWORD}
+
   app:
     build:
       context: ../
@@ -38,6 +51,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       ConnectionStrings__DefaultConnection: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
@@ -49,10 +64,12 @@ services:
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
       ConnectionStrings__InboxDatabase: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
-      Jwt__SecretKey: ${NORDISKA_JWT_SECRET:?Set NORDISKA_JWT_SECRET in infra/v2/.env}
+      Jwt__SecretKey: ${NORDISKA_JWT_SECRET}
       Jwt__Issuer: NordiskaSparbanken
       Jwt__Audience: NordiskaSparbankenPortal
-      AuditLogging__SigningKey: ${NORDISKA_AUDIT_SIGNING_KEY:?Set NORDISKA_AUDIT_SIGNING_KEY in infra/v2/.env}
+      AuditLogging__SigningKey: ${NORDISKA_AUDIT_SIGNING_KEY}
+      AdminUser__Password: ${ADMIN_USER_PASSWORD}
+      FaqSearchLog__Salt: ${FAQ_SEARCH_LOG_SALT}
       ActiveLogin__BankId__Environment: Simulated
       ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
     volumes:
@@ -71,6 +88,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       ConnectionStrings__ReportingDatabase: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
@@ -97,6 +116,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
 
     environment:
       NORDISKA_PDF_ENABLE_SIGNING: "1"

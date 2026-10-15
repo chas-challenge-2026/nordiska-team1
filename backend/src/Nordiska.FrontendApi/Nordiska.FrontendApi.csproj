@@ -12,6 +12,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" />
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="BCrypt.Net-Next" />
   </ItemGroup>
 
   <ItemGroup>

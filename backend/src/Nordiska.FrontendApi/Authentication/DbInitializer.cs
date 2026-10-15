@@ -39,12 +39,23 @@ public class DbInitializer
 
         var adminEmail = configuration?["AdminUser:Email"] ?? "admin@nordiska.se";
         var adminName = configuration?["AdminUser:Name"] ?? "Jesper Adminsson";
-        var adminPersonalNum = configuration?["AdminUser:PersonalNum"] ?? "200505032383";
         
-        var adminPassword = configuration?["AdminUser:Password"] ?? "password123";
+        var hostEnv = serviceProvider.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+        var isDevOrTest = hostEnv == null || hostEnv.IsDevelopment() || hostEnv.EnvironmentName == "Testing";
+
+        var adminPassword = configuration?["AdminUser:Password"];
+        if (string.IsNullOrWhiteSpace(adminPassword) || adminPassword.Contains("PLACEHOLDER"))
+        {
+            if (!isDevOrTest)
+            {
+                throw new InvalidOperationException("AdminUser:Password must be configured via environment variable or secret in production.");
+            }
+            adminPassword = "password123";
+        }
 
         // 1. Ensure StaffMember table contains bootstrap administrator (RBAC)
         var existingStaff = await db.StaffMembers.FirstOrDefaultAsync(s => s.Email == adminEmail);
+        var passwordHasher = new BCryptPasswordHasher<StaffMember>();
         if (existingStaff == null)
         {
             var adminStaff = new StaffMember
@@ -57,45 +68,23 @@ public class DbInitializer
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
-            var passwordHasher = new PasswordHasher<StaffMember>();
             adminStaff.PasswordHash = passwordHasher.HashPassword(adminStaff, adminPassword);
             db.StaffMembers.Add(adminStaff);
             await db.SaveChangesAsync();
         }
-
-        // 2. Legacy customer fallback for backwards compatibility
-        var adminCustomer = await userManager.FindByEmailAsync(adminEmail)
-            ?? await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == adminPersonalNum || c.Email == adminEmail || c.UserName == adminEmail);
-
-        if (adminCustomer == null)
+        else if (!existingStaff.PasswordHash.StartsWith("$2"))
         {
-            adminCustomer = new Customer
-            {
-                UserName = adminEmail,
-                Name = adminName,
-                PersonalNum = adminPersonalNum,
-                Email = adminEmail,
-                PhoneNumber = "+46700999999",
-                CreatedAt = DateTime.UtcNow
-            };
-            var createResult = await userManager.CreateAsync(adminCustomer, adminPassword);
-            if (!createResult.Succeeded)
-            {
-                await userManager.CreateAsync(adminCustomer);
-                await userManager.AddPasswordAsync(adminCustomer, adminPassword);
-            }
-        }
-        else
-        {
-            if (string.IsNullOrEmpty(adminCustomer.PasswordHash))
-            {
-                await userManager.AddPasswordAsync(adminCustomer, adminPassword);
-            }
+            // Upgrade legacy PBKDF2 hash to BCrypt (DoD requirement)
+            existingStaff.PasswordHash = passwordHasher.HashPassword(existingStaff, adminPassword);
+            await db.SaveChangesAsync();
         }
 
-        if (!await userManager.IsInRoleAsync(adminCustomer, "Admin"))
+        // 2. Clean up legacy admin ghost customer from Customers table if present (ensures strict RBAC separation)
+        var legacyAdminCustomer = await db.Customers.FirstOrDefaultAsync(c => c.Email == adminEmail || c.UserName == adminEmail);
+        if (legacyAdminCustomer != null)
         {
-            await userManager.AddToRoleAsync(adminCustomer, "Admin");
+            db.Customers.Remove(legacyAdminCustomer);
+            await db.SaveChangesAsync();
         }
 
         var anna = await userManager.FindByEmailAsync("anna@example.com");
