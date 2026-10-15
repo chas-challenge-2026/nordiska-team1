@@ -1,0 +1,10 @@
+{
+  "accounts": 10000,
+  "transactions": 500000,
+  "currency": "SEK",
+  "annual_interest_rate": 0.025,
+  "tax_withholding_rate": 0.30,
+  "distribution": {
+    "type": "uniform"
+  }
+}

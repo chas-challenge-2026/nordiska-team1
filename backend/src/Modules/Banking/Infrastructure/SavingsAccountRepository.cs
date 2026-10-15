@@ -1,0 +1,45 @@
+using Microsoft.EntityFrameworkCore;
+using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Banking.Infrastructure.Db;
+
+namespace Nordiska.Modules.Banking.Infrastructure;
+
+public sealed class SavingsAccountRepository(BankingDbContext db) : ISavingsAccountRepository
+{
+    public async Task<IEnumerable<SavingsAccount>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await db.SavingsAccounts.AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<SavingsAccount>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+    {
+        return await db.SavingsAccounts.AsNoTracking()
+            .Where(a => a.CustomerId == customerId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+        => db.SavingsAccounts.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+
+    public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+        => db.SavingsAccounts
+            .Where(a => a.CustomerId == customerId && a.IsFavorite && a.Status == "active")
+            .CountAsync(cancellationToken);
+
+    public async Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        if (entity.Id != 0) throw new ArgumentException("Only new entity can be created.", nameof(entity));
+        db.SavingsAccounts.Add(entity);
+        await db.SaveChangesAsync(cancellationToken);
+        return entity.Id;
+    }
+
+    public async Task UpdateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        db.SavingsAccounts.Update(entity);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+}

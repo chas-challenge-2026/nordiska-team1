@@ -1,0 +1,31 @@
+using System;
+using Nordiska.Modules.Banking.Domain;
+using Nordiska.FrontendApi.Contracts.Requests;
+
+namespace Nordiska.FrontendApi.Contracts.Mappers;
+
+public static class CustomerMappers
+{
+    public static void ApplyUpdate(this Customer target, UpdateCustomerRequest req)
+    {
+        if (!string.IsNullOrWhiteSpace(req.Name)) target.Name = req.Name!;
+        if (!string.IsNullOrWhiteSpace(req.Email)) target.Email = req.Email!;
+        if (!string.IsNullOrWhiteSpace(req.PersonalNum)) target.PersonalNum = req.PersonalNum!;
+        if (!string.IsNullOrWhiteSpace(req.EffectivePhone)) target.PhoneNumber = req.EffectivePhone!;
+        if (req.OverviewPreference != null) target.OverviewPreference = req.OverviewPreference;
+        target.UpdatedAt = DateTime.UtcNow;
+    }
+
+    public static CustomerResponse ToResponse(this Customer c)
+        => new(
+            c.Id,
+            c.PersonalNum,
+            c.Name,
+            c.Email ?? string.Empty,
+            c.PhoneNumber,
+            c.CreatedAt,
+            c.PhoneNumber,
+            c.UpdatedAt,
+            c.OverviewPreference ?? new List<string>()
+        );
+}

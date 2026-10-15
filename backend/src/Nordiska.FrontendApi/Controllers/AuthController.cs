@@ -1,0 +1,315 @@
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Nordiska.FrontendApi.Authentication;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Responses;
+using Nordiska.FrontendApi.Filters;
+using Nordiska.FrontendApi.RateLimiting;
+using Nordiska.Modules.Banking.Application;
+
+namespace Nordiska.FrontendApi.Controllers;
+
+/// <summary>
+/// Authentication and session management endpoints using BankID and JWT cookies.
+/// </summary>
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
+{
+    private readonly IAuthService _authService;
+
+    public AuthController(IAuthService authService)
+    {
+        _authService = authService;
+    }
+
+    /// <summary>
+    /// Initiates a BankID authentication session.
+    /// </summary>
+    /// <remarks>
+    /// Starts a BankID transaction. In the development simulator environment, an optional 
+    /// <c>personalNum</c> can be supplied to simulate authenticating as a specific customer.
+    /// Returns an <c>orderRef</c> that must be passed to the <c>/api/auth/bankid/collect</c> endpoint.
+    /// </remarks>
+    /// <param name="request">The initiate request containing the optional personal number.</param>
+    /// <response code="200">BankID session successfully initiated with orderRef and start tokens.</response>
+    /// <response code="400">Failed to initiate BankID session (e.g. invalid request or service error).</response>
+    [AllowAnonymous]
+    [HttpPost("bankid/initiate")]
+    [AuditAction("AUTH_BANKID_INITIATE")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [ProducesResponseType(typeof(BankIdInitiateResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Initiate([FromBody] BankIdInitiateRequest request)
+    {
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var result = await _authService.InitiateBankIdAsync(request, clientIp);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { message = result.ErrorMessage });
+        }
+
+        return Ok(result.InitiateData);
+    }
+
+    /// <summary>
+    /// Collects the status of an ongoing BankID authentication session.
+    /// </summary>
+    /// <remarks>
+    /// Polls the BankID session using the <c>orderRef</c>. When the status reaches <c>COMPLETE</c>,
+    /// a secure, HttpOnly authentication cookie (<c>access_token</c>) is automatically set on the response.
+    /// </remarks>
+    /// <param name="request">The collect request containing the orderRef.</param>
+    /// <response code="200">Current status of the authentication (e.g. PENDING or COMPLETE with customer profile).</response>
+    /// <response code="401">Authentication failed or customer not found.</response>
+    [AllowAnonymous]
+    [HttpPost("bankid/collect")]
+    [AuditAction("AUTH_BANKID_COLLECT")]
+    [ProducesResponseType(typeof(BankIdCollectResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Collect([FromBody] BankIdCollectRequest request)
+    {
+        var result = await _authService.CollectBankIdAsync(request, Response);
+
+        if (!result.IsSuccess)
+        {
+            return Unauthorized(new { message = result.ErrorMessage });
+        }
+
+        return Ok(result.CollectData);
+    }
+
+    /// <summary>
+    /// Registers a new customer and establishes an authenticated session.
+    /// </summary>
+    /// <remarks>
+    /// Creates a new customer identity record and immediately sets the HttpOnly authentication cookie.
+    /// </remarks>
+    /// <param name="request">Customer registration details including name, email, personal number, and phone number.</param>
+    /// <param name="validator">Validator for customer registration request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Customer registered successfully and session established.</response>
+    /// <response code="400">Registration validation failed (e.g. invalid personal number or email format).</response>
+    /// <response code="409">Conflict: email address or personal number is already registered.</response>
+    [AllowAnonymous]
+    [HttpPost("register")]
+    [AuditAction("AUTH_REGISTER")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterCustomerRequestDto request,
+        [FromServices] IValidator<RegisterCustomerRequestDto> validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            foreach (var error in validationResult.Errors)
+            {
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            }
+            return ValidationProblem(ModelState);
+        }
+
+        var result = await _authService.RegisterCustomerAsync(request, Response);
+
+        if (!result.IsSuccess)
+        {
+            if (result.FailureReason == AuthFailureReason.Conflict)
+            {
+                var problem = new ProblemDetails
+                {
+                    Status = StatusCodes.Status409Conflict,
+                    Title = "Conflict",
+                    Detail = result.ErrorMessage
+                };
+                if (!string.IsNullOrWhiteSpace(result.ConflictCode))
+                {
+                    problem.Extensions["code"] = result.ConflictCode;
+                }
+                return StatusCode(StatusCodes.Status409Conflict, problem);
+            }
+
+            if (result.Errors != null)
+            {
+                foreach (var err in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, err);
+                }
+                return ValidationProblem(ModelState);
+            }
+
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request",
+                detail: result.ErrorMessage ?? "Registreringen misslyckades.");
+        }
+
+        return Ok(result.Customer ?? new CustomerResponseDto(0, request.Email, request.Name, result.Token));
+    }
+
+    /// <summary>
+    /// Authenticates a customer using email and password.
+    /// </summary>
+    /// <remarks>
+    /// Performs email and password authentication and automatically sets the secure HttpOnly <c>access_token</c> authentication cookie on success.
+    /// After 5 failed attempts the account is locked for 15 minutes (BankID login lifts the lockout).
+    /// In Development only, seeded demo accounts without a password (e.g. <c>anna@example.com</c> or <c>erik@example.com</c>) can log in using password <c>password123</c>.
+    /// </remarks>
+    /// <param name="request">Login request payload containing email and password.</param>
+    /// <response code="200">Login successful, returns customer profile and sets auth cookie.</response>
+    /// <response code="401">Invalid email or password.</response>
+    /// <response code="423">Account is temporarily locked after too many failed attempts.</response>
+    /// <response code="429">Too many login requests from this IP.</response>
+    [AllowAnonymous]
+    [HttpPost("login")]
+    [AuditAction("AUTH_LOGIN")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status423Locked)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var result = await _authService.LoginAsync(request, Response);
+
+        if (result.FailureReason == AuthFailureReason.LockedOut)
+        {
+            return LockedOut(result.LockoutEnd);
+        }
+
+        if (!result.IsSuccess)
+        {
+            return Unauthorized(new { message = result.ErrorMessage });
+        }
+
+        return Ok(result.CollectData?.Customer);
+    }
+
+    // 423 as ProblemDetails with Retry-After, so the frontend can tell a lockout apart from wrong password
+    private IActionResult LockedOut(DateTimeOffset? lockoutEnd)
+    {
+        var remaining = lockoutEnd.HasValue ? lockoutEnd.Value - DateTimeOffset.UtcNow : TimeSpan.Zero;
+        if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
+
+        Response.Headers.RetryAfter = ((int)Math.Ceiling(remaining.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+
+        var minutes = Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes));
+        return Problem(
+            statusCode: StatusCodes.Status423Locked,
+            title: "Locked",
+            detail: $"Kontot är tillfälligt spärrat, försök igen om {minutes} minuter.");
+    }
+
+    /// <summary>
+    /// Returns the currently authenticated user's profile information extracted from the session and database.
+    /// </summary>
+    /// <response code="200">The authenticated user's id, name, email, phone, and role.</response>
+    /// <response code="401">Unauthorized if the user is not authenticated.</response>
+    [HttpGet("me")]
+    [HttpGet("/api/me")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetCurrentUser(
+        [FromServices] ICustomerService customerService,
+        CancellationToken cancellationToken)
+    {
+        var customerIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
+                    ?? User.FindFirst(ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Customer";
+
+        if (long.TryParse(customerIdStr, out var customerId))
+        {
+            try
+            {
+                var customer = await customerService.GetByIdAsync(customerId, cancellationToken);
+                return Ok(new
+                {
+                    id = customer.Id,
+                    name = customer.Name,
+                    email = !string.IsNullOrWhiteSpace(email) ? email : customer.Email,
+                    phone = customer.PhoneNumber,
+                    phoneNumber = customer.PhoneNumber,
+                    role = role
+                });
+            }
+            catch
+            {
+                // Fallback to claims if domain customer is not yet provisioned
+            }
+        }
+
+        return Ok(new
+        {
+            id = customerIdStr,
+            name = User.FindFirst("name")?.Value ?? email,
+            email = email,
+            phone = (string?)null,
+            phoneNumber = (string?)null,
+            role = role
+        });
+    }
+
+    /// <summary>
+    /// Logs out the user by clearing the HTTP-only authentication cookie.
+    /// </summary>
+    /// <response code="200">Successfully logged out and cookie deleted.</response>
+    // Anonymous so a user with an expired session can still clear the cookie
+    [AllowAnonymous]
+    [HttpPost("logout")]
+    [AuditAction("AUTH_LOGOUT")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult Logout()
+    {
+        Response.DeleteAuthCookie();
+        return Ok(new { message = "Logged out successfully" });
+    }
+
+    /// <summary>
+    /// Extends the active session by issuing a refreshed JWT authentication cookie.
+    /// </summary>
+    /// <remarks>
+    /// Re-evaluates the authenticated caller's identity and updates the secure HttpOnly <c>access_token</c>
+    /// cookie with a refreshed expiration timestamp.
+    /// </remarks>
+    /// <response code="200">Session successfully extended.</response>
+    /// <response code="401">Unauthorized if the session is invalid, expired, or locked out.</response>
+    [Authorize]
+    [HttpPost("refresh")]
+    [HttpPost("extend-session")]
+    [AuditAction("AUTH_REFRESH")]
+    [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshSession()
+    {
+        var customerIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
+                          ?? User.FindFirst(ClaimTypes.Email)?.Value;
+
+        if (string.IsNullOrWhiteSpace(customerIdStr))
+        {
+            return Unauthorized(new { message = "Ogiltig session." });
+        }
+
+        var result = await _authService.RefreshSessionAsync(customerIdStr, Response);
+
+        if (!result.IsSuccess)
+        {
+            return Unauthorized(new { message = result.ErrorMessage });
+        }
+
+        return Ok(result.CollectData?.Customer ?? new CustomerResponseDto(0, "", ""));
+    }
+}

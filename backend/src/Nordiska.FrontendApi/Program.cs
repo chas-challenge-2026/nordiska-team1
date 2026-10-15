@@ -1,0 +1,295 @@
+using System;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Nordiska.FrontendApi.Authentication;
+using Nordiska.FrontendApi.Authentication.Jwt;
+using Nordiska.Modules.Faq.Infrastructure.Db;
+using Nordiska.Modules.Banking.Infrastructure.Db;
+using Nordiska.Modules.Reporting.Infrastructure.Db;
+using Nordiska.Modules.Faq.Application;
+using System.IO;
+using System.Reflection;
+using FluentValidation;
+using Nordiska.FrontendApi.Contracts.Requests;
+using Nordiska.FrontendApi.Contracts.Validators;
+using Scalar.AspNetCore;
+using Nordiska.FrontendApi.Extensions;
+using Microsoft.AspNetCore.Identity;
+using Nordiska.Modules.Banking.Domain;
+using ActiveLogin.Authentication.BankId.AspNetCore.Auth;
+using ActiveLogin.Authentication.BankId.Api;
+using ActiveLogin.Authentication.BankId.Core;
+using Nordiska.Modules.Banking.Infrastructure;
+using Microsoft.OpenApi;
+using Nordiska.Modules.Banking.Application;
+using Nordiska.FrontendApi.BackgroundWorkers;
+using Nordiska.Modules.Inbox.Infrastructure.Db;
+using Nordiska.FrontendApi.Endpoints.Reporting;
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure dependency injection validation to prevent captive dependencies and service locator anti-patterns
+builder.Host.UseDefaultServiceProvider((context, options) =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
+// Register JWT configuration options
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+
+// Configure authentication with JWT Bearer
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing.")))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieName, out var cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+// Authorization policies incl. fallback policy that requires login (NOR-138)
+builder.Services.AddApiAuthorization();
+// Register password hashing and auth services in Dependency Injection
+builder.Services.AddScoped<IPasswordHasher<Customer>, BCryptPasswordHasher<Customer>>();
+builder.Services.AddScoped<IPasswordHasher<StaffMember>, BCryptPasswordHasher<StaffMember>>();
+builder.Services.AddScoped<IJwtProvider, JwtProvider>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IValidator<RegisterCustomerRequestDto>, RegisterCustomerRequestDtoValidator>();
+
+// Register controller services
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    // include XML comments so Scalar/Swagger can show summaries and parameter docs
+    foreach (var file in Directory.GetFiles(AppContext.BaseDirectory, "Nordiska.*.xml"))
+    {
+        options.IncludeXmlComments(file);
+    }
+
+    // Configure JWT Bearer authentication in Swagger / Scalar UI
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Klistra in ditt JWT-token här (utan 'Bearer ' prefix)."
+    };
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    options.AddSecurityRequirement((doc) => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer"),
+            new List<string>()
+        }
+    });
+});
+
+builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
+
+builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
+builder.Services.AddInboxModuleInfrastructure(builder.Configuration);
+builder.Services.AddScoped<IReportInboxSynchronizer, ReportInboxSynchronizer>();
+
+// Official Microsoft HealthChecks with EF Core database check
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<BankingDbContext>("database");
+
+// Background worker for scheduled & recurring transactions
+builder.Services.AddHostedService<PlannedTransactionsBackgroundWorker>();
+builder.Services.AddHostedService<FaqSearchLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqViewLogBackgroundWorker>();
+builder.Services.AddHostedService<FaqSearchLogCleanupWorker>();
+ 
+builder.Services
+    .AddIdentityCore<Customer>(options =>
+    {
+        // Customer log in with bank ID, we do not need to store password in database when creating new customer. 
+        options.Password.RequireDigit = false;
+        options.Password.RequiredLength = 1;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequiredUniqueChars = 0;
+        
+        // Email must be unique
+        options.User.RequireUniqueEmail = true;
+
+        // Lock password login after too many failed attempts (NOR-70)
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue<int?>("Lockout:MaxFailedAccessAttempts") ?? 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int?>("Lockout:LockoutMinutes") ?? 15);
+    })
+    .AddRoles<IdentityRole<long>>()
+    .AddEntityFrameworkStores<BankingDbContext>();
+// Get environment from app settings 
+var bankIdEnvironment = builder.Configuration["ActiveLogin:BankId:Environment"] ?? "Simulated";
+// Service for bank id  
+if (bankIdEnvironment.Equals("Simulated", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddBankId(bankId => bankId.UseSimulatedEnvironment());
+}
+else if (bankIdEnvironment.Equals("Test", StringComparison.OrdinalIgnoreCase))
+{
+    var certPath = Path.Combine(AppContext.BaseDirectory, "Certificates", "FPTestcert5_20240610.p12");
+    if (!File.Exists(certPath))
+    {
+        certPath = Path.Combine(builder.Environment.ContentRootPath, "Certificates", "FPTestcert5_20240610.p12");
+    }
+
+    builder.Services.AddBankId(bankId =>
+    {
+        bankId.UseTestEnvironment();
+        if (File.Exists(certPath))
+        {
+            bankId.UseClientCertificate(() => new System.Security.Cryptography.X509Certificates.X509Certificate2(certPath, "qwerty123"));
+        }
+    });
+}
+builder.Services
+    .AddAuthentication()
+    .AddBankIdAuth(bankId =>
+    {
+        bankId.AddSameDevice();
+    });
+// Configure strict CORS policy for the React 18 SPA (NOR-66)
+// Whitelists trusted frontend origins without AllowAnyOrigin.
+// Enables Authorization header for JWT tokens and exposes Content-Disposition for PDF downloads.
+const string StrictFrontendCorsPolicy = "StrictFrontendCorsPolicy";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(StrictFrontendCorsPolicy, policy =>
+    {
+        var allowedOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? new[]
+            {
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:4173",
+                "http://localhost:3000"
+            };
+
+        policy.WithOrigins(allowedOrigins)
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With")
+              .WithExposedHeaders("Content-Disposition")
+              .AllowCredentials();
+    });
+});
+// Custom-made! ProblemDetails and ExceptionHandler DI registered via extension (moved into ServiceCollectionExtensions.cs)
+builder.Services.AddErrorHandling();
+// Rate limiting for login and money-moving endpoints (NOR-70), limits are read from "RateLimiting" in appsettings
+builder.Services.AddRateLimitingPolicies(builder.Configuration);
+
+var app = builder.Build();
+
+//look out for the order of middleware, it matters.
+app.UseExceptionHandler();
+app.UseHttpsRedirection();
+
+// Enable authentication and authorization middleware in the pipeline
+app.UseRouting();
+// Enable CORS middleware before Authentication and Authorization
+app.UseCors(StrictFrontendCorsPolicy);
+
+// Enable static files (for React frontend in wwwroot) and default files
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
+// Must run after authentication so the transactions policy can partition on the customer id
+app.UseRateLimiter();
+app.MapControllers();
+
+// Standard HealthChecks endpoint available in all environments (Azure, Coolify, Docker, Local)
+app.MapHealthChecks("/health")
+    .AllowAnonymous();
+
+// Backwards-compatible /health/database endpoint returning detailed status
+app.MapHealthChecks("/health/database")
+    .AllowAnonymous();
+
+if (app.Environment.IsDevelopment())
+{
+    // Dev tooling is only mapped in Development, so it can stay open for local testing
+    app.MapSwagger("/openapi/{documentName}.json")
+        .AllowAnonymous();
+
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Nordiska API");
+
+        // These optional features aren't needed for local API testing.
+        options.DisableAgent();
+        options.DisableDefaultFonts();
+
+        // Show C# HttpClient examples by default.
+        options.WithDefaultHttpClient(
+            ScalarTarget.CSharp,
+            ScalarClient.HttpClient);
+    }).AllowAnonymous();
+}
+
+// Always ensure essential Identity roles and bootstrap administrator exist (both Development and Production)
+try
+{
+    await DbInitializer.EnsureAdminAndRolesAsync(app.Services, app.Configuration);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Could not ensure admin and roles at startup: {Message}", ex.Message);
+}
+
+// Seed demo customer and sample data in Development
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        await DbInitializer.SeedAsync(app.Services, app.Configuration);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Could not seed test data at startup: {Message}", ex.Message);
+    }
+}
+
+// Fallback to React index.html for non-API client-side routes (SPA routing)
+// AllowAnonymous so the fallback policy doesn't block the frontend before the user has logged in
+app.MapFallbackToFile("index.html")
+    .AllowAnonymous();
+
+app.Run();
+
+// Expose Program class for integration testing with WebApplicationFactory
+public partial class Program { }
+

@@ -1,0 +1,61 @@
+namespace Nordiska.FrontendApi.Extensions;
+
+using System.Diagnostics;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Nordiska.FrontendApi.Middleware;
+//Put service collection extension methods here for better organization and separation of concerns. (TO KEEP Prgram.cs CLEAN)
+/// <summary>
+/// Convenience extension methods for IServiceCollection used by the Frontend API.
+/// </summary>
+public static class ServiceCollectionExtensions
+{
+    /// <summary>
+    /// Registers problem details and the global exception handler.
+    /// </summary>
+    public static IServiceCollection AddErrorHandling(this IServiceCollection services)
+    {
+        services.AddProblemDetails(options =>
+        {
+            // Every ProblemDetails response gets a traceId, whether it comes from
+            // GlobalExceptionHandler, ValidationProblem(), or a built-in 404/405.
+            options.CustomizeProblemDetails = context =>
+            {
+                context.ProblemDetails.Extensions["traceId"] =
+                    Activity.Current?.Id
+                    ?? context.HttpContext.TraceIdentifier;
+            };
+        });
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers authorization policies. Every endpoint requires a logged in user unless it is marked with [AllowAnonymous].
+    /// </summary>
+    public static IServiceCollection AddApiAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            // Safe by default: a new endpoint without attributes is protected, not public
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+
+            options.AddPolicy("faq:manage", policy =>
+            {
+                policy.AddAuthenticationSchemes(
+                    JwtBearerDefaults.AuthenticationScheme);
+
+                policy.RequireAuthenticatedUser();
+
+                policy.RequireAssertion(ctx =>
+                    ctx.User.IsInRole("Admin") ||
+                    ctx.User.HasClaim("permission", "faq:manage"));
+            });
+        });
+
+        return services;
+    }
+}

@@ -1,0 +1,20 @@
+using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Identity;
+
+namespace Nordiska.Modules.Banking.Domain;
+
+public sealed class Customer : IdentityUser<long>
+{
+    public uint Version { get; set; }
+
+    public string PersonalNum { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    public List<string> OverviewPreference { get; set; } = new();
+
+    public ICollection<SavingsAccount> SavingsAccounts { get; set; } = new List<SavingsAccount>();
+    public ICollection<SavingsGoal> SavingsGoals { get; set; } = new List<SavingsGoal>();
+}

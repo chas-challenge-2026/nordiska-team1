@@ -1,0 +1,181 @@
+import { useTranslation } from "react-i18next";
+
+export type TransferPhase = "processing" | "success" | "failure";
+
+export type TransferSummary = {
+    amount: string;
+    fromName: string;
+    fromMeta: string;
+    toName: string;
+    toMeta: string;
+    date: string;
+    /** Bara satt för återkommande överföringar. */
+    interval?: string;
+};
+
+type TransferDoneProps = {
+    phase: TransferPhase;
+    summary: TransferSummary;
+    onReset: () => void;
+};
+
+function SummaryRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+    return (
+        <div className="flex justify-between gap-4">
+            <span className="text-sm text-secondary">{label}</span>
+            <span className="min-w-0 text-right">
+                <span className="block wrap-break-word text-[15px] font-bold text-dark-navy">
+                    {value}
+                </span>
+                {sub && (
+                    <span className="block text-sm text-secondary">{sub}</span>
+                )}
+            </span>
+        </div>
+    );
+}
+
+/**
+ * Bekräftelsevy efter en överföring. Tre faser:
+ * - "processing": simulerar att överföringen skickas (resande punkt mellan
+ *   kontona) — inget resultat visas än.
+ * - "success" / "failure": bearbetningsvyn tonas bort och resultatet tonas
+ *   in, så de aldrig visas samtidigt.
+ */
+export default function TransferDone({
+    phase,
+    summary,
+    onReset,
+}: TransferDoneProps) {
+    const { t } = useTranslation();
+    const isProcessing = phase === "processing";
+    const isFailure = phase === "failure";
+
+    return (
+        <div className="p-3 pb-6 sm:p-6">
+            {isProcessing && (
+                <div>
+                    <p className="m-0 text-sm font-semibold text-secondary">
+                        {t("page-transfer.done.processing")}
+                    </p>
+                    <div className="mt-6 flex max-w-full items-center gap-2 sm:max-w-[520px] sm:gap-4">
+                        <div className="min-w-0 flex-1 border border-primary-blue/40 bg-primary-blue/10 px-4 py-3.5">
+                            <div className="text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
+                                {t("generic.from")}
+                            </div>
+                            <div className="truncate text-[15px] font-bold text-dark-navy">
+                                {summary.fromName}
+                            </div>
+                        </div>
+                        <div className="relative h-0.5 w-10 flex-none bg-[#E5EAF0] sm:w-28">
+                            <div className="absolute -top-1 left-0 h-2.5 w-2.5 animate-[dot-travel_1.8s_ease-in-out_infinite] rounded-full bg-nordiska-orange" />
+                        </div>
+                        <div className="min-w-0 flex-1 border border-primary-blue/40 bg-primary-blue/10 px-4 py-3.5">
+                            <div className="text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
+                                {t("generic.to")}
+                            </div>
+                            <div className="truncate text-[15px] font-bold text-dark-navy">
+                                {summary.toName}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!isProcessing && (
+                <div className="animate-rise">
+                    <div className="flex items-center gap-4">
+                        <svg
+                            width="56"
+                            height="56"
+                            viewBox="0 0 76 76"
+                            fill="none"
+                            aria-hidden="true"
+                        >
+                            <circle
+                                cx="38"
+                                cy="38"
+                                r="34"
+                                stroke="var(--color-nordiska-orange)"
+                                strokeWidth="3"
+                                strokeDasharray="214"
+                                className="animate-[ring-draw_0.7s_ease-out_both]"
+                            />
+                            {isFailure ? (
+                                <path
+                                    d="M27 27 L49 49 M49 27 L27 49"
+                                    stroke="#C4291C"
+                                    strokeWidth="4"
+                                    strokeLinecap="round"
+                                    strokeDasharray="64"
+                                    className="animate-[x-draw_0.45s_0.55s_ease-out_both]"
+                                />
+                            ) : (
+                                <path
+                                    d="M23 39.5 L34 50 L54 28"
+                                    stroke="var(--color-nordiska-blue)"
+                                    strokeWidth="4"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeDasharray="44"
+                                    className="animate-[check-draw_0.45s_0.55s_ease-out_both]"
+                                />
+                            )}
+                        </svg>
+                        <div>
+                            <h2 className="m-0 text-2xl font-semibold text-dark-navy">
+                                {t(
+                                    isFailure
+                                        ? "page-transfer.done.failure-heading"
+                                        : "page-transfer.done.heading",
+                                )}
+                            </h2>
+                        </div>
+                    </div>
+
+                    {!isFailure && (
+                        <div className="mt-6 flex max-w-full flex-col gap-3 border border-nordiska-blue/50 bg-light-gray/30 px-4 py-4 sm:max-w-[520px] sm:px-5">
+                            <SummaryRow
+                                label={t("page-transfer.bankid.amount")}
+                                value={summary.amount}
+                            />
+                            <div aria-hidden="true" className="border-b-2 border-nordiska-orange" />
+                            <SummaryRow
+                                label={t("generic.from")}
+                                value={summary.fromName}
+                                sub={summary.fromMeta}
+                            />
+                            <SummaryRow
+                                label={t("generic.to")}
+                                value={summary.toName}
+                                sub={summary.toMeta}
+                            />
+                            <SummaryRow
+                                label={t("generic.date")}
+                                value={summary.date}
+                            />
+                            {summary.interval && (
+                                <SummaryRow
+                                    label={t("page-transfer.interval-label")}
+                                    value={summary.interval}
+                                />
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={onReset}
+                        className="mt-6 inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-nordiska-blue"
+                    >
+                        {t(
+                            isFailure
+                                ? "page-transfer.done.back-to-transfers"
+                                : "page-transfer.done.new-transfer",
+                        )}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
