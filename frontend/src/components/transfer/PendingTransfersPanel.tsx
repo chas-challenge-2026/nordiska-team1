@@ -14,6 +14,9 @@ export default function PendingTransfersPanel({
 
     return (
         <div className="p-3 sm:p-4">
+            <p className="mt-3 ml-1 text-xs text-secondary sm:text-sm">
+                {t("page-transfer.pending.footnote")}
+            </p>
             <div className="max-h-[420px] overflow-y-auto pr-1">
                 {pendingTransfers.map((pending) => (
                     <TableRow
@@ -28,9 +31,6 @@ export default function PendingTransfersPanel({
                     />
                 ))}
             </div>
-            <p className="mt-3 ml-1 text-xs text-secondary sm:text-sm">
-                {t("page-transfer.pending.footnote")}
-            </p>
         </div>
     );
 }

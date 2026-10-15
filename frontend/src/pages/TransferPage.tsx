@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
-import PendingTransfersPanel from "../components/transfer/PendingTransfersPanel";
 import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase, TransferSummary } from "../components/TransferDone";
@@ -45,6 +44,7 @@ export default function TransferPage() {
     const { addLocalPlanned, createPlanned, panelProps } =
         usePlannedTransfers(ownAccounts);
     const { pendingTransfers, addPending } = usePendingTransfers();
+    if (pendingTransfers.length > 0) console.log(pendingTransfers); // fular till denna
 
     const [name, setName] = useState("");
     const [fromId, setFromId] = useState<string | null>(null);
@@ -206,12 +206,13 @@ export default function TransferPage() {
     };
 
     return (
-        <main className="min-h-screen w-full text-dark-navy">
+        <main className="w-full text-dark-navy">
             <div className="mx-auto w-full max-w-7xl px-2 pt-4 pb-20 sm:px-6 sm:pt-8 md:pb-8 lg:px-1 lg:py-10">
                 {/* MAIN CONTENT */}
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_240px]">
-                    {/* TRANSFER FORM */}
+                <div className="flex flex-col gap-5 lg:flex-row">
+                    {/* TRANSFER FORM, sets row height */}
                     <TransferCard
+                        className="lg:flex-[1.4]"
                         id="transfer-form-heading"
                         label={t("page-transfer.form-card-label")}
                         title={t("page-transfer.heading")}
@@ -248,29 +249,22 @@ export default function TransferPage() {
                         )}
                     </TransferCard>
 
-                    {/* PLANNED AND PENDING TRANSFERS */}
-                    <div className="flex min-w-0 flex-col gap-5">
-                        <TransferCard
-                            id="planned-transfers-heading"
-                            label={t("page-transfer.planned.card-label")}
-                            title={t("table.planned-transactions")}
-                        >
-                            <PlannedTransfersPanel {...panelProps} />
-                        </TransferCard>
-
-                        {pendingTransfers.length > 0 && (
+                    {/* PLANNED AND PENDING TRANSFERS, stretched by row, contributes no height */}
+                    <div className="flex min-w-0 lg:flex-1">
+                        <div className="flex w-full flex-col gap-5 lg:h-0 lg:min-h-full">
                             <TransferCard
-                                id="pending-transfers-heading"
-                                label={t("page-transfer.pending.card-label")}
-                                title={t("table.pending-transfers")}
+                                id="planned-transfers-heading"
+                                label={t("page-transfer.planned.card-label")}
+                                title={t("table.planned-transactions")}
                             >
-                                <PendingTransfersPanel pendingTransfers={pendingTransfers} />
+                                <PlannedTransfersPanel {...panelProps} />
                             </TransferCard>
-                        )}
+
+                        </div>
                     </div>
 
                     {/* HELP / RELATED ARTICLES */}
-                    <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block">
+                    <aside aria-label={t("generic.help")} className="hidden min-w-0 shrink-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block xl:w-60">
                         <div className="min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white">
                             <p className="mt-2 truncate text-right text-sm uppercase text-white/80">{t("generic.help-center")}</p>
                             <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
