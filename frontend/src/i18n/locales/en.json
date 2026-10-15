@@ -719,12 +719,13 @@
         }
     },
     "faq-page": {
-        "categories-error": "Could not retrieve categories"
+        "categories-error": "Could not retrieve categories",
+        "no-match-title": "It looks like you searched for something we don't have an answer to yet.",
+        "no-match-action": "Please submit a support request, and we'll help you as soon as possible."
     },
     "help-card": {
         "related": "Related",
         "information": "More information",
         "load-error": "Could not load related questions."
-
     }
 }

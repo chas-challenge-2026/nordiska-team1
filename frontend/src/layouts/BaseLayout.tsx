@@ -7,7 +7,7 @@ export default function DesktopLayout() {
     const location =  useLocation();
 
     return (
-        <div className="flex flex-1 flex-col bg-nordiska-bg">
+        <div className="flex flex-1 flex-col bg-nordiska-bg">      
             <MobileNavigation />
             <main className="flex flex-1 min-h-0 w-full overflow-x-hidden pb-20 xl:mb-0">
                 <AnimatePresence mode="wait">
