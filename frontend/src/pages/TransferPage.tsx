@@ -6,8 +6,8 @@ import PendingTransfersPanel from "../components/transfer/PendingTransfersPanel"
 import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase, TransferSummary } from "../components/TransferDone";
+import { formatCurrency } from "../utils/currency";
 import {
-    formatSek,
     parseAmount,
     todayIso,
     shouldSimulateFailure,
@@ -76,7 +76,7 @@ export default function TransferPage() {
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
     const doneSummary: TransferSummary = {
-        amount: formatSek(amountValue),
+        amount: formatCurrency(amountValue),
         fromName: fromAccount?.name ?? "",
         fromMeta: fromAccount?.meta ?? "",
         toName: toAccount?.name ?? "",

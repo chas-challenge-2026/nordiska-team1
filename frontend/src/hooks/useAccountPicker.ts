@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { ModalKind } from "../components/transfer/TransferModals";
 import type { AccountPickerGroup } from "../components/modals/AccountPickerModal";
 import type { NewAccountValues } from "../components/modals/AddAccountForm";
-import { formatSek, matchesSearch } from "../components/transfer/transferHelpers";
+import { matchesSearch } from "../components/transfer/transferHelpers";
+import { formatCurrency } from "../utils/currency";
 import type {
     OwnAccount,
     TransferAccount,
@@ -48,7 +49,7 @@ export function useAccountPicker({
                     id: a.id,
                     name: a.name,
                     meta: a.meta,
-                    balance: a.own ? `${formatSek(a.balance)} sek` : undefined,
+                    balance: a.own ? formatCurrency(a.balance) : undefined,
                     selected: a.id === selectedId,
                 }));
 

@@ -4,8 +4,7 @@ import AccountSelector from '../components/transactions/AccountSelector';
 import TransactionFilter from '../components/transactions/TransactionsFilter';
 import type { TransactionFilters } from '../components/transactions/TransactionsFilter';
 import Modal from '../components/modals/Modal';
-import { useTransactions } from '../hooks/useTransactions';
-import type { TransactionParams } from '../services/transactionsService';
+import { useTransactionRows } from '../hooks/useTransactions';
 import { useGetAccounts } from '../hooks/useAccounts';
 import { useTranslation } from 'react-i18next';
 import { useIsDesktop } from '../hooks/useIsDesktop';
@@ -89,25 +88,21 @@ export default function TransactionsPage() {
 
     useEffect(() => () => clearTimeout(searchTimeoutRef.current), []);
 
-    const params: TransactionParams = {
-        Page: page,
-        PageSize: pageSize,
+    const transactionFilters = {
         AccountIds: effectiveSelectedIds,
         // Planerade transaktioner visas först när de har genomförts
         IsPlanned: false,
-        GroupByDate: true,
         SearchTerm: debouncedSearch || undefined,
         FromDate: filters.dateFrom ? startOfLocalDay(filters.dateFrom) : undefined,
         ToDate: filters.dateTo ? endOfLocalDay(filters.dateTo) : undefined,
         Type: filters.type === 'all' ? undefined : filters.type,
     };
 
-    const { data: transactions, isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData } = useTransactions(params, !!accounts && effectiveSelectedIds.length > 0);
+    const {
+        groups, shownCount, totalCount, totalPages, hasNextPage, hasPreviousPage,
+        isLoading: transactionsLoading, isError: transactionsError, isPlaceholderData,
+    } = useTransactionRows(transactionFilters, page, pageSize, !!accounts && effectiveSelectedIds.length > 0);
 
-    const hasNextPage = transactions?.hasNextPage ?? false;
-    const hasPreviousPage = transactions?.hasPreviousPage ?? false;
-
-    const totalCount = transactions?.totalCount ?? 0;
     const activeFilterCount = [filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length;
     const accountBadge = accounts && effectiveSelectedIds.length < accounts.length ? effectiveSelectedIds.length : 0;
 
@@ -144,8 +139,10 @@ export default function TransactionsPage() {
 
     const handleShowClosedChange = (show: boolean) => {
         setShowClosed(show);
-        // Återställ valet så att alla synliga konton blir valda
-        setSelectedAccountIds(null);
+        // Stängda konton läggs till eller tas bort ur urvalet, resten av urvalet behålls
+        const closedIds = allAccounts?.filter(a => a.status === "closed").map(a => a.id) ?? [];
+        const withoutClosed = effectiveSelectedIds.filter(id => !closedIds.includes(id));
+        setSelectedAccountIds(show ? [...withoutClosed, ...closedIds] : withoutClosed);
         setPage(1);
     };
 
@@ -190,10 +187,10 @@ export default function TransactionsPage() {
                     {/* TRANSAKTIONSLISTA */}
                     <TransactionTable
                         accounts={allAccounts ?? []}
-                        transactions={transactions?.items ?? []}
-                        groups={transactions?.groups ?? []}
-                        totalCount={transactions?.totalCount ?? 0}
-                        totalPages={transactions?.totalPages ?? 1}
+                        groups={groups}
+                        shownCount={shownCount}
+                        totalCount={totalCount}
+                        totalPages={totalPages}
                         emptyMessage={effectiveSelectedIds.length === 0 ? t("transactions-route.select-account") : t("transactions-route.no-transactions")}
                         page={page}
                         hasNextPage={hasNextPage}

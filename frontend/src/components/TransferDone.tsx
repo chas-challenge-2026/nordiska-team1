@@ -137,7 +137,7 @@ export default function TransferDone({
                         <div className="mt-6 flex max-w-full flex-col gap-3 border border-nordiska-blue/50 bg-light-gray/30 px-4 py-4 sm:max-w-[520px] sm:px-5">
                             <SummaryRow
                                 label={t("page-transfer.bankid.amount")}
-                                value={`${summary.amount} sek`}
+                                value={summary.amount}
                             />
                             <div aria-hidden="true" className="border-b-2 border-nordiska-orange" />
                             <SummaryRow
