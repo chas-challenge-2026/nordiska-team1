@@ -57,7 +57,7 @@ dotnet run --project .\backend\tools\Nordiska.DevSetup\Nordiska.DevSetup.csproj 
 ### 3. Verify the containers
 
 ```powershell
-cd .\infra\v2
+cd .\infra
 docker compose ps
 ```
 
@@ -107,7 +107,7 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 ### 3. Verify the containers
 
 ```shell
-cd ./infra/v2
+cd ./infra
 docker compose ps
 ```
 
@@ -157,7 +157,7 @@ dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj 
 ### 3. Verify the containers
 
 ```shell
-cd ./infra/v2
+cd ./infra
 docker compose ps
 ```
 
@@ -203,7 +203,38 @@ Start the frontend separately:
 npm run dev
 ```
 
-Run the remaining Docker commands below from `infra/v2`.
+### Running projects separately (Local Native Development)
+
+If you prefer running the .NET API and React frontend directly on your host machine without rebuilding Docker containers:
+
+1. **Start only the PostgreSQL database in Docker:**
+   ```shell
+   cd infra
+   docker compose up -d db
+   ```
+   *(PostgreSQL is exposed on `localhost:5433`)*
+
+2. **Run Backend API locally (.NET):**
+   ```shell
+   cd backend/src/Nordiska.FrontendApi
+   dotnet run
+   ```
+   *(API is available on `http://localhost:5031` with Scalar at `http://localhost:5031/scalar/v1`)*
+
+3. **Run Frontend locally (Vite):**
+   ```shell
+   cd frontend
+   npm run dev
+   ```
+   *(Frontend is available on `http://localhost:5173`)*
+
+4. **Run Reporting Worker locally (optional, for PDF and async report generation):**
+   ```shell
+   cd backend/src/Nordiska.Reporting.Worker
+   dotnet run
+   ```
+
+Run the remaining Docker commands below from `infra`.
 
 ### Start the environment
 
@@ -268,7 +299,7 @@ Run DevSetup:
 - When database permissions change
 - When new required environment variables are added
 
-For normal restarts, running `docker compose up -d` from `infra/v2` is enough.
+For normal restarts, running `docker compose up -d` from `infra` is enough.
 
 ---
 
@@ -282,7 +313,7 @@ Example:
 password authentication failed for user "nordiska_migrator"
 ```
 
-This usually means that `infra/v2/.env` contains different passwords from an already initialized PostgreSQL Docker volume.
+This usually means that `infra/.env` contains different passwords from an already initialized PostgreSQL Docker volume.
 
 Do not delete only `.env`. PostgreSQL keeps the role passwords stored in the persistent volume, while DevSetup would generate different replacement values.
 
@@ -310,9 +341,9 @@ If the local database and generated PDF files can be deleted, reset the local en
 
 ```powershell
 docker compose --project-name nordiska-v2 `
-  --env-file infra/v2/.env `
-  -f infra/v2/docker-compose.yml `
-  -f infra/v2/docker-compose.override.yml `
+  --env-file infra/.env `
+  -f infra/docker-compose.yml `
+  -f infra/docker-compose.override.yml `
   down -v
 ```
 
@@ -320,9 +351,9 @@ docker compose --project-name nordiska-v2 `
 
 ```shell
 docker compose --project-name nordiska-v2 \
-  --env-file infra/v2/.env \
-  -f infra/v2/docker-compose.yml \
-  -f infra/v2/docker-compose.override.yml \
+  --env-file infra/.env \
+  -f infra/docker-compose.yml \
+  -f infra/docker-compose.override.yml \
   down -v
 ```
 
@@ -354,7 +385,7 @@ dotnet run --project backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj --
 After the first successful setup, normal development only requires:
 
 ```shell
-cd infra/v2
+cd infra
 docker compose up -d
 ```
 

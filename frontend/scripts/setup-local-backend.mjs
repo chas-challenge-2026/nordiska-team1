@@ -26,7 +26,7 @@ export async function setupLocalBackend({
     execute = spawnSync,
 }) {
     const frontendDirectory = join(repoRoot, "frontend");
-    const infrastructureDirectory = join(repoRoot, "infra", "v2");
+    const infrastructureDirectory = join(repoRoot, "infra");
 
     const environmentStatus = await ensureFrontendEnvironment(frontendDirectory);
 
@@ -35,7 +35,7 @@ export async function setupLocalBackend({
     } catch (error) {
         if (error?.code === "ENOENT") {
             throw new Error(
-                "infra/v2/.env is missing. Run Nordiska.DevSetup once before starting the local backend.",
+                "infra/.env is missing. Run Nordiska.DevSetup once before starting the local backend.",
             );
         }
 

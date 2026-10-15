@@ -8,9 +8,39 @@ services:
 
   api:
     build:
+      context: ../
+      dockerfile: Dockerfile
       target: api
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__BankingDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__FaqDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__ReportingDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      ConnectionStrings__InboxDatabase: >-
+        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_api;Password=${NORDISKA_API_PASSWORD}
+      Jwt__SecretKey: ${NORDISKA_JWT_SECRET}
+      Jwt__Issuer: NordiskaSparbanken
+      Jwt__Audience: NordiskaSparbankenPortal
+      AuditLogging__SigningKey: ${NORDISKA_AUDIT_SIGNING_KEY}
+      AdminUser__Password: ${ADMIN_USER_PASSWORD}
+      FaqSearchLog__Salt: ${FAQ_SEARCH_LOG_SALT}
+      ActiveLogin__BankId__Environment: Simulated
+      ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
       ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - report_documents:/var/lib/nordiska/report-documents:ro
     ports:
       - "127.0.0.1:5031:8080"
 
@@ -18,7 +48,7 @@ services:
     profiles:
       - full-docker
     build:
-      context: ../..
+      context: ../
       dockerfile: Dockerfile
       target: frontend-development
     restart: unless-stopped
@@ -31,7 +61,7 @@ services:
       VITE_API_BASE_URL: http://localhost:5031/api
       CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ../../frontend:/app/frontend
+      - ../frontend:/app/frontend
       - frontend_node_modules:/app/frontend/node_modules
     ports:
       - "127.0.0.1:5173:5173"
