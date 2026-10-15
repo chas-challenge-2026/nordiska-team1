@@ -49,6 +49,7 @@
         "loading": "Någonting gick fel vid hämtning av datan.",
         "no-user": "Kan inte hitta användare.",
         "report": "Det gick inte att skapa rapporten. Försök igen.",
+        "timeout": "Tog för lång tid att ladda",
         "generic": "Något gick fel. Försök igen senare."
     },
     "aria-label": {
