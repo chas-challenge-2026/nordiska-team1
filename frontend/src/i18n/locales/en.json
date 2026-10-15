@@ -126,6 +126,8 @@
  
 
     "accounts-route": {
+        "info": "Account Information",
+        "overview": "Balance & Actions",
         "favorite-error": "You can have a maximum of 4 favorite accounts. Remove a favorite to add a new one.",
         "account-type": "Account type",
         "account-type-saving": "Savings account",
@@ -281,7 +283,7 @@
 
     "account-card": {
         "title": "Balance",
-        "description": "Here are the balances of your favorite accounts",
+        "description": "Total balance and balances for favorite accounts",
         "description-no-favorites": "Mark account as favorite to show balance here",
         "pending": "Loading your accounts",
         "error": "Oops... Something went wrong",

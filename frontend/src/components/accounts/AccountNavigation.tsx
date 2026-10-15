@@ -29,7 +29,7 @@ export default function AccountsNavigation({
             {/* ----------------------- */}
             {/* MOBILE ACCOUNT SELECTOR */}
             {/* ----------------------- */}
-            <div className="relative lg:hidden">
+            <div className="relative min-[991px]:hidden">
                 <div className="overflow-hidden border border-primary-blue/40 bg-primary-blue/10 md:shadow-sm">
 
                     {/* COLLAPSIBLE HEADER */}
@@ -110,13 +110,13 @@ export default function AccountsNavigation({
             {/* -------------------------- */}
             {/* DESKTOP ACCOUNT NAVIGATION */}
             {/* -------------------------- */}
-            <div className="hidden lg:block overflow-hidden border border-gray-200 bg-white md:shadow-sm">
+            <div className="hidden min-[991px]:block overflow-hidden border border-gray-200 bg-white md:shadow-sm">
 
                 {/* NAV HEADER */}
                 <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-dark-navy px-4 py-3">
                     <div className="min-w-0 text-white">
-                        <p className="truncate text-xs uppercase text-white/70">{t("accounts-route.accounts-nav.show-accountinfo")}</p>
-                        <p className="mt-1 truncate text-md font-semibold">{t("accounts-route.accounts-nav.pick-one-account")}</p>
+                        <p className="truncate text-xs uppercase text-white/70">{t("accounts-route.accounts-nav.pick-one-account")}</p>
+                        <p className="mt-1 truncate text-md font-semibold">{t("accounts-route.accounts-header.my-accounts")}</p>
                     </div>
                 </div>
 

@@ -2,26 +2,23 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import axios from "axios";
-
 import { useGetAccounts, useCloseAccount, useGetAllSavingsGoals, useUpdateFavoriteAccount } from "../hooks/useAccounts";
 import { formatCurrency } from "../utils/currency";
-
 import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import ActionButton from "../components/accounts/ActionButton";
 import HandleSavingsGoalModal from "../components/accounts/HandleSavingGoalModal";
-import AccountsHeader from "../components/accounts/AccountsHeader";
 import AccountsNavigation from "../components/accounts/AccountNavigation";
 import InterestSection from "../components/accounts/InterestSection";
 import CloseAccountModal from "../components/accounts/CloseAccountModal";
 import SavingsGoalSection from "../components/accounts/SavingsGoalSection";
 import AccountRecentTransactions from "../components/accounts/AccountRecentTransactions";
-
 import HelpCard from "../components/faq/HelpCard";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
 import { useSearchParams } from "react-router";
 import AccountStatementBtn from "../components/reports/AccountStatementButton";
 import { Reorder } from "motion/react";
 import DraggableSection from "../components/accounts/DraggableSection";
+import TotalBalanceAndBtns from "../components/accounts/TotalBalanceAndBtns";
 
 export type SectionId = "transactions" | "savings" | "interest";
 
@@ -166,16 +163,31 @@ export default function AccountsPage() {
     return (
         <main className="min-h-screen w-full text-dark-navy mt-3 sm:mt-4 md:mt-10">
             <div className="mx-auto w-full max-w-7xl px-2 ">
-                {/* HEADER */}
-                <AccountsHeader selectedAccountId={selectedAccountId} totalBalance={totalBalance} onCreateAccount={() => setIsCreateAccountOpen(true)} />
 
-                {/* MAIN CONTENT */}
-                <div className="grid gap-5 lg:grid-cols-[minmax(220px,280px)_1fr] xl:grid-cols-[280px_1fr_240px]">
-                    {/* ACCOUNT NAVIGATION */}
-                    <AccountsNavigation accounts={sortedAccounts} accountsLoading={accountsLoading} accountsError={accountsError} selectedAccountId={selectedAccountId} expandedAccount={expandedAccount} onSelectAccount={setSelectedAccount} />
+                {/* VISAS PÅ SMÅ SKÄRM */}
+                       <div className="min-[1200px]:hidden">
+                            <TotalBalanceAndBtns
+                                selectedAccountId={selectedAccountId}
+                                totalBalance={totalBalance}
+                                onCreateAccount={() => setIsCreateAccountOpen(true)}
+                            />
+                        </div>
 
+                <div className="grid grid-cols-1 gap-5 min-[991px]:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] min-[1200px]:grid-cols-[280px_minmax(0,1fr)_240px]">
+
+                    {/* ------------------------------- */}
+                    {/* --------- COL VÄNSTER --------- */}
+                    {/* ------------------------------- */}
+                    <div className="flex min-w-0 flex-col gap-5">
+                        {/* ACCOUNT NAVIGATION */}
+                        <AccountsNavigation accounts={sortedAccounts} accountsLoading={accountsLoading} accountsError={accountsError} selectedAccountId={selectedAccountId} expandedAccount={expandedAccount} onSelectAccount={setSelectedAccount} />
+                    </div>
+
+                    {/* ------------------------------ */}
+                    {/* --------- COL MITTEN --------- */}
+                    {/* ------------------------------ */}
                     {/* ACCOUNT INFORMATION */}
-                    <section aria-labelledby="account-details-heading" className="min-w-0 overflow-hidden bg-white md:border md:border-gray-200 md:shadow-sm">
+                    <section aria-labelledby="account-details-heading" className="min-w-0 overflow-hidden min-[991px]:bg-white min-[991px]:border min-[991px]:border-gray-200 min-[991px]:shadow-sm">
                         {expandedAccount && (
                             <article>
                                 {/* CARD HEADER */}
@@ -201,7 +213,7 @@ export default function AccountsPage() {
                                     {/* ACCOUNT NAME AND BALANCE */}
                                     <div className="flex flex-col gap-3 border border-nordiska-blue/50 bg-primary-blue/10 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:p-5">
                                         <div className="min-w-0">
-                                            <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.account-name")}</p>
+                                            <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{expandedAccount.accountNumber}</p>
                                             <p className="mt-0.5 truncate text-xl font-bold text-dark-navy sm:mt-1 sm:text-3xl">
                                                 {expandedAccount.accountName || t(`accounts-route.account-type-${expandedAccount.accountType}`)}
                                             </p>
@@ -272,18 +284,32 @@ export default function AccountsPage() {
                         )}
                     </section>
 
-                    {/* HELP / RELATED ARTICLES */}
-                    <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block">
-                        <div className="min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white">
-                            <p className="mt-2 truncate text-right text-sm uppercase text-white/80">{t("generic.help-center")}</p>
-                            <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
-                        </div>
+                    {/* ----------------------------- */}
+                    {/* --------- COL HÖGER --------- */}
+                    {/* ----------------------------- */}
+                    <div className="hidden min-[1200px]:flex min-[1200px]:flex-col min-[1200px]:gap-5">
+                       
+                        <TotalBalanceAndBtns selectedAccountId={selectedAccountId} totalBalance={totalBalance} onCreateAccount={() => setIsCreateAccountOpen(true)} />
 
-                        <div className="p-4">
-                            <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={12} />
-                        </div>
-                    </aside>
+                        {/* HELP / RELATED ARTICLES */}
+                        <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm md:block">
+                            <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-nordiska-blue px-4 py-3">
+                                <div className="min-w-0 text-white">
+                                    <p className="truncate text-xs uppercase text-white/70">{t("generic.help-center")}</p>
+                                    <p className="mt-1 truncate text-md font-semibold">{t("generic.related-articles")}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4">
+                                <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={12} />
+                            </div>
+                        </aside>
+                    </div>
                 </div>
+
+                {/* --------------------------- */}
+                {/* --------- MODALER --------- */}
+                {/* --------------------------- */}
 
                 {/* CLOSE ACCOUNT MODAL */}
                 <CloseAccountModal
@@ -319,7 +345,9 @@ export default function AccountsPage() {
                 />
 
                 {/* HELP BUBBLE */}
-                <HelpCardBubble searchTerms={t("accounts-route.help-card-search")} numOfHits={6} />
+                <div className="min-[1200px]:hidden">
+                    <HelpCardBubble searchTerms={t("accounts-route.help-card-search")} numOfHits={6} />
+                </div>  
             </div>
         </main>
     );

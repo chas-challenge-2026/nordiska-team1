@@ -124,6 +124,8 @@
         "list-title": "Transaktionshistorik"
     },
     "accounts-route": {
+        "info": "Kontoinformation",
+        "overview": "Saldo & Åtgärder",
         "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
         "account-type": "Kontotyp",
         "account-type-saving": "Sparkonto",
@@ -280,7 +282,7 @@
 
         "account-card":{
             "title": "Saldo",
-            "description": "Här visas saldo för favoritmarkerade konton",
+            "description": "Totalt saldo och saldon för favoritmarkerade konton",
             "description-no-favorites": "Favoritmarkera konton för att visa saldo här",
             "pending": "Laddar dina konton",
             "error": "Det gick inte att ladda dina konton",
