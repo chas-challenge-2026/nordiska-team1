@@ -139,6 +139,9 @@ USER $APP_UID
 
 ENTRYPOINT ["dotnet", "Nordiska.FrontendApi.dll"]
 
+# Stage 8b: Backwards-compatible alias for local scripts or compose targeting 'api'
+FROM app AS api
+
 # Stage 9: Database Migrator (Devtools) for isolated schema migrations
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migrator
 WORKDIR /src

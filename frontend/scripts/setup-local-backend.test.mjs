@@ -98,8 +98,9 @@ test("starts only the database, API and reporting worker Docker services", async
                     "-d",
                     "--build",
                     "db",
-                    "api",
+                    "app",
                     "reporting-worker",
+                    "pdf-signer",
                 ],
                 options: {
                     cwd: infrastructureDirectory,

@@ -61,7 +61,7 @@ cd .\infra
 docker compose ps
 ```
 
-The `api`, `reporting-worker` and `db` containers should be running.
+The `app`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -111,7 +111,7 @@ cd ./infra
 docker compose ps
 ```
 
-The `api`, `reporting-worker` and `db` containers should be running.
+The `app`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -161,7 +161,7 @@ cd ./infra
 docker compose ps
 ```
 
-The `api`, `reporting-worker` and `db` containers should be running.
+The `app`, `reporting-worker` and `db` containers should be running.
 
 Open the services at:
 
@@ -179,7 +179,7 @@ The standard local Docker environment keeps the existing combined frontend and b
 
 | Container | Address | Responsibility |
 |---|---|---|
-| `api` | `http://localhost:8080` | Combined React frontend and .NET backend API |
+| `app` | `http://localhost:8080` | Combined React frontend and .NET backend API |
 | `reporting-worker` | No public port | Native PDF generation and job processing |
 | `db` | `localhost:5433` | PostgreSQL database |
 
@@ -191,7 +191,7 @@ After DevSetup has been run once, frontend developers can run this from the `fro
 npm run setup:local-backend
 ```
 
-The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts only `db`, the backend-only `api` on `http://localhost:5031`, and `reporting-worker`. It never overwrites an existing `.env.local`, does not start Vite and does not change the standard combined Docker environment on `http://localhost:8080`.
+The command uses the additive `docker-compose.frontend-local.yml` configuration. It creates `frontend/.env.local` when needed and starts `db`, the backend-only `app` on `http://localhost:5031`, `reporting-worker` and `pdf-signer`. It never overwrites an existing `.env.local`, does not start Vite and does not change the standard combined Docker environment on `http://localhost:8080`.
 
 The first run can take a few minutes because Docker builds both the .NET API and the native C++ PDF generator; later builds normally reuse the Docker cache.
 
@@ -265,7 +265,7 @@ docker compose ps
 ### Follow API logs
 
 ```shell
-docker compose logs -f api
+docker compose logs -f app
 ```
 
 ### Follow frontend logs

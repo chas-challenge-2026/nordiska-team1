@@ -63,7 +63,7 @@ docker compose --project-name nordiska-v2 `
   --env-file infra/.env `
   -f infra/docker-compose.yml `
   -f infra/docker-compose.frontend-local.yml `
-  up -d --build db api reporting-worker
+  up -d --build db app reporting-worker
 ```
 
 ### macOS/Linux
@@ -73,7 +73,7 @@ docker compose --project-name nordiska-v2 \
   --env-file infra/.env \
   -f infra/docker-compose.yml \
   -f infra/docker-compose.frontend-local.yml \
-  up -d --build db api reporting-worker
+  up -d --build db app reporting-worker
 ```
 
 ---
@@ -88,7 +88,7 @@ Följande tre tjänster ska visas:
 
 ```text
 db
-api
+app
 reporting-worker
 ```
 
