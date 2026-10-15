@@ -722,7 +722,11 @@ internal static class SecretGenerator
         "NORDISKA_API_PASSWORD",
         "NORDISKA_REPORTING_WORKER_PASSWORD",
         "NORDISKA_JWT_SECRET",
-        "NORDISKA_AUDIT_SIGNING_KEY"
+        "NORDISKA_AUDIT_SIGNING_KEY",
+        "PDF_SIGNER_PKCS11_PIN",
+        "PDF_SIGNER_PKCS11_SO_PIN",
+        "FAQ_SEARCH_LOG_SALT",
+        "ADMIN_USER_PASSWORD"
     ];
 
     private static readonly HashSet<string> SecretVariableSet =
@@ -730,8 +734,18 @@ internal static class SecretGenerator
 
     public static IReadOnlyList<string> RequiredVariables => SecretVariables;
 
-    public static string Generate()
+    public static string Generate(string variableName)
     {
+        if (string.Equals(variableName, "PDF_SIGNER_PKCS11_PIN", StringComparison.OrdinalIgnoreCase))
+        {
+            return RandomNumberGenerator.GetInt32(1000, 10000).ToString();
+        }
+
+        if (string.Equals(variableName, "PDF_SIGNER_PKCS11_SO_PIN", StringComparison.OrdinalIgnoreCase))
+        {
+            return RandomNumberGenerator.GetInt32(10000000, 100000000).ToString();
+        }
+
         var bytes = new byte[32];
         RandomNumberGenerator.Fill(bytes);
         return Convert.ToHexString(bytes);
@@ -779,7 +793,7 @@ internal static class SecretGenerator
                 }
                 else
                 {
-                    finalSecrets[variable] = Generate();
+                    finalSecrets[variable] = Generate(variable);
                     generatedCount++;
 
                     var reason = !existingSecrets.TryGetValue(variable, out var invalidValue)
