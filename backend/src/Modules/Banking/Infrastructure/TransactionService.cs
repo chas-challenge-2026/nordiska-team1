@@ -196,6 +196,9 @@ public class TransactionService : ITransactionService
         if (request.Amount <= 0)
             throw new ArgumentException("Planned amount must be greater than zero.", nameof(request.Amount));
 
+        if (request.PlannedDate.Date < DateTime.UtcNow.Date)
+            throw new ArgumentException("Planned date cannot be in the past.", nameof(request.PlannedDate));
+
         var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
             ?? throw new NotFoundException($"Account {request.AccountId} was not found.");
 

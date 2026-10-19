@@ -680,6 +680,22 @@ public class TransactionServiceTests
     }
 
     [Fact]
+    public async Task CreatePlanned_WithPastDate_ThrowsArgumentException()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var pastDate = DateTime.UtcNow.AddDays(-1);
+        var req = new PlannedTransactionRequest(1, "withdrawal", 500m, pastDate, "Gamla pengar");
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => svc.CreatePlannedAsync(req));
+        Assert.Contains("past", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
     public async Task CreatePlanned_AccountNotFound_ThrowsNotFoundException()
     {
         var accRepo = new FakeSavingsRepo();
