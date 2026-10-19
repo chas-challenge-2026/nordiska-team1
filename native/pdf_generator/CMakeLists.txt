@@ -132,22 +132,6 @@ target_link_libraries(nordiska_pdf_generator_c_api PRIVATE
     nordiska_document_input_json
 )
 
-# Diagnostics & Metrics Library
-add_library(nordiska_document_diagnostics STATIC
-    src/diagnostics/benchmark_metrics.cpp
-)
-target_include_directories(nordiska_document_diagnostics PUBLIC include)
-target_compile_features(nordiska_document_diagnostics PUBLIC cxx_std_23)
-
-# Benchmark Executable
-add_executable(pdf_generator_benchmark src/benchmark/main.cpp)
-target_link_libraries(pdf_generator_benchmark PRIVATE
-    nordiska_document_core
-    nordiska_document_input_json
-    nordiska_document_diagnostics
-    nordiska_pdf_generator_c_api
-)
-
 # Standalone CLI Subproject
 add_subdirectory(cli)
 
@@ -159,10 +143,6 @@ if(BUILD_TESTING)
     target_link_libraries(nordiska_pdf_signing_tests PRIVATE nordiska_document_core OpenSSL::Crypto)
     add_test(NAME nordiska_pdf_signing_tests COMMAND nordiska_pdf_signing_tests)
 
-    add_executable(nordiska_diagnostics_tests tests/benchmark_metrics_tests.cpp)
-    target_link_libraries(nordiska_diagnostics_tests PRIVATE nordiska_document_diagnostics)
-    add_test(NAME nordiska_diagnostics_tests COMMAND nordiska_diagnostics_tests)
-
     add_executable(nordiska_json_ingestor_tests tests/json_ingestor_tests.cpp)
     target_link_libraries(nordiska_json_ingestor_tests PRIVATE nordiska_document_input_json nordiska_document_core)
     add_test(NAME nordiska_json_ingestor_tests COMMAND nordiska_json_ingestor_tests)
@@ -173,7 +153,6 @@ if(BUILD_TESTING)
 
     set_tests_properties(
         nordiska_pdf_signing_tests
-        nordiska_diagnostics_tests
         nordiska_json_ingestor_tests
         nordiska_pdf_generator_c_api_tests
         PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

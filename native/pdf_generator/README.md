@@ -11,9 +11,8 @@ Designed for direct FFI / P-Invoke integration from .NET services and standalone
 ```text
 native/pdf_generator/
 ├── include/nordiska/             # Public C++ interface headers
-│   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig)
+│   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig, PipelineTiming)
 │   ├── c_api/                    # C89 ABI boundary (pdf_generator_c_api.h)
-│   ├── diagnostics/              # Timing, metrics, and benchmark structures
 │   ├── domain/                   # CustomerBatch, Document, PdfRenderingJob
 │   ├── ingestion/                # JSON ingestor interface & factory
 │   ├── layout/                   # Deterministic layout structures (DocumentLayout)
@@ -27,10 +26,9 @@ native/pdf_generator/
 │   ├── rendering/                # Native, Haru (default, bump arena), Cairo
 │   └── signing/                  # Socket signer adapter, PDF preparation & hashing
 ├── cli/                          # Standalone CLI binary (pdf_generator)
-├── src/benchmark/                # Multi-threaded performance harness
 ├── tests/                        # CTest automated test suites
-├── tools/                        # Code formatters, synthetic data generator & OpenSSL setup
-└── docs/                         # Golden customer batch specification
+├── tools/                        # Code formatters & OpenSSL setup helper
+└── docs/                         # Golden customer batch specification & signing docs
 ```
 
 ### The Generation Pipeline
@@ -153,7 +151,6 @@ cmake --build build/release -j
 Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/release/`):
 - `libnordiska_pdf_generator_c_api.so`: Exported C ABI shared library for .NET P/Invoke.
 - `pdf_generator`: Standalone CLI worker.
-- `pdf_generator_benchmark`: Multi-worker benchmarking tool.
 - `nordiska_*_tests`: CTest unit test executables.
 
 ---
@@ -186,15 +183,21 @@ are case-insensitive; an unset or empty value retains Libharu. Unknown values
 return invalid argument with no delivery callback. Signing configuration is
 independent of the selected renderer.
 
-For callers that need the artifact checksum, use the additive
-`nordiska_pdf_v2_generate_customer_batch` function with
-`nordiska_pdf_delivery_callback_v2`. Each `nordiska_pdf_document_view_v2` includes
-`sha256_hex`, a NUL-terminated 64-character lowercase SHA-256 of the complete
-delivered PDF, including any inserted signature. Copy this string during the
-callback, just as for PDF bytes and identifiers. Status codes, environment
-configuration, atomic delivery and `nordiska_pdf_v1_get_last_error` are shared
-with v1. Existing v1 functions and struct layouts are unchanged. Host callers
-can adopt v2 to avoid rehashing PDF bytes; .NET adoption is a separate change.
+#### V2 API (Future Preparation — Not Yet in Production)
+
+> **Note:** The V2 C API (`nordiska_pdf_v2_generate_customer_batch` and
+> `nordiska_pdf_v2_generate_customer_batch_instrumented`) is **preparation for
+> future adoption** and is **not yet used in production or by the .NET worker**.
+> Its main purpose is to eliminate duplicate hashing in the rest of the
+> application: because the native generator already computes the SHA-256 digest
+> of each complete delivered PDF (including any inserted signature), V2 exposes
+> that checksum directly (`sha256_hex`, 64 lowercase hex characters + NUL
+> terminator on `nordiska_pdf_document_view_v2`) so host callers do not need to
+> re-hash PDF bytes after delivery.
+
+Existing V1 functions and struct layouts remain completely unchanged for full
+backward compatibility. Status codes, environment configuration, atomic delivery
+and `nordiska_pdf_v1_get_last_error` are shared between V1 and V2.
 
 Both entry points are stateless: each call resolves the current environment
 configuration, constructs its own generator components and releases them when

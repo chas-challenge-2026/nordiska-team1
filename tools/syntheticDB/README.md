@@ -30,7 +30,7 @@ The menu uses subtle colors for selection, active environment and operation resu
 
 This creates a separate database and connects the app, reporting worker and PDF signer to it. **It replaces previous synthetic data; your normal `nordiska_v2` database and its PDFs are preserved.** The synthetic database uses its own PDF volume.
 
-For creation of 10,000 customers or more, the tool keeps the initial 500-customer sample fully indexed, then rebuilds eligible ledger query indexes after bulk loading. Primary keys and foreign keys remain enabled. Completion includes index rebuilding, sequence updates and database statistics. Append and smaller runs keep all indexes. Use `--keep-indexes` to compare the original ingestion path. See [measured results](maintainer-notes.md#performance-measurements).
+For creation of 10,000 customers or more, the tool temporarily defers eligible query indexes and rebuilds them before reporting completion. Primary keys and foreign keys remain enabled. Use `--keep-indexes` to keep all indexes throughout loading.
 
 Compose files are in `infra/`. Local secrets and selection stay in `infra/.env` (legacy `infra/v2/.env` is also supported), which the tool passes explicitly to Compose. Switching recreates all three services, checks their running database settings and rolls back if the switch fails. Database switching uses the tool’s `compose.override.yml` without changing shared infrastructure files. The backend-only configuration for local frontend development is preserved when active.
 
@@ -62,4 +62,39 @@ The synthetic database has the same schema and uses the same app features as the
 
 The services reconnect to the normal database and its original PDF volume. Synthetic data and PDFs remain available for later use. Reset and delete affect only the synthetic database; they retain PDF files, and replacement seeding can leave old synthetic PDFs unreferenced. Use **Delete synthetic documents** (or `--delete-documents`) to reclaim retained synthetic PDF storage.
 
-Seeding prepares data; it does not submit jobs or generate PDF reports. Rebuild instructions, tests and additional options are in [maintainer notes](maintainer-notes.md).
+Seeding prepares data; it does not submit jobs or generate PDF reports. Services running outside Docker are not reconfigured by this tool.
+
+## Additional CLI options
+
+Run the binary with `--help` for all options. Useful extras:
+
+| Option | Purpose |
+|---|---|
+| `--append` | Add customers while keeping existing synthetic records. Requires `--customers`. |
+| `--stress-text` | Generate long transaction descriptions with Swedish characters. |
+| `--benchmark` | Measure generation without Docker or database writes. Requires `--customers`. |
+| `--reset` | Replace the synthetic database with an empty cloned schema. |
+| `--drop` | Delete the synthetic database. |
+
+The year defaults to 2025, the seed to 42, and threads to the available CPU cores. Seeding returns Docker services to NORMAL; switch to SYNTHETIC again afterward. If creation fails or is interrupted, resolve the error and rerun replacement creation to clear partial data and restore indexes.
+
+## Rebuilding and testing
+
+After changing the C++ source, rebuild with Docker and commit the source, Linux binary and updated checksum together:
+
+```bash
+./tools/syntheticDB/build-linux-release.sh
+(cd tools/syntheticDB && sha256sum -c nordiska-synthetic-linux-x86_64.sha256)
+```
+
+Run checks from the repository root (test helpers require Python 3):
+
+```bash
+./tools/syntheticDB/tests/run.sh                 # CLI and menu tests with mocked Docker
+./tools/syntheticDB/tests/run.sh --native        # Native generator tests in Docker
+python3 tools/syntheticDB/tests/compose-config.py
+./tools/syntheticDB/tests/integration.sh         # Database ingestion in a disposable container
+./tools/syntheticDB/tests/switch-integration.sh  # Switching and rollback in a disposable stack
+```
+
+For performance measurements, run `bash tools/syntheticDB/benchmark.sh`. It uses a disposable database and prints the results directory.

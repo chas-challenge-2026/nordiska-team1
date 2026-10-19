@@ -82,7 +82,9 @@ NORDISKA_PDF_API int nordiska_pdf_v1_generate_customer_batch_instrumented(const 
                                                                           void* user_data);
 
 /* ========================================================================== */
-/* V2 — PDF delivery with artifact hashes                                     */
+/* V2 — PDF delivery with artifact hashes (Future preparation; not yet in     */
+/* production or used by the .NET worker. Provided so future host callers can */
+/* consume the native-computed SHA-256 directly without re-hashing PDFs.)     */
 /* ========================================================================== */
 
 /* Separate V2 views preserve the original V1 struct layouts and callback ABI. */

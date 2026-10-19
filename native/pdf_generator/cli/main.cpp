@@ -73,7 +73,7 @@ void print_usage(std::string_view program_name) {
 
 void print_version_info() {
     std::cout << "nordiska-pdf " << kVersion << " (Linux x86_64, C++23)\n"
-              << "Engines: libharu, cairo | Ingestors: nlohmann-json, simdjson\n";
+              << "Engines: libharu, cairo, native | Ingestors: nlohmann-json, simdjson\n";
 }
 
 CliOptions parse_cli(int argc, char* argv[]) {
