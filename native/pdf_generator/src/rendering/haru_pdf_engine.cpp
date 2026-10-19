@@ -37,23 +37,40 @@ void haru_error_handler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void* user_
 }
 
 struct HaruBumpArena {
-    static constexpr size_t kInitialCapacity = 512 * 1024; // 512 KB
-    std::vector<uint8_t> buffer;
-    size_t offset{0};
+    static constexpr size_t kChunkSize = 512 * 1024; // 512 KB per chunk
+    std::vector<std::vector<uint8_t>> chunks;
+    size_t current_chunk_idx{0};
+    size_t current_offset{0};
 
-    HaruBumpArena() : buffer(kInitialCapacity) {}
+    HaruBumpArena() {
+        chunks.emplace_back(kChunkSize);
+    }
 
     void reset() noexcept {
-        offset = 0;
+        current_chunk_idx = 0;
+        current_offset = 0;
+        if (chunks.size() > 4) {
+            chunks.resize(2);
+        }
     }
 
     void* allocate(size_t bytes) {
-        const size_t aligned_offset = (offset + 7) & ~static_cast<size_t>(7);
-        if (aligned_offset + bytes > buffer.size()) {
-            buffer.resize(std::max(buffer.size() * 2, aligned_offset + bytes + 65536));
+        const size_t aligned_offset = (current_offset + 7) & ~static_cast<size_t>(7);
+        if (current_chunk_idx < chunks.size() && aligned_offset + bytes <= chunks[current_chunk_idx].size()) {
+            current_offset = aligned_offset + bytes;
+            return chunks[current_chunk_idx].data() + aligned_offset;
         }
-        offset = aligned_offset + bytes;
-        return buffer.data() + aligned_offset;
+
+        // Allocate a new chunk; existing chunk buffers are never reallocated or moved
+        const size_t new_chunk_size = std::max(kChunkSize, bytes + 16);
+        ++current_chunk_idx;
+        if (current_chunk_idx >= chunks.size()) {
+            chunks.emplace_back(new_chunk_size);
+        } else if (chunks[current_chunk_idx].size() < new_chunk_size) {
+            chunks[current_chunk_idx].resize(new_chunk_size);
+        }
+        current_offset = bytes;
+        return chunks[current_chunk_idx].data();
     }
 };
 

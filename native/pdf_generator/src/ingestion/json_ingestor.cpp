@@ -210,22 +210,33 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             });
         }
         const auto& cust_id_val = root.at("customer_id");
-        if (!cust_id_val.is_number_unsigned() && !cust_id_val.is_number_integer()) {
+        if (cust_id_val.is_number_unsigned()) {
+            const auto u = cust_id_val.get<std::uint64_t>();
+            if (u == 0) {
+                return std::unexpected(IngestError{
+                    .kind = IngestErrorKind::InvalidInput,
+                    .path = "customer_id",
+                    .message = "customer_id must be greater than zero",
+                });
+            }
+            job.customer_id = u;
+        } else if (cust_id_val.is_number_integer()) {
+            const auto i = cust_id_val.get<std::int64_t>();
+            if (i <= 0) {
+                return std::unexpected(IngestError{
+                    .kind = IngestErrorKind::InvalidInput,
+                    .path = "customer_id",
+                    .message = "customer_id must be greater than zero",
+                });
+            }
+            job.customer_id = static_cast<std::uint64_t>(i);
+        } else {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
                 .path = "customer_id",
                 .message = "customer_id must be an unsigned integer",
             });
         }
-        const auto raw_cust_id = cust_id_val.get<std::int64_t>();
-        if (raw_cust_id <= 0) {
-            return std::unexpected(IngestError{
-                .kind = IngestErrorKind::InvalidInput,
-                .path = "customer_id",
-                .message = "customer_id must be greater than zero",
-            });
-        }
-        job.customer_id = static_cast<std::uint64_t>(raw_cust_id);
 
         job.schema_version = get_optional_string(root, "$schema_version", "1.0");
         job.customer_name = get_optional_string(root, "customer_name");

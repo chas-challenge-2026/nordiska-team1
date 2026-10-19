@@ -137,13 +137,13 @@ class SocketPdfSigner final : public PdfSigner {
         }
 
         // Set reasonable 10-second connect/read/write timeouts
-        struct timeval tv {};
+        struct timeval tv{};
         tv.tv_sec = 10;
         tv.tv_usec = 0;
         ::setsockopt(fd.get(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         ::setsockopt(fd.get(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
-        struct sockaddr_un addr {};
+        struct sockaddr_un addr{};
         addr.sun_family = AF_UNIX;
         if (socket_path_.size() >= sizeof(addr.sun_path)) {
             return std::unexpected(

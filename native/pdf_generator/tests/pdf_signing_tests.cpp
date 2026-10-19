@@ -53,7 +53,7 @@ class MockUnixSignerServer {
         server_fd_ = ::socket(AF_UNIX, SOCK_STREAM, 0);
         require(server_fd_ >= 0, "mock server: socket failed");
 
-        struct sockaddr_un addr {};
+        struct sockaddr_un addr{};
         addr.sun_family = AF_UNIX;
         std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
         require(::bind(server_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == 0,
@@ -74,7 +74,7 @@ class MockUnixSignerServer {
             // Connect to unblock accept if waiting
             int dummy_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
             if (dummy_fd >= 0) {
-                struct sockaddr_un addr {};
+                struct sockaddr_un addr{};
                 addr.sun_family = AF_UNIX;
                 std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
                 ::connect(dummy_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));

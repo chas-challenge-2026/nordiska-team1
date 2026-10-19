@@ -274,6 +274,10 @@ cat input.json | ./build/release/pdf_generator -o output/ --json-summary
 
 ## 7. Testing & Code Quality
 
+For interactive, unsigned JSON-to-PDF fuzzing with AFL++, see
+[tests/fuzz/README.md](tests/fuzz/README.md). Fuzz targets are opt-in and are not
+included in normal builds.
+
 ```bash
 # 1. Format native C++ code
 ./tools/format-native.sh

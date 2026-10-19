@@ -13,6 +13,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
+option(NORDISKA_BUILD_FUZZERS "Build native JSON-to-PDF fuzzing and replay targets" OFF)
+option(NORDISKA_FUZZ_SANITIZERS "Enable address/undefined sanitizers in fuzz builds" ON)
+if(NORDISKA_BUILD_FUZZERS AND NORDISKA_FUZZ_SANITIZERS)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        message(FATAL_ERROR "Fuzz sanitizers require a Clang or GCC compatible compiler")
+    endif()
+    # Instrument the implementation and fetched dependencies, not just the driver.
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all)
+    add_link_options(-fsanitize=address,undefined -fno-sanitize-recover=all)
+endif()
+
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 
@@ -134,6 +145,10 @@ target_link_libraries(nordiska_pdf_generator_c_api PRIVATE
 
 # Standalone CLI Subproject
 add_subdirectory(cli)
+
+if(NORDISKA_BUILD_FUZZERS)
+    add_subdirectory(tests/fuzz)
+endif()
 
 # Installation targets
 install(TARGETS nordiska_pdf_generator_c_api LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)

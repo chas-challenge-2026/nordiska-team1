@@ -16,9 +16,13 @@ namespace nordiska {
 namespace {
 
 inline void append_float_2(std::string& out, float val) {
-    char buf[32];
+    char buf[64];
     auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), val, std::chars_format::fixed, 2);
-    out.append(buf, ptr - buf);
+    if (ec == std::errc{}) {
+        out.append(buf, ptr - buf);
+    } else {
+        out.append("0.00");
+    }
 }
 
 void build_page_content_stream(const PageLayout& page, std::string& stream_buf) {
