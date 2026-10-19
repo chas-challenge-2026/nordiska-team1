@@ -59,12 +59,12 @@ test("preserves an existing local frontend environment", async () => {
     }
 });
 
-test("starts only the database, API and reporting worker Docker services", async () => {
+test("starts the shared-volume API app with the database and reporting worker", async () => {
     const directory = await mkdtemp(join(tmpdir(), "nordiska-local-backend-"));
 
     try {
         const frontendDirectory = join(directory, "frontend");
-        const infrastructureDirectory = join(directory, "infra", "v2");
+        const infrastructureDirectory = join(directory, "infra");
         await mkdir(frontendDirectory, { recursive: true });
         await mkdir(infrastructureDirectory, { recursive: true });
         await writeFile(
@@ -98,7 +98,7 @@ test("starts only the database, API and reporting worker Docker services", async
                     "-d",
                     "--build",
                     "db",
-                    "api",
+                    "app",
                     "reporting-worker",
                 ],
                 options: {
@@ -112,13 +112,29 @@ test("starts only the database, API and reporting worker Docker services", async
     }
 });
 
+test("the local API Compose override supplies development-only secret fallbacks", async () => {
+    const composeOverride = await readFile(
+        new URL("../../infra/docker-compose.frontend-local.yml", import.meta.url),
+        "utf8",
+    );
+
+    assert.match(
+        composeOverride,
+        /AdminUser__Password:\s*\$\{ADMIN_USER_PASSWORD:-password123\}/,
+    );
+    assert.match(
+        composeOverride,
+        /FaqSearchLog__Salt:\s*\$\{FAQ_SEARCH_LOG_SALT:-nordiska-faq-search-salt-dev\}/,
+    );
+});
+
 test("requires DevSetup before starting Docker when the backend environment is missing", async () => {
     const directory = await mkdtemp(join(tmpdir(), "nordiska-local-backend-"));
 
     try {
         const frontendDirectory = join(directory, "frontend");
         await mkdir(frontendDirectory, { recursive: true });
-        await mkdir(join(directory, "infra", "v2"), { recursive: true });
+        await mkdir(join(directory, "infra"), { recursive: true });
         await writeFile(
             join(frontendDirectory, ".env.example"),
             "VITE_API_BASE_URL=http://localhost:5031/api\n",

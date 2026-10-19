@@ -146,7 +146,8 @@ COPY backend/Directory.Build.props backend/Directory.Packages.props ./backend/
 COPY backend/dotnet-tools.json ./backend/
 COPY backend/src/ ./backend/src/
 COPY backend/scripts/migrate-database.sh ./backend/scripts/
-RUN chmod +x ./backend/scripts/migrate-database.sh
+RUN sed -i 's/\r$//' ./backend/scripts/migrate-database.sh \
+    && chmod +x ./backend/scripts/migrate-database.sh
 WORKDIR /src/backend
 RUN dotnet tool restore
 ENTRYPOINT ["/src/backend/scripts/migrate-database.sh"]
