@@ -45,7 +45,7 @@ function NoSavingGoalState() {
     );
 }
 
-function GoalProgress({ goal, index }: { goal: SavingsGoalWithBalance; index: number; }) {
+function GoalProgress({ goal }: { goal: SavingsGoalWithBalance}) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const target = Math.max(0, goal.targetAmount);
@@ -64,7 +64,7 @@ function GoalProgress({ goal, index }: { goal: SavingsGoalWithBalance; index: nu
                         navigate(`/accounts?account=${goal.accountId}`);
                     }
                 }}
-            className={`flex basis-1/4 shrink-0 flex-col justify-center border-nordiska-orange px-3 py-2 even:bg-light-gray/60 odd:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 ${index === 3 ? "last:border-0" : "border-b-2"}`}>
+            className={`flex basis-1/4 shrink-0 flex-col justify-center border-nordiska-orange px-3 py-2 even:bg-light-gray/60 odd:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 `}>
 
             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
                 <span className="min-w-0 wrap-break-word font-semibold">{goal.title} </span>
@@ -194,8 +194,8 @@ export default function SavingsGoalsCard() {
                         <NoSavingGoalState />
                     ) : selectedGoals.length > 0 ? (
                         <ul className="min-w-0 overflow-hidden flex flex-col flex-1">
-                            {selectedGoals.map((goal, index) => (
-                                <GoalProgress key={goal.id} goal={goal} index={index} />
+                            {selectedGoals.map((goal) => (
+                                <GoalProgress key={goal.id} goal={goal} />
                             ))}
                         </ul>
                     ) : (

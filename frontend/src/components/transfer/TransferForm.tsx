@@ -165,6 +165,7 @@ export default function TransferForm({
                         placeholder={t("page-transfer.name-placeholder")}
                         value={name}
                         onChange={onNameChange}
+                        maxLength={50}
                     />
                 </div>
             </section>

@@ -196,7 +196,7 @@ export default function AccountsPage() {
                                         {/* ACCOUNT TYPE */}
                                         <div className="min-w-0">
                                             <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs">{t("accounts-route.account-type")}</p>
-                                            <p className="mt-0.5 truncate text-base font-bold uppercase tracking-wide sm:mt-1 sm:text-lg">{t(`accounts-route.account-type-${expandedAccount.accountType}`)}</p>
+                                            <p className="mt-0.5 truncate text-base font-bold tracking-wide sm:mt-1 sm:text-lg">{t(`accounts-route.account-type-${expandedAccount.accountType}`)}</p>
                                         </div>
 
                                         {/* INTEREST RATE */}
