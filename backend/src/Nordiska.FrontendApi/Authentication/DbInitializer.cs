@@ -220,6 +220,28 @@ public class DbInitializer
         var existingPeter = await db.Customers
             .FirstOrDefaultAsync(c => c.PersonalNum == peterPersonalNum);
 
+        // If Peter exists from a legacy manual test without official demo accounts (NOR-400001), reset him so fresh seed data takes over
+        if (existingPeter != null && !await db.SavingsAccounts.AnyAsync(a => a.CustomerId == existingPeter.Id && a.AccountNumber == "NOR-400001"))
+        {
+            var oldAccounts = await db.SavingsAccounts.Where(a => a.CustomerId == existingPeter.Id).ToListAsync();
+            var oldAccIds = oldAccounts.Select(a => a.Id).ToList();
+
+            var oldLedger = await db.LedgerEntries.Where(l => oldAccIds.Contains(l.AccountId) || (l.TargetAccountId.HasValue && oldAccIds.Contains(l.TargetAccountId.Value))).ToListAsync();
+            db.LedgerEntries.RemoveRange(oldLedger);
+
+            var oldGoals = await db.SavingsGoals.Where(g => g.CustomerId == existingPeter.Id).ToListAsync();
+            db.SavingsGoals.RemoveRange(oldGoals);
+
+            var oldLoans = await db.Loans.Where(l => l.CustomerId == existingPeter.Id).ToListAsync();
+            db.Loans.RemoveRange(oldLoans);
+
+            db.SavingsAccounts.RemoveRange(oldAccounts);
+            db.Customers.Remove(existingPeter);
+            await db.SaveChangesAsync();
+
+            existingPeter = null;
+        }
+
         if (existingPeter == null)
         {
             var testPeter = new Customer
@@ -684,20 +706,26 @@ public class DbInitializer
             }
 
             // Savings goal for Dennis
-            var hasDennisGoal = await db.SavingsGoals.AnyAsync(g => g.CustomerId == dennis.Id && g.AccountId == dennisSavingsAcc!.Id);
-            if (!hasDennisGoal && dennisSavingsAcc != null)
+            var dennisGoal = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == dennis.Id && g.AccountId == dennisSavingsAcc!.Id);
+            if (dennisGoal == null && dennisSavingsAcc != null)
             {
                 db.SavingsGoals.Add(new SavingsGoal
                 {
                     CustomerId = dennis.Id,
                     AccountId = dennisSavingsAcc.Id,
                     Title = "Sommarsemester 2027",
-                    TargetAmount = 30000.00m,
-                    CurrentAmount = 24500.00m,
+                    TargetAmount = 90000.00m,
+                    CurrentAmount = 75000.00m,
                     TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
                     Status = "active",
                     CreatedAt = DateTime.UtcNow
                 });
+                await db.SaveChangesAsync();
+            }
+            else if (dennisGoal != null)
+            {
+                dennisGoal.TargetAmount = 90000.00m;
+                dennisGoal.CurrentAmount = 75000.00m;
                 await db.SaveChangesAsync();
             }
         }
@@ -796,20 +824,26 @@ public class DbInitializer
             }
 
             // Savings goal for Peter
-            var hasPeterGoal = await db.SavingsGoals.AnyAsync(g => g.CustomerId == peter.Id && g.AccountId == peterSavingsAcc!.Id);
-            if (!hasPeterGoal && peterSavingsAcc != null)
+            var peterGoal = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == peter.Id && g.AccountId == peterSavingsAcc!.Id);
+            if (peterGoal == null && peterSavingsAcc != null)
             {
                 db.SavingsGoals.Add(new SavingsGoal
                 {
                     CustomerId = peter.Id,
                     AccountId = peterSavingsAcc.Id,
                     Title = "Sommarsemester 2027",
-                    TargetAmount = 30000.00m,
-                    CurrentAmount = 24500.00m,
+                    TargetAmount = 90000.00m,
+                    CurrentAmount = 75000.00m,
                     TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
                     Status = "active",
                     CreatedAt = DateTime.UtcNow
                 });
+                await db.SaveChangesAsync();
+            }
+            else if (peterGoal != null)
+            {
+                peterGoal.TargetAmount = 90000.00m;
+                peterGoal.CurrentAmount = 75000.00m;
                 await db.SaveChangesAsync();
             }
         }
