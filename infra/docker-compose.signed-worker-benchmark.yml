@@ -1,0 +1,8 @@
+services:
+  reporting-worker:
+    depends_on:
+      pdf-signer:
+        condition: service_started
+    environment:
+      NORDISKA_PDF_ENABLE_SIGNING: "1"
+      PDF_SIGNER_MODE: timestamp
