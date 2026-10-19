@@ -137,7 +137,7 @@ public class DbInitializer
                 CreatedAt = DateTime.UtcNow
             };
 
-            await userManager.CreateAsync(testCustomer);
+            await userManager.CreateAsync(testCustomer, "password123");
         }
         else
         {
@@ -146,6 +146,10 @@ public class DbInitializer
             existingCustomer.PersonalNum = testPersonalNum;
             existingCustomer.NormalizedUserName = "ANNA@EXAMPLE.COM";
             existingCustomer.NormalizedEmail = "ANNA@EXAMPLE.COM";
+            if (string.IsNullOrEmpty(existingCustomer.PasswordHash))
+            {
+                await userManager.AddPasswordAsync(existingCustomer, "password123");
+            }
             await db.SaveChangesAsync();
 
         }
@@ -166,7 +170,7 @@ public class DbInitializer
                 CreatedAt = DateTime.UtcNow
             };
 
-            await userManager.CreateAsync(testErik);
+            await userManager.CreateAsync(testErik, "password123");
         }
         else
         {
@@ -174,6 +178,10 @@ public class DbInitializer
             existingErik.Email = "erik@example.com";
             existingErik.NormalizedUserName = "ERIK@EXAMPLE.COM";
             existingErik.NormalizedEmail = "ERIK@EXAMPLE.COM";
+            if (string.IsNullOrEmpty(existingErik.PasswordHash))
+            {
+                await userManager.AddPasswordAsync(existingErik, "password123");
+            }
             await db.SaveChangesAsync();
         }
 
@@ -193,7 +201,7 @@ public class DbInitializer
                 CreatedAt = DateTime.UtcNow
             };
 
-            await userManager.CreateAsync(testDennis);
+            await userManager.CreateAsync(testDennis, "password123");
         }
         else
         {
@@ -201,6 +209,10 @@ public class DbInitializer
             existingDennis.Email = "dennis@demo.com";
             existingDennis.NormalizedUserName = "DENNIS@DEMO.COM";
             existingDennis.NormalizedEmail = "DENNIS@DEMO.COM";
+            if (string.IsNullOrEmpty(existingDennis.PasswordHash))
+            {
+                await userManager.AddPasswordAsync(existingDennis, "password123");
+            }
             await db.SaveChangesAsync();
         }
 
@@ -220,7 +232,7 @@ public class DbInitializer
                 CreatedAt = DateTime.UtcNow
             };
 
-            await userManager.CreateAsync(testPeter);
+            await userManager.CreateAsync(testPeter, "password123");
         }
         else
         {
@@ -228,6 +240,10 @@ public class DbInitializer
             existingPeter.Email = "peter@demo.com";
             existingPeter.NormalizedUserName = "PETER@DEMO.COM";
             existingPeter.NormalizedEmail = "PETER@DEMO.COM";
+            if (string.IsNullOrEmpty(existingPeter.PasswordHash))
+            {
+                await userManager.AddPasswordAsync(existingPeter, "password123");
+            }
             await db.SaveChangesAsync();
         }
 

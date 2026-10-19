@@ -270,8 +270,12 @@ catch (Exception ex)
     app.Logger.LogWarning(ex, "Could not ensure admin and roles at startup: {Message}", ex.Message);
 }
 
-// Seed demo customer and sample data in Development
-if (app.Environment.IsDevelopment())
+// Seed demo customer and sample data in Development or when explicitly enabled via SEED_DEMO_DATA
+var shouldSeedDemoData = app.Environment.IsDevelopment()
+    || string.Equals(app.Configuration["SEED_DEMO_DATA"], "true", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(app.Configuration["SeedDemoData"], "true", StringComparison.OrdinalIgnoreCase);
+
+if (shouldSeedDemoData)
 {
     try
     {
