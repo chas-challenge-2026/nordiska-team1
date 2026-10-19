@@ -80,6 +80,14 @@ void print_version_info() {
 CliOptions parse_cli(int argc, char* argv[]) {
     CliOptions options;
 
+    if (const char* env_engine = std::getenv("NORDISKA_PDF_ENGINE"); env_engine && *env_engine) {
+        options.renderer = env_engine;
+    }
+    if (const char* env_signing = std::getenv("NORDISKA_PDF_ENABLE_SIGNING"); env_signing && *env_signing) {
+        std::string_view val(env_signing);
+        options.enable_signing = (val == "1" || val == "true" || val == "TRUE" || val == "yes");
+    }
+
     for (int index = 1; index < argc; ++index) {
         const std::string_view argument = argv[index];
 

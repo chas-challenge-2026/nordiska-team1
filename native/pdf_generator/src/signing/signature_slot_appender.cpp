@@ -302,7 +302,9 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
         std::format("\n{} 0 obj\n<<{}\n/Version /1.7\n/AcroForm << /SigFlags 3 /Fields [ {} 0 R ] >>\n>>\nendobj\n",
                     root_id, catalog_body, field_id);
     const size_t field_offset = pdf.size() + prefix.size();
-    prefix += std::format("{} 0 obj\n<< /FT /Sig /T (Signature1) /V {} 0 R >>\nendobj\n", field_id, signature_id);
+    prefix += std::format("{} 0 obj\n<< /Type /Annot /Subtype /Widget /Rect [0 0 0 0] /F 132 /FT /Sig /T (Signature1) "
+                          "/V {} 0 R >>\nendobj\n",
+                          field_id, signature_id);
     const size_t signature_offset = pdf.size() + prefix.size();
     prefix += std::format(
         "{} 0 obj\n<< /Type /Sig /Filter /Adobe.PPKLite /SubFilter /ETSI.CAdES.detached\n/ByteRange [", signature_id);

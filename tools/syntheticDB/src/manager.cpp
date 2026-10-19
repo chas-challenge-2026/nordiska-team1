@@ -50,9 +50,16 @@ static std::string read_file(const fs::path& path) {
     return {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
 }
 // Private temporary files keep schema dumps and environment rewrites off shared paths.
+static fs::path default_temp_pattern() {
+    if (fs::exists("tmp") && fs::is_directory("tmp")) {
+        return "tmp/nordiska-synthetic.XXXXXX";
+    }
+    return fs::temp_directory_path() / "nordiska-synthetic.XXXXXX";
+}
+
 struct TempFile {
     fs::path path;
-    explicit TempFile(fs::path pattern = fs::temp_directory_path() / "nordiska-synthetic.XXXXXX") {
+    explicit TempFile(fs::path pattern = default_temp_pattern()) {
         std::string name = pattern.string();
         int fd = mkstemp(name.data());
         if (fd < 0) throw std::runtime_error("Cannot create temporary file");

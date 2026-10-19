@@ -445,10 +445,13 @@ void test_real_cms() {
     X509_gmtime_adj(X509_getm_notBefore(cert.get()), 0);
     X509_gmtime_adj(X509_getm_notAfter(cert.get()), 3600);
     X509_set_pubkey(cert.get(), key.get());
-    auto* name = X509_get_subject_name(cert.get());
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, reinterpret_cast<const unsigned char*>("PDF test only"), -1,
-                               -1, 0);
-    X509_set_issuer_name(cert.get(), name);
+    const std::unique_ptr<X509_NAME, decltype(&X509_NAME_free)> name(X509_NAME_new(), X509_NAME_free);
+    require(name != nullptr, "test certificate subject name allocation failed");
+    require(X509_NAME_add_entry_by_txt(name.get(), "CN", MBSTRING_ASC,
+                                       reinterpret_cast<const unsigned char*>("PDF test only"), -1, -1, 0) == 1,
+            "test certificate CN entry failed");
+    require(X509_set_subject_name(cert.get(), name.get()) == 1, "set subject name failed");
+    require(X509_set_issuer_name(cert.get(), name.get()) == 1, "set issuer name failed");
     require(X509_sign(cert.get(), key.get(), EVP_sha256()) > 0, "test certificate signing failed");
 
     for (auto engine :
