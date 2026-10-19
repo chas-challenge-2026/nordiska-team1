@@ -11,6 +11,15 @@ internal sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     public override DateTimeOffset GetUtcNow() => now;
 }
 
+internal sealed class AdjustableTimeProvider(DateTimeOffset now) : TimeProvider
+{
+    private DateTimeOffset _now = now;
+
+    public override DateTimeOffset GetUtcNow() => _now;
+
+    public void Advance(TimeSpan duration) => _now += duration;
+}
+
 internal sealed record JobFailure(
     long JobId,
     string WorkerId,

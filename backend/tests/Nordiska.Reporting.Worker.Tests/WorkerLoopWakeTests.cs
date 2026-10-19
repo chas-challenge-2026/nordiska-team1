@@ -56,6 +56,7 @@ public sealed class WorkerLoopWakeTests
             provider.GetRequiredService<IServiceScopeFactory>(),
             wakeSignal,
             lifecycle,
+            provider.GetRequiredService<TimeProvider>(),
             options);
 
         await scheduler.RunCycleAsync("worker-01", CancellationToken.None);
@@ -106,6 +107,7 @@ public sealed class WorkerLoopWakeTests
             provider.GetRequiredService<IServiceScopeFactory>(),
             wakeSignal,
             lifecycle,
+            provider.GetRequiredService<TimeProvider>(),
             options);
 
         await scheduler.RunCycleAsync("worker-01", CancellationToken.None);
@@ -156,6 +158,7 @@ public sealed class WorkerLoopWakeTests
                 provider.GetRequiredService<IServiceScopeFactory>(),
                 wakeSignal,
                 lifecycle,
+                provider.GetRequiredService<TimeProvider>(),
                 options),
             lifecycle,
             NullLogger<WorkerLoop>.Instance);
@@ -216,6 +219,7 @@ public sealed class WorkerLoopWakeTests
                 provider.GetRequiredService<IServiceScopeFactory>(),
                 wakeSignal,
                 lifecycle,
+                provider.GetRequiredService<TimeProvider>(),
                 options),
             lifecycle,
             NullLogger<WorkerLoop>.Instance);

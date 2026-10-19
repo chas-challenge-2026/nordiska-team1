@@ -24,7 +24,9 @@ public class WorkerLoopTests
     private static TaskCompletionSource<bool> NewSignal()
         => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private ReportingWorker CreateWorker(int pollIntervalSeconds)
+    private ReportingWorker CreateWorker(
+        int pollIntervalSeconds,
+        TimeProvider? timeProvider = null)
     {
         var options = new TaxReportWorkerOptions
         {
@@ -34,7 +36,8 @@ public class WorkerLoopTests
 
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddSingleton<TimeProvider>(new FixedTimeProvider(DateTimeOffset.UtcNow));
+        services.AddSingleton<TimeProvider>(
+            timeProvider ?? new FixedTimeProvider(DateTimeOffset.UtcNow));
         services.AddSingleton<IOptions<TaxReportWorkerOptions>>(Options.Create(options));
         services.AddSingleton<ITaxReportJobRepository>(_taxJobs);
         services.AddSingleton<ITaxReportRenderPipeline>(new FakeTaxReportRenderer());
@@ -54,6 +57,7 @@ public class WorkerLoopTests
             provider.GetRequiredService<IServiceScopeFactory>(),
             wakeSignal,
             lifecycle,
+            provider.GetRequiredService<TimeProvider>(),
             Options.Create(options));
         var loop = new WorkerLoop(
             scheduler,
@@ -89,29 +93,62 @@ public class WorkerLoopTests
     }
 
     [Fact]
-    public async Task ProcessedTaxReport_LoopsAgainWithoutWaiting()
+    public async Task TaxOnlyBurst_DoesNotClaimEmptyAccountQueueForEveryJob()
     {
-        var secondRound = NewSignal();
-        _taxJobs.OnClaim = call => call == 1 ? new ClaimedTaxReportJob(5, 21, 1) : null;
-        _statementJobs.OnClaim = call =>
+        var afterBurst = NewSignal();
+        _taxJobs.OnClaim = call =>
         {
-            if (call == 2)
-            {
-                secondRound.TrySetResult(true);
-            }
+            if (call == 6)
+                afterBurst.TrySetResult(true);
 
-            return null;
+            return call <= 5
+                ? new ClaimedTaxReportJob(call, 21, 1)
+                : null;
         };
         var worker = CreateWorker(pollIntervalSeconds: 30);
 
         await worker.StartAsync(CancellationToken.None);
-        await secondRound.Task.WaitAsync(SignalTimeout);
+        await afterBurst.Task.WaitAsync(SignalTimeout);
         await worker.StopAsync(CancellationToken.None);
 
-        Assert.Equal(2, _taxJobs.ClaimCalls);
-        Assert.Single(_taxCompletion.Completed);
-        Assert.Single(_storage.Saved);
+        Assert.Equal(6, _taxJobs.ClaimCalls);
+        Assert.Equal(1, _statementJobs.ClaimCalls);
+        Assert.Equal(5, _taxCompletion.Completed.Count);
+        Assert.Equal(5, _storage.Saved.Count);
         Assert.Empty(_statementCompletion.Completed);
+    }
+
+    [Fact]
+    public async Task EmptyAccountQueue_IsProbedAgainAfterCooldown()
+    {
+        var clock = new AdjustableTimeProvider(DateTimeOffset.UtcNow);
+        var accountProbedAgain = NewSignal();
+        _taxJobs.OnClaim = call =>
+        {
+            if (call == 2)
+                clock.Advance(TimeSpan.FromSeconds(1));
+
+            return call <= 2
+                ? new ClaimedTaxReportJob(call, 21, 1)
+                : null;
+        };
+        _statementJobs.OnClaim = call =>
+        {
+            if (call == 2)
+                accountProbedAgain.TrySetResult(true);
+
+            return call == 2
+                ? new ClaimedAccountStatementJob(8, 33, 1)
+                : null;
+        };
+        var worker = CreateWorker(pollIntervalSeconds: 30, clock);
+
+        await worker.StartAsync(CancellationToken.None);
+        await accountProbedAgain.Task.WaitAsync(SignalTimeout);
+        await worker.StopAsync(CancellationToken.None);
+
+        Assert.True(_statementJobs.ClaimCalls >= 2);
+        Assert.Single(_statementCompletion.Completed);
     }
 
     [Fact]
