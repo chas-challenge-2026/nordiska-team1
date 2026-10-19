@@ -110,12 +110,12 @@ export default function RecentTransactionsCard() {
                 <div className="flex flex-1 flex-col overflow-hidden">
 
                     {/* TRANSFER ROWS */}
-                    {result.slice(0, MAX_ROWS).map((tx, index) => (
+                    {result.slice(0, MAX_ROWS).map((tx) => (
                         <button 
                             key={tx.id}
                             type="button"
                             onClick={() => handleTransactionClick(tx)}
-                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 ${index === 3 ? "last:border-0" : "border-b-2"}`}
+                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 `}
                             >
         
                             {/* NAMN & SUMMA */}

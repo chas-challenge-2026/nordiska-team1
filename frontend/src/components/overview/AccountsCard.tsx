@@ -46,13 +46,13 @@ export default function AccountsCard() {
                         <p className="text-sm font-semibold sm:text-xl"> {formatCurrency(totalBalance)}</p>
                     </div>
 
-                    {displayedAccounts?.map((account, index) => (
+                    {displayedAccounts?.map((account) => (
                         <button 
                             key={account.id}
                             title={`${t("overview-route.account-card.hover-title")} ${account.accountNumber}`}
                             type="button"
                             onClick={() => navigate(`/accounts?account=${account.id}`)}
-                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 ${index === 3 ? "last:border-0" : "border-b-2"}`}
+                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10`}
                             >
 
                             {/* KONTONAMN OCH SALDO */}

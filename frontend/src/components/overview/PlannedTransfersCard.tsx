@@ -65,12 +65,12 @@ export default function PlannedTransfersCard() {
             <section className="flex flex-1 flex-col p-2 sm:p-3">
             <div className="flex flex-1 flex-col overflow-hidden">
                 {/* TRANSFER ROWS */}
-                {upcoming.slice(0, MAX_ROWS).map((tx, index) => (
+                {upcoming.slice(0, MAX_ROWS).map((tx) => (
                     <button 
                         key={tx.id}
                         type="button"
                         onClick={() => {navigate("/transfer")}}
-                        className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 ${index === 4 ? "last:border-0" : "border-b-2"}`}
+                        className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 `}
                     >
                         {/* NAMN & SUMMA */}
                         <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
