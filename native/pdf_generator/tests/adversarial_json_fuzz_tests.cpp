@@ -1,6 +1,8 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/ingestion/json_ingestor.hpp"
+#include "nordiska/layout/layout_builder.hpp"
+#include "nordiska/rendering/pdf_engine.hpp"
 #include "pdf_test_helpers.hpp"
 
 #include <cstdint>
@@ -323,6 +325,58 @@ void test_large_valid_json_batches(nordiska::JsonIngestorKind kind) {
     require(stmt.transactions.size() == 2000, "Transactions count must be 2000");
 }
 
+void test_unicode_nfd_and_transliteration_json(nordiska::JsonIngestorKind kind) {
+    std::cout << "Testing NFD decomposed Unicode and transliteration via JSON ingestion..." << std::endl;
+    nordiska::JsonIngestor ingestor(kind);
+
+    // JSON payload containing decomposed NFD ("A\u030Ake pa\u030A O\u0308sterlen", "e\u0301tudiant")
+    // and European names ("Wałęsa", "Dvořák", "Groß" with ẞ)
+    const std::string json =
+        "{\n"
+        "  \"customer_id\": 12345,\n"
+        "  \"documents\": [\n"
+        "    {\n"
+        "      \"document_id\": \"doc_nfd\",\n"
+        "      \"kind\": \"account_statement\",\n"
+        "      \"document\": {\n"
+        "        \"account_number\": \"SE12345678\",\n"
+        "        \"title\": \"A\\u030Ake pa\\u030A O\\u0308sterlen\",\n"
+        "        \"account_name\": \"Konto e\\u0301tudiant\",\n"
+        "        \"transactions\": [\n"
+        "          {\n"
+        "            \"date\": \"2026-05-01\",\n"
+        "            \"type\": \"O\\u0308verfo\\u0308ring\",\n"
+        "            \"description\": \"Till Wa\\u0142\\u0119sa & Dvo\\u0159\\u00e1k Gro\\u1e9e\",\n"
+        "            \"amount_minor\": -50000,\n"
+        "            \"amount_display\": \"−500,00 SEK\",\n"
+        "            \"balance_after_display\": \"10 000,00 SEK\"\n"
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}";
+
+    std::span<const uint8_t> span{reinterpret_cast<const uint8_t*>(json.data()), json.size()};
+    auto job_res = ingestor.ingest(span);
+    require(job_res.has_value(), "JSON ingestion of NFD/transliteration batch must succeed");
+    require(job_res->documents.size() == 1, "Must have 1 document");
+
+    auto layout_res = nordiska::LayoutBuilder::build(job_res->documents[0]);
+    require(layout_res.has_value(), "Layout building for NFD document must succeed");
+
+    // Render across engines and verify Ghostscript validates without error
+    for (auto engine_kind :
+         {nordiska::PdfEngineKind::Native, nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo}) {
+        nordiska::PdfEngine engine(engine_kind, true);
+        auto pdf_res = engine.render(*layout_res);
+        require(pdf_res.has_value(), "Rendering NFD document must succeed");
+        require(nordiska::test::is_valid_pdf_structure(*pdf_res), "PDF structure must be valid");
+        require(nordiska::test::validate_pdf_with_ghostscript(*pdf_res),
+                "PDF with NFD decomposed characters must pass Ghostscript validation");
+    }
+}
+
 } // namespace
 
 int main() {
@@ -339,6 +393,9 @@ int main() {
 
     test_large_valid_json_batches(nordiska::JsonIngestorKind::Simdjson);
     test_large_valid_json_batches(nordiska::JsonIngestorKind::Nlohmann);
+
+    test_unicode_nfd_and_transliteration_json(nordiska::JsonIngestorKind::Simdjson);
+    test_unicode_nfd_and_transliteration_json(nordiska::JsonIngestorKind::Nlohmann);
 
     std::cout << "All adversarial JSON fuzzing tests passed successfully!" << std::endl;
     return 0;

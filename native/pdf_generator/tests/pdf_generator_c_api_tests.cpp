@@ -789,7 +789,30 @@ int main() {
         nordiska::utf8_to_cp1252_append("Emoji \xF0\x9F\x98\x80 test", fallback_4byte);
         require(fallback_4byte == "Emoji ? test", "Unrecognized 4-byte sequence must emit single '?'");
 
-        // 14.8 End-to-end rendering in Native and Libharu engines with Unicode minus
+        // 14.8 Decomposed Unicode (NFD) combining diacritics fold to precomposed CP1252
+        std::string nfd_swedish;
+        // "A\u030Ake & A\u0308lva pa\u030A O\u0308sterlen: e\u0301tudiant u\u0308ber"
+        nordiska::utf8_to_cp1252_append("A\xCC\x8A"
+                                        "ke & A\xCC\x88"
+                                        "lva pa\xCC\x8A O\xCC\x88"
+                                        "sterlen: e\xCC\x81"
+                                        "tudiant u\xCC\x88"
+                                        "ber",
+                                        nfd_swedish);
+        std::string nfc_expected;
+        nordiska::utf8_to_cp1252_append("Åke & Älva på Österlen: étudiant über", nfc_expected);
+        require(nfd_swedish == nfc_expected, "NFD decomposed sequences must fold identically to NFC precomposed");
+        require(nfd_swedish.find('?') == std::string::npos, "NFD decomposed Swedish characters must not emit '?'");
+
+        // 14.9 European transliteration fallbacks (Polish, Czech, German)
+        std::string translit;
+        // "Wałęsa Dvořák Groß" (with capital sharp S U+1E9E)
+        nordiska::utf8_to_cp1252_append("Wa\xC5\x82\xC4\x99sa Dvo\xC5\x99\xC3\xA1k Gro\xE1\xBA\x9E", translit);
+        require(translit.find("Wal") != std::string::npos, "Ł (U+0142) should transliterate to 'l'");
+        require(translit.find("Dvor") != std::string::npos, "ř (U+0159) should transliterate to 'r'");
+        require(translit.find('\xDF') != std::string::npos, "Capital sharp S (U+1E9E) should map to ß (0xDF)");
+
+        // 14.10 End-to-end rendering in Native and Libharu engines with Unicode minus
         nordiska::AccountStatement stmt;
         stmt.account_number = "SE1234567890";
         stmt.title = "Kontoutdrag";
