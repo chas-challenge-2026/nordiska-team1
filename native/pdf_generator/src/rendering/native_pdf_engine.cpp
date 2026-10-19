@@ -21,6 +21,61 @@ inline void append_float_2(std::string& out, float val) {
     out.append(buf, ptr - buf);
 }
 
+void build_page_content_stream(const PageLayout& page, std::string& stream_buf) {
+    stream_buf.clear();
+
+    // Draw Lines
+    if (!page.lines.empty()) {
+        float current_width = -1.0F;
+        for (const PositionedLine& line : page.lines) {
+            if (line.line_width != current_width) {
+                current_width = line.line_width;
+                append_float_2(stream_buf, current_width);
+                stream_buf.append(" w\n");
+            }
+            const float y1 = page.height - line.y1;
+            const float y2 = page.height - line.y2;
+            append_float_2(stream_buf, line.x1);
+            stream_buf.push_back(' ');
+            append_float_2(stream_buf, y1);
+            stream_buf.append(" m ");
+            append_float_2(stream_buf, line.x2);
+            stream_buf.push_back(' ');
+            append_float_2(stream_buf, y2);
+            stream_buf.append(" l S\n");
+        }
+    }
+
+    // Draw Texts
+    if (!page.texts.empty()) {
+        stream_buf.append("BT\n");
+        std::string_view current_font = "";
+        float current_font_size = -1.0F;
+
+        for (const PositionedText& text : page.texts) {
+            std::string_view font_tag = (text.weight == FontWeight::Bold) ? "/F2" : "/F1";
+            if (font_tag != current_font || text.font_size != current_font_size) {
+                current_font = font_tag;
+                current_font_size = text.font_size;
+                stream_buf.append(current_font);
+                stream_buf.push_back(' ');
+                append_float_2(stream_buf, current_font_size);
+                stream_buf.append(" Tf\n");
+            }
+            const float haru_y = page.height - text.y;
+            stream_buf.append("1 0 0 1 ");
+            append_float_2(stream_buf, text.x);
+            stream_buf.push_back(' ');
+            append_float_2(stream_buf, haru_y);
+            stream_buf.append(" Tm (");
+
+            append_pdf_escaped_text(stream_buf, text.text);
+            stream_buf.append(") Tj\n");
+        }
+        stream_buf.append("ET\n");
+    }
+}
+
 class NativeEngineImpl final : public PdfEngine::Impl {
   public:
     explicit NativeEngineImpl(bool compression = true) : compression_(compression) {}
@@ -101,58 +156,7 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                                       page_obj_id, page.width, page.height, content_obj_id, font_f1_id, font_f2_id));
 
             // Generate content stream
-            t_stream_buf.clear();
-
-            // Draw Lines
-            if (!page.lines.empty()) {
-                float current_width = -1.0F;
-                for (const PositionedLine& line : page.lines) {
-                    if (line.line_width != current_width) {
-                        current_width = line.line_width;
-                        append_float_2(t_stream_buf, current_width);
-                        t_stream_buf.append(" w\n");
-                    }
-                    const float y1 = page.height - line.y1;
-                    const float y2 = page.height - line.y2;
-                    append_float_2(t_stream_buf, line.x1);
-                    t_stream_buf.push_back(' ');
-                    append_float_2(t_stream_buf, y1);
-                    t_stream_buf.append(" m ");
-                    append_float_2(t_stream_buf, line.x2);
-                    t_stream_buf.push_back(' ');
-                    append_float_2(t_stream_buf, y2);
-                    t_stream_buf.append(" l S\n");
-                }
-            }
-
-            // Draw Texts
-            if (!page.texts.empty()) {
-                t_stream_buf.append("BT\n");
-                std::string_view current_font = "";
-                float current_font_size = -1.0F;
-
-                for (const PositionedText& text : page.texts) {
-                    std::string_view font_tag = (text.weight == FontWeight::Bold) ? "/F2" : "/F1";
-                    if (font_tag != current_font || text.font_size != current_font_size) {
-                        current_font = font_tag;
-                        current_font_size = text.font_size;
-                        t_stream_buf.append(current_font);
-                        t_stream_buf.push_back(' ');
-                        append_float_2(t_stream_buf, current_font_size);
-                        t_stream_buf.append(" Tf\n");
-                    }
-                    const float haru_y = page.height - text.y;
-                    t_stream_buf.append("1 0 0 1 ");
-                    append_float_2(t_stream_buf, text.x);
-                    t_stream_buf.push_back(' ');
-                    append_float_2(t_stream_buf, haru_y);
-                    t_stream_buf.append(" Tm (");
-
-                    append_pdf_escaped_text(t_stream_buf, text.text);
-                    t_stream_buf.append(") Tj\n");
-                }
-                t_stream_buf.append("ET\n");
-            }
+            build_page_content_stream(page, t_stream_buf);
 
             // Write Content Stream Object
             object_offsets[content_obj_id] = pdf.size();
