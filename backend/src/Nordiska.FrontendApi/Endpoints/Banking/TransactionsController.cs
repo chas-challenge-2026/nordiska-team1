@@ -263,7 +263,7 @@ public class TransactionsController : ControllerBase
     /// <param name="request">Planned transaction details.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="201">Planned transaction successfully registered.</response>
-    /// <response code="400">Invalid planned transaction details.</response>
+    /// <response code="400">Invalid planned transaction details (e.g. non-positive amount or date in the past).</response>
     /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
     /// <response code="404">Account not found or does not belong to the authenticated user.</response>
     [HttpPost("planned")]
