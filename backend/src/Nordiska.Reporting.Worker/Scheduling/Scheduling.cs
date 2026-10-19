@@ -48,13 +48,9 @@ internal sealed class ReportingJobScheduler : IReportingJobScheduler
     }
 
     public Task WaitForWorkAsync(CancellationToken cancellationToken) =>
-        _wakeSignal.WaitAsync(
-            TimeSpan.FromSeconds(_options.PollIntervalSeconds),
-            cancellationToken);
+        _wakeSignal.WaitAsync(TimeSpan.FromSeconds(_options.PollIntervalSeconds),cancellationToken);
 
-    private async Task<bool> ProcessAvailableJobsAsync(
-        string workerId,
-        CancellationToken cancellationToken)
+    private async Task<bool> ProcessAvailableJobsAsync(string workerId,CancellationToken cancellationToken)
     {
         if (!_lifecycle.IsAcceptingWork)
             return false;

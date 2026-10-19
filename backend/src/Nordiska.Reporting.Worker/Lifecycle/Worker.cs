@@ -55,12 +55,17 @@ internal sealed class Worker : BackgroundService
 
         try
         {
-            var workers = new Task[_options.Concurrency];
-
+            /*
+             * Creates one Task per worker slot (_options.Concurrency)!
+             * So if concurrency is 3, the array has three positions. Each position
+             * will hold the running Task for one independent worker loop.
+             * 
+             */
+            var workers = new Task[_options.Concurrency]; 
+            // 
             for (var index = 0; index < workers.Length; index++)
             {
-                string workerId =
-                    $"{_workerInstanceId}-{index + 1:D2}";
+                string workerId =$"{_workerInstanceId}-{index + 1:D2}"; //worker ids
                 workers[index] = _workerLoop.RunAsync(
                     workerId,
                     stoppingToken);

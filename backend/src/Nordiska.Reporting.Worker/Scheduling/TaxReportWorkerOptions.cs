@@ -2,7 +2,7 @@ namespace Nordiska.Reporting.Worker.Scheduling;
 
 public sealed class TaxReportWorkerOptions
 {
-    public int Concurrency { get; set; } = 12;
+    public int Concurrency { get; set; } = 12; // slots 
 
     public int PollIntervalSeconds { get; set; } = 30;
 
