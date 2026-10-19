@@ -1,4 +1,4 @@
-namespace Nordiska.Reporting.Worker;
+namespace Nordiska.Reporting.Worker.Scheduling;
 
 internal interface IReportingJobNotificationSource
 {

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Npgsql;
 
-namespace Nordiska.Reporting.Worker;
+namespace Nordiska.Reporting.Worker.Scheduling;
 
 internal sealed class PostgresReportingJobNotificationSource
     : IReportingJobNotificationSource

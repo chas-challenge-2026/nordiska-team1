@@ -1,8 +1,8 @@
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Domain;
-using Nordiska.Modules.Reporting.PdfGeneration;
+using Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
-namespace Nordiska.Reporting.Worker.TaxReports;
+namespace Nordiska.Reporting.Worker.JobHandlers.TaxReports;
 
 public sealed record RenderedTaxReport(
     long TaxReportId,

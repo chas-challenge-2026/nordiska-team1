@@ -1,4 +1,4 @@
-namespace Nordiska.Reporting.Worker.TaxReports;
+namespace Nordiska.Reporting.Worker.Scheduling;
 
 public sealed class TaxReportWorkerOptions
 {
@@ -11,4 +11,6 @@ public sealed class TaxReportWorkerOptions
     public int RetryDelaySeconds { get; set; } = 30;
 
     public int MaximumAttempts { get; set; } = 3;
+
+    public int DrainTimeoutSeconds { get; set; } = 25;
 }

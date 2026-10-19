@@ -1,8 +1,8 @@
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Domain;
-using Nordiska.Modules.Reporting.PdfGeneration;
+using Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
-namespace Nordiska.Reporting.Worker.AccountStatements;
+namespace Nordiska.Reporting.Worker.JobHandlers.AccountStatements;
 
 public sealed record RenderedAccountStatement(
     long AccountStatementId,

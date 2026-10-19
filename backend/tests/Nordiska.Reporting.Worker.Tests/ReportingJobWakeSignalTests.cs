@@ -1,3 +1,5 @@
+using Nordiska.Reporting.Worker.Scheduling;
+
 namespace Nordiska.Reporting.Worker.Tests;
 
 public sealed class ReportingJobWakeSignalTests

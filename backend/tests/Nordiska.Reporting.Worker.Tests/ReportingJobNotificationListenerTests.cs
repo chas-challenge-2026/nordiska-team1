@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Nordiska.Reporting.Worker.Scheduling;
 
 namespace Nordiska.Reporting.Worker.Tests;
 

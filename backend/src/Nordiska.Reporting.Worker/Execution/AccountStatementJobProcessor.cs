@@ -1,9 +1,10 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Options;
 using Nordiska.Modules.Reporting.Application;
-using Nordiska.Reporting.Worker.TaxReports;
+using Nordiska.Reporting.Worker.JobHandlers.AccountStatements;
+using Nordiska.Reporting.Worker.Scheduling;
 
-namespace Nordiska.Reporting.Worker.AccountStatements;
+namespace Nordiska.Reporting.Worker.Execution;
 
 public sealed class AccountStatementJobProcessor
 {

@@ -83,6 +83,7 @@ services:
       dockerfile: Dockerfile
       target: reporting-worker
     restart: unless-stopped
+    stop_grace_period: 35s
     security_opt:
       - no-new-privileges:true
     depends_on:

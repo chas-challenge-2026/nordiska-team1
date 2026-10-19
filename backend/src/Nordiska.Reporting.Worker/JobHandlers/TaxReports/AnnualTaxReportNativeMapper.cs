@@ -2,8 +2,9 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Nordiska.Modules.Reporting.Domain;
+using Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
-namespace Nordiska.Reporting.Worker.TaxReports;
+namespace Nordiska.Reporting.Worker.JobHandlers.TaxReports;
 
 public sealed class AnnualTaxReportNativeMapper
 {
@@ -71,35 +72,6 @@ public sealed class AnnualTaxReportNativeMapper
         return $"{formatted} {currency}";
     }
 }
-
-internal sealed record NativeReportPackage(
-    [property: JsonPropertyName("$schema_version")]
-    string SchemaVersion,
-
-    [property: JsonPropertyName("customer_id")]
-    long CustomerId,
-
-    [property: JsonPropertyName("customer_name")]
-    string CustomerName,
-
-    [property: JsonPropertyName("created_at")]
-    string CreatedAt,
-
-    [property: JsonPropertyName("documents")]
-    IReadOnlyList<NativeDocumentEnvelope> Documents);
-
-internal sealed record NativeDocumentEnvelope(
-    [property: JsonPropertyName("document_id")]
-    string DocumentId,
-
-    [property: JsonPropertyName("kind")]
-    string Kind,
-
-    [property: JsonPropertyName("version")]
-    string Version,
-
-    [property: JsonPropertyName("document")]
-    object Document);
 
 internal sealed record NativeAnnualTaxReportDocument(
     [property: JsonPropertyName("title")]
