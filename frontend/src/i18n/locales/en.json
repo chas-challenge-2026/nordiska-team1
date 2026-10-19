@@ -564,7 +564,7 @@
         "amount-placeholder": "0.00",
         "amount-suffix": "sek",
         "amount-error": "Amount exceeds the balance on {{account}}",
-        "date-error": "Choose today or a later date",
+        "date-error": "The selected date has already passed",
         "date-label": "Transfer date",
         "recurring-label": "Recurring",
         "interval-label": "Interval",
