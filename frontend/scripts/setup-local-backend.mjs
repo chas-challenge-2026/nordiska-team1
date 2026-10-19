@@ -60,6 +60,7 @@ export async function setupLocalBackend({
             "db",
             "app",
             "reporting-worker",
+            "pdf-signer",
         ],
         {
             cwd: infrastructureDirectory,

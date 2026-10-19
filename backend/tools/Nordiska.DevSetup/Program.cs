@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -338,10 +338,11 @@ internal static class Program
         if (messages.Contains("28P01", StringComparison.OrdinalIgnoreCase) ||
             messages.Contains("password authentication failed", StringComparison.OrdinalIgnoreCase) ||
             messages.Contains("Password mismatch", StringComparison.OrdinalIgnoreCase) ||
+            messages.Contains("infra/.env is missing", StringComparison.OrdinalIgnoreCase) ||
             messages.Contains("infra/v2/.env is missing", StringComparison.OrdinalIgnoreCase))
         {
             ConsoleUi.WriteErrorLine(
-                "[FEL] Lösenorden i infra/v2/.env matchar inte PostgreSQL-rollerna i den befintliga Docker-volymen.");
+                "[FEL] Lösenorden i infra/.env matchar inte PostgreSQL-rollerna i den befintliga Docker-volymen.");
             ConsoleUi.WriteErrorLine(
                 "[GÖR SÅ HÄR] Behåll databasen och synkronisera lösenorden genom att köra följande kommando från repositoryts rot:");
             ConsoleUi.WriteErrorLine(
@@ -386,7 +387,9 @@ internal static class Program
         if (batchSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
 
-        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        var envPath = Path.Combine(root, "infra", ".env");
+        if (!File.Exists(envPath))
+            envPath = Path.Combine(root, "infra", "v2", ".env");
         if (!File.Exists(envPath))
             throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
 
@@ -511,7 +514,9 @@ internal static class Program
         if (delayMs < 0)
             throw new ArgumentOutOfRangeException(nameof(delayMs), "Delay must be zero or greater.");
 
-        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        var envPath = Path.Combine(root, "infra", ".env");
+        if (!File.Exists(envPath))
+            envPath = Path.Combine(root, "infra", "v2", ".env");
         if (!File.Exists(envPath))
             throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
 
@@ -643,7 +648,9 @@ internal static class Program
 
         if (accountId == 0)
         {
-            var envPath = Path.Combine(root, "infra", "v2", ".env");
+            var envPath = Path.Combine(root, "infra", ".env");
+            if (!File.Exists(envPath))
+                envPath = Path.Combine(root, "infra", "v2", ".env");
             if (!File.Exists(envPath))
                 throw new InvalidOperationException($"Environment file not found at {envPath}. Run the normal DB setup first.");
 
@@ -744,7 +751,11 @@ internal static class SecretGenerator
         "NORDISKA_API_PASSWORD",
         "NORDISKA_REPORTING_WORKER_PASSWORD",
         "NORDISKA_JWT_SECRET",
-        "NORDISKA_AUDIT_SIGNING_KEY"
+        "NORDISKA_AUDIT_SIGNING_KEY",
+        "PDF_SIGNER_PKCS11_PIN",
+        "PDF_SIGNER_PKCS11_SO_PIN",
+        "FAQ_SEARCH_LOG_SALT",
+        "ADMIN_USER_PASSWORD"
     ];
 
     private static readonly HashSet<string> SecretVariableSet =
@@ -752,8 +763,18 @@ internal static class SecretGenerator
 
     public static IReadOnlyList<string> RequiredVariables => SecretVariables;
 
-    public static string Generate()
+    public static string Generate(string variableName)
     {
+        if (string.Equals(variableName, "PDF_SIGNER_PKCS11_PIN", StringComparison.OrdinalIgnoreCase))
+        {
+            return RandomNumberGenerator.GetInt32(1000, 10000).ToString();
+        }
+
+        if (string.Equals(variableName, "PDF_SIGNER_PKCS11_SO_PIN", StringComparison.OrdinalIgnoreCase))
+        {
+            return RandomNumberGenerator.GetInt32(10000000, 100000000).ToString();
+        }
+
         var bytes = new byte[32];
         RandomNumberGenerator.Fill(bytes);
         return Convert.ToHexString(bytes);
@@ -761,7 +782,7 @@ internal static class SecretGenerator
 
     public static void EnsureEnv(string root)
     {
-        var directory = Path.Combine(root, "infra", "v2");
+        var directory = Path.Combine(root, "infra");
         var path = Path.Combine(directory, ".env");
 
         if (!Directory.Exists(directory))
@@ -801,7 +822,7 @@ internal static class SecretGenerator
                 }
                 else
                 {
-                    finalSecrets[variable] = Generate();
+                    finalSecrets[variable] = Generate(variable);
                     generatedCount++;
 
                     var reason = !existingSecrets.TryGetValue(variable, out var invalidValue)
@@ -971,7 +992,7 @@ internal static class DatabaseSetup
 
     public static async Task PreventSecretRegenerationForExistingVolumeAsync(string root)
     {
-        var envPath = Path.Combine(root, "infra", "v2", ".env");
+        var envPath = Path.Combine(root, "infra", ".env");
         if (File.Exists(envPath))
             return;
 
@@ -989,7 +1010,7 @@ internal static class DatabaseSetup
             return;
 
         throw new InvalidOperationException(
-            $"infra/v2/.env is missing, but the persistent Docker volume " +
+            $"infra/.env is missing, but the persistent Docker volume " +
             $"'{DatabaseVolumeName}' already exists.{Environment.NewLine}" +
             "DevSetup will not generate new passwords because they would not match the " +
             $"PostgreSQL roles stored in that volume.{Environment.NewLine}" +
@@ -1059,7 +1080,7 @@ internal static class DatabaseSetup
                 throw new InvalidOperationException(
                     $"[DATABASE AUTH] Password mismatch for PostgreSQL role '{username}'." +
                     Environment.NewLine +
-                    "The current infra/v2/.env does not match the credentials stored in the " +
+                    "The current infra/.env does not match the credentials stored in the " +
                     $"persistent volume '{DatabaseVolumeName}'." + Environment.NewLine +
                     "This commonly happens when .env was deleted or when another checkout reused " +
                     $"the fixed Compose project '{ComposeProjectName}'.",
@@ -1080,7 +1101,7 @@ internal static class DatabaseSetup
 
     public static Dictionary<string, string> ReadEnv(string root)
     {
-        var path = Path.Combine(root, "infra", "v2", ".env");
+        var path = Path.Combine(root, "infra", ".env");
 
         if (!File.Exists(path))
         {
@@ -1459,7 +1480,7 @@ internal static class DatabaseSetup
         string? input = null,
         bool showOutputOnSuccess = true)
     {
-        var directory = Path.Combine(root, "infra", "v2");
+        var directory = Path.Combine(root, "infra");
 
         if (!Directory.Exists(directory))
         {
@@ -1729,7 +1750,7 @@ internal static class DatabaseSetup
                 $"[DATABASE AUTH] PostgreSQL rejected the supplied username/password.{Environment.NewLine}" +
                 $"[CAUSE] PostgreSQL SQLSTATE 28P01 means password authentication failed.{Environment.NewLine}" +
                 $"{Environment.NewLine}" +
-                $"[CAUSE] A common cause in this local setup is that the passwords in infra/v2/.env " +
+                $"[CAUSE] A common cause in this local setup is that the passwords in infra/.env " +
                 $"do not match the passwords stored inside an already initialized Docker " +
                 $"PostgreSQL volume.{Environment.NewLine}" +
                 $"{Environment.NewLine}" +

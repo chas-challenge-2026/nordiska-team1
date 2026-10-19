@@ -100,6 +100,7 @@ test("starts the shared-volume API app with the database and reporting worker", 
                     "db",
                     "app",
                     "reporting-worker",
+                    "pdf-signer",
                 ],
                 options: {
                     cwd: infrastructureDirectory,

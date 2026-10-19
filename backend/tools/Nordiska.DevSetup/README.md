@@ -24,7 +24,7 @@ Performs the complete database setup and then builds and starts the full Docker 
 dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- . repair-passwords
 ```
 
-Synchronizes the PostgreSQL role passwords with the values stored in `infra/v2/.env` without deleting the database.
+Synchronizes the PostgreSQL role passwords with the values stored in `infra/.env` without deleting the database.
 
 ## Seed transactions
 
