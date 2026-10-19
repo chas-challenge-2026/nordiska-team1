@@ -97,8 +97,14 @@ class ScopedFd {
 bool read_exact(int fd, uint8_t* buffer, size_t len) {
     size_t total_read = 0;
     while (total_read < len) {
-        const ssize_t n = ::read(fd, buffer + total_read, len - total_read);
-        if (n <= 0) {
+        const ssize_t n = ::recv(fd, buffer + total_read, len - total_read, MSG_NOSIGNAL);
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return false;
+        }
+        if (n == 0) {
             return false;
         }
         total_read += static_cast<size_t>(n);
@@ -111,7 +117,13 @@ bool write_exact(int fd, const uint8_t* buffer, size_t len) {
     while (total_written < len) {
         // A disconnected signer must return an I/O error without terminating the host process.
         const ssize_t n = ::send(fd, buffer + total_written, len - total_written, MSG_NOSIGNAL);
-        if (n <= 0) {
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return false;
+        }
+        if (n == 0) {
             return false;
         }
         total_written += static_cast<size_t>(n);

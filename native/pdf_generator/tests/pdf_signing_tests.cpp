@@ -43,7 +43,11 @@ enum class MockSignerReply {
     TooLarge,
     Failure,
     ProtocolVersionMismatch,
-    UnsupportedAlgorithm
+    UnsupportedAlgorithm,
+    DisconnectImmediately,
+    DisconnectMidRequest,
+    DisconnectMidResponseHeader,
+    DisconnectMidResponseBody
 };
 
 class MockUnixSignerServer {
@@ -131,10 +135,27 @@ class MockUnixSignerServer {
     }
 
     void handle_client(int fd) {
+        MockSignerReply rep = reply_.load();
+        if (rep == MockSignerReply::DisconnectImmediately) {
+            return;
+        }
+
         uint8_t req[48];
+        if (rep == MockSignerReply::DisconnectMidRequest) {
+            size_t partial = 0;
+            while (partial < 16) {
+                ssize_t n = ::recv(fd, req + partial, 16 - partial, MSG_NOSIGNAL);
+                if (n <= 0) {
+                    break;
+                }
+                partial += static_cast<size_t>(n);
+            }
+            return;
+        }
+
         size_t total = 0;
         while (total < sizeof(req)) {
-            ssize_t n = ::read(fd, req + total, sizeof(req) - total);
+            ssize_t n = ::recv(fd, req + total, sizeof(req) - total, MSG_NOSIGNAL);
             if (n <= 0) {
                 return;
             }
@@ -152,7 +173,24 @@ class MockUnixSignerServer {
         seen_digests_.push_back(digest);
         request_count_++;
 
-        MockSignerReply rep = reply_.load();
+        if (rep == MockSignerReply::DisconnectMidResponseHeader) {
+            uint32_t status_net = htonl(0);
+            (void)::send(fd, &status_net, 4, MSG_NOSIGNAL);
+            return;
+        }
+
+        if (rep == MockSignerReply::DisconnectMidResponseBody) {
+            uint32_t status_net = htonl(0);
+            uint32_t hex_len_net = htonl(4096);
+            uint8_t resp_hdr[8];
+            std::memcpy(resp_hdr, &status_net, 4);
+            std::memcpy(resp_hdr + 4, &hex_len_net, 4);
+            (void)::send(fd, resp_hdr, sizeof(resp_hdr), MSG_NOSIGNAL);
+            const char partial_body[] = "0123456789";
+            (void)::send(fd, partial_body, sizeof(partial_body) - 1, MSG_NOSIGNAL);
+            return;
+        }
+
         uint32_t status = 0;
         std::string hex;
 
@@ -377,6 +415,20 @@ void test_socket_signer_adapter() {
     }
 
     require(server.oversized_reply_disconnected(), "oversized reply must exercise a disconnected peer");
+
+    // Test mid-handshake socket disconnects without terminating host process
+    for (auto mode : {MockSignerReply::DisconnectImmediately, MockSignerReply::DisconnectMidRequest,
+                      MockSignerReply::DisconnectMidResponseHeader, MockSignerReply::DisconnectMidResponseBody}) {
+        server.set_reply(mode);
+        nordiska::PdfGenerator generator(config);
+        auto result = generator.generate(payload);
+        require(!result, "socket disconnect must cause signing failure");
+        require(std::holds_alternative<nordiska::SigningError>(result.error().details),
+                "error details must be SigningError");
+        require(std::get<nordiska::SigningError>(result.error().details).kind ==
+                    nordiska::SigningErrorKind::InternalError,
+                "socket disconnect must map to SigningErrorKind::InternalError");
+    }
 
     // Test socket connection failure when server is stopped
     server.stop();
