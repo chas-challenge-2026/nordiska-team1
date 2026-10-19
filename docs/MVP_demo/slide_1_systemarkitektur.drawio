@@ -1,0 +1,160 @@
+<mxfile host="65bd71144e">
+    <diagram id="bento-16x9" name="Systemarkitektur">
+        <mxGraphModel dx="1652" dy="2141" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#334155;fontColor=#F8FAFC;fontSize=22;fontStyle=1;align=left;spacingLeft=24;" value="Nordiska Sparbanken v2 — Systemarkitektur" vertex="1">
+                    <mxGeometry height="55" width="1520" x="40" y="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#2563EB;strokeWidth=2;" value="" vertex="1">
+                    <mxGeometry height="315" width="410" x="40" y="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=20;fontStyle=1;" value="React 18 SPA (TypeScript)" vertex="1">
+                    <mxGeometry height="35" width="360" x="65" y="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1_b1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#93C5FD;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#0F172A;" value="Kundportal" vertex="1">
+                    <mxGeometry height="95" width="360" x="65" y="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1_b2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#93C5FD;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#0F172A;" value="Adminportal" vertex="1">
+                    <mxGeometry height="95" width="360" x="65" y="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#059669;strokeWidth=2;" value="" vertex="1">
+                    <mxGeometry height="335" width="410" x="40" y="475" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=20;fontStyle=1;" value="PostgreSQL 15" vertex="1">
+                    <mxGeometry height="35" width="360" x="65" y="490" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_b1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6EE7B7;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#0F172A;" value="Immutabelt Ledger" vertex="1">
+                    <mxGeometry height="70" width="360" x="65" y="540" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_b2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6EE7B7;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#0F172A;" value="Rollseparering &amp; Signerad Audit" vertex="1">
+                    <mxGeometry height="70" width="360" x="65" y="625" as="geometry"/>
+                </mxCell>
+                <mxCell id="db_b3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6EE7B7;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#0F172A;" value="Rapport-kö (Jobb Leasing)" vertex="1">
+                    <mxGeometry height="65" width="360" x="65" y="710" as="geometry"/>
+                </mxCell>
+                <mxCell id="api_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#4F46E5;strokeWidth=2;" value="" vertex="1">
+                    <mxGeometry height="705" width="430" x="560" y="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="api_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=20;fontStyle=1;" value=".NET 8 Web API" vertex="1">
+                    <mxGeometry height="35" width="370" x="590" y="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="mod_banking" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#818CF8;strokeWidth=2;align=center;fontSize=22;fontStyle=1;fontColor=#1E1B4B;" value="Banking" vertex="1">
+                    <mxGeometry height="120" width="370" x="590" y="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="mod_faq" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#818CF8;strokeWidth=2;align=center;fontSize=22;fontStyle=1;fontColor=#1E1B4B;" value="FAQ" vertex="1">
+                    <mxGeometry height="120" width="370" x="590" y="325" as="geometry"/>
+                </mxCell>
+                <mxCell id="mod_inbox" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#818CF8;strokeWidth=2;align=center;fontSize=22;fontStyle=1;fontColor=#1E1B4B;" value="Inbox" vertex="1">
+                    <mxGeometry height="120" width="370" x="590" y="470" as="geometry"/>
+                </mxCell>
+                <mxCell id="mod_reporting" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#818CF8;strokeWidth=2;align=center;fontSize=22;fontStyle=1;fontColor=#1E1B4B;" value="Reporting" vertex="1">
+                    <mxGeometry height="120" width="370" x="590" y="615" as="geometry"/>
+                </mxCell>
+                <mxCell id="nat_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#D97706;strokeWidth=2;" value="" vertex="1">
+                    <mxGeometry height="705" width="460" x="1100" y="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="nat_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=20;fontStyle=1;" value="Rapport-pipeline" vertex="1">
+                    <mxGeometry height="32" width="390" x="1125" y="118" as="geometry"/>
+                </mxCell>
+                <mxCell id="n_worker" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F59E0B;strokeWidth=2;align=center;fontSize=18;fontStyle=1;fontColor=#0F172A;" value="Nordiska.Reporting.Worker (.NET 8)" vertex="1">
+                    <mxGeometry height="70" width="410" x="1125" y="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="native_box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;" value="" vertex="1">
+                    <mxGeometry height="275" width="410" x="1125" y="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="native_box_title" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#9A3412;fontSize=16;fontStyle=1;" value="Native (C / C++)" vertex="1">
+                    <mxGeometry height="26" width="160" x="1140" y="296" as="geometry"/>
+                </mxCell>
+                <mxCell id="n_cpp" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;strokeWidth=2;align=center;fontSize=18;fontStyle=1;fontColor=#0F172A;" value="C++23 pdf_generator" vertex="1">
+                    <mxGeometry height="75" width="370" x="1145" y="330" as="geometry"/>
+                </mxCell>
+                <mxCell id="n_signer" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=2;align=center;fontSize=18;fontStyle=1;fontColor=#0F172A;" value="C pdf-signer + SoftHSM2" vertex="1">
+                    <mxGeometry height="75" width="370" x="1145" y="470" as="geometry"/>
+                </mxCell>
+                <mxCell id="n_tsa" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;strokeWidth=2;align=center;fontSize=18;fontStyle=1;fontColor=#0F172A;" value="TSA Server" vertex="1">
+                    <mxGeometry height="65" width="370" x="1145" y="625" as="geometry"/>
+                </mxCell>
+                <mxCell id="n_vol" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;strokeWidth=2;align=center;fontSize=17;fontStyle=1;fontColor=#065F46;" value="Delad Dokumentvolym (Signerad PDF)" vertex="1">
+                    <mxGeometry height="55" width="370" x="1145" y="720" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_c1_api" edge="1" parent="1" style="endArrow=block;startArrow=block;endFill=1;startFill=1;html=1;strokeColor=#2563EB;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="HTTPS / JWT">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="450" y="250" as="sourcePoint"/>
+                        <mxPoint x="560" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_api_db" edge="1" parent="1" style="endArrow=block;startArrow=block;endFill=1;startFill=1;html=1;strokeColor=#059669;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="EF Core 8">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="560" y="630" as="sourcePoint"/>
+                        <mxPoint x="450" y="630" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_db_worker" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#D97706;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;" value="Jobb-leasing">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="245" y="850"/>
+                            <mxPoint x="1050" y="850"/>
+                            <mxPoint x="1050" y="195"/>
+                        </Array>
+                        <mxPoint x="245" y="810" as="sourcePoint"/>
+                        <mxPoint x="1125" y="195" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_w_cpp_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="P/Invoke C ABI">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1260" y="230" as="sourcePoint"/>
+                        <mxPoint x="1260" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_cpp_w_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#059669;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="Callback (PDF)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1435" y="330" as="sourcePoint"/>
+                        <mxPoint x="1435" y="230" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_cpp_sig_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#E11D48;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFF7ED;" value="Unix Socket (Hash)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1260" y="405" as="sourcePoint"/>
+                        <mxPoint x="1260" y="470" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_sig_cpp_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#E11D48;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFF7ED;" value="Signatur">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1435" y="470" as="sourcePoint"/>
+                        <mxPoint x="1435" y="405" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_sig_tsa_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#9333EA;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="HTTP-anrop">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1260" y="545" as="sourcePoint"/>
+                        <mxPoint x="1260" y="625" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_tsa_sig_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#9333EA;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="Tidsstämpel">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1435" y="625" as="sourcePoint"/>
+                        <mxPoint x="1435" y="545" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_w_vol" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#059669;strokeWidth=2;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;" value="Sparar PDF">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1550" y="195"/>
+                            <mxPoint x="1550" y="748"/>
+                        </Array>
+                        <mxPoint x="1535" y="195" as="sourcePoint"/>
+                        <mxPoint x="1515" y="748" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_vol_api" edge="1" parent="1" style="endArrow=open;endFill=0;dashed=1;html=1;strokeColor=#10B981;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" value="Read-Only PDF">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1145" y="748" as="sourcePoint"/>
+                        <mxPoint x="960" y="675" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

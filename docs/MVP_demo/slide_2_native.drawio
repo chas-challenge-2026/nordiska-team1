@@ -1,0 +1,148 @@
+<mxfile host="65bd71144e">
+  <diagram id="slide2-native-detail" name="Native Detalj &amp; Invarianter">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Banner -->
+        <mxCell id="title" value="Nordiska Sparbanken v2 — Rapport-pipeline &amp; Native (C / C++) i detalj" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#334155;fontColor=#F8FAFC;fontSize=22;fontStyle=1;align=left;spacingLeft=24;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1520" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LEFT 2/3: RAPPORT-PIPELINE & NATIVE DETAIL (X=40, W=980) ================= -->
+        <mxCell id="pipe_outer" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#D97706;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="980" height="760" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe_title" value="Rapport-pipeline" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="65" y="112" width="350" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 1. .NET 8 Reporting Worker (Top) -->
+        <mxCell id="w_box" value="Nordiska.Reporting.Worker (.NET 8)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F59E0B;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="80" y="150" width="900" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- ================= NATIVE (C / C++) OUTER BOX ================= -->
+        <mxCell id="nat_outer" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="65" y="275" width="930" height="425" as="geometry" />
+        </mxCell>
+        <mxCell id="nat_label" value="Native (C / C++)" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#9A3412;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="85" y="283" width="220" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- 2. C++23 pdf_generator container -->
+        <mxCell id="cpp_container" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="85" y="320" width="890" height="165" as="geometry" />
+        </mxCell>
+        <mxCell id="cpp_title" value="C++23 pdf_generator (libnordiska_pdf_generator_c_api.so)" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="105" y="330" width="600" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Internal stages inside C++23 pdf_generator -->
+        <mxCell id="cpp_s1" value="1. Ingest&lt;br&gt;&lt;span style=&quot;font-size:14px;font-weight:normal;color:#475569;&quot;&gt;simdjson&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=2;align=center;fontSize=16;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="105" y="375" width="190" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="cpp_s2" value="2. Layout&lt;br&gt;&lt;span style=&quot;font-size:14px;font-weight:normal;color:#475569;&quot;&gt;LayoutBuilder&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=2;align=center;fontSize=16;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="325" y="375" width="190" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="cpp_s3" value="3. Render&lt;br&gt;&lt;span style=&quot;font-size:14px;font-weight:normal;color:#475569;&quot;&gt;libharu / Native&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=2;align=center;fontSize=16;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="545" y="375" width="190" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="cpp_s4" value="4. PDF Prep&lt;br&gt;&lt;span style=&quot;font-size:14px;font-weight:normal;color:#475569;&quot;&gt;SHA-256 Digest&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=2;align=center;fontSize=16;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="765" y="375" width="190" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- Small horizontal arrows between C++ stages -->
+        <mxCell id="e_cs12" value="" style="endArrow=block;endFill=1;html=1;strokeColor=#64748B;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="295" y="418" as="sourcePoint" />
+            <mxPoint x="325" y="418" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cs23" value="" style="endArrow=block;endFill=1;html=1;strokeColor=#64748B;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="515" y="418" as="sourcePoint" />
+            <mxPoint x="545" y="418" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cs34" value="" style="endArrow=block;endFill=1;html=1;strokeColor=#64748B;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="735" y="418" as="sourcePoint" />
+            <mxPoint x="765" y="418" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 3. C pdf-signer container -->
+        <mxCell id="sig_container" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="85" y="550" width="890" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sig_title" value="C pdf-signer (pdf_signer_service)" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#0F172A;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="105" y="558" width="450" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Internal boxes inside C pdf-signer -->
+        <mxCell id="sig_b1" value="OpenSSL 3.5+ CMS / CAdES" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF1F2;strokeColor=#FDA4AF;strokeWidth=2;align=center;fontSize=17;fontStyle=1;fontColor=#881337;" vertex="1" parent="1">
+          <mxGeometry x="105" y="595" width="410" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="sig_b2" value="PKCS#11 Provider → SoftHSM2 (Privat Nyckel)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF1F2;strokeColor=#FDA4AF;strokeWidth=2;align=center;fontSize=17;fontStyle=1;fontColor=#881337;" vertex="1" parent="1">
+          <mxGeometry x="545" y="595" width="410" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- 4. TSA Server (Bottom of Rapport-pipeline) -->
+        <mxCell id="tsa_box" value="TSA Server (tsa_server_service — RFC 3161)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9333EA;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="80" y="765" width="900" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- ================= DOWN & UP ARROWS (LEFT = DOWN, RIGHT = UP) ================= -->
+        <!-- Worker <-> C++23 -->
+        <mxCell id="a1_down" value="P/Invoke C89 ABI (JSON per kund)" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="215" as="sourcePoint" />
+            <mxPoint x="330" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a1_up" value="C-Callback (Signerad PDF-buffer)" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#059669;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="320" as="sourcePoint" />
+            <mxPoint x="750" y="215" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- C++23 <-> C Signer -->
+        <mxCell id="a2_down" value="Unix Socket (32-byte SHA-256 Hash)" style="endArrow=block;endFill=1;html=1;strokeColor=#E11D48;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFF7ED;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="485" as="sourcePoint" />
+            <mxPoint x="330" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a2_up" value="CMS-signatur (Hex)" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#E11D48;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFF7ED;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="550" as="sourcePoint" />
+            <mxPoint x="750" y="485" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- C Signer <-> TSA -->
+        <mxCell id="a3_down" value="HTTP (TimeStampReq)" style="endArrow=block;endFill=1;html=1;strokeColor=#9333EA;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="680" as="sourcePoint" />
+            <mxPoint x="330" y="765" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a3_up" value="Signerad Tidsstämpel" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#9333EA;strokeWidth=3;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="765" as="sourcePoint" />
+            <mxPoint x="750" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ================= RIGHT 1/3: BULLET POINTS AREA (X=1050, W=510) ================= -->
+        <mxCell id="notes_box" value="&lt;b style=&quot;font-size:20px;&quot;&gt;Viktiga Designval &amp; Invarianter&lt;/b&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;1 anrop = 1 kund:&lt;/b&gt; Ingen delad kunddata i minnet&lt;br&gt;&lt;br&gt;• &lt;b&gt;All-or-nothing:&lt;/b&gt; Misslyckad signering avbryter batchen&lt;br&gt;&lt;br&gt;• &lt;b&gt;Lånat minne:&lt;/b&gt; Frigörs direkt efter C-Callback&lt;br&gt;&lt;br&gt;• &lt;b&gt;Endast SHA-256 över socket:&lt;/b&gt; Signer ser aldrig PDF/kunddata&lt;br&gt;&lt;br&gt;• &lt;b&gt;PAdES-B-T:&lt;/b&gt; PKCS#11 (SoftHSM2) + RFC 3161 TSA&lt;br&gt;&lt;br&gt;• &lt;b&gt;Prestanda:&lt;/b&gt; &amp;gt;155k JSON/s • &amp;gt;44k PDF/s" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=24;spacingRight=20;spacingTop=24;fontSize=17;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="100" width="510" height="760" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
