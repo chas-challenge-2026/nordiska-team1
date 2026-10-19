@@ -19,16 +19,13 @@ include(FetchContent)
 # 1. ZLIB (System package)
 find_package(ZLIB REQUIRED)
 
-# 2. OpenSSL (Requires OpenSSL >= 3.2.0 for CMS_final_digest)
-if(EXISTS "$ENV{HOME}/.local/openssl-3.3" AND NOT DEFINED OPENSSL_ROOT_DIR)
-    set(OPENSSL_ROOT_DIR "$ENV{HOME}/.local/openssl-3.3")
-endif()
+# 2. OpenSSL (SHA-256 hashing; CMS signing runs in the external signer service)
 if(DEFINED OPENSSL_ROOT_DIR)
     set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
     list(APPEND CMAKE_BUILD_RPATH "${OPENSSL_ROOT_DIR}/lib64" "${OPENSSL_ROOT_DIR}/lib")
     list(APPEND CMAKE_INSTALL_RPATH "${OPENSSL_ROOT_DIR}/lib64" "${OPENSSL_ROOT_DIR}/lib")
 endif()
-find_package(OpenSSL 3.2.0 REQUIRED COMPONENTS Crypto)
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
 # 3. Cairo (System package via pkg-config)
 find_package(PkgConfig REQUIRED)
@@ -119,7 +116,7 @@ target_link_libraries(nordiska_document_core PUBLIC
     PRIVATE OpenSSL::Crypto
 )
 
-# C ABI Shared Library for P/Invoke (.NET / Host Interop)
+# C-compatible shared library for host applications
 add_library(nordiska_pdf_generator_c_api SHARED
     src/c_api/pdf_generator_c_api.cpp
 )

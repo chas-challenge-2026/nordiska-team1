@@ -24,8 +24,8 @@ native/pdf_generator/
 │   ├── c_api/                    # C ABI implementation & boundary validation
 │   ├── ingestion/                # simdjson (default) & nlohmann JSON parsers
 │   ├── layout/                   # LayoutBuilder (typography, tables, flow)
-│   ├── rendering/                # Native (default), Haru (bump arena), Cairo
-│   └── signing/                  # C signer adapter, PDF preparation & hashing
+│   ├── rendering/                # Native, Haru (default, bump arena), Cairo
+│   └── signing/                  # Socket signer adapter, PDF preparation & hashing
 ├── cli/                          # Standalone CLI binary (pdf_generator)
 ├── src/benchmark/                # Multi-threaded performance harness
 ├── tests/                        # CTest automated test suites
@@ -72,12 +72,12 @@ GeneratedPdfs / C ABI Delivery Callback
 
 ### PDF Rendering Engines (`--renderer <engine>`)
 
-1. **`native` (`PdfEngineKind::Native`) — Default Recommended**:
+1. **`native` (`PdfEngineKind::Native`)**:
    - Zero-dependency direct PDF 1.4 compiler.
    - Formats Core-14 PostScript Type 1 Helvetica and Helvetica-Bold font dictionaries, text matrices (`BT`, `Tf`, `Tm`, `Tj`, `ET`), and vector line paths.
    - Zero-allocation numeric formatting via `<charconv>` (`std::to_chars`).
    - Produces the smallest file size (1.67 KB compressed) and fastest throughput (>44k docs/s).
-2. **`haru` (`PdfEngineKind::Libharu`)**:
+2. **`haru` (`PdfEngineKind::Libharu`) — Default**:
    - Classical C library backend optimized with a thread-local bump arena (`HaruBumpArena` via `HPDF_NewEx`).
    - Allocations are $\mathcal{O}(1)$ pointer bumps, eliminating libc `ptmalloc` lock contention.
 3. **`cairo` (`PdfEngineKind::Cairo`)**:
@@ -102,12 +102,11 @@ GeneratedPdfs / C ABI Delivery Callback
 - CMake 3.25+
 - Ninja build system
 - Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
-- OpenSSL >= 3.2.0 (Required for CMS SignedData digest signing with `CMS_final_digest`)
-  - *Ubuntu / Debian LTS Notice*: Most LTS distributions ship OpenSSL 3.0.x by default. On Ubuntu 22.04/24.04 or Debian 12 developer workstations, run the provided local setup script to build and install OpenSSL 3.3.2 into `~/.local/openssl-3.3/` (isolated, non-root, no system changes):
-    ```bash
-    ./tools/setup-openssl-3.3.sh
-    ```
-    CMake automatically auto-detects this path when configuring.
+- OpenSSL >= 3.0 for SHA-256 hashing and signature tests (`libssl-dev`).
+  CMS signing runs in the external signer service. A custom OpenSSL installation
+  can be selected with `-DOPENSSL_ROOT_DIR=<path>`. The optional
+  `tools/setup-openssl-3.3.sh` helper remains for the root Dockerfile, which still
+  calls it; standalone generator builds can use system OpenSSL.
 - Third-party libraries:
   - ZLIB (system package: `zlib1g-dev`)
   - Cairo 2D graphics (system package: `libcairo2-dev`)
@@ -253,6 +252,7 @@ when it returns. No environment variable is needed to choose instrumentation.
 - `--no-compression`: Disable Flate stream compression for maximum rendering speed.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
 - `--signing`: Call the PDF signer service via Unix domain socket and embed its CMS hex in generated documents (default: `false`).
+- `--signature-capacity <n>`: Reserved CMS hex characters (default: `8192`).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.

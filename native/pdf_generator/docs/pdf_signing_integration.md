@@ -3,12 +3,13 @@
 ## Ownership and flow
 
 `PdfGenerator` owns the reusable rendering pipeline and a signer instance when
-signing is enabled. Its default signer is a C++ RAII adapter over `pdf_sign.h`.
+signing is enabled. Its default signer calls the external signer service over
+a Unix domain socket using protocol v2.
 A custom `PdfSigner` remains available for tests and alternate integrations.
 A generator/signer instance is intended for sequential reuse; do not share it
 between concurrent signing calls without a signer thread-safety contract.
 
-For each document:
+For each document when signing is enabled:
 
 1. Select the reserved `/Contents` capacity, measured in **hex characters**.
 2. Render with spare output-buffer capacity for the incremental update.
@@ -16,14 +17,15 @@ For each document:
    dictionary, and a new xref/trailer pointing back to the original revision.
 4. Finalize `/ByteRange`, excluding the entire `<...>` signature value including
    its delimiters. SHA-256 hashes the two covered ranges without concatenation.
-5. If enabled, call `pdf_signer_sign` exactly once with SHA-256, the 32-byte digest,
-   and its length. The signer receives a digest, not PDF bytes or a private key.
+5. If enabled, send one protocol v2 request with SHA-256, the 32-byte digest,
+   its length, and the signing mode. The signer receives a digest, not PDF bytes
+   or a private key.
 6. Validate the returned hex length/content, copy into `/Contents`, and pad unused
    characters with ASCII `0`. No file bytes outside that slot change.
 7. Compute the complete delivered artifact's SHA-256 and return the document.
 
-The C result is disposed on success, error, and exceptions; the signer handle is
-destroyed with its C++ owner. A failure aborts the whole customer batch. The C++
+Each signing call owns its socket through RAII; it closes on success, error,
+and exceptions. A failure aborts the whole customer batch. The C++
 `GeneratorErrorPayload` variant preserves concrete subsystem errors (`SigningError`,
 `IngestError`, `LayoutError`, `RenderError`, etc.) without information loss.
 The existing C ABI reports `NORDISKA_PDF_SIGNING_FAILED` with a diagnostic.
@@ -37,7 +39,7 @@ signature status.
 ## Capacity policy
 
 `GeneratorConfig.signature_contents_capacity` defaults to **8,192 hex
-characters** (4,096 binary CMS bytes), matching the current signer's stub output.
+characters** (4,096 binary CMS bytes), matching the benchmark and mock signer output.
 The CLI exposes the same setting as `--signature-capacity`.
 
 Capacity is passed as an argument for each render and preparation operation;
@@ -72,54 +74,56 @@ The signature dictionary uses `/ETSI.CAdES.detached`; the eventual signer must
 return matching CAdES CMS. This label alone does not establish PAdES compliance
 or any legal signature classification.
 
-## C signer dependency and current limitation
+## External signer service
 
-The C implementation files were imported unchanged from
-`feature/NOR-161-uppdatera-signerings-api`, commit
-`eebfcb4d39bd6b88ad9b114aa6ada6875fb51ef0`. They remain in `native/pdf-signer`.
-Only the signing implementation and its key/certificate/logging dependencies
-were imported, not the branch's deployment/test provisioning files.
+The generator does not compile or link `native/pdf-signer` sources. The private
+adapter in `src/signing/pdf_signer.cpp` sends protocol v2 requests to a separately
+running service. The service owns its keys, certificates and crypto configuration.
 
-CMake builds a PIC static signer archive and links it into the generator targets,
-using OpenSSL Crypto. No runtime `.so` lookup is needed. Set the CMake cache path
-`NORDISKA_PDF_SIGNER_SOURCE_DIR` to consume a different compatible signer checkout.
-The C API boundary is confined to `src/signing/pdf_signer.cpp`.
+- `PDF_SIGNER_SOCKET_PATH`: socket path, default `/run/pdf-signer/pdf-signer.sock`.
+- `PDF_SIGNER_MODE`: `1` or `timestamp` selects timestamp mode; otherwise plain mode.
+- Requests contain four network-order 32-bit fields (version, algorithm, digest
+  length, mode), followed by the 32-byte SHA-256 digest.
+- Responses contain network-order status and hex-length fields, followed by CMS
+  hex bytes. Empty responses and payloads over 65,536 characters fail explicitly.
+  Insertion also validates hex encoding and the configured slot capacity.
 
-The current upstream `pdf_signer_create` already needs its configured PKCS#11
-provider, SoftHSM token/key, PIN and matching certificate. Its configuration
-includes `/usr/lib/libsofthsm2.so`, token `key-load-dev`, object `pdf-signer-test`,
-`PDF_SIGNER_PKCS11_PIN`, and the working-directory-relative certificate
-`tests/data/signing_cert.pem`. Generator startup does not provision these or
-silently substitute a fake signer.
-
-Even with that environment, `pdf_signer_sign` currently returns a repeating
-8,192-character hex pattern, **not valid CMS**. PDFs containing it can exercise
-placement but will not pass signature verification. This is an upstream stub
-limitation, separate from the generator's tested signature construction.
+OpenSSL Crypto remains a generator dependency for local SHA-256 hashing and the
+signature tests. The previous in-process signer's `CMS_final_digest` requirement
+and local OpenSSL auto-detection are no longer needed; system OpenSSL >= 3.0 is
+sufficient. An explicit `OPENSSL_ROOT_DIR` override remains supported.
 
 ## Usage and verification
 
-Signing remains opt-in for the C++ configuration and CLI. When signing is
-disabled, generation returns the renderer output without a signature revision
-or a byte-range digest. It still computes the SHA-256 checksum of the final
-artifact. The signature slot has zero capacity and the signing digest is zero.
-The standalone signature preparation functions remain available for callers
-that explicitly need deferred signing. The v1 C ABI layout is unchanged.
+Signing is opt-in for the C++ configuration and CLI. When signing is disabled,
+generation returns the renderer output without a signature revision or a
+byte-range digest. It still computes the SHA-256 checksum of the final artifact.
+The signature slot has zero capacity and the signing digest is zero. The
+standalone signature preparation functions remain available for callers that
+explicitly need deferred signing.
+
+The C ABI selects signing through `NORDISKA_PDF_ENABLE_SIGNING`: `1` or `true`
+enables it; any other set value disables it. When unset, signing is enabled if
+the configured/default socket path is readable and writable. The public v1
+struct layout is unchanged. Both v1 and v2 calls use this selection.
 
 ```sh
-cmake --build --preset default
-ctest --test-dir build --output-on-failure
-./build/pdf_generator --renderer native --signing --signature-capacity 8192 \
+cmake --preset debug
+cmake --build --preset debug
+ctest --preset debug
+PDF_SIGNER_SOCKET_PATH=/run/pdf-signer/pdf-signer.sock \
+./build/debug/pdf_generator --renderer native --signing --signature-capacity 8192 \
     --output build/signed-output docs/golden_customer_batch_sample.json
 ```
 
-The last command requires the upstream signer environment described above.
-Without `--signing`, preparation and hashing run without creating a C signer.
+The last command requires the external signer service. Without `--signing`, the
+CLI returns unsigned renderer output and computes its checksum without
+contacting the service.
 
-`nordiska_pdf_signing_tests` uses a C-boundary double to check the exact digest
-request, one create/destroy per generator lifetime, one sign/dispose per PDF,
-explicit-length output without a null terminator, and error cleanup. This double
-is linked only into that test executable, never the production CLI/library.
+`nordiska_pdf_signing_tests` uses a mock Unix socket server to check the digest
+request, repeated batches, one request per PDF, malformed/oversized responses,
+protocol errors, missing sockets, and unsigned mode. It does not require a running
+signer service or provision keys.
 
 Other tests cover multiple capacities, exact fit, oversized/malformed results,
 unchanged covered bytes, artifact checksums, unsigned mode, and all three engines.
@@ -128,16 +132,18 @@ certificate are embedded and decoded back out of each renderer's PDF. OpenSSL
 verifies them and rejects a tampered covered byte; certificate-chain trust is
 intentionally not required for this test.
 
-CTest writes manual-review samples to `build/signing_samples/`:
+CTest writes manual-review samples to `signing_samples/` under its working
+directory (`native/pdf_generator` for the configured suite):
 `engine-0` is Haru, `engine-1` Cairo, and `engine-2` Native. `valid-test-cert` files
 contain valid test signatures with an untrusted certificate; `stub` files contain
 dummy bytes for structure/placement checks. They are disposable build outputs.
 
 ## Timing
 
-`PipelineTiming.sign_seconds` measures the full signing phase. Its two nested
-measurements are `hash_seconds` (signing digest and final-file checksum) and
-`signer_call_seconds` (only `pdf_signer_sign`, excluding adapter copying and
-result disposal). They are not added again to `total_seconds()`. No individual
-buffer append/copy timers are collected. The benchmark's `--instrumented` output
-reports these totals; external-call time is zero when signing is disabled.
+`PipelineTiming.sign_seconds` measures the full signing phase. Preparation,
+signing digest, signer wrapper, CMS insertion, and final checksum have separate
+elapsed-time measurements. Preparation has nested inspection/format/write timers.
+`hash_seconds` is the sum of digest and checksum time; `signer_call_seconds`
+measures the successful socket call within the signer wrapper. Nested times are
+not added again to `total_seconds()`. The benchmark's `--instrumented` output
+reports these measurements; external-call time is zero for its fixed CMS stub.
