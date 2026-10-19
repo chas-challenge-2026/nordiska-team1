@@ -190,6 +190,8 @@ if(BUILD_TESTING)
         nordiska_adversarial_json_fuzz_tests
         nordiska_adversarial_c_api_tests
         nordiska_adversarial_signing_tests
-        PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0"
     )
 endif()

@@ -3,6 +3,8 @@
 #include "nordiska/application/pdf_generator.hpp"
 
 #include <array>
+#include <cctype>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -30,7 +32,30 @@ constexpr int NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED = 5;
 constexpr int NORDISKA_PDF_OUT_OF_MEMORY = 6;
 constexpr int NORDISKA_PDF_SIGNING_FAILED = 7;
 
-constexpr size_t kMaxJsonPayloadBytes = 32 * 1024 * 1024; // 32 MB (NOR-157)
+constexpr size_t kDefaultMaxJsonPayloadBytes = 32 * 1024 * 1024; // 32 MB (NOR-157)
+
+inline size_t parse_env_size(const char* env_var_name, size_t default_value) noexcept {
+    if (const char* val = std::getenv(env_var_name); val != nullptr && *val != '\0') {
+        const char* p = val;
+        while (*p != '\0' && std::isspace(static_cast<unsigned char>(*p))) {
+            ++p;
+        }
+        if (*p == '-' || *p == '\0') {
+            return default_value;
+        }
+        char* end = nullptr;
+        errno = 0;
+        const unsigned long long parsed = std::strtoull(p, &end, 10);
+        if (errno == 0 && end != p && *end == '\0' && parsed > 0) {
+            return static_cast<size_t>(parsed);
+        }
+    }
+    return default_value;
+}
+
+size_t get_max_json_payload_bytes() noexcept {
+    return parse_env_size("NORDISKA_PDF_MAX_PAYLOAD_BYTES", kDefaultMaxJsonPayloadBytes);
+}
 
 // Thread-local diagnostic storage for error reporting
 thread_local std::string g_last_error;
@@ -71,7 +96,7 @@ std::expected<void, int> validate_boundary_arguments(const uint8_t* json_utf8, s
         set_last_error("callback must not be null");
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
-    if (json_length > kMaxJsonPayloadBytes) {
+    if (json_length > get_max_json_payload_bytes()) {
         set_last_error("Payload size exceeds maximum allowed limit");
         return std::unexpected(NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED);
     }
@@ -98,6 +123,9 @@ int map_generator_error(const nordiska::GeneratorError& err) noexcept {
                 return payload.kind == nordiska::LayoutErrorKind::InternalError ? NORDISKA_PDF_INTERNAL_ERROR
                                                                                 : NORDISKA_PDF_INVALID_INPUT;
             } else if constexpr (std::is_same_v<T, nordiska::RenderError>) {
+                if (payload.kind == nordiska::RenderErrorKind::OutOfMemory) {
+                    return NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED;
+                }
                 return NORDISKA_PDF_INTERNAL_ERROR;
             } else if constexpr (std::is_same_v<T, nordiska::SigningError>) {
                 return NORDISKA_PDF_SIGNING_FAILED;
@@ -254,7 +282,7 @@ extern "C" int nordiska_pdf_v2_generate_customer_batch_instrumented(const uint8_
 }
 
 extern "C" size_t nordiska_pdf_v1_max_json_bytes(void) {
-    return kMaxJsonPayloadBytes;
+    return get_max_json_payload_bytes();
 }
 
 extern "C" const char* nordiska_pdf_v1_get_last_error(void) {

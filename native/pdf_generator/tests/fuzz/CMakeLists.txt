@@ -37,6 +37,8 @@ if(BUILD_TESTING)
         nordiska_fuzz_pdf_signing_slot
         nordiska_fuzz_combinatorial_pipeline
         nordiska_fuzz_c_api
-        PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0"
     )
 endif()

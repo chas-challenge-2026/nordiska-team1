@@ -267,6 +267,39 @@ void test_environment_variable_tampering() {
                 NORDISKA_PDF_INVALID_ARGUMENT,
             "Massive engine name must be rejected without crash");
     require(cap.call_count == 0, "No callback must be called");
+
+    // 4. Payload size limit override via NORDISKA_PDF_MAX_PAYLOAD_BYTES
+    {
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Default max payload must be 32 MB");
+
+        ScopedEnv custom_max("NORDISKA_PDF_MAX_PAYLOAD_BYTES", "512");
+        require(nordiska_pdf_v1_max_json_bytes() == 512, "max_json_bytes must reflect NORDISKA_PDF_MAX_PAYLOAD_BYTES");
+        cap = {};
+        require(nordiska_pdf_v1_generate_customer_batch(valid_bytes, kValidBatch.size(), v1_success_cb, &cap) ==
+                    NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED,
+                "Batch exceeding custom NORDISKA_PDF_MAX_PAYLOAD_BYTES must return RESOURCE_LIMIT_EXCEEDED");
+        require(cap.call_count == 0, "No callback must be invoked when payload exceeds limit");
+
+        // Invalid or zero values safely fall back to 32 MB default
+        custom_max.set("not_a_number");
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Invalid env value must fallback to default");
+
+        custom_max.set("0");
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Zero env value must fallback to default");
+
+        custom_max.set("-100");
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Negative env value must fallback to default");
+
+        custom_max.set("   ");
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Whitespace env value must fallback to default");
+
+        custom_max.set("1024trailing");
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Trailing garbage must fallback to default");
+
+        custom_max.set("9999999999999999999999999999999999999");
+        require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Overflow string must fallback to default");
+    }
+    require(nordiska_pdf_v1_max_json_bytes() == 32 * 1024 * 1024, "Unset env value must restore default 32 MB");
 }
 
 void test_multithreaded_concurrency() {

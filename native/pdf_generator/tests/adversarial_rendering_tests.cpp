@@ -1,12 +1,15 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/domain/document_types.hpp"
 #include "nordiska/layout/layout_builder.hpp"
+#include "nordiska/rendering/haru_pdf_engine.hpp"
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "pdf_test_helpers.hpp"
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -19,6 +22,30 @@ void require(bool condition, const char* message) {
         throw std::runtime_error(message);
     }
 }
+
+class ScopedEnv {
+  public:
+    ScopedEnv(const char* name, const char* value) : name_(name) {
+        if (const char* old = std::getenv(name)) {
+            old_ = old;
+        }
+        set(value);
+    }
+    ~ScopedEnv() {
+        set(old_ ? old_->c_str() : nullptr);
+    }
+    void set(const char* val) const {
+        if (val) {
+            ::setenv(name_, val, 1);
+        } else {
+            ::unsetenv(name_);
+        }
+    }
+
+  private:
+    const char* name_;
+    std::optional<std::string> old_;
+};
 
 nordiska::AccountStatement create_statement_with_transactions(size_t tx_count, const std::string& desc_prefix = "Tx ") {
     nordiska::AccountStatement stmt;
@@ -181,10 +208,228 @@ void test_pdf_injection_and_escaping() {
     }
 }
 
+void test_haru_bump_arena_limits_and_teardown() {
+    std::cout << "Testing HaruBumpArena limits, geometric growth, and memory teardown..." << std::endl;
+
+    // Ensure clean state before starting
+    nordiska::test::reset_haru_arena();
+    auto stats = nordiska::test::get_haru_arena_stats();
+    require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Default base chunk must be 2 MB");
+    require(stats.overflow_chunk_count == 0, "Initial overflow chunk count must be 0");
+    require(stats.total_capacity == 2 * 1024 * 1024, "Initial total capacity must be 2 MB");
+    require(!stats.budget_exceeded, "Budget exceeded flag must be false initially");
+
+    // 1. Direct bump allocation within base chunk (2 MB)
+    void* p1 = nordiska::test::haru_arena_allocate_for_test(1024 * 1024);
+    require(p1 != nullptr, "1 MB allocation must succeed in base chunk");
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.overflow_chunk_count == 0, "No overflow chunk should be created for 1 MB");
+    require(stats.total_capacity == 2 * 1024 * 1024, "Capacity should remain 2 MB");
+
+    // Fill the remainder of the 2 MB base chunk
+    void* p2 = nordiska::test::haru_arena_allocate_for_test(1024 * 1024);
+    require(p2 != nullptr, "Second 1 MB allocation should succeed in base chunk");
+
+    // 2. Geometric growth verification:
+    // Base: 2 MB
+    // Overflow 1: 4 MB (Total = 6 MB)
+    // Overflow 2: 6 MB (Total = 12 MB)
+    // Overflow 3: 20 MB (Total = 32 MB)
+
+    // A. Overflow into Overflow Chunk 1 (4 MB, Total = 6 MB)
+    void* p_ov1 = nordiska::test::haru_arena_allocate_for_test(1);
+    require(p_ov1 != nullptr, "Overflow 1 allocation must succeed");
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.overflow_chunk_count == 1, "Exactly 1 overflow chunk must exist");
+    require(stats.total_capacity == 6 * 1024 * 1024, "Capacity after Overflow 1 must be exactly 6 MB");
+
+    // B. Overflow into Overflow Chunk 2 (6 MB, Total = 12 MB)
+    void* p_ov2 = nordiska::test::haru_arena_allocate_for_test(4 * 1024 * 1024);
+    require(p_ov2 != nullptr, "Overflow 2 allocation must succeed");
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.overflow_chunk_count == 2, "Exactly 2 overflow chunks must exist");
+    require(stats.total_capacity == 12 * 1024 * 1024, "Capacity after Overflow 2 must be exactly 12 MB");
+
+    // C. Overflow into Overflow Chunk 3 (20 MB, Total = 32 MB)
+    void* p_ov3 = nordiska::test::haru_arena_allocate_for_test(6 * 1024 * 1024);
+    require(p_ov3 != nullptr, "Overflow 3 allocation must succeed");
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.overflow_chunk_count == 3, "Exactly 3 overflow chunks must exist");
+    require(stats.total_capacity == 32 * 1024 * 1024, "Capacity after Overflow 3 must reach 32 MB cap");
+
+    // 3. Hard ceiling (32 MB cap) rejection:
+    // Any allocation exceeding the 32 MB arena budget must return nullptr
+    void* p_overflow = nordiska::test::haru_arena_allocate_for_test(15 * 1024 * 1024);
+    require(p_overflow == nullptr, "Allocation exceeding 32 MB cap must return nullptr");
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.budget_exceeded, "budget_exceeded flag must be true");
+    require(stats.total_capacity == 32 * 1024 * 1024, "Total capacity must remain capped at 32 MB");
+
+    // 4. Deterministic teardown on reset():
+    // Overflow chunks must be deallocated immediately, returning to warm 2 MB baseline
+    nordiska::test::reset_haru_arena();
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.overflow_chunk_count == 0, "Teardown must deallocate all overflow chunks immediately");
+    require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Base chunk must remain warm 2 MB baseline");
+    require(stats.total_capacity == 2 * 1024 * 1024, "Total capacity must return to warm 2 MB baseline");
+    require(!stats.budget_exceeded, "budget_exceeded must be reset to false");
+
+    // Post-reset allocation must work immediately in the base chunk
+    void* p_after_reset = nordiska::test::haru_arena_allocate_for_test(512);
+    require(p_after_reset != nullptr, "Allocation after teardown must succeed in warm base chunk");
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.overflow_chunk_count == 0, "Post-reset allocation must stay in base chunk");
+
+    // 5. Environment variable overrides:
+    // A. Base chunk override via NORDISKA_PDF_HARU_BASE_CHUNK_BYTES
+    {
+        ScopedEnv custom_base("NORDISKA_PDF_HARU_BASE_CHUNK_BYTES", "1048576"); // 1 MB
+        nordiska::test::reset_haru_arena();
+        stats = nordiska::test::get_haru_arena_stats();
+        require(stats.base_chunk_capacity == 1048576, "Base chunk must honor NORDISKA_PDF_HARU_BASE_CHUNK_BYTES");
+        require(stats.total_capacity == 1048576, "Total capacity must equal configured base chunk");
+    }
+    nordiska::test::reset_haru_arena();
+    stats = nordiska::test::get_haru_arena_stats();
+    require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Base chunk must return to 2 MB after env unset");
+
+    // B. Hard ceiling override via NORDISKA_PDF_HARU_MAX_ARENA_BYTES and end-to-end Libharu rendering
+    {
+        // Constrain max arena to 256 KB so rendering a massive 4,000 tx statement fails due to OOM
+        ScopedEnv tight_ceiling("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "262144");
+        auto stmt = create_statement_with_transactions(4000);
+        auto layout_res = nordiska::LayoutBuilder::build_statement(stmt);
+        require(layout_res.has_value(), "Layout building for 4000 tx must succeed");
+
+        nordiska::PdfEngine engine(nordiska::PdfEngineKind::Libharu, true);
+        auto render_res = engine.render(*layout_res);
+        require(!render_res.has_value(), "Rendering massive statement with 256 KB arena cap must fail");
+        require(render_res.error().kind == nordiska::RenderErrorKind::OutOfMemory,
+                "Error must be OutOfMemory when arena budget exceeded");
+    }
+
+    // C. Immediate recovery on next render once limit is restored
+    {
+        auto stmt = create_statement_with_transactions(100);
+        auto layout_res = nordiska::LayoutBuilder::build_statement(stmt);
+        require(layout_res.has_value(), "Layout building for 100 tx must succeed");
+
+        nordiska::PdfEngine engine(nordiska::PdfEngineKind::Libharu, true);
+        auto render_res = engine.render(*layout_res);
+        require(render_res.has_value(), "Rendering 100 tx statement after recovery must succeed");
+        require(nordiska::test::is_valid_pdf_structure(*render_res), "Recovered PDF must have valid structure");
+
+        stats = nordiska::test::get_haru_arena_stats();
+        require(!stats.budget_exceeded, "Budget exceeded must be false after successful render");
+        require(stats.overflow_chunk_count == 0, "100 tx statement must fit within warm 2 MB base chunk");
+    }
+
+    // D. Geometric growth beyond 32 MB when configured via NORDISKA_PDF_HARU_MAX_ARENA_BYTES
+    {
+        // 128 MB ceiling (128 * 1024 * 1024 = 134217728)
+        ScopedEnv large_ceiling("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "134217728");
+        nordiska::test::reset_haru_arena();
+
+        // Fill base chunk (2 MB)
+        nordiska::test::haru_arena_allocate_for_test(2 * 1024 * 1024);
+        // Overflow 1 (4 MB, Total = 6 MB)
+        nordiska::test::haru_arena_allocate_for_test(1);
+        // Overflow 2 (6 MB, Total = 12 MB)
+        nordiska::test::haru_arena_allocate_for_test(4 * 1024 * 1024);
+        // Overflow 3 (20 MB, Total = 32 MB)
+        nordiska::test::haru_arena_allocate_for_test(6 * 1024 * 1024);
+        stats = nordiska::test::get_haru_arena_stats();
+        require(stats.total_capacity == 32 * 1024 * 1024, "Total capacity at Overflow 3 must be 32 MB");
+
+        // Overflow 4 doubles previous overflow (40 MB, Total = 72 MB)
+        nordiska::test::haru_arena_allocate_for_test(20 * 1024 * 1024);
+        stats = nordiska::test::get_haru_arena_stats();
+        require(stats.overflow_chunk_count == 4, "Overflow 4 must exist");
+        require(stats.total_capacity == 72 * 1024 * 1024,
+                "Total capacity after Overflow 4 must be 72 MB (geometric doubling)");
+
+        // Overflow 5 (clamped to remaining 56 MB budget, Total = 128 MB)
+        nordiska::test::haru_arena_allocate_for_test(40 * 1024 * 1024);
+        stats = nordiska::test::get_haru_arena_stats();
+        require(stats.overflow_chunk_count == 5, "Overflow 5 must exist");
+        require(stats.total_capacity == 128 * 1024 * 1024, "Total capacity must reach 128 MB ceiling");
+
+        // Further allocation must return nullptr
+        void* p_exceed_128 = nordiska::test::haru_arena_allocate_for_test(60 * 1024 * 1024);
+        require(p_exceed_128 == nullptr, "Allocation beyond 128 MB ceiling must return nullptr");
+        stats = nordiska::test::get_haru_arena_stats();
+        require(stats.budget_exceeded, "Budget exceeded must be true");
+    }
+
+    // E. Bad environment variable settings must safely fallback without breaking
+    {
+        // 1. Negative numbers
+        {
+            ScopedEnv neg_base("NORDISKA_PDF_HARU_BASE_CHUNK_BYTES", "-1");
+            ScopedEnv neg_max("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "-500");
+            nordiska::test::reset_haru_arena();
+            stats = nordiska::test::get_haru_arena_stats();
+            require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Negative base chunk must fallback to default 2 MB");
+            require(stats.total_capacity == 2 * 1024 * 1024, "Negative max arena must fallback to default 32 MB");
+        }
+
+        // 2. Zero values
+        {
+            ScopedEnv zero_base("NORDISKA_PDF_HARU_BASE_CHUNK_BYTES", "0");
+            ScopedEnv zero_max("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "0");
+            nordiska::test::reset_haru_arena();
+            stats = nordiska::test::get_haru_arena_stats();
+            require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Zero base chunk must fallback to default 2 MB");
+        }
+
+        // 3. Gibberish / non-numeric / whitespace
+        {
+            ScopedEnv gibberish("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "not_a_number");
+            ScopedEnv whitespace("NORDISKA_PDF_HARU_BASE_CHUNK_BYTES", "   ");
+            nordiska::test::reset_haru_arena();
+            stats = nordiska::test::get_haru_arena_stats();
+            require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Whitespace must fallback to default 2 MB");
+        }
+
+        // 4. Trailing garbage
+        {
+            ScopedEnv trailing("NORDISKA_PDF_HARU_BASE_CHUNK_BYTES", "1048576xyz");
+            nordiska::test::reset_haru_arena();
+            stats = nordiska::test::get_haru_arena_stats();
+            require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Trailing garbage must fallback to default 2 MB");
+        }
+
+        // 5. Overflow / extreme numbers
+        {
+            ScopedEnv huge("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "9999999999999999999999999999999999999999");
+            nordiska::test::reset_haru_arena();
+            stats = nordiska::test::get_haru_arena_stats();
+            require(stats.base_chunk_capacity == 2 * 1024 * 1024, "Overflow string must fallback safely to default");
+        }
+
+        // 6. Inverted configuration: base > max
+        {
+            // Set base chunk to 64 MB but max arena to 16 MB
+            ScopedEnv inv_base("NORDISKA_PDF_HARU_BASE_CHUNK_BYTES", "67108864");
+            ScopedEnv inv_max("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", "16777216");
+            nordiska::test::reset_haru_arena();
+            stats = nordiska::test::get_haru_arena_stats();
+            require(stats.base_chunk_capacity == 16777216, "Base chunk must be safely clamped to max arena");
+            require(stats.total_capacity == 16777216, "Total capacity must not exceed max arena ceiling");
+        }
+    }
+
+    // Clean up
+    nordiska::test::reset_haru_arena();
+    std::cout << "HaruBumpArena limits and teardown tests passed successfully!" << std::endl;
+}
+
 } // namespace
 
 int main() {
     std::cout << "Starting adversarial rendering tests..." << std::endl;
+
+    test_haru_bump_arena_limits_and_teardown();
 
     test_engine_valid_pdf_generation(nordiska::PdfEngineKind::Libharu, "Libharu");
     test_engine_valid_pdf_generation(nordiska::PdfEngineKind::Native, "Native");
