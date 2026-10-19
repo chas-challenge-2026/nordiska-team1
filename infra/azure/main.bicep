@@ -180,7 +180,11 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           env: [
             {
               name: 'ASPNETCORE_ENVIRONMENT'
-              value: 'Production'
+              value: 'Development'
+            }
+            {
+              name: 'ActiveLogin__BankId__Environment'
+              value: 'Test'
             }
             {
               name: 'ConnectionStrings__DefaultConnection'
