@@ -208,6 +208,58 @@ void test_pdf_injection_and_escaping() {
     }
 }
 
+void test_ultra_long_unbroken_strings_robustness() {
+    std::cout << "Testing ultra-long unbroken string robustness (500, 2000, 10000 chars)..." << std::endl;
+
+    const std::vector<std::pair<std::string, std::string>> long_cases = {
+        {"500 ASCII chars", std::string(500, 'W')},
+        {"2000 ASCII chars", std::string(2000, 'X')},
+        {"10000 ASCII chars", std::string(10000, 'Z')},
+        {"1000 multi-byte Swedish chars",
+         []() {
+             std::string s;
+             s.reserve(2000);
+             for (int i = 0; i < 500; ++i) {
+                 s += "åä";
+             }
+             return s;
+         }()},
+    };
+
+    for (const auto& [label, str] : long_cases) {
+        nordiska::AccountStatement stmt;
+        stmt.title = "Statement - " + label;
+        stmt.account_number = "SE9999000011112222";
+        stmt.account_name = str; // ultra-long customer/account name
+        stmt.currency = "SEK";
+        stmt.period = "2026-01-01 - 2026-12-31";
+        stmt.opening_balance = "100,00 SEK";
+        stmt.closing_balance = "200,00 SEK";
+        stmt.transactions.push_back(nordiska::StatementTransaction{
+            .date = "2026-06-01",
+            .type = "Kortköp",
+            .description = str, // ultra-long unbroken description
+            .currency = "SEK",
+            .amount_minor = 10000,
+            .amount_display = "100,00 SEK",
+            .balance_after_display = "200,00 SEK",
+        });
+
+        auto layout_res = nordiska::LayoutBuilder::build_statement(stmt);
+        require(layout_res.has_value(), ("Layout building for " + label + " must succeed").c_str());
+
+        for (auto engine_kind :
+             {nordiska::PdfEngineKind::Native, nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo}) {
+            nordiska::PdfEngine engine(engine_kind, true);
+            auto pdf_res = engine.render(*layout_res);
+            require(pdf_res.has_value(), ("Rendering for " + label + " must succeed").c_str());
+            require(nordiska::test::is_valid_pdf_structure(*pdf_res), ("Valid PDF structure for " + label).c_str());
+            require(nordiska::test::validate_pdf_with_ghostscript(*pdf_res),
+                    ("Ghostscript validation for " + label).c_str());
+        }
+    }
+}
+
 void test_haru_bump_arena_limits_and_teardown() {
     std::cout << "Testing HaruBumpArena limits, geometric growth, and memory teardown..." << std::endl;
 
@@ -436,6 +488,7 @@ int main() {
     test_engine_valid_pdf_generation(nordiska::PdfEngineKind::Cairo, "Cairo");
 
     test_pdf_injection_and_escaping();
+    test_ultra_long_unbroken_strings_robustness();
 
     std::cout << "All adversarial rendering tests passed successfully!" << std::endl;
     return 0;
