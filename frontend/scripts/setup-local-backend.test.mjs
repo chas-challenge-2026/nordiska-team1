@@ -59,7 +59,7 @@ test("preserves an existing local frontend environment", async () => {
     }
 });
 
-test("starts only the database, API and reporting worker Docker services", async () => {
+test("starts the shared-volume API app with the database and reporting worker", async () => {
     const directory = await mkdtemp(join(tmpdir(), "nordiska-local-backend-"));
 
     try {
@@ -111,6 +111,22 @@ test("starts only the database, API and reporting worker Docker services", async
     } finally {
         await rm(directory, { recursive: true, force: true });
     }
+});
+
+test("the local API Compose override supplies development-only secret fallbacks", async () => {
+    const composeOverride = await readFile(
+        new URL("../../infra/docker-compose.frontend-local.yml", import.meta.url),
+        "utf8",
+    );
+
+    assert.match(
+        composeOverride,
+        /AdminUser__Password:\s*\$\{ADMIN_USER_PASSWORD:-password123\}/,
+    );
+    assert.match(
+        composeOverride,
+        /FaqSearchLog__Salt:\s*\$\{FAQ_SEARCH_LOG_SALT:-nordiska-faq-search-salt-dev\}/,
+    );
 });
 
 test("requires DevSetup before starting Docker when the backend environment is missing", async () => {

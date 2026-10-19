@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Nordiska.Modules.Reporting.PdfGeneration;
+namespace Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
 public sealed record GeneratedPdfBatch(
     ulong CustomerId,

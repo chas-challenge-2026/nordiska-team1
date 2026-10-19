@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Options;
 using Nordiska.Modules.Reporting.Application;
+using Nordiska.Reporting.Worker.JobHandlers.TaxReports;
+using Nordiska.Reporting.Worker.Scheduling;
 
-namespace Nordiska.Reporting.Worker.TaxReports;
+namespace Nordiska.Reporting.Worker.Execution;
 
 public sealed class TaxReportJobProcessor
 {

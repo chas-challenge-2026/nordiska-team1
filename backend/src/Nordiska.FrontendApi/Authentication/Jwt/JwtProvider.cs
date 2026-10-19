@@ -87,7 +87,9 @@ public class JwtProvider : IJwtProvider
             new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
             new Claim("staff_id", staff.Id.ToString()),
-            new Claim(ClaimTypes.Role, staff.Role)
+            new Claim(ClaimTypes.Role, staff.Role),
+            new Claim("name", !string.IsNullOrWhiteSpace(staff.FullName) ? staff.FullName : (staff.Role == "Admin" ? "Administrator" : "Staff")),
+            new Claim(ClaimTypes.Name, !string.IsNullOrWhiteSpace(staff.FullName) ? staff.FullName : (staff.Role == "Admin" ? "Administrator" : "Staff"))
         };
 
         var key = Encoding.UTF8.GetBytes(_options.SecretKey);

@@ -1,5 +1,5 @@
 using System.IO;
-using Nordiska.Modules.Reporting.PdfGeneration;
+using Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
 namespace Nordiska.Reporting.Worker.Tests.PdfGeneration;
 

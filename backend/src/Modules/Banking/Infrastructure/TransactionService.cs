@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Nordiska.BuildingBlocks.Database;
 using Nordiska.BuildingBlocks.Database.Errors;
@@ -10,6 +11,7 @@ using Nordiska.Modules.Banking.Application;
 using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Banking.Infrastructure.Db;
 
 namespace Nordiska.Modules.Banking.Infrastructure;
 
@@ -19,17 +21,20 @@ public class TransactionService : ITransactionService
     private readonly ITransactionRepository _txRepo;
     private readonly ISavingsAccountRepository _accRepo;
     private readonly ISavingsGoalRepository? _goalRepo;
+    private readonly BankingDbContext? _dbContext;
 
     public TransactionService(
         ITransactionRepository txRepo,
         ISavingsAccountRepository accRepo,
         ILogger<TransactionService> logger,
-        ISavingsGoalRepository? goalRepo = null)
+        ISavingsGoalRepository? goalRepo = null,
+        BankingDbContext? dbContext = null)
     {
         _txRepo = txRepo;
         _accRepo = accRepo;
         _logger = logger;
         _goalRepo = goalRepo;
+        _dbContext = dbContext;
     }
 
     public async Task<IEnumerable<TransactionResponse>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
@@ -279,78 +284,116 @@ public class TransactionService : ITransactionService
             return null;
         }
 
-        TransactionResponse result;
+        IDbContextTransaction? transaction = null;
+        if (_dbContext is not null && _dbContext.Database.CurrentTransaction is null)
+        {
+            transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        }
+
         try
         {
-            if (isTransfer)
+            TransactionResponse result;
+            try
             {
-                if (!entry.TargetAccountId.HasValue)
+                if (isTransfer)
                 {
-                    _logger.LogError("Planned transfer {TxId} has no TargetAccountId specified.", entry.Id);
-                    return null;
+                    if (!entry.TargetAccountId.HasValue)
+                    {
+                        _logger.LogError("Planned transfer {TxId} has no TargetAccountId specified.", entry.Id);
+                        if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+                        return null;
+                    }
+
+                    result = await TransferAsync(
+                        new TransferRequest(entry.AccountId, entry.TargetAccountId.Value, entry.Amount, entry.Label),
+                        cancellationToken);
+                }
+                else
+                {
+                    result = await ExecuteAsync(
+                        new TransactionRequest(entry.AccountId, isWithdrawal ? "withdrawal" : "deposit", entry.Amount, entry.Label),
+                        cancellationToken);
+                }
+            }
+            catch (ConflictException ex)
+            {
+                _logger.LogWarning(ex, "Failed to execute planned transaction {TxId} on account {AccountId} due to business rule violation (e.g. insufficient funds): {Message}", entry.Id, entry.AccountId, ex.Message);
+                if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error executing planned transaction {TxId} on account {AccountId}: {Message}", entry.Id, entry.AccountId, ex.Message);
+                if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+
+            if (savingsGoal is not null)
+            {
+                savingsGoal.CurrentAmount += entry.Amount;
+                savingsGoal.UpdatedAt = DateTime.UtcNow;
+                if (savingsGoal.CurrentAmount >= savingsGoal.TargetAmount && !string.Equals(savingsGoal.Status, "completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    savingsGoal.Status = "completed";
+                    _logger.LogInformation("Savings goal {GoalId} reached target amount {TargetAmount}. Status set to completed.", savingsGoal.Id, savingsGoal.TargetAmount);
                 }
 
-                result = await TransferAsync(
-                    new TransferRequest(entry.AccountId, entry.TargetAccountId.Value, entry.Amount, entry.Label),
-                    cancellationToken);
+                await _goalRepo!.UpdateAsync(savingsGoal, cancellationToken);
             }
-            else
+
+            // Handle recurring or single-execution cleanup
+            if (!string.IsNullOrWhiteSpace(entry.Repeating))
             {
-                result = await ExecuteAsync(
-                    new TransactionRequest(entry.AccountId, isWithdrawal ? "withdrawal" : "deposit", entry.Amount, entry.Label),
-                    cancellationToken);
+                var rep = entry.Repeating.Trim().ToLowerInvariant();
+                var nextDate = rep switch
+                {
+                    "week" => (entry.PlannedDate ?? DateTime.UtcNow).AddDays(7),
+                    "month" => (entry.PlannedDate ?? DateTime.UtcNow).AddMonths(1),
+                    "year" => (entry.PlannedDate ?? DateTime.UtcNow).AddYears(1),
+                    _ => (DateTime?)null
+                };
+
+                if (nextDate.HasValue)
+                {
+                    entry.PlannedDate = nextDate.Value;
+                    await _txRepo.UpdateAsync(entry, cancellationToken);
+                    _logger.LogInformation("Advanced recurring planned transaction {TxId} to next date {NextDate} (repeating: {Repeating})", entry.Id, nextDate.Value, entry.Repeating);
+
+                    if (transaction is not null)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    return result;
+                }
             }
-        }
-        catch (ConflictException ex)
-        {
-            _logger.LogWarning(ex, "Failed to execute planned transaction {TxId} on account {AccountId} due to business rule violation (e.g. insufficient funds): {Message}", entry.Id, entry.AccountId, ex.Message);
-            return null;
+
+            // Single execution plan completed -> remove the planned entry
+            await _txRepo.DeleteAsync(entry.Id, cancellationToken);
+            _logger.LogInformation("Consumed and removed single planned transaction {TxId} for account {AccountId}", entry.Id, entry.AccountId);
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error executing planned transaction {TxId} on account {AccountId}: {Message}", entry.Id, entry.AccountId, ex.Message);
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            _logger.LogError(ex, "Failed to complete planned transaction {TxId}. Entire operation rolled back.", entry.Id);
             throw;
         }
-
-        if (savingsGoal is not null)
+        finally
         {
-            savingsGoal.CurrentAmount += entry.Amount;
-            savingsGoal.UpdatedAt = DateTime.UtcNow;
-            if (savingsGoal.CurrentAmount >= savingsGoal.TargetAmount && !string.Equals(savingsGoal.Status, "completed", StringComparison.OrdinalIgnoreCase))
+            if (transaction is not null)
             {
-                savingsGoal.Status = "completed";
-                _logger.LogInformation("Savings goal {GoalId} reached target amount {TargetAmount}. Status set to completed.", savingsGoal.Id, savingsGoal.TargetAmount);
-            }
-
-            await _goalRepo!.UpdateAsync(savingsGoal, cancellationToken);
-        }
-
-        // Handle recurring or single-execution cleanup
-        if (!string.IsNullOrWhiteSpace(entry.Repeating))
-        {
-            var rep = entry.Repeating.Trim().ToLowerInvariant();
-            var nextDate = rep switch
-            {
-                "week" => (entry.PlannedDate ?? DateTime.UtcNow).AddDays(7),
-                "month" => (entry.PlannedDate ?? DateTime.UtcNow).AddMonths(1),
-                "year" => (entry.PlannedDate ?? DateTime.UtcNow).AddYears(1),
-                _ => (DateTime?)null
-            };
-
-            if (nextDate.HasValue)
-            {
-                entry.PlannedDate = nextDate.Value;
-                await _txRepo.UpdateAsync(entry, cancellationToken);
-                _logger.LogInformation("Advanced recurring planned transaction {TxId} to next date {NextDate} (repeating: {Repeating})", entry.Id, nextDate.Value, entry.Repeating);
-                return result;
+                await transaction.DisposeAsync();
             }
         }
-
-        // Single execution plan completed -> remove the planned entry
-        await _txRepo.DeleteAsync(entry.Id, cancellationToken);
-        _logger.LogInformation("Consumed and removed single planned transaction {TxId} for account {AccountId}", entry.Id, entry.AccountId);
-
-        return result;
     }
 
     public async Task<IEnumerable<TransactionResponse>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)

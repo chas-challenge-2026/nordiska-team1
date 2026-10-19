@@ -11,6 +11,8 @@ services:
       target: app
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      AdminUser__Password: ${ADMIN_USER_PASSWORD:-password123}
+      FaqSearchLog__Salt: ${FAQ_SEARCH_LOG_SALT:-nordiska-faq-search-salt-dev}
     ports:
       - "127.0.0.1:5031:8080"
 

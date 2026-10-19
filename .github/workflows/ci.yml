@@ -73,7 +73,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d nordiska_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -125,14 +125,14 @@ jobs:
           ConnectionStrings__InboxDatabase: "Host=localhost;Port=5432;Database=nordiska_db;Username=postgres;Password=postgrespassword"
 
       - name: Generate Coverage Report
-        if: always()
+        if: always() && hashFiles('coverage-results/**/coverage.cobertura.xml') != ''
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.4.18
           reportgenerator "-reports:coverage-results/**/coverage.cobertura.xml" "-targetdir:coverage-report" "-reporttypes:MarkdownSummaryGithub;Html;Cobertura;TextSummary"
           cat coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Comment Coverage on Pull Request
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && hashFiles('coverage-report/SummaryGithub.md') != ''
         continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v2
         with:
@@ -140,7 +140,7 @@ jobs:
           path: coverage-report/SummaryGithub.md
 
       - name: Upload Coverage Report
-        if: always()
+        if: always() && hashFiles('coverage-report/SummaryGithub.md') != ''
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage-report

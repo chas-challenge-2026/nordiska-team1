@@ -20,7 +20,7 @@ export default function AccountRecentTransactions({accountId}: AccountRecentTran
         <section aria-labelledby="account-recent-transactions-heading" className="bg-white -mt-1">
             <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.transactions-section.title")}</h2>
             
-            <div className="border border-nordiska-blue/50 bg-light-gray/30 sm:p-4">
+            <div className="border border-nordiska-blue/50 bg-light-gray/30 sm:p-2">
                 {/* LOADING & ERROR */}
                 {isPending && ( <LoadingState title={t("overview-route.transactions-card.pending")}/>)}
                 {isError && (<ErrorState title={t("overview-route.transactions-card.error")}/>)}
@@ -40,7 +40,7 @@ export default function AccountRecentTransactions({accountId}: AccountRecentTran
                                             <span>{formatTime(tx.createdAt)}</span>
                                         </div>
                                         {/* TITEL */}
-                                        <span className="min-w-0 flex-1 wrap-break-word text-xs font-semibold sm:text-sm">
+                                        <span className="truncate min-w-0 flex-1 wrap-break-word text-xs font-semibold sm:text-sm">
                                             {tx.label || t(`overview-route.transactions-card.transfer-type-${tx.type}`)}
                                         </span>
                                         {/* SUMMA */}

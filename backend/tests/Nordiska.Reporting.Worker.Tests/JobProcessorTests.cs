@@ -2,8 +2,10 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Nordiska.Modules.Reporting.Application;
-using Nordiska.Reporting.Worker.AccountStatements;
-using Nordiska.Reporting.Worker.TaxReports;
+using Nordiska.Reporting.Worker.Execution;
+using Nordiska.Reporting.Worker.JobHandlers.AccountStatements;
+using Nordiska.Reporting.Worker.JobHandlers.TaxReports;
+using Nordiska.Reporting.Worker.Scheduling;
 
 namespace Nordiska.Reporting.Worker.Tests;
 

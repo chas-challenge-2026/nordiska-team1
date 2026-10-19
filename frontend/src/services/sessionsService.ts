@@ -7,12 +7,16 @@ export async function checkSession(): Promise<User | null> {
     try {
         //Authenticate
         const authRes = await axiosInstance.get<User>("/auth/me");
+        const authUser = authRes.data;
+
+        if (authUser.role === "Admin") { return authUser;}
+
         // Get customerinfo
         const customerRes = await axiosInstance.get<User>(`/customers/${authRes.data.id}`);
 
         return {
-            ...authRes.data,
             ...customerRes.data,
+            ...authUser
         };
     } catch(error) {
         // returnera inget om unauthorized

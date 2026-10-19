@@ -453,7 +453,8 @@
             "notifications": "No notifications.",
             "new-notifications": "No new notifications.",
             "documents": "No documents.",
-            "terms": "No terms to accept."
+            "terms": "No terms to accept.",
+            "feed": "Nothing to show in your inbox"
         },
         "thread": {
             "status": "Status",
