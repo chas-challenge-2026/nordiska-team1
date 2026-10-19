@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Nordiska.Modules.Reporting.Infrastructure.Db;
 using Nordiska.Modules.Reporting.PdfGeneration;
 using Nordiska.Reporting.Worker;
@@ -6,6 +7,7 @@ using Nordiska.Reporting.Worker.TaxReports;
 
 HostApplicationBuilder builder =
     Host.CreateApplicationBuilder(args);
+
 
 builder.Services.AddReportingModuleInfrastructure(
     builder.Configuration);
@@ -37,6 +39,28 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<
     AccountStatementJobProcessor>();
+
+builder.Services.AddSingleton<IReportingJobWakeSignal>(
+    serviceProvider =>
+    {
+        TaxReportWorkerOptions options = serviceProvider
+            .GetRequiredService<IOptions<TaxReportWorkerOptions>>()
+            .Value;
+
+        return new ReportingJobWakeSignal(
+            options.Concurrency);
+    });
+
+builder.Services.AddSingleton<
+    IReportingJobNotificationSource,
+    PostgresReportingJobNotificationSource>();
+
+builder.Services.AddSingleton<
+    IWorkerLoop,
+    WorkerLoop>();
+
+builder.Services.AddHostedService<
+    ReportingJobNotificationListener>();
 
 builder.Services.AddHostedService<Worker>();
 

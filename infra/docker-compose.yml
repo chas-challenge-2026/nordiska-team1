@@ -94,6 +94,7 @@ services:
       ConnectionStrings__ReportingDatabase: >-
         Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
+      TaxReportWorker__Concurrency: "${REPORTING_WORKER_CONCURRENCY:-12}"
       NORDISKA_PDF_ENABLE_SIGNING: "0"
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
     volumes:

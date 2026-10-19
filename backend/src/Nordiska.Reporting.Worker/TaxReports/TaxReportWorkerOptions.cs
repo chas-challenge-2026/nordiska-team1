@@ -2,7 +2,9 @@ namespace Nordiska.Reporting.Worker.TaxReports;
 
 public sealed class TaxReportWorkerOptions
 {
-    public int PollIntervalSeconds { get; set; } = 2;
+    public int Concurrency { get; set; } = 12;
+
+    public int PollIntervalSeconds { get; set; } = 30;
 
     public int LeaseDurationMinutes { get; set; } = 5;
 

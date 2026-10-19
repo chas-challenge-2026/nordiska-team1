@@ -1,5 +1,6 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Domain;
 using Nordiska.Modules.Reporting.Infrastructure.Db;
@@ -9,6 +10,38 @@ namespace Nordiska.Modules.Reporting.Infrastructure;
 public sealed class TaxReportJobRepository
     : ITaxReportJobRepository
 {
+    internal const string ClaimNextSql = """
+        WITH candidate AS (
+            SELECT job."Id"
+            FROM reporting.tax_report_jobs AS job
+            WHERE
+                (
+                    job."Status" = @PendingStatus
+                    AND job."AvailableAt" <= @Now
+                )
+                OR
+                (
+                    job."Status" = @ProcessingStatus
+                    AND job."LeaseExpiresAt" <= @Now
+                )
+            ORDER BY job."CreatedAt", job."Id"
+            FOR UPDATE SKIP LOCKED
+            LIMIT 1
+        )
+        UPDATE reporting.tax_report_jobs AS job
+        SET
+            "Status" = @ProcessingStatus,
+            "AttemptCount" = job."AttemptCount" + 1,
+            "LockedBy" = @WorkerId,
+            "LeaseExpiresAt" = @LeaseExpiresAt,
+            "StartedAt" = COALESCE(job."StartedAt", @Now),
+            "CompletedAt" = NULL,
+            "LastError" = NULL
+        FROM candidate
+        WHERE job."Id" = candidate."Id"
+        RETURNING job."Id", job."TaxReportId", job."AttemptCount";
+        """;
+
     private readonly ReportingDbContext _dbContext;
 
     public TaxReportJobRepository(
@@ -23,52 +56,56 @@ public sealed class TaxReportJobRepository
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
-        await using var transaction =
-            await _dbContext.Database.BeginTransactionAsync(
-                IsolationLevel.ReadCommitted,
-                cancellationToken);
-
-        List<TaxReportJob> jobs =
-            await _dbContext.TaxReportJobs
-                .FromSqlInterpolated($"""
-                    SELECT *
-                    FROM reporting.tax_report_jobs
-                    WHERE
-                        (
-                            "Status" = {TaxReportJobStatuses.Pending}
-                            AND "AvailableAt" <= {now}
-                        )
-                        OR
-                        (
-                            "Status" = {TaxReportJobStatuses.Processing}
-                            AND "LeaseExpiresAt" <= {now}
-                        )
-                    ORDER BY "CreatedAt", "Id"
-                    FOR UPDATE SKIP LOCKED
-                    LIMIT 1
-                    """)
-                .ToListAsync(cancellationToken);
-
-        TaxReportJob? job = jobs.SingleOrDefault();
-
-        if (job is null)
+        ArgumentException.ThrowIfNullOrWhiteSpace(workerId);
+        if (leaseDuration <= TimeSpan.Zero)
         {
-            await transaction.CommitAsync(cancellationToken);
-            return null;
+            throw new ArgumentOutOfRangeException(
+                nameof(leaseDuration));
         }
 
-        job.Claim(
-            workerId,
-            now,
-            leaseDuration);
+        NpgsqlConnection connection =
+            (NpgsqlConnection)_dbContext.Database.GetDbConnection();
+        bool closeConnection = connection.State != ConnectionState.Open;
+        if (closeConnection)
+            await connection.OpenAsync(cancellationToken);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await using var command = new NpgsqlCommand(
+                ClaimNextSql,
+                connection);
+            command.Parameters.AddWithValue(
+                "PendingStatus",
+                TaxReportJobStatuses.Pending);
+            command.Parameters.AddWithValue(
+                "ProcessingStatus",
+                TaxReportJobStatuses.Processing);
+            command.Parameters.AddWithValue(
+                "WorkerId",
+                workerId);
+            command.Parameters.AddWithValue(
+                "Now",
+                now.ToUniversalTime());
+            command.Parameters.AddWithValue(
+                "LeaseExpiresAt",
+                now.Add(leaseDuration).ToUniversalTime());
 
-        return new ClaimedTaxReportJob(
-            job.Id,
-            job.TaxReportId,
-            job.AttemptCount);
+            await using NpgsqlDataReader reader =
+                await command.ExecuteReaderAsync(cancellationToken);
+
+            if (!await reader.ReadAsync(cancellationToken))
+                return null;
+
+            return new ClaimedTaxReportJob(
+                reader.GetInt64(0),
+                reader.GetInt64(1),
+                reader.GetInt32(2));
+        }
+        finally
+        {
+            if (closeConnection)
+                await connection.CloseAsync();
+        }
     }
 
     public async Task MarkFailedAsync(
