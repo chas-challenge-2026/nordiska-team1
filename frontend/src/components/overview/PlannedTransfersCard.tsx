@@ -74,7 +74,7 @@ export default function PlannedTransfersCard() {
                     >
                         {/* NAMN & SUMMA */}
                         <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
-                            <span className="min-w-0 wrap-break-word font-semibold"> {tx.label ? tx.label : t(`transactions-route.type-transfer`)} </span>
+                            <span className="min-w-0 wrap-break-word font-semibold truncate"> {tx.label ? tx.label : t(`transactions-route.type-transfer`)} </span>
                             <span className={`shrink-0 whitespace-nowrap font-medium`}>{formatCurrency(tx.amount)}</span>
                         </p>
 

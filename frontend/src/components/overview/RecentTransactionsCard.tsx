@@ -120,7 +120,7 @@ export default function RecentTransactionsCard() {
         
                             {/* NAMN & SUMMA */}
                             <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
-                                <span className="min-w-0 wrap-break-word font-semibold"> {tx.label ? tx.label : t(`overview-route.transactions-card.transfer-type-${tx.type}`)} </span>
+                                <span className="min-w-0 wrap-break-word font-semibold truncate"> {tx.label ? tx.label : t(`overview-route.transactions-card.transfer-type-${tx.type}`)} </span>
                                 <span className={`shrink-0 whitespace-nowrap font-medium ${tx.amount < 0 ? "text-red-700" : tx.type === "transfer-group" ? "" : "text-green-700"}`}>
                                     {tx.type === "transfer-group" ? "" : tx.amount < 0 ? "" : "+"}
                                     {formatCurrency(tx.amount)}
