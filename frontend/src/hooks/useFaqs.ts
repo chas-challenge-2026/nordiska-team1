@@ -22,7 +22,7 @@ export const useFaqs = (
             getFaqs({  
                 language,
                 page,
-                pageSize: 3,
+                pageSize: 5,
                 search,
                 category,
                 keyword,

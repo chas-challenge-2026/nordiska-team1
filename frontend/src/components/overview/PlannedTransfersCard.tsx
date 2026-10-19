@@ -80,7 +80,10 @@ export default function PlannedTransfersCard() {
 
                         {/* DATUM & INTERVALL / FRÅN TILL */}
                         <p className="flex flex-wrap justify-between gap-x-2 gap-y-1 text-[9px] uppercase text-dark-navy/60 sm:text-xs">
-                            <span className="min-w-0 wrap-break-word">{formatDate(tx.plannedDate)}: <span className="font-medium capitalize">{t(`page-transfer.repeating.${tx.repeating}`)}</span></span> 
+                            <span className="min-w-0 wrap-break-word">
+                                {formatDate(tx.plannedDate)} 
+                                {tx.repeating ? <span className="font-medium capitalize"> {t(`page-transfer.repeating.${tx.repeating}`)}</span> : "" }
+                                </span> 
                             <span className="shrink-0 whitespace-nowrap">
                                 {getAccountNumber(tx.accountId)} → {getAccountNumber(tx.targetAccountId)}
                             </span>
