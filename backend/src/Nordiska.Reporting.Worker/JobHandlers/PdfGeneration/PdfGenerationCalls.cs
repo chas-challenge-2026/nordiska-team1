@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 
 
-namespace Nordiska.Modules.Reporting.PdfGeneration;
+namespace Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
 internal enum NativeStatus 
 {

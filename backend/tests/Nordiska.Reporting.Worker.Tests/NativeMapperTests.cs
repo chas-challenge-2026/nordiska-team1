@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Nordiska.Modules.Reporting.Domain;
-using Nordiska.Reporting.Worker.AccountStatements;
-using Nordiska.Reporting.Worker.TaxReports;
+using Nordiska.Reporting.Worker.JobHandlers.AccountStatements;
+using Nordiska.Reporting.Worker.JobHandlers.TaxReports;
 
 namespace Nordiska.Reporting.Worker.Tests;
 

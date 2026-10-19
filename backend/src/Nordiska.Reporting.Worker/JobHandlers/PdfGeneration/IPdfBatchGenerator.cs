@@ -1,4 +1,4 @@
-namespace Nordiska.Modules.Reporting.PdfGeneration;
+namespace Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
 public interface IPdfBatchGenerator
 {

@@ -625,7 +625,8 @@
         "dependencies": {
           "FluentValidation": "[11.6.0, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
-          "Nordiska.Modules.Banking": "[1.0.0, )"
+          "Nordiska.Modules.Banking": "[1.0.0, )",
+          "Npgsql": "[8.0.6, )"
         }
       },
       "nordiska.reporting.worker": {
@@ -633,7 +634,8 @@
         "dependencies": {
           "Microsoft.Extensions.Hosting": "[8.0.1, )",
           "Nordiska.BuildingBlocks.Database": "[1.0.0, )",
-          "Nordiska.Modules.Reporting": "[1.0.0, )"
+          "Nordiska.Modules.Reporting": "[1.0.0, )",
+          "Npgsql": "[8.0.6, )"
         }
       },
       "ActiveLogin.Authentication.BankId.AspNetCore": {

@@ -157,6 +157,8 @@ internal static class Program
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> repair-passwords\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> seed-transactions [customerId] [batchSize]\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> report-pressure-test [customerId] [accountId] [year] [batchSize] [delayMs]\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> worker-pdf-benchmark [jobCount] [timeoutSeconds] [taxReportId]\n" +
+                "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> worker-timestamp-pdf-benchmark [jobCount] [timeoutSeconds] [taxReportId]\n" +
                 "  dotnet run --project backend/tools/Nordiska.DevSetup -- <repo-root> direct-report-pressure-test [customerId] [accountId] [year] [batchSize] [delayMs] [baseUrl] [bearerToken]");
 
             return 1;
@@ -229,10 +231,37 @@ internal static class Program
                 return 0;
             }
 
+            bool workerPdfBenchmark = args.Length > 1 &&
+                string.Equals(args[1], "worker-pdf-benchmark", StringComparison.OrdinalIgnoreCase);
+            bool workerTimestampPdfBenchmark = args.Length > 1 &&
+                string.Equals(args[1], "worker-timestamp-pdf-benchmark", StringComparison.OrdinalIgnoreCase);
+
+            if (workerPdfBenchmark || workerTimestampPdfBenchmark)
+            {
+                if (args.Length > 5)
+                {
+                    throw new ArgumentException(
+                        "The worker PDF benchmark modes accept jobCount, timeoutSeconds, and taxReportId.");
+                }
+
+                var jobCount = args.Length > 2 ? int.Parse(args[2]) : 10_000;
+                var timeoutSeconds = args.Length > 3 ? int.Parse(args[3]) : 300;
+                var taxReportId = args.Length > 4 ? long.Parse(args[4]) : 0;
+                WorkerPdfBenchmarkResult result =
+                    await WorkerPdfBenchmark.RunAsync(
+                        root,
+                        jobCount,
+                        timeoutSeconds,
+                        taxReportId,
+                        requireDistinctDocuments:
+                            workerTimestampPdfBenchmark);
+                return result.Passed ? 0 : 1;
+            }
+
             if (args.Length != 1 && !repairPasswords && !startStack)
             {
                 Console.Error.WriteLine(
-                    "Pass the repository root as the first argument or use a dedicated dev mode such as start-stack, repair-passwords, seed-transactions, or report-pressure-test.");
+                    "Pass the repository root as the first argument or use a dedicated dev mode such as start-stack, repair-passwords, seed-transactions, report-pressure-test, worker-pdf-benchmark, or worker-timestamp-pdf-benchmark.");
 
                 return 1;
             }

@@ -2,9 +2,9 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Nordiska.Modules.Reporting.Domain;
-using Nordiska.Reporting.Worker.TaxReports;
+using Nordiska.Reporting.Worker.JobHandlers.PdfGeneration;
 
-namespace Nordiska.Reporting.Worker.AccountStatements;
+namespace Nordiska.Reporting.Worker.JobHandlers.AccountStatements;
 
 public sealed class AccountStatementNativeMapper
 {

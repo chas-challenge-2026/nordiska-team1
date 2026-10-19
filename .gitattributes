@@ -1,2 +1,3 @@
 *.sh text eol=lf
 native/pdf-signer/docker/*.sh text eol=lf
+backend/scripts/*.sh text eol=lf
