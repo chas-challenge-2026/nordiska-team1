@@ -537,7 +537,7 @@
             <response code="423">Account is temporarily locked after too many failed attempts.</response>
             <response code="429">Too many login requests from this IP.</response>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser(Nordiska.Modules.Banking.Application.ICustomerService,System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Controllers.AuthController.GetCurrentUser(Nordiska.Modules.Banking.Application.ICustomerService,Nordiska.Modules.Banking.Infrastructure.Db.BankingDbContext,System.Threading.CancellationToken)">
             <summary>
             Returns the currently authenticated user's profile information extracted from the session and database.
             </summary>

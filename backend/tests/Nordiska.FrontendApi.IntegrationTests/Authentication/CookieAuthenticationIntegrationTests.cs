@@ -40,6 +40,7 @@ public class TestAuthService : IAuthService
 {
     private readonly IJwtProvider _jwtProvider;
     private static readonly ConcurrentDictionary<string, Customer> _customers = new();
+    private static readonly ConcurrentDictionary<string, StaffMember> _staff = new();
     private static readonly ConcurrentDictionary<string, string> _orders = new();
 
     static TestAuthService()
@@ -67,6 +68,17 @@ public class TestAuthService : IAuthService
         _customers[erik.PersonalNum] = erik;
         _customers[erik.Email] = erik;
         _customers["erik@example.com"] = erik;
+
+        var admin = new StaffMember
+        {
+            Id = 1,
+            FullName = "Jesper Adminsson",
+            Email = "admin@nordiska.se",
+            Role = "Admin",
+            PhoneNumber = "+46700000001",
+            IsActive = true
+        };
+        _staff[admin.Email] = admin;
     }
 
     public TestAuthService(IJwtProvider jwtProvider)
@@ -165,6 +177,18 @@ public class TestAuthService : IAuthService
 
     public async Task<AuthenticationResultDto> LoginAsync(LoginRequest request, HttpResponse response)
     {
+        if (_staff.TryGetValue(request.Email, out var staffMember))
+        {
+            var token = await _jwtProvider.Generate(staffMember);
+            response.AppendAuthCookie(token, 15);
+            var completeData = new BankIdCollectResponseDto(
+                "COMPLETE",
+                null,
+                new CustomerResponseDto(staffMember.Id, staffMember.Email, staffMember.FullName, token)
+            );
+            return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
+        }
+
         if (_customers.TryGetValue(request.Email, out var customer))
         {
             var token = await _jwtProvider.Generate(customer);
@@ -236,7 +260,10 @@ public class TestJwtProvider : IJwtProvider
         {
             new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
-            new Claim(ClaimTypes.Role, staff.Role)
+            new Claim("staff_id", staff.Id.ToString()),
+            new Claim(ClaimTypes.Role, staff.Role),
+            new Claim("name", !string.IsNullOrWhiteSpace(staff.FullName) ? staff.FullName : (staff.Role == "Admin" ? "Administrator" : "Staff")),
+            new Claim(ClaimTypes.Name, !string.IsNullOrWhiteSpace(staff.FullName) ? staff.FullName : (staff.Role == "Admin" ? "Administrator" : "Staff"))
         };
         return Task.FromResult(GenerateToken(claims));
     }
@@ -1246,6 +1273,43 @@ public class CookieAuthenticationIntegrationTests : IClassFixture<CustomAuthWebA
         using var meDoc = JsonDocument.Parse(meContent);
         var email = meDoc.RootElement.GetProperty("email").GetString();
         email.Should().Be("anna@exempel.se");
+    }
+
+    [Fact]
+    public async Task Admin_Login_Sets_HttpOnly_AuthCookie_And_Returns_StaffProfile_In_MeEndpoint()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        // Act 1: Login with seeded admin user
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "admin@nordiska.se",
+            password = "password123"
+        });
+
+        // Assert 1: Successful login and auth cookie set
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        loginResponse.Headers.Contains("Set-Cookie").Should().BeTrue();
+
+        // Act 2: Access protected /api/auth/me endpoint
+        var meResponse = await client.GetAsync("/api/auth/me");
+        meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var meContent = await meResponse.Content.ReadAsStringAsync();
+        using var meDoc = JsonDocument.Parse(meContent);
+        var email = meDoc.RootElement.GetProperty("email").GetString();
+        var name = meDoc.RootElement.GetProperty("name").GetString();
+        var role = meDoc.RootElement.GetProperty("role").GetString();
+
+        email.Should().Be("admin@nordiska.se");
+        name.Should().Be("Jesper Adminsson");
+        role.Should().Be("Admin");
+        name.Should().NotBe("Anna Smith");
     }
 
     [Fact]

@@ -5,12 +5,14 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Nordiska.FrontendApi.Authentication;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
 using Nordiska.FrontendApi.Filters;
 using Nordiska.FrontendApi.RateLimiting;
 using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Infrastructure.Db;
 
 namespace Nordiska.FrontendApi.Controllers;
 
@@ -221,15 +223,63 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCurrentUser(
         [FromServices] ICustomerService customerService,
+        [FromServices] BankingDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        var customerIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
-                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
                     ?? User.FindFirst(ClaimTypes.Email)?.Value;
         var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Customer";
 
-        if (long.TryParse(customerIdStr, out var customerId))
+        var isStaffOrAdmin = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase)
+                             || string.Equals(role, "BankStaff", StringComparison.OrdinalIgnoreCase)
+                             || string.Equals(role, "Staff", StringComparison.OrdinalIgnoreCase)
+                             || User.HasClaim(c => c.Type == "staff_id");
+
+        if (isStaffOrAdmin)
+        {
+            var staffIdStr = User.FindFirst("staff_id")?.Value ?? sub;
+            if (long.TryParse(staffIdStr, out var staffId))
+            {
+                try
+                {
+                    var staff = await dbContext.StaffMembers.FirstOrDefaultAsync(s => s.Id == staffId && s.IsActive, cancellationToken);
+                    if (staff != null)
+                    {
+                        return Ok(new
+                        {
+                            id = staff.Id,
+                            name = staff.FullName,
+                            email = !string.IsNullOrWhiteSpace(email) ? email : staff.Email,
+                            phone = staff.PhoneNumber,
+                            phoneNumber = staff.PhoneNumber,
+                            role = staff.Role
+                        });
+                    }
+                }
+                catch
+                {
+                    // Fallback to claims if staff entity query fails
+                }
+            }
+
+            var fallbackName = User.FindFirst("name")?.Value 
+                               ?? User.FindFirst(ClaimTypes.Name)?.Value 
+                               ?? (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Administrator" : (email ?? "Staff"));
+
+            return Ok(new
+            {
+                id = staffIdStr,
+                name = fallbackName,
+                email = email,
+                phone = (string?)null,
+                phoneNumber = (string?)null,
+                role = role
+            });
+        }
+
+        if (long.TryParse(sub, out var customerId))
         {
             try
             {
@@ -252,8 +302,8 @@ public class AuthController : ControllerBase
 
         return Ok(new
         {
-            id = customerIdStr,
-            name = User.FindFirst("name")?.Value ?? email,
+            id = sub,
+            name = User.FindFirst("name")?.Value ?? User.FindFirst(ClaimTypes.Name)?.Value ?? email,
             email = email,
             phone = (string?)null,
             phoneNumber = (string?)null,
