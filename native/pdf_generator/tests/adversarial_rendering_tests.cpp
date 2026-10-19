@@ -1,6 +1,7 @@
 #include "nordiska/application/pdf_generator.hpp"
 #include "nordiska/domain/document_types.hpp"
 #include "nordiska/layout/layout_builder.hpp"
+#include "nordiska/rendering/cairo_pdf_engine.hpp"
 #include "nordiska/rendering/haru_pdf_engine.hpp"
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "pdf_test_helpers.hpp"
@@ -260,6 +261,44 @@ void test_ultra_long_unbroken_strings_robustness() {
     }
 }
 
+void test_cairo_font_fallbacks_and_failure() {
+    std::cout << "Testing Cairo font fallback chain and forced failure handling..." << std::endl;
+
+    auto stmt = create_statement_with_transactions(2);
+    auto layout_res = nordiska::LayoutBuilder::build_statement(stmt);
+    require(layout_res.has_value(), "Layout building must succeed");
+
+    // 1. Normal Cairo rendering succeeds with standard font fallback chain (Helvetica -> Arial -> sans-serif)
+    {
+        nordiska::test::reload_cairo_fonts();
+        nordiska::PdfEngine engine(nordiska::PdfEngineKind::Cairo, true);
+        auto pdf_res = engine.render(*layout_res);
+        require(pdf_res.has_value(), "Normal Cairo rendering must succeed with fallback chain");
+        require(nordiska::test::is_valid_pdf_structure(*pdf_res), "Rendered PDF must have valid structure");
+    }
+
+    // 2. Simulated font resolution failure returns clean EngineError without crashing
+    {
+        ScopedEnv force_fail("NORDISKA_PDF_CAIRO_FONT_OVERRIDE", "__FORCE_FAILURE__");
+        nordiska::test::reload_cairo_fonts();
+        nordiska::PdfEngine engine(nordiska::PdfEngineKind::Cairo, true);
+        auto pdf_res = engine.render(*layout_res);
+        require(!pdf_res.has_value(), "Cairo rendering must fail when fonts cannot be resolved");
+        require(pdf_res.error().kind == nordiska::RenderErrorKind::EngineError,
+                "Failed font resolution must return EngineError");
+        require(pdf_res.error().message.find("failed to resolve a valid font face") != std::string::npos,
+                "Error message must mention font face resolution failure");
+    }
+
+    // 3. Restoring environment restores healthy Cairo rendering
+    {
+        nordiska::test::reload_cairo_fonts();
+        nordiska::PdfEngine engine(nordiska::PdfEngineKind::Cairo, true);
+        auto pdf_res = engine.render(*layout_res);
+        require(pdf_res.has_value(), "Cairo rendering must recover cleanly after restoring font resolution");
+    }
+}
+
 void test_haru_bump_arena_limits_and_teardown() {
     std::cout << "Testing HaruBumpArena limits, geometric growth, and memory teardown..." << std::endl;
 
@@ -489,6 +528,7 @@ int main() {
 
     test_pdf_injection_and_escaping();
     test_ultra_long_unbroken_strings_robustness();
+    test_cairo_font_fallbacks_and_failure();
 
     std::cout << "All adversarial rendering tests passed successfully!" << std::endl;
     return 0;

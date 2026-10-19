@@ -8,4 +8,8 @@ namespace nordiska {
 
 std::unique_ptr<PdfEngine::Impl> create_cairo_pdf_engine();
 
+namespace test {
+void reload_cairo_fonts();
+}
+
 } // namespace nordiska

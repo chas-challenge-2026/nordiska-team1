@@ -1,9 +1,11 @@
 #include "nordiska/rendering/cairo_pdf_engine.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cairo-pdf.h>
 #include <cairo.h>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -39,11 +41,39 @@ struct CairoFontFaceDeleter {
 };
 using UniqueCairoFontFace = std::unique_ptr<cairo_font_face_t, CairoFontFaceDeleter>;
 
+static UniqueCairoFontFace create_font_face_with_fallback(cairo_font_weight_t weight) {
+    if (const char* override_font = std::getenv("NORDISKA_PDF_CAIRO_FONT_OVERRIDE");
+        override_font != nullptr && std::strcmp(override_font, "__FORCE_FAILURE__") == 0) {
+        return nullptr;
+    }
+
+    constexpr std::array<const char*, 3> kFontCandidates = {"Helvetica", "Arial", "sans-serif"};
+    for (const char* family : kFontCandidates) {
+        cairo_font_face_t* face = cairo_toy_font_face_create(family, CAIRO_FONT_SLANT_NORMAL, weight);
+        if (face != nullptr) {
+            const cairo_status_t status = cairo_font_face_status(face);
+            if (status == CAIRO_STATUS_SUCCESS) {
+                return UniqueCairoFontFace(face);
+            }
+            cairo_font_face_destroy(face);
+        }
+    }
+    return nullptr;
+}
+
 class SharedCairoFonts {
   public:
-    static const SharedCairoFonts& instance() {
+    static const SharedCairoFonts& instance(bool force_reload = false) {
         static SharedCairoFonts inst;
+        if (force_reload) {
+            inst.reload();
+        }
         return inst;
+    }
+
+    [[nodiscard]] bool is_valid() const noexcept {
+        return font_normal_ != nullptr && cairo_font_face_status(font_normal_.get()) == CAIRO_STATUS_SUCCESS &&
+               font_bold_ != nullptr && cairo_font_face_status(font_bold_.get()) == CAIRO_STATUS_SUCCESS;
     }
 
     [[nodiscard]] cairo_font_face_t* normal() const noexcept {
@@ -53,10 +83,15 @@ class SharedCairoFonts {
         return font_bold_.get();
     }
 
+    void reload() {
+        font_normal_ = create_font_face_with_fallback(CAIRO_FONT_WEIGHT_NORMAL);
+        font_bold_ = create_font_face_with_fallback(CAIRO_FONT_WEIGHT_BOLD);
+    }
+
   private:
-    SharedCairoFonts()
-        : font_normal_(cairo_toy_font_face_create("Helvetica", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL)),
-          font_bold_(cairo_toy_font_face_create("Helvetica", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD)) {}
+    SharedCairoFonts() {
+        reload();
+    }
 
     UniqueCairoFontFace font_normal_;
     UniqueCairoFontFace font_bold_;
@@ -118,6 +153,12 @@ class CairoEngineImpl final : public PdfEngine::Impl {
         cairo_set_source_rgb(cr.get(), 0.0, 0.0, 0.0);
 
         const auto& fonts = SharedCairoFonts::instance();
+        if (!fonts.is_valid()) {
+            return std::unexpected(RenderError{
+                .kind = RenderErrorKind::EngineError,
+                .message = "cairo: failed to resolve a valid font face (tried 'Helvetica', 'Arial', 'sans-serif')",
+            });
+        }
 
         for (const PageLayout& page_layout : layout.pages) {
             cairo_pdf_surface_set_size(surface.get(), page_layout.width, page_layout.height);
@@ -140,6 +181,12 @@ class CairoEngineImpl final : public PdfEngine::Impl {
 
             for (const PositionedText& text : page_layout.texts) {
                 cairo_font_face_t* target_face = (text.weight == FontWeight::Bold) ? fonts.bold() : fonts.normal();
+                if (target_face == nullptr || cairo_font_face_status(target_face) != CAIRO_STATUS_SUCCESS) {
+                    return std::unexpected(RenderError{
+                        .kind = RenderErrorKind::EngineError,
+                        .message = "cairo: active font face is in an invalid error state",
+                    });
+                }
                 if (target_face != current_font_face) {
                     cairo_set_font_face(cr.get(), target_face);
                     current_font_face = target_face;
@@ -155,7 +202,15 @@ class CairoEngineImpl final : public PdfEngine::Impl {
             cairo_show_page(cr.get());
         }
 
+        const cairo_status_t cr_status = cairo_status(cr.get());
         cr.reset();
+        if (cr_status != CAIRO_STATUS_SUCCESS) {
+            return std::unexpected(RenderError{
+                .kind = RenderErrorKind::EngineError,
+                .message = std::string("cairo: drawing context failed: ") + cairo_status_to_string(cr_status),
+            });
+        }
+
         cairo_surface_finish(surface.get());
         const cairo_status_t status = cairo_surface_status(surface.get());
         surface.reset();
@@ -176,5 +231,11 @@ class CairoEngineImpl final : public PdfEngine::Impl {
 std::unique_ptr<PdfEngine::Impl> create_cairo_pdf_engine() {
     return std::make_unique<CairoEngineImpl>();
 }
+
+namespace test {
+void reload_cairo_fonts() {
+    (void)SharedCairoFonts::instance(true);
+}
+} // namespace test
 
 } // namespace nordiska
