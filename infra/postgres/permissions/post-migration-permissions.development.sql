@@ -90,6 +90,14 @@ GRANT USAGE
     ON SEQUENCE reporting."generated_documents_Id_seq"
     TO nordiska_reporting_worker;
 
+GRANT UPDATE, DELETE
+    ON TABLE banking.ledger_entries
+    TO nordiska_api;
+
+GRANT DELETE
+    ON TABLE faq.faq_entries
+    TO nordiska_api;
+
 DO $$
 DECLARE
     schema_name text;
