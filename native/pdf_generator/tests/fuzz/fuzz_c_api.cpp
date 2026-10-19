@@ -39,11 +39,8 @@ std::string compute_sha256_hex(const uint8_t* data, size_t len) {
 
 std::string get_golden_sample_json() {
     const std::vector<std::string> paths = {
-        "docs/golden_customer_batch_sample.json",
-        "../docs/golden_customer_batch_sample.json",
-        "../../docs/golden_customer_batch_sample.json",
-        "tests/fuzz/seeds/mixed-batch.json"
-    };
+        "docs/golden_customer_batch_sample.json", "../docs/golden_customer_batch_sample.json",
+        "../../docs/golden_customer_batch_sample.json", "tests/fuzz/seeds/mixed-batch.json"};
     for (const auto& path : paths) {
         if (std::filesystem::exists(path)) {
             std::ifstream f(path);
@@ -52,7 +49,9 @@ std::string get_golden_sample_json() {
             }
         }
     }
-    return "{\n  \"customer_id\": 1,\n  \"schema_version\": \"1.0\",\n  \"documents\": [\n    {\n      \"document_id\": \"doc1\",\n      \"kind\": \"account_statement\",\n      \"document\": {\n        \"account_number\": \"1234567890\"\n      }\n    }\n  ]\n}";
+    return "{\n  \"customer_id\": 1,\n  \"schema_version\": \"1.0\",\n  \"documents\": [\n    {\n      "
+           "\"document_id\": \"doc1\",\n      \"kind\": \"account_statement\",\n      \"document\": {\n        "
+           "\"account_number\": \"1234567890\"\n      }\n    }\n  ]\n}";
 }
 
 // 1. Test argument boundary conditions
@@ -122,7 +121,7 @@ void test_c_api_execution_and_hashes() {
     require(rc_v1 == 0, "v1 generate instrumented must succeed");
     require(v1_called, "v1 callback must have been called");
 
-    struct nordiska_pdf_pipeline_timing timing{};
+    struct nordiska_pdf_pipeline_timing timing {};
     nordiska_pdf_v1_get_last_timing(&timing);
     require(timing.total_seconds > 0.0, "v1 timing total_seconds must be > 0");
 
@@ -159,7 +158,8 @@ void test_c_api_callback_rejection() {
     require(rc == 3, "rejected callback must return NORDISKA_PDF_CALLBACK_FAILED (3)");
 
     const char* last_err = nordiska_pdf_v1_get_last_error();
-    require(last_err != nullptr && std::strstr(last_err, "42") != nullptr, "last_error must record callback rejection code");
+    require(last_err != nullptr && std::strstr(last_err, "42") != nullptr,
+            "last_error must record callback rejection code");
 }
 
 // 4. Test engine environment variable selection
@@ -237,4 +237,3 @@ int main() {
     std::printf("[+] fuzz_c_api completed successfully with 0 crashes!\n");
     return 0;
 }
-

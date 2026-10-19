@@ -31,14 +31,7 @@ void require(bool condition, const char* message) {
 // Custom Mock Signer for testing signed configurations
 class FuzzMockSigner final : public nordiska::PdfSigner {
   public:
-    enum class Mode {
-        Valid,
-        OddLength,
-        NonHex,
-        Empty,
-        Oversized,
-        Error
-    };
+    enum class Mode { Valid, OddLength, NonHex, Empty, Oversized, Error };
 
     explicit FuzzMockSigner(Mode mode = Mode::Valid, size_t valid_hex_len = 8192)
         : mode_(mode), valid_hex_len_(valid_hex_len) {}
@@ -93,7 +86,9 @@ std::string generate_structured_batch(uint64_t customer_id, size_t doc_count, si
     json += "  \"documents\": [\n";
 
     for (size_t d = 0; d < doc_count; ++d) {
-        if (d > 0) json += ",\n";
+        if (d > 0) {
+            json += ",\n";
+        }
         const std::string doc_id = "doc_" + std::to_string(d);
         if (d % 2 == 0) {
             // Account Statement
@@ -111,13 +106,16 @@ std::string generate_structured_batch(uint64_t customer_id, size_t doc_count, si
             json += "        \"transactions\": [\n";
 
             for (size_t t = 0; t < tx_count; ++t) {
-                if (t > 0) json += ",\n";
+                if (t > 0) {
+                    json += ",\n";
+                }
                 json += "          {\n";
                 json += "            \"date\": \"2026-01-15\",\n";
                 json += "            \"type\": \"Kortköp\",\n";
                 json += "            \"description\": \"Tx " + std::to_string(t) + " " + custom_text + "\",\n";
                 json += "            \"amount_minor\": " + std::to_string(t % 2 == 0 ? 50000 : -25000) + ",\n";
-                json += std::string("            \"amount_display\": \"") + (t % 2 == 0 ? "500,00 kr" : "-250,00 kr") + "\",\n";
+                json += std::string("            \"amount_display\": \"") + (t % 2 == 0 ? "500,00 kr" : "-250,00 kr") +
+                        "\",\n";
                 json += "            \"balance_after_display\": \"10 500,00 kr\"\n";
                 json += "          }";
             }
@@ -149,14 +147,10 @@ std::string generate_structured_batch(uint64_t customer_id, size_t doc_count, si
 std::vector<std::string> load_seed_corpus() {
     std::vector<std::string> corpus;
     const std::vector<std::string> paths = {
-        "tests/fuzz/seeds/account-statement.json",
-        "tests/fuzz/seeds/annual-tax-report.json",
-        "tests/fuzz/seeds/mixed-batch.json",
-        "tests/fuzz/seeds/pagination-unicode.json",
-        "docs/golden_customer_batch_sample.json",
-        "../docs/golden_customer_batch_sample.json",
-        "../../docs/golden_customer_batch_sample.json"
-    };
+        "tests/fuzz/seeds/account-statement.json",     "tests/fuzz/seeds/annual-tax-report.json",
+        "tests/fuzz/seeds/mixed-batch.json",           "tests/fuzz/seeds/pagination-unicode.json",
+        "docs/golden_customer_batch_sample.json",      "../docs/golden_customer_batch_sample.json",
+        "../../docs/golden_customer_batch_sample.json"};
 
     for (const auto& path : paths) {
         if (std::filesystem::exists(path)) {
@@ -193,11 +187,13 @@ void verify_generated_batch(const nordiska::GeneratedPdfs& batch, const nordiska
 
         if (config.enable_signing) {
             require(doc.signature_slot.is_signed, "signed configuration must mark slot signed");
-            bool sig_nonzero = std::any_of(doc.signing_digest.begin(), doc.signing_digest.end(), [](auto b) { return b != 0; });
+            bool sig_nonzero =
+                std::any_of(doc.signing_digest.begin(), doc.signing_digest.end(), [](auto b) { return b != 0; });
             require(sig_nonzero, "signed configuration must compute signing_digest");
         } else {
             require(!doc.signature_slot.is_signed, "unsigned configuration must not mark slot signed");
-            bool sig_allzero = std::all_of(doc.signing_digest.begin(), doc.signing_digest.end(), [](auto b) { return b == 0; });
+            bool sig_allzero =
+                std::all_of(doc.signing_digest.begin(), doc.signing_digest.end(), [](auto b) { return b == 0; });
             require(sig_allzero, "unsigned configuration must leave signing_digest zero");
         }
     }
@@ -262,8 +258,7 @@ void test_differential_ingestion() {
 
     // Test large unsigned customer_id (boundary of uint64_t)
     const std::vector<uint64_t> customer_ids = {
-        1, 42, 1000000, 2147483647ULL, 4294967295ULL, 9223372036854775807ULL, 18446744073709551615ULL
-    };
+        1, 42, 1000000, 2147483647ULL, 4294967295ULL, 9223372036854775807ULL, 18446744073709551615ULL};
 
     for (uint64_t cid : customer_ids) {
         std::string json = generate_structured_batch(cid, 2, 5);
@@ -286,11 +281,8 @@ void test_differential_ingestion() {
 // Test signer failure modes in signed configuration
 void test_signing_failure_modes() {
     const std::vector<FuzzMockSigner::Mode> bad_modes = {
-        FuzzMockSigner::Mode::OddLength,
-        FuzzMockSigner::Mode::NonHex,
-        FuzzMockSigner::Mode::Empty,
-        FuzzMockSigner::Mode::Oversized,
-        FuzzMockSigner::Mode::Error,
+        FuzzMockSigner::Mode::OddLength, FuzzMockSigner::Mode::NonHex, FuzzMockSigner::Mode::Empty,
+        FuzzMockSigner::Mode::Oversized, FuzzMockSigner::Mode::Error,
     };
 
     for (auto mode : bad_modes) {
@@ -347,7 +339,9 @@ void test_raw_mutation_fuzzing(const std::vector<std::string>& corpus, size_t it
     };
 
     for (size_t i = 0; i < iterations; ++i) {
-        if (corpus.empty()) break;
+        if (corpus.empty()) {
+            break;
+        }
         const std::string& base = corpus[i % corpus.size()];
         std::vector<uint8_t> mutated(base.begin(), base.end());
 

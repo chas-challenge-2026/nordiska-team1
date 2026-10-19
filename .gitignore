@@ -113,6 +113,7 @@ coverage/
 tmp/
 temp/
 sample_outputs/
+signing_samples/
 /infra/secrets/
 /infra/v2/secrets/
 

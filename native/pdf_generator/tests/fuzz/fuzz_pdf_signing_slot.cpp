@@ -143,9 +143,13 @@ void test_mutated_pdf_fuzzing(const std::vector<uint8_t>& base_pdf, uint32_t see
 
         // Test capacity variations including edge cases (0, odd, valid)
         size_t test_capacity = 8192;
-        if (i % 7 == 0) test_capacity = 0;
-        else if (i % 7 == 1) test_capacity = 1023; // odd
-        else if (i % 7 == 2) test_capacity = 65536;
+        if (i % 7 == 0) {
+            test_capacity = 0;
+        } else if (i % 7 == 1) {
+            test_capacity = 1023; // odd
+        } else if (i % 7 == 2) {
+            test_capacity = 65536;
+        }
 
         auto res = nordiska::append_signature_slot(mutated, test_capacity);
         if (res.has_value()) {
@@ -171,12 +175,12 @@ void test_direct_byte_range_digest_bounds() {
 
     // Invalid bounds
     std::vector<nordiska::SignatureSlot> invalid_slots = {
-        {.offset = 0, .max_length = 20},            // offset 0
-        {.offset = 90, .max_length = 20},           // offset + max_length > size
-        {.offset = 10, .max_length = 0},            // max_length 0
-        {.offset = 10, .max_length = 19},           // odd max_length
-        {.offset = 100, .max_length = 20},          // offset >= size
-        {.offset = 11, .max_length = 20},           // pdf[offset-1] != '<'
+        {.offset = 0, .max_length = 20},                     // offset 0
+        {.offset = 90, .max_length = 20},                    // offset + max_length > size
+        {.offset = 10, .max_length = 0},                     // max_length 0
+        {.offset = 10, .max_length = 19},                    // odd max_length
+        {.offset = 100, .max_length = 20},                   // offset >= size
+        {.offset = 11, .max_length = 20},                    // pdf[offset-1] != '<'
         {.offset = 10, .max_length = 20, .is_signed = true}, // already signed slot for insert
     };
 
@@ -220,4 +224,3 @@ int main() {
     std::printf("[+] fuzz_pdf_signing_slot completed successfully with 0 crashes!\n");
     return 0;
 }
-

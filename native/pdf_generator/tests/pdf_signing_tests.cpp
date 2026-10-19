@@ -53,7 +53,7 @@ class MockUnixSignerServer {
         server_fd_ = ::socket(AF_UNIX, SOCK_STREAM, 0);
         require(server_fd_ >= 0, "mock server: socket failed");
 
-        struct sockaddr_un addr{};
+        struct sockaddr_un addr {};
         addr.sun_family = AF_UNIX;
         std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
         require(::bind(server_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == 0,
@@ -74,7 +74,7 @@ class MockUnixSignerServer {
             // Connect to unblock accept if waiting
             int dummy_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
             if (dummy_fd >= 0) {
-                struct sockaddr_un addr{};
+                struct sockaddr_un addr {};
                 addr.sun_family = AF_UNIX;
                 std::strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
                 ::connect(dummy_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
@@ -237,12 +237,6 @@ nordiska::Sha256Digest independent_hash(const std::vector<uint8_t>& bytes) {
     return digest;
 }
 
-void write_pdf(const std::filesystem::path& path, const std::vector<uint8_t>& bytes) {
-    std::ofstream out(path, std::ios::binary);
-    out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-    require(out.good(), "could not write signing sample");
-}
-
 void test_renderers() {
     const nordiska::DocumentLayout layout{.pages = {
                                               {.texts = {{.x = 40, .y = 50, .text = "Signing integration test"}}},
@@ -297,9 +291,7 @@ void test_renderers() {
                     "exact-fit CMS rejected");
             require(!nordiska::append_signature_slot(pdf, capacity), "existing revision must be rejected");
             if (capacity == 8192) {
-                write_pdf(std::filesystem::path("signing_samples") /
-                              ("engine-" + std::to_string(static_cast<int>(engine)) + "-stub.pdf"),
-                          pdf);
+                require(nordiska::test::is_valid_pdf_structure(pdf), "signed stub PDF must have valid structure");
             }
         }
     }
@@ -501,9 +493,7 @@ void test_real_cms() {
                               CMS_BINARY | CMS_NO_SIGNER_CERT_VERIFY);
         };
         require(verify() == 1, "embedded signature failed cryptographic verification");
-        write_pdf(std::filesystem::path("signing_samples") /
-                      ("engine-" + std::to_string(static_cast<int>(engine)) + "-valid-test-cert.pdf"),
-                  pdf);
+        require(nordiska::test::is_valid_pdf_structure(pdf), "CMS-signed PDF must have valid structure");
         pdf[10] ^= 1;
         require(verify() != 1, "tampered PDF unexpectedly verified");
         ERR_clear_error();
@@ -513,7 +503,6 @@ void test_real_cms() {
 } // namespace
 
 int main() {
-    std::filesystem::create_directories("signing_samples");
     test_renderers();
     test_socket_signer_adapter();
     test_real_cms();

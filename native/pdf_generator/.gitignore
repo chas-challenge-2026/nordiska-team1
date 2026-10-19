@@ -4,4 +4,6 @@ signing_samples/
 *.pdf
 
 treeclimber*
+*.csv*.supp
 *.csv
+*.supp

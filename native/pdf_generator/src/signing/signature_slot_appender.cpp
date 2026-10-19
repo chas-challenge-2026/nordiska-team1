@@ -181,7 +181,7 @@ std::string rewrite_trailer_size(std::string_view trailer, size_t new_object_cou
 std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> bytes,
                                                       SignaturePreparationTiming* timing) {
     auto previous = timing ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
-    const auto checkpoint = [&](double SignaturePreparationTiming::* field) {
+    const auto checkpoint = [&](double SignaturePreparationTiming::*field) {
         if (timing) {
             const auto now = std::chrono::steady_clock::now();
             timing->*field += std::chrono::duration<double>(now - previous).count();
