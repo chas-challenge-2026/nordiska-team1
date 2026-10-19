@@ -443,7 +443,8 @@
             "notifications": "Inga aviseringar.",
             "new-notifications": "Inga nya aviseringar.",
             "documents": "Inga dokument.",
-            "terms": "Inga villkor att godkänna."
+            "terms": "Inga villkor att godkänna.",
+            "feed": "Ingenting att visa i din inkorg"
         },
         "thread": {
             "status": "Status",
