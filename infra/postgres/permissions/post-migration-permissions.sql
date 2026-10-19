@@ -93,9 +93,43 @@ GRANT DELETE
     ON TABLE faq.faq_entries
     TO nordiska_api;
 
-REVOKE UPDATE, DELETE, TRUNCATE
-    ON TABLE banking.ledger_entries, reporting.audit_entries
+-- Allow nordiska_api to UPDATE and DELETE planned ledger entries while preventing TRUNCATE.
+-- Executed ledger entries ("IsPlanned" = false) are protected via the immutability trigger below.
+GRANT UPDATE, DELETE
+    ON TABLE banking.ledger_entries
+    TO nordiska_api;
+
+REVOKE TRUNCATE
+    ON TABLE banking.ledger_entries
     FROM nordiska_api;
+
+REVOKE UPDATE, DELETE, TRUNCATE
+    ON TABLE reporting.audit_entries
+    FROM nordiska_api;
+
+-- Ensure ledger immutability: executed ledger rows cannot be modified or deleted.
+CREATE OR REPLACE FUNCTION banking.enforce_ledger_immutability()
+RETURNS trigger AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD."IsPlanned" = false THEN
+            RAISE EXCEPTION 'Cannot delete immutable ledger entries';
+        END IF;
+        RETURN OLD;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD."IsPlanned" = false THEN
+            RAISE EXCEPTION 'Cannot modify immutable ledger entries';
+        END IF;
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_protect_immutable_ledger ON banking.ledger_entries;
+CREATE TRIGGER trg_protect_immutable_ledger
+BEFORE UPDATE OR DELETE ON banking.ledger_entries
+FOR EACH ROW EXECUTE FUNCTION banking.enforce_ledger_immutability();
 
 DO $$
 DECLARE
