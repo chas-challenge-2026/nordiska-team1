@@ -70,7 +70,8 @@ services:
       AuditLogging__SigningKey: ${NORDISKA_AUDIT_SIGNING_KEY}
       AdminUser__Password: ${ADMIN_USER_PASSWORD}
       FaqSearchLog__Salt: ${FAQ_SEARCH_LOG_SALT}
-      ActiveLogin__BankId__Environment: Simulated
+      ActiveLogin__BankId__Environment: ${ACTIVE_LOGIN_BANKID_ENVIRONMENT:-Simulated}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
       ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
     volumes:
       - report_documents:/var/lib/nordiska/report-documents:ro

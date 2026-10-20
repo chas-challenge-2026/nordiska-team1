@@ -183,6 +183,14 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: 'Production'
             }
             {
+              name: 'ActiveLogin__BankId__Environment'
+              value: 'Test'
+            }
+            {
+              name: 'SEED_DEMO_DATA'
+              value: 'true'
+            }
+            {
               name: 'ConnectionStrings__DefaultConnection'
               secretRef: 'db-connection'
             }
