@@ -30,9 +30,8 @@
 
 > "Tack Olle! När ni nyss såg kunden beställa sitt skatteunderlag och få det i inkorgen direkt, så var det vår Native-pipeline som jobbade bakom kulisserna.  
 > 
-> .NET-workern anropar PDF-motorn helt utan långsam hårddiskanvändning. En kunds alla dokument skapas per anrop och lämnas tillbaka via en callback signerade och klara.  
-> 
-> Prestandan på en helt vanlig dator är: **10 000 kunder, 15 000 konton och 700 000 transaktioner – efter ca en minut finns alla kunders dokument sparade i databasen**."
+> Den klarar även att batch-skapa och spara signerade dokument till databasen för 10000 kunder på en minut.
+> Totalt 15000 konton med 700 tusen transaktioner. Och detta på en helt vanlig dator.
 
 ---
 
