@@ -49,11 +49,30 @@ static std::string read_file(const fs::path& path) {
     if (!stream) throw std::runtime_error("Cannot read " + path.string());
     return {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
 }
+
+
+static fs::path repo_root() {
+    // Locate the checkout from the executable directory.
+    fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
+    while (!current.empty()) {
+        if (fs::exists(current / "infra/docker-compose.yml")) return current;
+        auto parent = current.parent_path();
+        if (parent == current) break;
+        current = parent;
+    }
+    throw std::runtime_error("Run the checked-in executable inside the repository checkout");
+}
+
 // Private temporary files keep schema dumps and environment rewrites off shared paths.
 static fs::path default_temp_pattern() {
-    if (fs::exists("tmp") && fs::is_directory("tmp")) {
-        return "tmp/nordiska-synthetic.XXXXXX";
-    }
+    try {
+        auto repo_tmp = repo_root() / "tmp";
+        std::error_code ec;
+        fs::create_directories(repo_tmp, ec);
+        if (fs::exists(repo_tmp) && fs::is_directory(repo_tmp)) {
+            return repo_tmp / "nordiska-synthetic.XXXXXX";
+        }
+    } catch (...) {}
     return fs::temp_directory_path() / "nordiska-synthetic.XXXXXX";
 }
 
@@ -89,17 +108,7 @@ static std::string run(const Args& args, const std::string* input = nullptr) {
         throw std::runtime_error("Command failed: " + command(args));
     return trim(output);
 }
-static fs::path repo_root() {
-    // Locate the checkout from the executable directory.
-    fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
-    while (!current.empty()) {
-        if (fs::exists(current / "infra/docker-compose.yml")) return current;
-        auto parent = current.parent_path();
-        if (parent == current) break;
-        current = parent;
-    }
-    throw std::runtime_error("Run the checked-in executable inside the repository checkout");
-}
+
 static bool valid_database(const std::string& name) {
     return name == "nordiska_v2" || name == "nordiska_synthetic";
 }
