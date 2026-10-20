@@ -49,26 +49,19 @@
 ### [01:05 – 01:35] Marcus — Signering, PKCS#11 & Moduläritet
 *(Visuell cue: Peka på **PKCS#11 ➔ TSA Server**)*
 
-> "Vi har byggt signeringen som en fristående del av PDF-flödet. Det gör att dokumentgenereringen och säkerhetsdelen hålls separerade, vilket förenklar både underhåll och framtida vidareutveckling.  
-> 
-> Signer-tjänsten hanterar nycklar via ett standardiserat PKCS#11-gränssnitt och stödjer även tidsstämpling. Det gör att vi kan hålla nyckelhanteringen isolerad och senare koppla lösningen mot ett riktigt HSM utan att behöva göra om hela arkitekturen.  
-> 
-> Genom att hålla PDF-generering, signering och nyckelhantering som separata delar får vi en lösning som kan växa över tid, där varje komponent kan skalas, bytas ut eller vidareutvecklas utan att påverka resten av flödet."
-
+>Vi har byggt signeringen som en fristående del av PDF-flödet, där nyckelhantering, signering och tidsstämpling är tydligt separerade från resten av dokumenthanteringen.
+>Det gör lösningen enkel att vidareutveckla eller förändra utan att påverka övriga delar.
+>Tidsstämplingen gör att dokumenten kan verifieras på ett tillförlitligt sätt även långt efter att de skapats, och vi har samtidigt byggt grunden för att kunna utöka lösningen med ännu starkare stöd för långtidsvalidering framåt.
 ---
 
 ### [01:35 – 02:00] Marcus — Helhetsavslut & Överlämning till Q&A
 *(Visuell cue: Blick mot kunden / kameran)*
 
-> "För att knyta ihop hela demon har ni fått se hur enkelhet, skalbarhet och förtroende genomsyrar lösningen från flera håll.  
-> 
-> Enkelhet i kundupplevelsen, med smidig BankID-inloggning, målstyrt sparande och snabb hjälp via FAQ:n.  
-> 
-> Skalbarhet i arkitekturen, med asynkron hantering, tydligt separerade komponenter och en native-del som kan hantera hög belastning effektivt.  
-> 
-> Och förtroende genom tydliga databasroller, säker hantering av kunddata genom hela flödet och signerade, tidsstämplade dokument.  
-> 
-> Vi är Team 1. Stort tack för att ni lyssnade — vi ser fram emot era frågor och er feed forward!"
+>För att knyta ihop demon har ni fått se hur enkelhet, skalbarhet och förtroende genomsyrar lösningen. Enkelhet i kundupplevelsen med BankID, målstyrt sparande och snabb hjälp via FAQ:n. 
+>
+>Skalbarhet genom asynkron hantering, tydligt separerade komponenter och en native-del som hanterar hög belastning effektivt. Och förtroende genom tydliga databasroller, säker hantering av >kunddata genom hela flödet och signerade, tidsstämplade dokument.
+>
+>Vi är Nordiska Team 1. Stort tack för att ni lyssnade — vi ser fram emot era frågor och er feed forward.
 
 ---
 
