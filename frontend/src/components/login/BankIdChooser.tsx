@@ -15,7 +15,10 @@ type BankIdChooserProps = {
  * Startvyn i inloggningskortet, byggd för att likna BankID:s egen
  * inloggning: BankID på annan enhet (QR-kod) eller på denna enhet (öppnar appen här).
  */
-export default function BankIdChooser({ onOtherDevice, onThisDevice, onManual, onCancel }: BankIdChooserProps) {
+
+// export default function BankIdChooser({ onOtherDevice, onThisDevice, onManual, onCancel }: BankIdChooserProps) {
+export default function BankIdChooser({ onOtherDevice, onThisDevice, onCancel }: BankIdChooserProps) {
+
     const { t } = useTranslation();
 
     const options = [
@@ -51,13 +54,13 @@ export default function BankIdChooser({ onOtherDevice, onThisDevice, onManual, o
                 ))}
             </div>
 
-            <button
+            {/* <button
                 type="button"
                 onClick={onManual}
                 className="mt-5 cursor-pointer text-sm font-semibold text-nordiska-blue underline"
             >
                 {t("login-route.manual-link")}
-            </button>
+            </button> */}
 
             <p className="mt-4 text-sm text-dark-navy">
                 {t("register-route.not-customer")}{" "}
