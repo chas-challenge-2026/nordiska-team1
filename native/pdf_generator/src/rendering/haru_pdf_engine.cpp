@@ -8,6 +8,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <hpdf.h>
+
+#ifndef HPDF_FAILED_TO_ALLOC_MEM
+#define HPDF_FAILED_TO_ALLOC_MEM HPDF_FAILD_TO_ALLOC_MEM
+#endif
 #include <memory>
 #include <string>
 #include <string_view>
