@@ -1,4 +1,5 @@
 #include "benchmark.hpp"
+#include "controller.hpp"
 
 #include <algorithm>
 #include <csignal>
@@ -26,6 +27,8 @@ void print_help(const char* prog) {
               << "  --keep-proxy         Keep TSA proxy running after benchmark finishes\n"
               << "  --start-proxy        Start TSA proxy with configured jitter and exit\n"
               << "  --stop-proxy         Stop running TSA proxy and exit\n"
+              << "  --no-save            Do not save mechanical report to runs folder\n"
+              << "  --runs-dir <path>    Custom directory for benchmark reports (default: tools/benchmark/runs)\n"
               << "  --help, -h           Show this help message\n\n"
               << "Examples:\n"
               << "  " << prog << "\n"
@@ -39,6 +42,15 @@ void print_help(const char* prog) {
 
 int main(int argc, char* argv[]) {
     nordiska::benchmark::BenchmarkOptions options;
+
+    bool menu_requested = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--menu" || arg == "--tui") menu_requested = true;
+    }
+    if (menu_requested || (argc == 1 && isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))) {
+        return nordiska::benchmark::run_interactive_controller();
+    }
 
     bool interactive_mode = (argc == 1 && isatty(STDIN_FILENO));
 
@@ -87,6 +99,10 @@ int main(int argc, char* argv[]) {
             options.start_proxy_only = true;
         } else if (arg == "--stop-proxy") {
             options.stop_proxy_only = true;
+        } else if (arg == "--no-save") {
+            options.save_report = false;
+        } else if (arg == "--runs-dir" && i + 1 < argc) {
+            options.runs_dir = argv[++i];
         } else {
             std::cerr << "Unknown option: " << arg << "\n";
             print_help(argv[0]);
@@ -119,40 +135,15 @@ int main(int argc, char* argv[]) {
     }
 
     if (interactive_mode) {
-        std::cout << "================================================================================\n"
-                  << "            NORDISKA INTERACTIVE REPORTING PIPELINE BENCHMARK\n"
-                  << "================================================================================\n";
-        try {
-            nordiska::benchmark::DatabaseClient probe(options.database);
-            auto counts = probe.get_counts();
-            auto env = probe.get_worker_environment();
-            std::cout << "Detected Active DB:    " << probe.database() << "\n";
-            if (env.found) {
-                std::cout << "Worker Container:      " << env.container_name << " (ID: " << env.container_id << ")\n"
-                          << "Worker Concurrency:    " << env.concurrency << " threads\n"
-                          << "PDF Socket Signing:    " << (env.pdf_enable_signing == "1" ? "Enabled (1)" : "Disabled (0)") << "\n";
+        std::cout << "Target Database: " << (options.database.empty() ? "auto-detect" : options.database) << "\n"
+                  << "Press [Enter] for full benchmark, or enter customer limit (e.g. 100): " << std::flush;
+        std::string line;
+        if (std::getline(std::cin, line)) {
+            if (!line.empty()) {
+                try {
+                    options.limit = std::stoll(line);
+                } catch (...) {}
             }
-            std::cout << "Available Customers:   " << counts.customers << "\n"
-                      << "Available Accounts:    " << counts.accounts << "\n"
-                      << "Ledger Transactions:   " << counts.transactions << "\n"
-                      << "Polling Interval:      " << options.poll_interval_seconds << "s\n"
-                      << "Reporting Year:        " << options.year << "\n"
-                      << "--------------------------------------------------------------------------------\n"
-                      << "Press [Enter] to run full benchmark, or type a customer limit (e.g. 100): ";
-
-            std::string line;
-            if (std::getline(std::cin, line)) {
-                if (!line.empty()) {
-                    try {
-                        options.limit = std::stoll(line);
-                        std::cout << "Limiting benchmark to first " << options.limit << " customers.\n";
-                    } catch (...) {
-                        std::cout << "Invalid number, running against all customers.\n";
-                    }
-                }
-            }
-        } catch (const std::exception& ex) {
-            std::cerr << "Warning during pre-flight probe: " << ex.what() << "\n";
         }
     }
 

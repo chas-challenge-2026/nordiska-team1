@@ -1,5 +1,7 @@
 # Applied by the tool; keeps database switching out of shared infrastructure files.
 services:
+  db:
+    command: ["postgres", "-c", "max_connections=250"]
   app:
     environment:
       ConnectionStrings__DefaultConnection: >-
@@ -15,9 +17,10 @@ services:
   reporting-worker:
     environment:
       ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD};Maximum Pool Size=200;
   pdf-signer:
     environment:
+      PDF_SIGNER_WORKER_COUNT: ${PDF_SIGNER_WORKER_COUNT:-128}
       ConnectionStrings__ReportingDatabase: >-
         Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
 volumes:

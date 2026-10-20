@@ -9,6 +9,7 @@ g++ -std=c++23 -O3 -DNDEBUG -pthread \
     -I "$script_dir/include" \
     "$script_dir/src/database.cpp" \
     "$script_dir/src/benchmark.cpp" \
+    "$script_dir/src/controller.cpp" \
     "$script_dir/src/main.cpp" \
     -o "$binary"
 

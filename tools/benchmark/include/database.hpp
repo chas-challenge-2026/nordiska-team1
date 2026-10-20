@@ -42,6 +42,7 @@ struct WorkerEnvironment {
     std::string image;
     std::string dotnet_version;
     std::string concurrency = "12";
+    std::string signer_concurrency = "128";
     std::string pdf_enable_signing = "0";
     std::string pdf_signer_mode = "plain";
     std::string pdf_signer_socket = "/run/pdf-signer/pdf-signer.sock";
@@ -78,7 +79,14 @@ public:
     void stop_tsa_proxy() const;
     void ensure_tsa_proxy_if_needed(int min_ms = 2, int max_ms = 20) const;
 
+    const std::filesystem::path& repo_root() const { return repo_root_; }
+
+    std::string get_env_setting(const std::string& key, const std::string& default_val = "") const;
+    void apply_environment_changes(const std::string& key, const std::string& val);
+    void recreate_worker_service() const;
+
     static std::string detect_active_database();
+    static std::filesystem::path find_repo_root();
 
 private:
     std::filesystem::path repo_root_;

@@ -17,6 +17,8 @@ struct BenchmarkOptions {
     bool keep_proxy = false;
     bool start_proxy_only = false;
     bool stop_proxy_only = false;
+    bool save_report = true;
+    std::string runs_dir;
 };
 
 struct BenchmarkResult {
@@ -52,6 +54,9 @@ public:
 
     BenchmarkResult run();
     static void print_summary(const BenchmarkResult& result, const BenchmarkOptions& options);
+    static void write_summary(std::ostream& os, const BenchmarkResult& result, const BenchmarkOptions& options);
+    static void write_mechanical_data(std::ostream& os, const BenchmarkResult& result, const BenchmarkOptions& options);
+    static std::string save_report(const BenchmarkResult& result, const BenchmarkOptions& options, const std::filesystem::path& repo_root);
 
 private:
     BenchmarkOptions options_;

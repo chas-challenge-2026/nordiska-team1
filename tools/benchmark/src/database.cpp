@@ -44,6 +44,7 @@ std::string run_cmd(const std::vector<std::string>& args) {
         if (!cmd.empty()) cmd += " ";
         cmd += shell_quote(a);
     }
+    cmd += " 2>&1";
 
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) throw std::runtime_error("Failed to run command: " + cmd);
@@ -60,15 +61,19 @@ std::string run_cmd(const std::vector<std::string>& args) {
     return trim(out);
 }
 
-fs::path find_repo_root() {
-    fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
-    while (!current.empty()) {
-        if (fs::exists(current / "infra/docker-compose.yml")) return current;
-        auto parent = current.parent_path();
-        if (parent == current) break;
-        current = parent;
-    }
-    current = fs::current_path();
+} // namespace
+
+fs::path DatabaseClient::find_repo_root() {
+    try {
+        fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
+        while (!current.empty()) {
+            if (fs::exists(current / "infra/docker-compose.yml")) return current;
+            auto parent = current.parent_path();
+            if (parent == current) break;
+            current = parent;
+        }
+    } catch (...) {}
+    fs::path current = fs::current_path();
     while (!current.empty()) {
         if (fs::exists(current / "infra/docker-compose.yml")) return current;
         auto parent = current.parent_path();
@@ -76,6 +81,12 @@ fs::path find_repo_root() {
         current = parent;
     }
     throw std::runtime_error("Cannot locate repository root from executable or working directory");
+}
+
+namespace {
+
+fs::path find_repo_root() {
+    return DatabaseClient::find_repo_root();
 }
 
 std::string dotnet_json_str(const std::string& expr) {
@@ -123,15 +134,85 @@ std::string DatabaseClient::detect_active_database() {
     return "nordiska_synthetic";
 }
 
+std::string DatabaseClient::get_env_setting(const std::string& key, const std::string& default_val) const {
+    fs::path env_file = repo_root_ / "infra/.env";
+    if (fs::exists(env_file)) {
+        std::ifstream file(env_file);
+        std::string line;
+        std::regex re{R"(^[ \t]*)" + key + R"([ \t]*=[ \t]*(.*)$)"};
+        while (std::getline(file, line)) {
+            std::smatch match;
+            if (std::regex_match(line, match, re)) {
+                return trim(match[1]);
+            }
+        }
+    }
+    return default_val;
+}
+
+void DatabaseClient::apply_environment_changes(const std::string& key, const std::string& val) {
+    fs::path env_tool = repo_root_ / "tools/env/nordiska-env";
+    if (fs::exists(env_tool)) {
+        try {
+            run_cmd({env_tool.string(), "--set", key + "=" + val});
+            return;
+        } catch (...) {}
+    }
+    fs::path env_file = repo_root_ / "infra/.env";
+    std::ifstream file(env_file);
+    std::string content, line;
+    bool found = false;
+    while (std::getline(file, line)) {
+        if (line.rfind(key + "=", 0) == 0) {
+            content += key + "=" + val + "\n";
+            found = true;
+        } else {
+            content += line + "\n";
+        }
+    }
+    file.close();
+    if (!found) content += key + "=" + val + "\n";
+    std::ofstream out(env_file);
+    out << content;
+}
+
+void DatabaseClient::recreate_worker_service() const {
+    std::string cur_db = get_env_setting("NORDISKA_DATABASE", "nordiska_synthetic");
+    std::vector<std::string> args = {
+        "docker", "compose",
+        "--env-file", (repo_root_ / "infra/.env").string(),
+        "-f", (repo_root_ / "infra/docker-compose.yml").string(),
+        "-f", (repo_root_ / "infra/docker-compose.override.yml").string()
+    };
+    if (fs::exists(repo_root_ / "tools/syntheticDB/compose.override.yml")) {
+        args.push_back("-f");
+        args.push_back((repo_root_ / "tools/syntheticDB/compose.override.yml").string());
+    }
+
+    std::string signing = get_env_setting("NORDISKA_PDF_ENABLE_SIGNING", "1");
+    if (signing == "1") {
+        auto signer_args = args;
+        signer_args.insert(signer_args.end(), {"up", "-d", "--no-deps", "pdf-signer"});
+        try { run_cmd(signer_args); } catch (...) {}
+    }
+
+    int min_ms = 2, max_ms = 20;
+    ensure_tsa_proxy_if_needed(min_ms, max_ms);
+
+    auto worker_args = args;
+    worker_args.insert(worker_args.end(), {"up", "-d", "--no-deps", "reporting-worker"});
+    run_cmd(worker_args);
+}
+
 std::string DatabaseClient::find_db_container() const {
     try {
-        std::string id = run_cmd({
+        std::string name = run_cmd({
             "docker", "ps",
             "--filter", "label=com.docker.compose.project=nordiska-v2",
             "--filter", "label=com.docker.compose.service=db",
-            "--format", "{{.ID}}"
+            "--format", "{{.Names}}"
         });
-        if (!id.empty()) return id;
+        if (!name.empty()) return trim(name);
     } catch (...) {}
     return "nordiska-v2-db-1";
 }
@@ -190,6 +271,16 @@ WorkerEnvironment DatabaseClient::get_worker_environment() const {
                     env.storage_volume = mname;
                 }
             }
+
+            try {
+                std::string s_env = run_cmd({"docker", "inspect", "nordiska-v2-pdf-signer-1", "--format", "{{range .Config.Env}}{{println .}}{{end}}"});
+                std::istringstream s_stream(s_env);
+                while (std::getline(s_stream, line)) {
+                    if (line.rfind("PDF_SIGNER_WORKER_COUNT=", 0) == 0) {
+                        env.signer_concurrency = line.substr(24);
+                    }
+                }
+            } catch (...) {}
         }
     } catch (...) {}
     return env;
@@ -206,11 +297,27 @@ DatabaseClient::DatabaseClient(std::string database) {
 }
 
 std::string DatabaseClient::sql(const std::string& query) const {
-    return run_cmd({
-        "docker", "exec", "-i", container_,
-        "psql", "-U", "nordiska_bootstrap", "-d", database_,
-        "-v", "ON_ERROR_STOP=1", "-A", "-t", "-c", query
-    });
+    try {
+        return run_cmd({
+            "docker", "exec", "-i", container_,
+            "psql", "-U", "nordiska_bootstrap", "-d", database_,
+            "-v", "ON_ERROR_STOP=1", "-A", "-t", "-c", query
+        });
+    } catch (const std::exception& e) {
+        std::string err = e.what();
+        if (err.find("is not running") != std::string::npos || err.find("No such container") != std::string::npos) {
+            std::string refreshed = find_db_container();
+            if (!refreshed.empty() && refreshed != container_) {
+                const_cast<DatabaseClient*>(this)->container_ = refreshed;
+                return run_cmd({
+                    "docker", "exec", "-i", container_,
+                    "psql", "-U", "nordiska_bootstrap", "-d", database_,
+                    "-v", "ON_ERROR_STOP=1", "-A", "-t", "-c", query
+                });
+            }
+        }
+        throw;
+    }
 }
 
 DbCounts DatabaseClient::get_counts() const {

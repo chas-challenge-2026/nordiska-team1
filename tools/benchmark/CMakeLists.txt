@@ -11,6 +11,7 @@ add_executable(nordiska-benchmark
     src/main.cpp
     src/database.cpp
     src/benchmark.cpp
+    src/controller.cpp
 )
 
 target_include_directories(nordiska-benchmark PRIVATE include)

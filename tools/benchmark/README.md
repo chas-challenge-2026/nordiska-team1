@@ -70,30 +70,26 @@ Run the build script from the repository root:
 ```
 This produces the standalone binary `tools/benchmark/nordiska-benchmark`.
 
-### Run the Benchmark
-
-#### Interactive Mode:
+### Interactive Controller (TUI)
+Launch the unified benchmark controller to configure settings and run benchmarks:
 ```bash
-./tools/benchmark/nordiska-benchmark
+./tools/benchmark/bench-tui.sh
 ```
-Displays active database stats and prompts for an optional customer limit or full run.
 
-#### Automated CLI Mode:
+### Direct CLI Mode
+Run benchmarks directly from command line:
 ```bash
-# Run full whole-database benchmark
+# Run benchmark on active database (all customers)
 ./tools/benchmark/nordiska-benchmark
 
-# Run a test benchmark limited to 50 customers
-./tools/benchmark/nordiska-benchmark --limit 50
+# Quick sample benchmark (e.g. 100 customers)
+./tools/benchmark/nordiska-benchmark --limit 100
 
-# Custom polling interval (default 2s)
-./tools/benchmark/nordiska-benchmark --poll 1
+# Benchmark with simulated TSA latency jitter (e.g. 60–100 ms)
+./tools/benchmark/nordiska-benchmark --limit 100 --jitter 60-100
 
 # Target a specific database
 ./tools/benchmark/nordiska-benchmark --db nordiska_synthetic
-
-# Keep existing reporting data before run
-./tools/benchmark/nordiska-benchmark --no-clean
 ```
 
 ---
@@ -102,12 +98,13 @@ Displays active database stats and prompts for an optional customer limit or ful
 
 | Option | Description | Default |
 |---|---|---|
-| `--db <name>` | Target PostgreSQL database name | Auto-detected from `infra/.env` |
 | `--limit <N>` | Limit benchmark to first N customers | `0` (unlimited, full database) |
+| `--jitter <ms|min-max>` | Simulated TSA latency in ms (e.g. `80` or `60-100`) | Auto-detected from `.env` |
+| `--db <name>` | Target PostgreSQL database name | Auto-detected from `infra/.env` |
 | `--poll <seconds>`| Progress telemetry polling interval | `2` seconds |
 | `--year <YYYY>` | Reporting tax & statement year | `2026` |
 | `--no-clean` | Do not clean reporting tables before run | Disabled (cleans before staging) |
-| `--clean-storage`| Delete PDF files from worker volume | `true` |
+| `--no-save` | Do not write report to `runs/` folder | Disabled (saves to `runs/`) |
 | `--help` | Show command line usage information | |
 
 ---

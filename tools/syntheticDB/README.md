@@ -73,6 +73,7 @@ Run the binary with `--help` for all options. Useful extras:
 | `--append` | Add customers while keeping existing synthetic records. Requires `--customers`. |
 | `--stress-text` | Generate long transaction descriptions with Swedish characters. |
 | `--benchmark` | Measure generation without Docker or database writes. Requires `--customers`. |
+| `--update-ui` | Rebuild and update the UI (`app`) container. |
 | `--reset` | Replace the synthetic database with an empty cloned schema. |
 | `--drop` | Delete the synthetic database. |
 
