@@ -30,9 +30,9 @@
 
 #### [00:20 – 00:40] Marcus (Ledord: Enkelhet & Skalbarhet)
 *(Visuell cue: Peka på React 18 SPA ➔ .NET 8 API-lådan med dess 4 moduler ➔ PostgreSQL)*
-> "Vårt arbete har styrts av tre ledord: **Enkelhet**, **Skalbarhet** och **Förtroende**.  
-> 
-> För att uppnå enkelhet och skalbarhet har vi brutit upp v1-monoliten i tre lager: en modern React 18 SPA, ett modulärt .NET 8 Web API uppdelat i fyra strikt isolerade domäner – Banking, FAQ, Inbox och Reporting – samt en PostgreSQL-databas där saldon säkras av ett oföränderligt, immutabelt ledger."
+> "Vårt arbete har styrts av de tre ledorden: **Enkelhet**, **Skalbarhet** och **Förtroende**.  
+>
+> För att uppnå enkelhet och skalbarhet har vi brutit upp v1-monoliten i tre lager: en modern React 18 SPA frontend, ett modulärt .NET 8 Backend och en dedikerad native pdf-genereringspipeline. 
 
 #### [00:40 – 01:00] Jimmy (Ledord: Förtroende & Frikoppling)
 *(Visuell cue: Peka på Rapport-kö i DB ➔ Reporting.Worker ➔ Native C/C++)*
