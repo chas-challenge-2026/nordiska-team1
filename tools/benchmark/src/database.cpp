@@ -96,6 +96,11 @@ std::string dotnet_json_str(const std::string& expr) {
 } // namespace
 
 std::string DatabaseClient::detect_active_database() {
+    const char* env_db = std::getenv("NORDISKA_DATABASE");
+    if (env_db && *env_db) {
+        return trim(env_db);
+    }
+
     fs::path root = find_repo_root();
     fs::path env_file = root / "infra/.env";
     if (!fs::exists(env_file)) env_file = root / "infra/v2/.env";
