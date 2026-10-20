@@ -11,9 +11,9 @@
 
 | Tid | Segment | Talare | Vad pekar du på i Slide 2? | Kärnbudskap / Stödord |
 |---|---|---|---|---|
-| **00:00–00:40** (40s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory P/Invoke. simdjson (>155k dok/s), PDF (>44k/s). **Skarpt E2E i Docker på vanlig dator: 10k kunder, 15k konton, 700k transaktioner ~1 min!** (v1 kraschade vid 200). |
-| **00:40–01:05** (25s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare ser bara 32-byte SHA-256 hash – aldrig kunddata! |
-| **01:05–01:35** (30s) | **Signering, PKCS#11 & HSM** | **Marcus** | C pdf-signer ➔ PKCS#11 ➔ TSA Server | **Marcus del:** Fristående signering, PKCS#11, tidsstämpling, mjukvara ➔ fysisk HSM utan arkitekturändring, modulär lösning. |
+| **00:00–00:40** (40s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory via callback, noll hårddiskanvändning. **Prestanda på vanlig dator: 10k kunder, 15k konton, 700k transaktioner sparade i DB på ca 1 min!** |
+| **00:40–01:05** (25s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare tar bara emot hash – ser aldrig kunddata! |
+| **01:05–01:35** (30s) | **Signering, PKCS#11 & HSM** | **Marcus** | C pdf-signer ➔ PKCS#11 ➔ TSA Server | Fristående signering skild från PDF-generering. PKCS#11 + tidsstämpling, isolerad nyckelhantering, redo för riktig HSM. Modulär lösning. |
 | **01:35–02:00** (25s) | **Helhetsavslut & Överlämning** | **Marcus** | Blick mot kunden / Hela bilden | Knyt ihop säcken: Enkelhet (UI/FAQ), Skalbarhet (Worker/Native), Förtroende (Ledger/PAdES). Bjud in till Q&A & Feed forward! |
 
 ---
@@ -30,11 +30,9 @@
 
 > "Tack Olle! När ni nyss såg kunden beställa sitt skatteunderlag och få det i inkorgen direkt, så var det vår Native-pipeline som jobbade bakom kulisserna.  
 > 
-> Vår .NET-worker anropar C++23-motorn in-memory via ett strikt C89 ABI och P/Invoke – helt utan långsam disk-I/O emellan. Med SIMD-accelererad JSON-parsing läser vi över **155 000 dokument i sekunden** och vår interna motor renderar över **44 000 PDF:er per sekund**.  
+> .NET-workern anropar PDF-motorn helt utan långsam hårddiskanvändning. En kunds alla dokument skapas per anrop och lämnas tillbaka via en callback signerade och klara.  
 > 
-> Vi har också benchat hela den skarpa produkten deployad i Docker på helt vanliga datorer: **10 000 kunder, 15 000 konton och 700 000 transaktioner** – från att jobben stageas i databasen till att alla PDF:er är genererade och skrivna – tar **cirka en minut end-to-end**.  
-> 
-> V1:ans system låste sig och tog timeout redan vid 200 transaktioner; vi kör alltså 700 000 transaktioner på en minut."
+> Prestandan på en helt vanlig dator är: **10 000 kunder, 15 000 konton och 700 000 transaktioner – efter ca en minut finns alla kunders dokument sparade i databasen**."
 
 ---
 
@@ -43,20 +41,20 @@
 
 > "Men för en bank krävs också absolut förtroende. Därför har vi byggt in hårda säkerhetsinvarianter:  
 > 
-> För det första: **Atomärt kundkontrakt**. Ett anrop hanterar exakt en kund. Inget delat tillstånd, och minsta fel avbryter hela batchen. Det gör det strukturellt omöjligt att kunddata läcker mellan PDF:er.  
+> För det första: Ett anrop hanterar exakt en kund. Inget delat tillstånd, och minsta fel avbryter hela batchen. Det gör det strukturellt omöjligt att kunddata läcker mellan PDF:er.  
 > 
-> För det andra: **Zero-Trust över Unix-socket**. Vår isolerade C-signerare tar endast emot en 32-byte SHA-256-hash. Signeringsprocessen ser alltså aldrig själva kunddatan."
+> För det andra: Vår isolerade C-signerare tar endast emot en hash av dokumentet. Signeringsprocessen kan alltså aldrig se själva kunddatan."
 
 ---
 
 ### [01:05 – 01:35] Marcus — Signering, PKCS#11 & Moduläritet
 *(Visuell cue: Peka på **PKCS#11 ➔ TSA Server**)*
 
-> "Vi har byggt signeringen som en fristående del av PDF-flödet. Det gör att dokumentgenereringen och säkerhetsdelen kan hållas separerade, vilket förenklar både underhåll och framtida vidareutveckling.  
+> "Vi har byggt signeringen som en fristående del av PDF-flödet. Det gör att dokumentgenereringen och säkerhetsdelen hålls separerade, vilket förenklar både underhåll och framtida vidareutveckling.  
 > 
-> Signer-tjänsten hanterar nycklar via ett standardiserat PKCS#11-gränssnitt och stödjer även tidsstämpling. Det innebär att vi kan använda samma lösning i utvecklingsmiljö och senare koppla den mot ett riktigt HSM utan att behöva göra om hela arkitekturen.  
+> Signer-tjänsten hanterar nycklar via ett standardiserat PKCS#11-gränssnitt och stödjer även tidsstämpling. Det gör att vi kan hålla nyckelhanteringen isolerad och senare koppla lösningen mot ett riktigt HSM utan att behöva göra om hela arkitekturen.  
 > 
-> Resultatet är en modulär lösning där varje del har ett tydligt ansvar och kan skalas eller bytas ut separat."
+> Genom att hålla PDF-generering, signering och nyckelhantering som separata delar får vi en lösning som kan växa över tid, där varje komponent kan skalas, bytas ut eller vidareutvecklas utan att påverka resten av flödet."
 
 ---
 
@@ -76,17 +74,16 @@
 
 * **Jimmy (00:00–00:40) Prestanda & Docker E2E:**  
   – Skatteunderlaget nyss skapades av Native-motorn.  
-  – In-memory P/Invoke via C89 ABI, noll disk-I/O.  
-  – simdjson: >155 000 dok/s, rendering: >44 000 PDF/s.  
-  – **Skarpt Docker E2E-test på vanlig laptop:** 10 000 kunder, 15 000 konton, 700 000 transaktioner på **~1 minut** (stagea jobb, köa, rendera, skriva PDF).  
-  – Jämförelse: v1 kraschade vid 200 transaktioner.  
+  – In-memory anrop via callback, noll hårddiskanvändning.  
+  – En kunds alla dokument per anrop, returneras signerade och klara.  
+  – **Prestanda på vanlig dator:** 10 000 kunder, 15 000 konton, 700 000 transaktioner sparade i DB på ca 1 minut.  
 * **Jimmy (00:40–01:05) Förtroende & Zero-Trust:**  
-  – Atomärt kundkontrakt: 1 kund/anrop, all-or-nothing, noll dataläckage.  
-  – Zero-trust över Unix-socket: Signeraren ser bara 32-byte hash – aldrig kunddata!  
+  – 1 kund/anrop, all-or-nothing, noll dataläckage.  
+  – Zero-trust: Signeraren tar bara emot en hash – ser aldrig kunddata!  
 * **Marcus (01:05–01:35) Signering, PKCS#11 & Moduläritet:**  
-  – Fristående signering skild från PDF-generering: enklare underhåll.  
-  – PKCS#11 + tidsstämpling: samma lösning lokalt och mot riktig HSM utan arkitekturändring.  
-  – Modulär lösning: tydligt ansvar, kan skalas eller bytas ut separat.  
+  – Fristående signering skild från PDF-generering: enklare underhåll och vidareutveckling.  
+  – PKCS#11 + tidsstämpling: isolerad nyckelhantering, koppla mot riktigt HSM utan ombyggnad.  
+  – Modulär lösning: varje del kan skalas, bytas ut eller vidareutvecklas separat.  
 * **Marcus (01:35–02:00) Avslutning:**  
   – Ledorden summerade: Enkelhet (kundresa), Skalbarhet (backend/native), Förtroende (ledger/signering).  
   – Tacka och öppna för Q&A och feed forward!
