@@ -11,9 +11,9 @@
 
 | Tid | Segment | Talare | Vad pekar du på i Slide 2? | Kärnbudskap / Stödord |
 |---|---|---|---|---|
-| **00:00–00:45** (45s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory P/Invoke. simdjson (>155k dok/s), PDF (>44k/s). **Skarpt E2E i Docker på vanlig dator: 10k kunder, 15k konton, 700k transaktioner ~1 min!** (v1 kraschade vid 200). |
-| **00:45–01:15** (30s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer ➔ PKCS#11 | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare ser bara 32-byte SHA-256 hash – aldrig kunddata! SoftHSM2/PKCS#11. |
-| **01:15–01:35** (20s) | **PAdES-B-T & Standarder** | **Marcus** | TSA Server ➔ PAdES-B-T | Betrodd RFC 3161 TSA-tidsstämpel = PAdES-B-T idag. Förberett för fysisk HSM och PAdES-B-LTA till slutrelease. |
+| **00:00–00:40** (40s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory P/Invoke. simdjson (>155k dok/s), PDF (>44k/s). **Skarpt E2E i Docker på vanlig dator: 10k kunder, 15k konton, 700k transaktioner ~1 min!** (v1 kraschade vid 200). |
+| **00:40–01:05** (25s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare ser bara 32-byte SHA-256 hash – aldrig kunddata! |
+| **01:05–01:35** (30s) | **Signering, PKCS#11 & HSM** | **Marcus** | C pdf-signer ➔ PKCS#11 ➔ TSA Server | **Marcus del:** Fristående signering, PKCS#11, tidsstämpling, mjukvara ➔ fysisk HSM utan arkitekturändring, modulär lösning. |
 | **01:35–02:00** (25s) | **Helhetsavslut & Överlämning** | **Marcus** | Blick mot kunden / Hela bilden | Knyt ihop säcken: Enkelhet (UI/FAQ), Skalbarhet (Worker/Native), Förtroende (Ledger/PAdES). Bjud in till Q&A & Feed forward! |
 
 ---
@@ -25,7 +25,7 @@
 
 ---
 
-### [00:00 – 00:45] Jimmy — Native Prestanda & Skalbarhet
+### [00:00 – 00:40] Jimmy — Native Prestanda & Skalbarhet
 *(Dela skärmen och visa **Slide 2**: `slide_2_native.drawio`. Peka på **C++23 pdf_generator**, steg 1–3: Ingest ➔ Layout ➔ Render)*
 
 > "Tack Olle! När ni nyss såg kunden beställa sitt skatteunderlag och få det i inkorgen direkt, så var det vår Native-pipeline som jobbade bakom kulisserna.  
@@ -38,25 +38,25 @@
 
 ---
 
-### [00:45 – 01:15] Jimmy — Förtroende, Zero-Trust & Invarianter
-*(Visuell cue: Peka på **Unix Socket ➔ C pdf-signer ➔ PKCS#11**)*
+### [00:40 – 01:05] Jimmy — Förtroende, Zero-Trust & Invarianter
+*(Visuell cue: Peka på **Unix Socket ➔ C pdf-signer**)*
 
-> "Men för en bank räcker inte bara prestanda – det krävs absolut förtroende och regulatorisk trygghet. Därför har vi byggt in tre hårda säkerhetsinvarianter:  
+> "Men för en bank krävs också absolut förtroende. Därför har vi byggt in hårda säkerhetsinvarianter:  
 > 
 > För det första: **Atomärt kundkontrakt**. Ett anrop hanterar exakt en kund. Inget delat tillstånd, och minsta fel avbryter hela batchen. Det gör det strukturellt omöjligt att kunddata läcker mellan PDF:er.  
 > 
-> För det andra: **Zero-Trust över Unix-socket**. Vår isolerade C-signerare tar endast emot en 32-byte SHA-256-hash. Signeringsprocessen ser alltså aldrig själva kunddatan.  
-> 
-> För det tredje: Den privata nyckeln är hårdvaruisolerad i SoftHSM2 via **PKCS#11** och lämnar aldrig säker miljö."
+> För det andra: **Zero-Trust över Unix-socket**. Vår isolerade C-signerare tar endast emot en 32-byte SHA-256-hash. Signeringsprocessen ser alltså aldrig själva kunddatan."
 
 ---
 
-### [01:15 – 01:35] Marcus — PAdES-B-T & Standarder
-*(Visuell cue: Peka på **TSA Server ➔ PAdES-B-T**)*
+### [01:05 – 01:35] Marcus — Signering, PKCS#11 & Moduläritet
+*(Visuell cue: Peka på **PKCS#11 ➔ TSA Server**)*
 
-> "Tillsammans med en kryptografisk RFC 3161-tidsstämpel från vår TSA-server uppnår vi **PAdES-B-T-nivå** redan idag – vilket ger juridiskt bindande och verifierbara bankdokument.  
+> "Vi har byggt signeringen som en fristående del av PDF-flödet. Det gör att dokumentgenereringen och säkerhetsdelen kan hållas separerade, vilket förenklar både underhåll och framtida vidareutveckling.  
 > 
-> Arkitekturen med PKCS#11 gör att vi kan byta till en fysisk HSM i produktion utan att ändra en rad kod, och vi har förberett banan för långtidsvalidering, **PAdES-B-LTA**, till slutreleasen."
+> Signer-tjänsten hanterar nycklar via ett standardiserat PKCS#11-gränssnitt och stödjer även tidsstämpling. Det innebär att vi kan använda samma lösning i utvecklingsmiljö och senare koppla den mot ett riktigt HSM utan att behöva göra om hela arkitekturen.  
+> 
+> Resultatet är en modulär lösning där varje del har ett tydligt ansvar och kan skalas eller bytas ut separat."
 
 ---
 
@@ -74,19 +74,19 @@
 
 ## 3. Stödordsvariant (För att tala fritt)
 
-* **Jimmy (00:00–00:45) Prestanda & Docker E2E:**  
+* **Jimmy (00:00–00:40) Prestanda & Docker E2E:**  
   – Skatteunderlaget nyss skapades av Native-motorn.  
   – In-memory P/Invoke via C89 ABI, noll disk-I/O.  
   – simdjson: >155 000 dok/s, rendering: >44 000 PDF/s.  
   – **Skarpt Docker E2E-test på vanlig laptop:** 10 000 kunder, 15 000 konton, 700 000 transaktioner på **~1 minut** (stagea jobb, köa, rendera, skriva PDF).  
   – Jämförelse: v1 kraschade vid 200 transaktioner.  
-* **Jimmy (00:45–01:15) Förtroende & Zero-Trust:**  
+* **Jimmy (00:40–01:05) Förtroende & Zero-Trust:**  
   – Atomärt kundkontrakt: 1 kund/anrop, all-or-nothing, noll dataläckage.  
   – Zero-trust över Unix-socket: Signeraren ser bara 32-byte hash – aldrig kunddata!  
-  – PKCS#11 / SoftHSM2: Nyckeln lämnar aldrig HSM.  
-* **Marcus (01:15–01:35) PAdES-B-T:**  
-  – RFC 3161 TSA-stämpel = PAdES-B-T idag.  
-  – Förberett för fysisk HSM och PAdES-B-LTA till v2-slutleveransen.  
+* **Marcus (01:05–01:35) Signering, PKCS#11 & Moduläritet:**  
+  – Fristående signering skild från PDF-generering: enklare underhåll.  
+  – PKCS#11 + tidsstämpling: samma lösning lokalt och mot riktig HSM utan arkitekturändring.  
+  – Modulär lösning: tydligt ansvar, kan skalas eller bytas ut separat.  
 * **Marcus (01:35–02:00) Avslutning:**  
   – Ledorden summerade: Enkelhet (kundresa), Skalbarhet (backend/native), Förtroende (ledger/signering).  
   – Tacka och öppna för Q&A och feed forward!
@@ -97,7 +97,7 @@
 
 1. **Vem delar skärmen?**  
    När Olle säger *"över till Jimmy och Marcus"*, delar Jimmy eller Marcus upp **Slide 2 i fullskärm** direkt. Ha fliken eller bilden öppen och redo i bakgrunden så att bytet tar max 2 sekunder.
-2. **Peka medan Jimmy talar:**  
-   När Jimmy nämner "steg 1 till 3", cirkla med muspekaren runt `pdf_generator`. När han nämner "Unix-socket", peka på pilen ner mot `pdf-signer`.
+2. **Peka medan Jimmy och Marcus talar:**  
+   När Jimmy nämner "steg 1 till 3", cirkla med muspekaren runt `pdf_generator`. När han nämner "Unix-socket", peka på pilen ner mot `pdf-signer`. När Marcus pratar om PKCS#11 och HSM, peka på nyckeln och TSA-kopplingen.
 3. **Överlämning till Q&A:**  
    När Marcus säger *"vi ser fram emot era frågor och er feed forward"*, stäng skärmdelningen eller låt Slide 2 ligga kvar i bakgrunden så att kundens blick återgår till teamets kameror under de 6 minuterna Q&A.
