@@ -685,6 +685,7 @@
             "in-category": "in category:"
         },
         "faq-list": {
+            "suggestion": "Did you mean",
             "loading": "Loading frequently asked questions",
             "error": "Could not retrieve frequently asked questions.",
             "no-results": "No results matched your search."

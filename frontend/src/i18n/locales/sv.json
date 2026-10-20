@@ -664,6 +664,7 @@
             "in-category": "i kategori:"
         },
         "faq-list": {
+            "suggestion": "Menade du",
             "loading": "Laddar vanliga frågor",
             "error": "Kunde inte hämta vanliga frågor.",
             "no-results": "Inga resultat matchade din sökning."
