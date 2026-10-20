@@ -16,6 +16,7 @@ type TransferFormProps = {
     over: boolean;
     date: string;
     onDateChange: (value: string) => void;
+    dateInPast: boolean;
     recurring: boolean;
     onRecurringChange: (value: boolean) => void;
     recurrence: RecurrenceFieldsValue;
@@ -37,6 +38,7 @@ export default function TransferForm({
     over,
     date,
     onDateChange,
+    dateInPast,
     recurring,
     onRecurringChange,
     recurrence,
@@ -149,6 +151,11 @@ export default function TransferForm({
                             {t("page-transfer.recurring-label")}
                         </label>
                     </div>
+                    {dateInPast && (
+                        <p aria-live="polite" className="-mt-2 text-sm text-error sm:-mt-3">
+                            {t("page-transfer.date-error")}
+                        </p>
+                    )}
 
                     {recurring && (
                         <RecurrenceFields name="transfer" {...recurrence} />

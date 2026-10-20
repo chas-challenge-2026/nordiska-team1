@@ -6,6 +6,7 @@ import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase, TransferSummary } from "../components/TransferDone";
 import { formatCurrency } from "../utils/currency";
+import { toDateKey } from "../utils/date";
 import {
     parseAmount,
     todayIso,
@@ -66,12 +67,14 @@ export default function TransferPage() {
     const amountValue = parseAmount(amount);
     const over = !!fromAccount && amountValue > fromAccount.balance;
     const isExternal = !!toAccount && !toAccount.own;
+    const dateInPast = date < toDateKey(new Date().toISOString());
 
     const canSubmit =
         !!fromAccount &&
         !!toAccount &&
         amountValue > 0 &&
-        !over;
+        !over &&
+        !dateInPast;
 
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
@@ -228,6 +231,7 @@ export default function TransferPage() {
                                 over={over}
                                 date={date}
                                 onDateChange={setDate}
+                                dateInPast={dateInPast}
                                 recurring={recurring}
                                 onRecurringChange={recurrence.setRecurring}
                                 recurrence={recurrence.fieldProps}
