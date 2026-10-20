@@ -191,3 +191,4 @@ In this evaluation, we integrated `ensure_tsa_proxy_if_needed()` into `nordiska-
 ## 7. Conclusion
 
 The benchmark tooling on `feat/267-reporting-benchmark` is robust, production-grade, and verified to handle massive scale. The .NET reporting worker and native C++ PDF engine comfortably sustained **> 660 PDFs/sec unsigned** and **> 410 PDFs/sec signed with realistic WAN TSA latency**, completing a full nationwide bank batch of **63,437 PDF documents in under 2.6 minutes** with **zero errors**.
+
