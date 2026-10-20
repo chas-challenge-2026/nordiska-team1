@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="slide2-native-detail" name="Native Detalj">
-        <mxGraphModel dx="1286" dy="1281" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+        <mxGraphModel dx="1956" dy="1486" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -43,7 +43,7 @@
                 <mxCell id="cpp_s5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="5. Insert Signatur" vertex="1">
                     <mxGeometry height="80" width="240" x="395" y="375" as="geometry"/>
                 </mxCell>
-                <mxCell id="cpp_s6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="6. Slut-Hash (SHA-256)" vertex="1">
+                <mxCell id="cpp_s6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="6. Hash (SHA-256)" vertex="1">
                     <mxGeometry height="80" width="260" x="715" y="375" as="geometry"/>
                 </mxCell>
                 <mxCell id="e_cs12" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#334155;strokeWidth=3;" value="">
