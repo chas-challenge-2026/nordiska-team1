@@ -144,5 +144,6 @@ services:
 volumes:
   postgres_v2_data:
   report_documents:
+    name: ${NORDISKA_REPORT_DOCUMENTS_VOLUME:-nordiska-v2_report_documents}
   pdf_signer_socket:
 

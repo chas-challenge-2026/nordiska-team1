@@ -94,12 +94,19 @@ recreate_worker() {
     
     local signing
     signing=$(get_env_val "NORDISKA_PDF_ENABLE_SIGNING" "0")
+    local cur_db
+    cur_db=$(get_env_val "NORDISKA_DATABASE" "nordiska_v2")
+    local extra_compose=()
+    if [[ "$cur_db" == "nordiska_synthetic" && -f "$REPO_ROOT/tools/syntheticDB/compose.override.yml" ]]; then
+        extra_compose+=("-f" "$REPO_ROOT/tools/syntheticDB/compose.override.yml")
+    fi
+
     if [[ "$signing" == "1" ]]; then
-        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERRIDE" up -d --no-deps pdf-signer
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERRIDE" "${extra_compose[@]}" up -d --no-deps pdf-signer
     fi
     ensure_tsa_proxy
 
-    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERRIDE" up -d --no-deps reporting-worker
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERRIDE" "${extra_compose[@]}" up -d --no-deps reporting-worker
     STATUS_MSG="[OK] Recreated containers with updated environment!"
     STATUS_COLOR="$C_BOLD_GREEN"
 }

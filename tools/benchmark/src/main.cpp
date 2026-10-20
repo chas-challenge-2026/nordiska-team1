@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
                           << "PDF Socket Signing:    " << (env.pdf_enable_signing == "1" ? "Enabled (1)" : "Disabled (0)") << "\n";
             }
             std::cout << "Available Customers:   " << counts.customers << "\n"
-                      << "Available Customers:   " << counts.customers << "\n"
                       << "Available Accounts:    " << counts.accounts << "\n"
                       << "Ledger Transactions:   " << counts.transactions << "\n"
                       << "Polling Interval:      " << options.poll_interval_seconds << "s\n"

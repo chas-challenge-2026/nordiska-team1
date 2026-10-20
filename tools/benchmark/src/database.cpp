@@ -245,8 +245,10 @@ void DatabaseClient::clean_reporting_data(bool clean_storage) const {
 
     if (clean_storage) {
         try {
+            auto env = get_worker_environment();
+            std::string target = env.found ? env.container_id : "nordiska-v2-reporting-worker-1";
             run_cmd({
-                "docker", "exec", "nordiska-v2-reporting-worker-1",
+                "docker", "exec", target,
                 "sh", "-c", "rm -rf /var/lib/nordiska/report-documents/*"
             });
         } catch (...) {}
@@ -549,6 +551,30 @@ LatencyStats DatabaseClient::query_latency_stats() const {
 int64_t DatabaseClient::count_generated_documents() const {
     std::string out = sql("SELECT count(*) FROM reporting.generated_documents;");
     return out.empty() ? 0 : std::stoll(out);
+}
+
+void DatabaseClient::ensure_tsa_proxy_if_needed() const {
+    try {
+        auto env = get_worker_environment();
+        if (env.pdf_enable_signing == "1" && (env.pdf_signer_mode == "timestamp" || env.pdf_signer_mode == "1")) {
+            std::string tsa_url = run_cmd({
+                "docker", "exec", "nordiska-v2-pdf-signer-1",
+                "sh", "-c", "echo $PDF_SIGNER_TSA_URL"
+            });
+            if (tsa_url.find("8082") != std::string::npos) {
+                std::string tcp_out = run_cmd({
+                    "docker", "exec", "nordiska-v2-pdf-signer-1",
+                    "cat", "/proc/net/tcp"
+                });
+                if (tcp_out.find("1F92") == std::string::npos) {
+                    std::string proxy_c = (repo_root_ / "tools/benchmark/tsa_proxy.c").string();
+                    run_cmd({"docker", "cp", proxy_c, "nordiska-v2-pdf-signer-1:/app/tsa_proxy.c"});
+                    run_cmd({"docker", "exec", "nordiska-v2-pdf-signer-1", "gcc", "-O3", "-pthread", "/app/tsa_proxy.c", "-o", "/app/tsa_proxy"});
+                    run_cmd({"docker", "exec", "-d", "nordiska-v2-pdf-signer-1", "/app/tsa_proxy", "2", "20", "8082", "8081"});
+                }
+            }
+        }
+    } catch (...) {}
 }
 
 } // namespace nordiska::benchmark

@@ -141,3 +141,5 @@ PHASE 2: DRAIN EXECUTION (PRODUCTION .NET WORKER)
 TOTAL END-TO-END BATCH TIME (Staging + Drain): 5.97 s
 ================================================================================
 ```
+
+For the comprehensive full-matrix benchmark report spanning up to **25,000 customers (63,400+ documents)** across various concurrency levels and signing configurations, see [Benchmark Report & Scalability Analysis](docs/benchmark-report.md).

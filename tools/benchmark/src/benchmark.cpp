@@ -67,6 +67,8 @@ BenchmarkResult BenchmarkRunner::run() {
         db_.clean_reporting_data(true);
     }
 
+    db_.ensure_tsa_proxy_if_needed();
+
     // -------------------------------------------------------------------------
     // PHASE 1: STAGING (JOB INJECTION)
     // -------------------------------------------------------------------------

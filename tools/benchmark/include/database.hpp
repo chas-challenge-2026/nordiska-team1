@@ -72,6 +72,7 @@ public:
     LatencyStats query_latency_stats() const;
     int64_t count_generated_documents() const;
     WorkerEnvironment get_worker_environment() const;
+    void ensure_tsa_proxy_if_needed() const;
 
     static std::string detect_active_database();
 
