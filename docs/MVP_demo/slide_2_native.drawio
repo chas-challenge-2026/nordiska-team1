@@ -1,139 +1,139 @@
 <mxfile host="65bd71144e">
     <diagram id="slide2-native-detail" name="Native Detalj">
-        <mxGraphModel dx="1417" dy="1077" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#FFFFFF" math="0" shadow="0">
+        <mxGraphModel dx="1417" dy="1077" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#134663" math="0" shadow="0">
             <root>
-                <mxCell id="0"/>
-                <mxCell id="1" parent="0"/>
-                <mxCell id="bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=none;pointerEvents=0;" value="" vertex="1">
-                    <mxGeometry height="900" width="1600" as="geometry"/>
+                <mxCell id="0" />
+                <mxCell id="1" parent="0" />
+                <mxCell id="bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#134663;strokeColor=none;pointerEvents=0;" value="" vertex="1">
+                    <mxGeometry height="900" width="1600" as="geometry" />
                 </mxCell>
-                <mxCell id="title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#334155;fontColor=#FFFFFF;fontSize=18;fontStyle=1;align=left;spacingLeft=20;" value="Nordiska Sparbanken v2 — Native PDF-Pipeline (C++23 &amp; C)" vertex="1">
-                    <mxGeometry height="40" width="990" x="30" y="18" as="geometry"/>
+                <mxCell id="title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EDA91B;strokeColor=#D9990F;fontColor=#00102B;fontSize=18;fontStyle=1;align=left;spacingLeft=20;" value="Nordiska Sparbanken v2 — Native PDF-Pipeline (C++23 &amp; C)" vertex="1">
+                    <mxGeometry height="40" width="990" x="30" y="18" as="geometry" />
                 </mxCell>
-                <mxCell id="a1_down" edge="1" parent="1" source="title" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=3;fontSize=15;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFFFFF;exitX=0.165;exitY=1.027;exitDx=0;exitDy=0;exitPerimeter=0;" value="JSON in (P/Invoke)">
+                <mxCell id="a1_down" edge="1" parent="1" source="title" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=3;fontSize=15;fontStyle=1;fontColor=#FFFFFF;labelBackgroundColor=#134663;exitX=0.165;exitY=1.027;exitDx=0;exitDy=0;exitPerimeter=0;" value="JSON in (P/Invoke)">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="195" y="70" as="sourcePoint"/>
-                        <mxPoint x="195" y="130" as="targetPoint"/>
+                        <mxPoint x="195" y="70" as="sourcePoint" />
+                        <mxPoint x="195" y="130" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="a1_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#059669;strokeWidth=3;fontSize=15;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFFFFF;" value="Färdig PDF-batch ut (C-Callback)">
+                <mxCell id="a1_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#10B981;strokeWidth=3;fontSize=15;fontStyle=1;fontColor=#FFFFFF;labelBackgroundColor=#134663;" value="Färdig PDF-batch ut (C-Callback)">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="835" y="130" as="sourcePoint"/>
-                        <mxPoint x="835" y="60" as="targetPoint"/>
+                        <mxPoint x="835" y="130" as="sourcePoint" />
+                        <mxPoint x="835" y="60" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="nat_outer" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=3;verticalAlign=top;align=left;spacingLeft=18;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#9A3412;" value="Native (C / C++)" vertex="1">
-                    <mxGeometry height="665" width="990" x="30" y="130" as="geometry"/>
+                <mxCell id="nat_outer" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F3E6;strokeColor=#EA580C;strokeWidth=3;verticalAlign=top;align=left;spacingLeft=18;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#00102B;" value="Native (C / C++)" vertex="1">
+                    <mxGeometry height="665" width="990" x="30" y="130" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=18;spacingTop=10;fontSize=19;fontStyle=1;fontColor=#000000;" value="C++23 pdf_generator" vertex="1">
-                    <mxGeometry height="310" width="950" x="50" y="175" as="geometry"/>
+                <mxCell id="cpp_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F3E6;strokeColor=#EA580C;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=18;spacingTop=10;fontSize=19;fontStyle=1;fontColor=#00102B;" value="C++23 pdf_generator" vertex="1">
+                    <mxGeometry height="310" width="950" x="50" y="175" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_s1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#000000;" value="1. Ingest" vertex="1">
-                    <mxGeometry height="80" width="240" x="75" y="220" as="geometry"/>
+                <mxCell id="cpp_s1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#38BDF8;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#FFFFFF;" value="1. Ingest" vertex="1">
+                    <mxGeometry height="80" width="240" x="75" y="220" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_s2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#000000;" value="2. Layout (IR)" vertex="1">
-                    <mxGeometry height="80" width="240" x="395" y="220" as="geometry"/>
+                <mxCell id="cpp_s2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#38BDF8;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#FFFFFF;" value="2. Layout (IR)" vertex="1">
+                    <mxGeometry height="80" width="240" x="395" y="220" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_s3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#000000;" value="3. Render" vertex="1">
-                    <mxGeometry height="80" width="260" x="715" y="220" as="geometry"/>
+                <mxCell id="cpp_s3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#38BDF8;strokeWidth=2;align=center;fontSize=20;fontStyle=1;fontColor=#FFFFFF;" value="3. Render" vertex="1">
+                    <mxGeometry height="80" width="260" x="715" y="220" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_s4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="4. Signature Slot &amp; Digest" vertex="1">
-                    <mxGeometry height="80" width="265" x="75" y="375" as="geometry"/>
+                <mxCell id="cpp_s4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#EA580C;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#FFFFFF;" value="4. Signature Slot &amp; Digest" vertex="1">
+                    <mxGeometry height="80" width="265" x="75" y="375" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_s5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="5. Insert Signatur" vertex="1">
-                    <mxGeometry height="80" width="240" x="395" y="375" as="geometry"/>
+                <mxCell id="cpp_s5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#EA580C;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#FFFFFF;" value="5. Insert Signatur" vertex="1">
+                    <mxGeometry height="80" width="240" x="395" y="375" as="geometry" />
                 </mxCell>
-                <mxCell id="cpp_s6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="6. Hash (SHA-256)" vertex="1">
-                    <mxGeometry height="80" width="260" x="715" y="375" as="geometry"/>
+                <mxCell id="cpp_s6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#34D399;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#FFFFFF;" value="6. Hash (SHA-256)" vertex="1">
+                    <mxGeometry height="80" width="260" x="715" y="375" as="geometry" />
                 </mxCell>
-                <mxCell id="e_cs12" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#334155;strokeWidth=3;" value="">
+                <mxCell id="e_cs12" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#0F3644;strokeWidth=3;" value="">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="315" y="260" as="sourcePoint"/>
-                        <mxPoint x="395" y="260" as="targetPoint"/>
+                        <mxPoint x="315" y="260" as="sourcePoint" />
+                        <mxPoint x="395" y="260" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e_cs23" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#334155;strokeWidth=3;" value="">
+                <mxCell id="e_cs23" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#0F3644;strokeWidth=3;" value="">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="635" y="260" as="sourcePoint"/>
-                        <mxPoint x="715" y="260" as="targetPoint"/>
+                        <mxPoint x="635" y="260" as="sourcePoint" />
+                        <mxPoint x="715" y="260" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e_cs34" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;" value="Med signering">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="775" y="338"/>
-                            <mxPoint x="205" y="338"/>
-                        </Array>
-                        <mxPoint x="775" y="300" as="sourcePoint"/>
-                        <mxPoint x="205" y="375" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e_cs36_nosign" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#059669;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFFFFF;" value="Utan signering">
-                    <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="895" y="300" as="sourcePoint"/>
-                        <mxPoint x="895" y="375" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e_cs56" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#059669;strokeWidth=3;" value="">
-                    <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="635" y="415" as="sourcePoint"/>
-                        <mxPoint x="715" y="415" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="a2_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#E11D48;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFF7ED;" value="Unix Socket (SHA-256)">
-                    <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="205" y="455" as="sourcePoint"/>
-                        <mxPoint x="205" y="615" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="a2_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#E11D48;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFF7ED;edgeStyle=orthogonalEdgeStyle;" value="CMS-signatur (Hex)">
+                <mxCell id="e_cs34" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#000000;labelBackgroundColor=#F8F3E6;edgeStyle=orthogonalEdgeStyle;" value="Med signering">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="845" y="520"/>
-                            <mxPoint x="515" y="520"/>
+                            <mxPoint x="775" y="338" />
+                            <mxPoint x="205" y="338" />
                         </Array>
-                        <mxPoint x="845" y="615" as="sourcePoint"/>
-                        <mxPoint x="515" y="455" as="targetPoint"/>
+                        <mxPoint x="775" y="300" as="sourcePoint" />
+                        <mxPoint x="205" y="375" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="sig_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E11D48;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=18;spacingTop=10;fontSize=19;fontStyle=1;fontColor=#000000;" value="C pdf-signer" vertex="1">
-                    <mxGeometry height="200" width="950" x="50" y="565" as="geometry"/>
+                <mxCell id="e_cs36_nosign" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#10B981;strokeWidth=2;fontSize=13;fontStyle=1;fontColor=#000000;labelBackgroundColor=#F8F3E6;" value="Utan signering">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="895" y="300" as="sourcePoint" />
+                        <mxPoint x="895" y="375" as="targetPoint" />
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="sig_s1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF1F2;strokeColor=#E11D48;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="1. PKCS#11 Sign" vertex="1">
-                    <mxGeometry height="115" width="265" x="75" y="615" as="geometry"/>
+                <mxCell id="e_cs56" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#10B981;strokeWidth=3;" value="">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="635" y="415" as="sourcePoint" />
+                        <mxPoint x="715" y="415" as="targetPoint" />
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="sig_s2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF1F2;strokeColor=#E11D48;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="2. TSA Tidsstämpel" vertex="1">
-                    <mxGeometry height="115" width="250" x="395" y="615" as="geometry"/>
+                <mxCell id="a2_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#EA580C;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#000000;labelBackgroundColor=#F8F3E6;" value="Unix Socket (SHA-256)">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="205" y="455" as="sourcePoint" />
+                        <mxPoint x="205" y="615" as="targetPoint" />
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="sig_s3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF1F2;strokeColor=#E11D48;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#000000;" value="3. PAdES-B-T (CMS Hex)" vertex="1">
-                    <mxGeometry height="115" width="275" x="700" y="615" as="geometry"/>
+                <mxCell id="a2_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#F43F5E;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#000000;labelBackgroundColor=#F8F3E6;edgeStyle=orthogonalEdgeStyle;" value="CMS-signatur (Hex)">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="845" y="520" />
+                            <mxPoint x="515" y="520" />
+                        </Array>
+                        <mxPoint x="845" y="615" as="sourcePoint" />
+                        <mxPoint x="515" y="455" as="targetPoint" />
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="sig_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F3E6;strokeColor=#E11D48;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=18;spacingTop=10;fontSize=19;fontStyle=1;fontColor=#00102B;" value="C pdf-signer" vertex="1">
+                    <mxGeometry height="200" width="950" x="50" y="565" as="geometry" />
+                </mxCell>
+                <mxCell id="sig_s1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#E11D48;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#FFFFFF;" value="1. PKCS#11 Sign" vertex="1">
+                    <mxGeometry height="115" width="265" x="75" y="615" as="geometry" />
+                </mxCell>
+                <mxCell id="sig_s2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#E11D48;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#FFFFFF;" value="2. TSA Tidsstämpel" vertex="1">
+                    <mxGeometry height="115" width="250" x="395" y="615" as="geometry" />
+                </mxCell>
+                <mxCell id="sig_s3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F3644;strokeColor=#38BDF8;strokeWidth=2;align=center;fontSize=19;fontStyle=1;fontColor=#FFFFFF;" value="3. PAdES-B-T (CMS Hex)" vertex="1">
+                    <mxGeometry height="115" width="275" x="700" y="615" as="geometry" />
                 </mxCell>
                 <mxCell id="e_ss12" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#E11D48;strokeWidth=3;" value="">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="340" y="672" as="sourcePoint"/>
-                        <mxPoint x="395" y="672" as="targetPoint"/>
+                        <mxPoint x="340" y="672" as="sourcePoint" />
+                        <mxPoint x="395" y="672" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e_ss23" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#E11D48;strokeWidth=3;" value="">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="645" y="672" as="sourcePoint"/>
-                        <mxPoint x="700" y="672" as="targetPoint"/>
+                        <mxPoint x="645" y="672" as="sourcePoint" />
+                        <mxPoint x="700" y="672" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="a3_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#9333EA;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFFFFF;" value="HTTP (TSA Request)">
+                <mxCell id="a3_down" edge="1" parent="1" style="endArrow=block;endFill=1;html=1;strokeColor=#C084FC;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#FFFFFF;labelBackgroundColor=#134663;" value="HTTP (TSA Request)">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="435" y="730" as="sourcePoint"/>
-                        <mxPoint x="435" y="865" as="targetPoint"/>
+                        <mxPoint x="435" y="730" as="sourcePoint" />
+                        <mxPoint x="435" y="865" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="a3_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#9333EA;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#000000;labelBackgroundColor=#FFFFFF;" value="TimeStampToken">
+                <mxCell id="a3_up" edge="1" parent="1" style="endArrow=block;endFill=1;dashed=1;html=1;strokeColor=#C084FC;strokeWidth=3;fontSize=14;fontStyle=1;fontColor=#FFFFFF;labelBackgroundColor=#134663;" value="TimeStampToken">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="605" y="865" as="sourcePoint"/>
-                        <mxPoint x="605" y="730" as="targetPoint"/>
+                        <mxPoint x="605" y="865" as="sourcePoint" />
+                        <mxPoint x="605" y="730" as="targetPoint" />
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="notes_box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#334155;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=22;spacingRight=18;spacingTop=16;fontSize=14;fontStyle=0;fontColor=#000000;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;&lt;font style=&quot;&quot;&gt;&lt;b style=&quot;&quot;&gt;PDF Generator (C++23)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;Atomärt kundkontrakt (All-or-Nothing):&lt;/b&gt; 1 anrop = 1 kund (1..N dok). Minsta fel avbryter hela batchen med exakt feldiagnostik per steg och dokument.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Ren presentationsmotor:&lt;/b&gt; Noll affärslogik eller formatering i C++ – tar emot färdigformaterad JSON från .NET.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Inställningar via env-variabler:&lt;/b&gt; Signering (på/av, läge, socket) styrs via miljövariabler.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Modulär pipeline:&lt;/b&gt; Utbytbar JSON-ingest → Fristående Layout → Utbytbar Render (libharu / egen / Cairo).&lt;br&gt;&lt;br&gt;• &lt;b&gt;Strikt minneskontrakt:&lt;/b&gt; Lånat minne exponeras som vy under C-Callback och frigörs direkt efteråt.&lt;br&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;&lt;b&gt;PDF Signer (C)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;Zero-Trust över Unix-socket:&lt;/b&gt; Tar endast emot 32-byte SHA-256-hash – signeringsprocessen ser aldrig PDF:en eller kunddata.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Hårdvaruförberedd nyckelisolering:&lt;/b&gt; Privat nyckel är låst i SoftHSM2 via OpenSSL PKCS#11-provider (nyckeln lämnar aldrig HSM).&lt;br&gt;&lt;br&gt;• &lt;b&gt;PAdES-B-T-nivå:&lt;/b&gt; Kombinerar CMS/CAdES-signatur med en kryptografisk RFC 3161-tidsstämpel från TSA-servern.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Konfiguration via miljövariabler:&lt;/b&gt; PKCS#11-modul, URI, certifikat och TSA-URL sätts via env-variabler – byt till fysisk HSM utan omkompilering.&lt;/font&gt;" vertex="1">
-                    <mxGeometry height="852" width="525" x="1045" y="18" as="geometry"/>
+                <mxCell id="notes_box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=22;spacingRight=18;spacingTop=16;fontSize=14;fontStyle=0;fontColor=#FFFFFF;" value="&lt;font color=&quot;#FFFFFF&quot;&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;&lt;font style=&quot;&quot;&gt;&lt;b style=&quot;&quot;&gt;&lt;font color=&quot;#EDA91B&quot;&gt;&lt;b&gt;PDF Generator (C++23)&lt;/b&gt;&lt;/font&gt;&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;Atomärt kundkontrakt (All-or-Nothing):&lt;/b&gt; 1 anrop = 1 kund (1..N dok). Minsta fel avbryter hela batchen med exakt feldiagnostik per steg och dokument.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Ren presentationsmotor:&lt;/b&gt; Noll affärslogik eller formatering i C++ – tar emot färdigformaterad JSON från .NET.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Inställningar via env-variabler:&lt;/b&gt; Signering (på/av, läge, socket) styrs via miljövariabler.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Modulär pipeline:&lt;/b&gt; Utbytbar JSON-ingest → Fristående Layout → Utbytbar Render (libharu / egen / Cairo).&lt;br&gt;&lt;br&gt;• &lt;b&gt;Strikt minneskontrakt:&lt;/b&gt; Lånat minne exponeras som vy under C-Callback och frigörs direkt efteråt.&lt;br&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;&lt;b&gt;&lt;font color=&quot;#EDA91B&quot;&gt;&lt;b&gt;PDF Signer (C)&lt;/b&gt;&lt;/font&gt;&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;Zero-Trust över Unix-socket:&lt;/b&gt; Tar endast emot 32-byte SHA-256-hash – signeringsprocessen ser aldrig PDF:en eller kunddata.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Hårdvaruförberedd nyckelisolering:&lt;/b&gt; Privat nyckel är låst i SoftHSM2 via OpenSSL PKCS#11-provider (nyckeln lämnar aldrig HSM).&lt;br&gt;&lt;br&gt;• &lt;b&gt;PAdES-B-T-nivå:&lt;/b&gt; Kombinerar CMS/CAdES-signatur med en kryptografisk RFC 3161-tidsstämpel från TSA-servern.&lt;br&gt;&lt;br&gt;• &lt;b&gt;Konfiguration via miljövariabler:&lt;/b&gt; PKCS#11-modul, URI, certifikat och TSA-URL sätts via env-variabler – byt till fysisk HSM utan omkompilering.&lt;/font&gt;&lt;/font&gt;" vertex="1">
+                    <mxGeometry height="852" width="525" x="1045" y="18" as="geometry" />
                 </mxCell>
             </root>
         </mxGraphModel>
