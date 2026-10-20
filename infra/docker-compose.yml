@@ -93,10 +93,11 @@ services:
         condition: service_completed_successfully
     environment:
       ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       ReportDocumentStorage__RootPath: /var/lib/nordiska/report-documents
       TaxReportWorker__Concurrency: "${REPORTING_WORKER_CONCURRENCY:-12}"
-      NORDISKA_PDF_ENABLE_SIGNING: "0"
+      NORDISKA_PDF_ENABLE_SIGNING: "${NORDISKA_PDF_ENABLE_SIGNING:-0}"
+      PDF_SIGNER_MODE: "${PDF_SIGNER_MODE:-plain}"
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
     volumes:
       - report_documents:/var/lib/nordiska/report-documents
@@ -125,14 +126,14 @@ services:
       NORDISKA_PDF_ENABLE_SIGNING: "1"
       PDF_OUTPUT_DIRECTORY: /var/lib/nordiska/report-documents
       ConnectionStrings__ReportingDatabase: >-
-        Host=db;Port=5432;Database=nordiska_v2;Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
+        Host=db;Port=5432;Database=${NORDISKA_DATABASE:-nordiska_v2};Username=nordiska_reporting_worker;Password=${NORDISKA_REPORTING_WORKER_PASSWORD}
       PDF_SIGNER_PKCS11_PROVIDER: pkcs11
       PDF_SIGNER_PKCS11_MODULE: /usr/lib/softhsm/libsofthsm2.so
       PDF_SIGNER_PKCS11_URI: "pkcs11:token=key-load-dev;object=pdf-signer-test;type=private"
       PDF_SIGNER_CERT_PATH: /app/tests/data/signing_cert.pem
       PDF_SIGNER_TSA_CERT_PATH: /app/tests/data/tsa_cert.pem
       PDF_SIGNER_SOCKET_PATH: /run/pdf-signer/pdf-signer.sock
-      PDF_SIGNER_TSA_URL: http://127.0.0.1:8081/
+      PDF_SIGNER_TSA_URL: "${PDF_SIGNER_TSA_URL:-http://127.0.0.1:8081/}"
       PDF_SIGNER_PKCS11_PIN: ${PDF_SIGNER_PKCS11_PIN:?Set PDF_SIGNER_PKCS11_PIN}
       PDF_SIGNER_PKCS11_SO_PIN: ${PDF_SIGNER_PKCS11_SO_PIN:?Set PDF_SIGNER_PKCS11_SO_PIN}
 
