@@ -12,9 +12,9 @@
 | Tid | Segment | Talare | Vad pekar du på i Slide 2? | Kärnbudskap / Stödord |
 |---|---|---|---|---|
 | **00:00–00:40** (40s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory via callback, noll hårddiskanvändning. **Prestanda på vanlig dator: 10k kunder, 15k konton, 700k transaktioner sparade i DB på ca 1 min!** |
-| **00:40–01:05** (25s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare tar bara emot hash – ser aldrig kunddata! |
+| **00:40–01:05** (25s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare tar bara emot en anonym hash – ser aldrig kunddata! |
 | **01:05–01:35** (30s) | **Signering, PKCS#11 & HSM** | **Marcus** | C pdf-signer ➔ PKCS#11 ➔ TSA Server | Fristående signering skild från PDF-generering. PKCS#11 + tidsstämpling, isolerad nyckelhantering, redo för riktig HSM. Modulär lösning. |
-| **01:35–02:00** (25s) | **Helhetsavslut & Överlämning** | **Marcus** | Blick mot kunden / Hela bilden | Knyt ihop säcken: Enkelhet (UI/FAQ), Skalbarhet (Worker/Native), Förtroende (Ledger/PAdES). Bjud in till Q&A & Feed forward! |
+| **01:35–02:00** (25s) | **Helhetsavslut & Överlämning** | **Marcus** | Blick mot kunden / Hela bilden | Knyt ihop säcken: Enkelhet (kundupplevelse), Skalbarhet (arkitektur/asynkron/native), Förtroende (DB-roller, säker data, signering). Bjud in till Q&A & Feed forward! |
 
 ---
 
@@ -43,7 +43,7 @@
 > 
 > För det första: Ett anrop hanterar exakt en kund. Inget delat tillstånd, och minsta fel avbryter hela batchen. Det gör det strukturellt omöjligt att kunddata läcker mellan PDF:er.  
 > 
-> För det andra: Vår isolerade C-signerare tar endast emot en hash av dokumentet. Signeringsprocessen kan alltså aldrig se själva kunddatan."
+> För det andra: Vår isolerade C-signerare tar endast emot en anonym hash. Signeringsprocessen kan alltså aldrig se själva kunddatan."
 
 ---
 
@@ -61,12 +61,15 @@
 ### [01:35 – 02:00] Marcus — Helhetsavslut & Överlämning till Q&A
 *(Visuell cue: Blick mot kunden / kameran)*
 
-> "För att knyta ihop hela demon:  
-> Ni har sett **Enkelhet** för kunden genom smidig BankID-inloggning, målstyrt sparande och direkt hjälp i FAQ:n.  
-> Ni har sett **Skalbarhet** genom vår asynkrona kö och den blixtsnabba Native-motorn.  
-> Och ni har sett **Förtroende** genom immutabelt ledger i databasen och säkert signerade handlingar.  
+> "För att knyta ihop hela demon har ni fått se hur enkelhet, skalbarhet och förtroende genomsyrar lösningen från flera håll.  
 > 
-> Vi är Team 1 – varmt tack för att ni lyssnade, och vi ser mycket fram emot era frågor och er feed forward!"
+> Enkelhet i kundupplevelsen, med smidig BankID-inloggning, målstyrt sparande och snabb hjälp via FAQ:n.  
+> 
+> Skalbarhet i arkitekturen, med asynkron hantering, tydligt separerade komponenter och en native-del som kan hantera hög belastning effektivt.  
+> 
+> Och förtroende genom tydliga databasroller, säker hantering av kunddata genom hela flödet och signerade, tidsstämplade dokument.  
+> 
+> Vi är Team 1. Stort tack för att ni lyssnade — vi ser fram emot era frågor och er feed forward!"
 
 ---
 
@@ -79,13 +82,13 @@
   – **Prestanda på vanlig dator:** 10 000 kunder, 15 000 konton, 700 000 transaktioner sparade i DB på ca 1 minut.  
 * **Jimmy (00:40–01:05) Förtroende & Zero-Trust:**  
   – 1 kund/anrop, all-or-nothing, noll dataläckage.  
-  – Zero-trust: Signeraren tar bara emot en hash – ser aldrig kunddata!  
+  – Zero-trust: Signeraren tar bara emot en anonym hash – ser aldrig kunddata!  
 * **Marcus (01:05–01:35) Signering, PKCS#11 & Moduläritet:**  
   – Fristående signering skild från PDF-generering: enklare underhåll och vidareutveckling.  
   – PKCS#11 + tidsstämpling: isolerad nyckelhantering, koppla mot riktigt HSM utan ombyggnad.  
   – Modulär lösning: varje del kan skalas, bytas ut eller vidareutvecklas separat.  
 * **Marcus (01:35–02:00) Avslutning:**  
-  – Ledorden summerade: Enkelhet (kundresa), Skalbarhet (backend/native), Förtroende (ledger/signering).  
+  – Ledorden summerade: Enkelhet (kundupplevelse), Skalbarhet (arkitektur/asynkron/native), Förtroende (DB-roller, säker data, signerade/tidsstämplade dok).  
   – Tacka och öppna för Q&A och feed forward!
 
 ---
