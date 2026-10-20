@@ -145,16 +145,30 @@ void BenchmarkRunner::print_summary(const BenchmarkResult& r, const BenchmarkOpt
     std::cout << "\n================================================================================\n"
               << "                              BENCHMARK SUMMARY\n"
               << "================================================================================\n"
-              << "Target Database:         " << opt.database << "\n";
-    if (r.worker_env.found) {
-        std::cout << "Benchmarked Worker:      Concurrency: " << r.worker_env.concurrency
-                  << " | Signing: " << (r.worker_env.pdf_enable_signing == "1" ? "Enabled" : "Disabled")
-                  << " | .NET " << (r.worker_env.dotnet_version.empty() ? "8.0" : r.worker_env.dotnet_version)
-                  << " | " << r.worker_env.container_name << "\n"
-                  << "PDF Storage Volume:      " << (r.worker_env.storage_volume.empty() ? "local" : r.worker_env.storage_volume) << "\n";
-    }
-    std::cout << "Total Documents Staged:  " << r.total_staged << " (" << r.tax_jobs << " tax + " << r.statement_jobs << " statements)\n"
+              << "Target Database:         " << opt.database << "\n"
+              << "Total Documents Staged:  " << r.total_staged << " (" << r.tax_jobs << " tax + " << r.statement_jobs << " statements)\n"
               << "--------------------------------------------------------------------------------\n"
+              << "BENCHMARKED ENVIRONMENT VARIABLES & RUNTIME CONFIG:\n";
+
+    if (r.worker_env.found) {
+        std::cout << "  TaxReportWorker__Concurrency:     " << r.worker_env.concurrency << " threads\n"
+                  << "  NORDISKA_PDF_ENABLE_SIGNING:      " << r.worker_env.pdf_enable_signing
+                  << " (" << (r.worker_env.pdf_enable_signing == "1" ? "Signing Enabled" : "Signing Disabled / Bypassed") << ")\n"
+                  << "  PDF_SIGNER_SOCKET_PATH:           " << (r.worker_env.pdf_signer_socket.empty() ? "None" : r.worker_env.pdf_signer_socket) << "\n"
+                  << "  ReportDocumentStorage__RootPath:  " << (r.worker_env.storage_root.empty() ? "/var/lib/nordiska/report-documents" : r.worker_env.storage_root) << "\n"
+                  << "  NORDISKA_REPORT_DOCUMENTS_VOLUME: " << (r.worker_env.storage_volume.empty() ? "local" : r.worker_env.storage_volume) << "\n"
+                  << "  NORDISKA_DATABASE:                " << opt.database << "\n"
+                  << "  Worker Container:                 " << r.worker_env.container_name << " (" << r.worker_env.container_id << ")\n"
+                  << "  Worker Runtime Image:             " << r.worker_env.image << " (.NET " << (r.worker_env.dotnet_version.empty() ? "8.0" : r.worker_env.dotnet_version) << ")\n"
+                  << "  Worker DB Target:                 Host=" << (r.worker_env.db_host.empty() ? "db" : r.worker_env.db_host)
+                  << ", Database=" << (r.worker_env.db_name.empty() ? opt.database : r.worker_env.db_name)
+                  << ", User=" << (r.worker_env.db_user.empty() ? "nordiska_reporting_worker" : r.worker_env.db_user) << "\n";
+    } else {
+        std::cout << "  Worker Container:                 Not running or not detected\n"
+                  << "  NORDISKA_DATABASE:                " << opt.database << "\n";
+    }
+
+    std::cout << "--------------------------------------------------------------------------------\n"
               << "PHASE 1: STAGING (JOB INJECTION)\n"
               << "  Tax Jobs Staging:      " << std::fixed << std::setprecision(1) << r.tax_stage_ms << " ms\n"
               << "  Statement Jobs Staging:" << std::fixed << std::setprecision(1) << r.statement_stage_ms << " ms\n"
