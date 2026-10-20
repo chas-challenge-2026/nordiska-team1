@@ -11,7 +11,7 @@
 
 | Tid | Segment | Talare | Vad pekar du på i Slide 2? | Kärnbudskap / Stödord |
 |---|---|---|---|---|
-| **00:00–00:45** (45s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory P/Invoke utan disk-I/O. simdjson (>155k dok/s), PDF (>44k/s). 50k kunder (170k PDF) < 4 sek! |
+| **00:00–00:45** (45s) | **Native Prestanda & Skalbarhet** | **Jimmy** | C++23 pdf_generator (steg 1–3: Ingest, Layout, Render) | In-memory P/Invoke. simdjson (>155k dok/s), PDF (>44k/s). **Skarpt E2E i Docker på vanlig dator: 10k kunder, 15k konton, 700k transaktioner ~1 min!** (v1 kraschade vid 200). |
 | **00:45–01:15** (30s) | **Förtroende & Zero-Trust** | **Jimmy** | Unix Socket ➔ C pdf-signer ➔ PKCS#11 | 1 kund/anrop, all-or-nothing, noll dataläcka. Signerare ser bara 32-byte SHA-256 hash – aldrig kunddata! SoftHSM2/PKCS#11. |
 | **01:15–01:35** (20s) | **PAdES-B-T & Standarder** | **Marcus** | TSA Server ➔ PAdES-B-T | Betrodd RFC 3161 TSA-tidsstämpel = PAdES-B-T idag. Förberett för fysisk HSM och PAdES-B-LTA till slutrelease. |
 | **01:35–02:00** (25s) | **Helhetsavslut & Överlämning** | **Marcus** | Blick mot kunden / Hela bilden | Knyt ihop säcken: Enkelhet (UI/FAQ), Skalbarhet (Worker/Native), Förtroende (Ledger/PAdES). Bjud in till Q&A & Feed forward! |
@@ -28,13 +28,13 @@
 ### [00:00 – 00:45] Jimmy — Native Prestanda & Skalbarhet
 *(Dela skärmen och visa **Slide 2**: `slide_2_native.drawio`. Peka på **C++23 pdf_generator**, steg 1–3: Ingest ➔ Layout ➔ Render)*
 
-> "Tack Olle! När ni nyss såg kunden beställa sitt skatteunderlag och få det i inkorgen på under en sekund, så var det vår Native-pipeline som jobbade bakom kulisserna.  
+> "Tack Olle! När ni nyss såg kunden beställa sitt skatteunderlag och få det i inkorgen direkt, så var det vår Native-pipeline som jobbade bakom kulisserna.  
 > 
-> Vår .NET Reporting.Worker anropar vår C++23-motor in-memory via ett strikt C89 ABI och P/Invoke – helt utan långsam disk-I/O emellan.  
+> Vår .NET-worker anropar C++23-motorn in-memory via ett strikt C89 ABI och P/Invoke – helt utan långsam disk-I/O emellan. Med SIMD-accelererad JSON-parsing läser vi över **155 000 dokument i sekunden** och vår interna motor renderar över **44 000 PDF:er per sekund**.  
 > 
-> Med SIMD-accelererad JSON-parsing läser vi över **155 000 dokument i sekunden**, och vår interna renderingsmotor genererar över **44 000 PDF:er per sekund**.  
+> Vi har också benchat hela den skarpa produkten deployad i Docker på helt vanliga datorer: **10 000 kunder, 15 000 konton och 700 000 transaktioner** – från att jobben stageas i databasen till att alla PDF:er är genererade och skrivna – tar **cirka en minut end-to-end**.  
 > 
-> Det här innebär att vid årsskiftet, när 50 000 kunder ska ha sina årsbesked samtidigt, genererar vi samtliga 170 000 dokument på **under 4 sekunder**. Systemet svettas inte ens."
+> V1:ans system låste sig och tog timeout redan vid 200 transaktioner; vi kör alltså 700 000 transaktioner på en minut."
 
 ---
 
@@ -74,11 +74,12 @@
 
 ## 3. Stödordsvariant (För att tala fritt)
 
-* **Jimmy (00:00–00:45) Prestanda:**  
+* **Jimmy (00:00–00:45) Prestanda & Docker E2E:**  
   – Skatteunderlaget nyss skapades av Native-motorn.  
   – In-memory P/Invoke via C89 ABI, noll disk-I/O.  
   – simdjson: >155 000 dok/s, rendering: >44 000 PDF/s.  
-  – 50k kunder (170k PDF:er) tar under 4 sekunder vid årsskiftet.  
+  – **Skarpt Docker E2E-test på vanlig laptop:** 10 000 kunder, 15 000 konton, 700 000 transaktioner på **~1 minut** (stagea jobb, köa, rendera, skriva PDF).  
+  – Jämförelse: v1 kraschade vid 200 transaktioner.  
 * **Jimmy (00:45–01:15) Förtroende & Zero-Trust:**  
   – Atomärt kundkontrakt: 1 kund/anrop, all-or-nothing, noll dataläckage.  
   – Zero-trust över Unix-socket: Signeraren ser bara 32-byte hash – aldrig kunddata!  
