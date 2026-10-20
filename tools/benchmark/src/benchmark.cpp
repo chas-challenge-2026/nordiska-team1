@@ -67,11 +67,34 @@ BenchmarkResult BenchmarkRunner::run() {
         db_.clean_reporting_data(true);
     }
 
-    db_.ensure_tsa_proxy_if_needed();
+    // TSA Jitter / Latency Proxy Lifecycle
+    int min_ms = 2, max_ms = 20;
+    bool proxy_needed = false;
+    if (options_.jitter_min.has_value() || options_.jitter_max.has_value()) {
+        proxy_needed = true;
+        min_ms = options_.jitter_min.value_or(2);
+        max_ms = options_.jitter_max.value_or(std::max(min_ms, 20));
+    } else {
+        proxy_needed = db_.is_tsa_proxy_needed(min_ms, max_ms);
+    }
 
-    // -------------------------------------------------------------------------
-    // PHASE 1: STAGING (JOB INJECTION)
-    // -------------------------------------------------------------------------
+    bool started_proxy = false;
+    if (proxy_needed) {
+        min_ms = std::clamp(min_ms, 0, 1000);
+        max_ms = std::clamp(max_ms, min_ms, 1000);
+        std::cout << "[+] Starting TSA Latency Proxy (127.0.0.1:8082 -> 8081, " << min_ms << "–" << max_ms << " ms jitter)...\n";
+        if (db_.start_tsa_proxy(min_ms, max_ms)) {
+            started_proxy = true;
+            std::cout << "[+] TSA Latency Proxy active.\n";
+        } else {
+            std::cerr << "[-] Warning: Failed to start TSA proxy on port 8082!\n";
+        }
+    }
+
+    try {
+        // -------------------------------------------------------------------------
+        // PHASE 1: STAGING (JOB INJECTION)
+        // -------------------------------------------------------------------------
     std::cout << "\n--- PHASE 1: STAGING (JOB INJECTION) ---\n"
               << "Injecting jobs with AvailableAt = future (held)..." << std::endl;
 
@@ -162,8 +185,22 @@ BenchmarkResult BenchmarkRunner::run() {
     result.latency = db_.query_latency_stats();
     result.documents_in_db = db_.count_generated_documents();
 
+    if (started_proxy && !options_.keep_proxy) {
+        std::cout << "[+] Shutting down TSA Latency Proxy...\n";
+        db_.stop_tsa_proxy();
+        std::cout << "[+] TSA Latency Proxy stopped.\n";
+        started_proxy = false;
+    }
+
     print_summary(result, options_);
     return result;
+    } catch (...) {
+        if (started_proxy && !options_.keep_proxy) {
+            std::cout << "\n[+] Shutting down TSA Latency Proxy on error...\n";
+            db_.stop_tsa_proxy();
+        }
+        throw;
+    }
 }
 
 void BenchmarkRunner::print_summary(const BenchmarkResult& r, const BenchmarkOptions& opt) {

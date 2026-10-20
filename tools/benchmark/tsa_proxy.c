@@ -73,10 +73,13 @@ static void* connection_worker(void* arg) {
         return NULL;
     }
 
-    // Set 5-second socket timeout
-    struct timeval tv = {.tv_sec = 5, .tv_usec = 0};
+    // Set socket timeout (scales with configured latency up to 1000ms)
+    int timeout_sec = 5 + (g_max_ms / 500);
+    struct timeval tv = {.tv_sec = timeout_sec, .tv_usec = 0};
     setsockopt(c_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     setsockopt(s_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(c_fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    setsockopt(s_fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
     // 2. Read full request from client
     char buffer[16384];
@@ -140,10 +143,15 @@ int main(int argc, char** argv) {
     }
 
     if (g_min_ms < 0) g_min_ms = 0;
+    if (g_min_ms > 1000) g_min_ms = 1000;
     if (g_max_ms < g_min_ms) g_max_ms = g_min_ms;
+    if (g_max_ms > 1000) g_max_ms = 1000;
 
-    signal(SIGINT, handle_sig);
-    signal(SIGTERM, handle_sig);
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = handle_sig;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
     signal(SIGPIPE, SIG_IGN);
 
     int listen_fd = socket(AF_INET, SOCK_STREAM, 0);

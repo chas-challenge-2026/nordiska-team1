@@ -12,6 +12,11 @@ struct BenchmarkOptions {
     int64_t limit = 0; // 0 = all accounts/customers
     int poll_interval_seconds = 2; // explicitly 2s as requested
     bool interactive = false;
+    std::optional<int> jitter_min;
+    std::optional<int> jitter_max;
+    bool keep_proxy = false;
+    bool start_proxy_only = false;
+    bool stop_proxy_only = false;
 };
 
 struct BenchmarkResult {

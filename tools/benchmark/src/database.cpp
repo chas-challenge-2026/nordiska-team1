@@ -1,6 +1,8 @@
 #include "database.hpp"
 
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -9,6 +11,7 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 #include <unistd.h>
 #include <sys/wait.h>
 
@@ -553,28 +556,110 @@ int64_t DatabaseClient::count_generated_documents() const {
     return out.empty() ? 0 : std::stoll(out);
 }
 
-void DatabaseClient::ensure_tsa_proxy_if_needed() const {
+bool DatabaseClient::is_tsa_proxy_needed(int& min_ms, int& max_ms) const {
     try {
-        auto env = get_worker_environment();
-        if (env.pdf_enable_signing == "1" && (env.pdf_signer_mode == "timestamp" || env.pdf_signer_mode == "1")) {
-            std::string tsa_url = run_cmd({
-                "docker", "exec", "nordiska-v2-pdf-signer-1",
-                "sh", "-c", "echo $PDF_SIGNER_TSA_URL"
-            });
-            if (tsa_url.find("8082") != std::string::npos) {
-                std::string tcp_out = run_cmd({
-                    "docker", "exec", "nordiska-v2-pdf-signer-1",
-                    "cat", "/proc/net/tcp"
-                });
-                if (tcp_out.find("1F92") == std::string::npos) {
-                    std::string proxy_c = (repo_root_ / "tools/benchmark/tsa_proxy.c").string();
-                    run_cmd({"docker", "cp", proxy_c, "nordiska-v2-pdf-signer-1:/app/tsa_proxy.c"});
-                    run_cmd({"docker", "exec", "nordiska-v2-pdf-signer-1", "gcc", "-O3", "-pthread", "/app/tsa_proxy.c", "-o", "/app/tsa_proxy"});
-                    run_cmd({"docker", "exec", "-d", "nordiska-v2-pdf-signer-1", "/app/tsa_proxy", "2", "20", "8082", "8081"});
-                }
+        std::string tsa_url = run_cmd({
+            "docker", "exec", "nordiska-v2-pdf-signer-1",
+            "sh", "-c", "echo $PDF_SIGNER_TSA_URL"
+        });
+        if (tsa_url.find("8082") == std::string::npos) {
+            return false;
+        }
+
+        min_ms = 2;
+        max_ms = 20;
+
+        fs::path env_file = repo_root_ / "infra/.env";
+        if (fs::exists(env_file)) {
+            std::ifstream file(env_file);
+            std::string line;
+            std::regex re_min{R"(^[ \t]*PDF_SIGNER_TSA_LATENCY_MIN_MS[ \t]*=[ \t]*(.*)$)"};
+            std::regex re_max{R"(^[ \t]*PDF_SIGNER_TSA_LATENCY_MAX_MS[ \t]*=[ \t]*(.*)$)"};
+            std::regex re_base{R"(^[ \t]*PDF_SIGNER_TSA_LATENCY_MS[ \t]*=[ \t]*(.*)$)"};
+            std::regex re_pct{R"(^[ \t]*PDF_SIGNER_TSA_JITTER_PERCENT[ \t]*=[ \t]*(.*)$)"};
+            std::string s_min, s_max, s_base, s_pct;
+            while (std::getline(file, line)) {
+                std::smatch m;
+                if (std::regex_match(line, m, re_min)) s_min = trim(m[1]);
+                else if (std::regex_match(line, m, re_max)) s_max = trim(m[1]);
+                else if (std::regex_match(line, m, re_base)) s_base = trim(m[1]);
+                else if (std::regex_match(line, m, re_pct)) s_pct = trim(m[1]);
+            }
+            if (!s_min.empty() && !s_max.empty()) {
+                min_ms = std::stoi(s_min);
+                max_ms = std::stoi(s_max);
+            } else if (!s_base.empty()) {
+                int base = std::stoi(s_base);
+                int pct = s_pct.empty() ? 50 : std::stoi(s_pct);
+                int jitter = (base * pct) / 100;
+                min_ms = std::max(0, base - jitter);
+                max_ms = base + jitter;
             }
         }
+        min_ms = std::clamp(min_ms, 0, 1000);
+        max_ms = std::clamp(max_ms, min_ms, 1000);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool DatabaseClient::is_tsa_proxy_running() const {
+    try {
+        std::string out = run_cmd({
+            "docker", "exec", "nordiska-v2-pdf-signer-1",
+            "pgrep", "-f", "tsa_proxy"
+        });
+        return !trim(out).empty();
+    } catch (...) {
+        return false;
+    }
+}
+
+bool DatabaseClient::start_tsa_proxy(int min_ms, int max_ms) const {
+    try {
+        min_ms = std::clamp(min_ms, 0, 1000);
+        max_ms = std::clamp(max_ms, min_ms, 1000);
+
+        // Terminate any existing instance to apply new jitter settings
+        stop_tsa_proxy();
+
+        std::string proxy_c = (repo_root_ / "tools/benchmark/tsa_proxy.c").string();
+        run_cmd({"docker", "cp", proxy_c, "nordiska-v2-pdf-signer-1:/app/tsa_proxy.c"});
+        run_cmd({"docker", "exec", "nordiska-v2-pdf-signer-1", "gcc", "-O3", "-pthread", "/app/tsa_proxy.c", "-o", "/app/tsa_proxy"});
+        run_cmd({"docker", "exec", "-d", "nordiska-v2-pdf-signer-1", "/app/tsa_proxy", std::to_string(min_ms), std::to_string(max_ms), "8082", "8081"});
+
+        for (int i = 0; i < 30; ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (is_tsa_proxy_running()) {
+                return true;
+            }
+        }
+        return is_tsa_proxy_running();
+    } catch (const std::exception& e) {
+        std::cerr << "[-] Error starting TSA proxy: " << e.what() << "\n";
+        return false;
+    }
+}
+
+void DatabaseClient::stop_tsa_proxy() const {
+    try {
+        run_cmd({
+            "docker", "exec", "nordiska-v2-pdf-signer-1",
+            "pkill", "-9", "-f", "tsa_proxy"
+        });
     } catch (...) {}
+}
+
+void DatabaseClient::ensure_tsa_proxy_if_needed(int min_ms, int max_ms) const {
+    int detected_min = min_ms, detected_max = max_ms;
+    if (is_tsa_proxy_needed(detected_min, detected_max)) {
+        if (min_ms != 2 || max_ms != 20) {
+            start_tsa_proxy(min_ms, max_ms);
+        } else if (!is_tsa_proxy_running()) {
+            start_tsa_proxy(detected_min, detected_max);
+        }
+    }
 }
 
 } // namespace nordiska::benchmark

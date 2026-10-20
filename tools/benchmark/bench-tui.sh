@@ -80,12 +80,12 @@ ensure_tsa_proxy() {
         min_ms=$(get_env_val "PDF_SIGNER_TSA_LATENCY_MIN_MS" "2")
         max_ms=$(get_env_val "PDF_SIGNER_TSA_LATENCY_MAX_MS" "20")
         
-        docker exec nordiska-v2-pdf-signer-1 pkill tsa_proxy 2>/dev/null || true
+        docker exec nordiska-v2-pdf-signer-1 pkill -9 -f tsa_proxy 2>/dev/null || true
         docker cp "$REPO_ROOT/tools/benchmark/tsa_proxy.c" nordiska-v2-pdf-signer-1:/app/tsa_proxy.c 2>/dev/null || true
         docker exec nordiska-v2-pdf-signer-1 gcc -O3 -pthread /app/tsa_proxy.c -o /app/tsa_proxy 2>/dev/null || true
         docker exec -d nordiska-v2-pdf-signer-1 /app/tsa_proxy "$min_ms" "$max_ms" 8082 8081
     else
-        docker exec nordiska-v2-pdf-signer-1 pkill tsa_proxy 2>/dev/null || true
+        docker exec nordiska-v2-pdf-signer-1 pkill -9 -f tsa_proxy 2>/dev/null || true
     fi
 }
 
@@ -249,12 +249,13 @@ action_tsa_latency() {
     echo -e "  ${C_BOLD}[2]${C_RESET} 10 ms ± 30% jitter percentage (Fast intra-cloud / VNet PKI)"
     echo -e "  ${C_BOLD}[3]${C_RESET} 35 ms ± 25% jitter percentage (Typical commercial TSA)"
     echo -e "  ${C_BOLD}[4]${C_RESET} 80 ms ± 25% jitter percentage (Cross-region WAN / external)"
-    echo -e "  ${C_BOLD}[5]${C_RESET} Custom min–max ms range (e.g. 2 20)"
-    echo -e "  ${C_BOLD}[6]${C_RESET} Custom base ms + jitter % (e.g. 25ms ± 40%)"
-    echo -e "  ${C_BOLD}[0]${C_RESET} Disable simulated latency (0ms native loopback)"
+    echo -e "  ${C_BOLD}[5]${C_RESET} 100–1000 ms heavy jitter range (Extreme WAN / heavy latency)"
+    echo -e "  ${C_BOLD}[6]${C_RESET} Custom min–max ms range (up to 1000 ms)"
+    echo -e "  ${C_BOLD}[7]${C_RESET} Custom base ms + jitter % (up to 1000 ms)"
+    echo -e "  ${C_BOLD}[0]${C_RESET} Disable simulated latency (0ms native loopback direct to 8081)"
     echo -e ""
     local choice=""
-    read -r -p "Select preset [0-6]: " choice || true
+    read -r -p "Select preset [0-7]: " choice || true
     case "$choice" in
         1)
             set_env_val "PDF_SIGNER_TSA_URL" "http://127.0.0.1:8082/"
@@ -298,11 +299,25 @@ action_tsa_latency() {
             prompt_apply
             ;;
         5)
+            set_env_val "PDF_SIGNER_TSA_URL" "http://127.0.0.1:8082/"
+            set_env_val "PDF_SIGNER_TSA_LATENCY_MIN_MS" "100"
+            set_env_val "PDF_SIGNER_TSA_LATENCY_MAX_MS" "1000"
+            set_env_val "PDF_SIGNER_TSA_LATENCY_MS" ""
+            set_env_val "PDF_SIGNER_TSA_JITTER_MS" ""
+            set_env_val "PDF_SIGNER_TSA_JITTER_PERCENT" ""
+            STATUS_MSG="TSA latency set to 100–1000 ms heavy jitter range (via proxy)."
+            STATUS_COLOR="$C_BOLD_YELLOW"
+            prompt_apply
+            ;;
+        6)
             echo -e ""
             local r_min="" r_max=""
-            read -r -p "Enter minimum latency in ms: " r_min || true
-            read -r -p "Enter maximum latency in ms: " r_max || true
+            read -r -p "Enter minimum latency in ms (0–1000): " r_min || true
+            read -r -p "Enter maximum latency in ms (0–1000): " r_max || true
             if [[ "$r_min" =~ ^[0-9]+$ && "$r_max" =~ ^[0-9]+$ ]]; then
+                [[ $r_min -gt 1000 ]] && r_min=1000
+                [[ $r_max -gt 1000 ]] && r_max=1000
+                [[ $r_max -lt $r_min ]] && r_max=$r_min
                 set_env_val "PDF_SIGNER_TSA_URL" "http://127.0.0.1:8082/"
                 set_env_val "PDF_SIGNER_TSA_LATENCY_MIN_MS" "$r_min"
                 set_env_val "PDF_SIGNER_TSA_LATENCY_MAX_MS" "$r_max"
@@ -313,16 +328,18 @@ action_tsa_latency() {
                 prompt_apply
             fi
             ;;
-        6)
+        7)
             echo -e ""
             local b_ms="" p_pct=""
-            read -r -p "Enter base latency in ms (e.g. 20): " b_ms || true
+            read -r -p "Enter base latency in ms (up to 1000): " b_ms || true
             read -r -p "Enter jitter percentage (e.g. 50 for ±50%): " p_pct || true
             if [[ "$b_ms" =~ ^[0-9]+$ && "$p_pct" =~ ^[0-9]+$ ]]; then
+                [[ $b_ms -gt 1000 ]] && b_ms=1000
                 local j_calc=$(( (b_ms * p_pct) / 100 ))
                 local m_low=$(( b_ms - j_calc ))
                 [[ $m_low -lt 0 ]] && m_low=0
                 local m_high=$(( b_ms + j_calc ))
+                [[ $m_high -gt 1000 ]] && m_high=1000
                 set_env_val "PDF_SIGNER_TSA_URL" "http://127.0.0.1:8082/"
                 set_env_val "PDF_SIGNER_TSA_LATENCY_MIN_MS" "$m_low"
                 set_env_val "PDF_SIGNER_TSA_LATENCY_MAX_MS" "$m_high"
@@ -334,6 +351,7 @@ action_tsa_latency() {
             fi
             ;;
         0)
+            docker exec nordiska-v2-pdf-signer-1 pkill -9 -f tsa_proxy 2>/dev/null || true
             set_env_val "PDF_SIGNER_TSA_URL" "http://127.0.0.1:8081/"
             set_env_val "PDF_SIGNER_TSA_LATENCY_MIN_MS" ""
             set_env_val "PDF_SIGNER_TSA_LATENCY_MAX_MS" ""

@@ -72,7 +72,11 @@ public:
     LatencyStats query_latency_stats() const;
     int64_t count_generated_documents() const;
     WorkerEnvironment get_worker_environment() const;
-    void ensure_tsa_proxy_if_needed() const;
+    bool is_tsa_proxy_needed(int& min_ms, int& max_ms) const;
+    bool is_tsa_proxy_running() const;
+    bool start_tsa_proxy(int min_ms = 2, int max_ms = 20) const;
+    void stop_tsa_proxy() const;
+    void ensure_tsa_proxy_if_needed(int min_ms = 2, int max_ms = 20) const;
 
     static std::string detect_active_database();
 

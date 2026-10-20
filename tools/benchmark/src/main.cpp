@@ -1,5 +1,7 @@
 #include "benchmark.hpp"
 
+#include <algorithm>
+#include <csignal>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,11 +19,20 @@ void print_help(const char* prog) {
               << "  --limit <N>          Limit number of customers/accounts (default: 0 = all)\n"
               << "  --no-clean           Do not truncate reporting tables before the run\n"
               << "  --clean              Clean reporting tables before run (default)\n"
+              << "  --jitter <ms|min-max> Simulated TSA latency (up to 1000ms, e.g. 500 or 100-1000)\n"
+              << "  --jitter-min <ms>    Minimum TSA latency in ms (0–1000)\n"
+              << "  --jitter-max <ms>    Maximum TSA latency in ms (0–1000)\n"
+              << "  --tsa-jitter <min> <max> TSA latency range in ms (0–1000)\n"
+              << "  --keep-proxy         Keep TSA proxy running after benchmark finishes\n"
+              << "  --start-proxy        Start TSA proxy with configured jitter and exit\n"
+              << "  --stop-proxy         Stop running TSA proxy and exit\n"
               << "  --help, -h           Show this help message\n\n"
               << "Examples:\n"
               << "  " << prog << "\n"
-              << "  " << prog << " --limit 100\n"
-              << "  " << prog << " --db nordiska_synthetic --poll 2\n";
+              << "  " << prog << " --limit 100 --jitter 50-500\n"
+              << "  " << prog << " --jitter 1000\n"
+              << "  " << prog << " --start-proxy --jitter 100-1000\n"
+              << "  " << prog << " --stop-proxy\n";
 }
 
 } // namespace
@@ -48,9 +59,61 @@ int main(int argc, char* argv[]) {
             options.clean_first = false;
         } else if (arg == "--clean") {
             options.clean_first = true;
+        } else if (arg == "--jitter" && i + 1 < argc) {
+            std::string j_val = argv[++i];
+            auto dash = j_val.find('-');
+            if (dash != std::string::npos) {
+                int min_j = std::clamp(std::stoi(j_val.substr(0, dash)), 0, 1000);
+                int max_j = std::clamp(std::stoi(j_val.substr(dash + 1)), min_j, 1000);
+                options.jitter_min = min_j;
+                options.jitter_max = max_j;
+            } else {
+                int max_j = std::clamp(std::stoi(j_val), 0, 1000);
+                options.jitter_min = 0;
+                options.jitter_max = max_j;
+            }
+        } else if (arg == "--jitter-min" && i + 1 < argc) {
+            options.jitter_min = std::clamp(std::stoi(argv[++i]), 0, 1000);
+        } else if (arg == "--jitter-max" && i + 1 < argc) {
+            options.jitter_max = std::clamp(std::stoi(argv[++i]), 0, 1000);
+        } else if (arg == "--tsa-jitter" && i + 2 < argc) {
+            int min_j = std::clamp(std::stoi(argv[++i]), 0, 1000);
+            int max_j = std::clamp(std::stoi(argv[++i]), min_j, 1000);
+            options.jitter_min = min_j;
+            options.jitter_max = max_j;
+        } else if (arg == "--keep-proxy") {
+            options.keep_proxy = true;
+        } else if (arg == "--start-proxy") {
+            options.start_proxy_only = true;
+        } else if (arg == "--stop-proxy") {
+            options.stop_proxy_only = true;
         } else {
             std::cerr << "Unknown option: " << arg << "\n";
             print_help(argv[0]);
+            return 1;
+        }
+    }
+
+    if (options.stop_proxy_only) {
+        nordiska::benchmark::DatabaseClient client(options.database);
+        std::cout << "[+] Stopping TSA Latency Proxy...\n";
+        client.stop_tsa_proxy();
+        std::cout << "[+] TSA Latency Proxy stopped.\n";
+        return 0;
+    }
+
+    if (options.start_proxy_only) {
+        nordiska::benchmark::DatabaseClient client(options.database);
+        int min_ms = options.jitter_min.value_or(2);
+        int max_ms = options.jitter_max.value_or(std::max(min_ms, 20));
+        min_ms = std::clamp(min_ms, 0, 1000);
+        max_ms = std::clamp(max_ms, min_ms, 1000);
+        std::cout << "[+] Starting TSA Latency Proxy (127.0.0.1:8082 -> 8081, " << min_ms << "–" << max_ms << " ms jitter)...\n";
+        if (client.start_tsa_proxy(min_ms, max_ms)) {
+            std::cout << "[+] TSA Latency Proxy successfully started.\n";
+            return 0;
+        } else {
+            std::cerr << "[-] Failed to start TSA Latency Proxy.\n";
             return 1;
         }
     }
