@@ -687,8 +687,8 @@ public class DbInitializer
             }
 
             // Planned transaction for Dennis
-            var hasDennisPlanned = await db.LedgerEntries.AnyAsync(l => l.AccountId == dennisSalaryAcc!.Id && l.IsPlanned);
-            if (!hasDennisPlanned && dennisSalaryAcc != null && dennisSavingsAcc != null)
+            var dennisPlanned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == dennisSalaryAcc!.Id && l.IsPlanned);
+            if (dennisPlanned == null && dennisSalaryAcc != null && dennisSavingsAcc != null)
             {
                 db.LedgerEntries.Add(new LedgerEntry
                 {
@@ -698,10 +698,15 @@ public class DbInitializer
                     Label = "Månadssparande",
                     TargetAccountId = dennisSavingsAcc.Id,
                     IsPlanned = true,
-                    Repeating = "monthly",
+                    Repeating = "month",
                     PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
                     CreatedAt = DateTime.UtcNow
                 });
+                await db.SaveChangesAsync();
+            }
+            else if (dennisPlanned != null && dennisPlanned.Repeating == "monthly")
+            {
+                dennisPlanned.Repeating = "month";
                 await db.SaveChangesAsync();
             }
 
@@ -805,8 +810,8 @@ public class DbInitializer
             }
 
             // Planned transaction for Peter
-            var hasPeterPlanned = await db.LedgerEntries.AnyAsync(l => l.AccountId == peterSalaryAcc!.Id && l.IsPlanned);
-            if (!hasPeterPlanned && peterSalaryAcc != null && peterSavingsAcc != null)
+            var peterPlanned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == peterSalaryAcc!.Id && l.IsPlanned);
+            if (peterPlanned == null && peterSalaryAcc != null && peterSavingsAcc != null)
             {
                 db.LedgerEntries.Add(new LedgerEntry
                 {
@@ -816,10 +821,15 @@ public class DbInitializer
                     Label = "Månadssparande",
                     TargetAccountId = peterSavingsAcc.Id,
                     IsPlanned = true,
-                    Repeating = "monthly",
+                    Repeating = "month",
                     PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
                     CreatedAt = DateTime.UtcNow
                 });
+                await db.SaveChangesAsync();
+            }
+            else if (peterPlanned != null && peterPlanned.Repeating == "monthly")
+            {
+                peterPlanned.Repeating = "month";
                 await db.SaveChangesAsync();
             }
 
