@@ -104,12 +104,18 @@ export default function FaqPage() {
                 <div className="lg:flex-1 lg:overflow-y-auto">
                     <FaqList
                         faqs={faqs}
+                        search={search}
                         isLoading={isLoading}
                         isError={isError}
                         openFaqId={effectiveOpenFaqId}
                         selectedFeedback={selectedFeedback}
                         onOpenChange={handleOpenChange}
                         onFeedback={handleHelpCount}
+                        onSearchSuggestion={(suggestion) => {
+                            setSearchInput(suggestion);
+                            setSearch(suggestion);
+                            setPage(1);
+                        }}
                     />
                 </div>
 

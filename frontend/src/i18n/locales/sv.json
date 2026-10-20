@@ -543,6 +543,7 @@
         "amount-placeholder": "0,00",
         "amount-suffix": "sek",
         "amount-error": "Belopp överstiger saldo på {{account}}",
+        "date-error": "Valt datum har redan passerat",
         "date-label": "Överföringsdatum",
         "recurring-label": "Återkommande",
         "interval-label": "Intervall",
@@ -663,6 +664,7 @@
             "in-category": "i kategori:"
         },
         "faq-list": {
+            "suggestion": "Menade du",
             "loading": "Laddar vanliga frågor",
             "error": "Kunde inte hämta vanliga frågor.",
             "no-results": "Inga resultat matchade din sökning."

@@ -6,6 +6,7 @@ import TransferModals from "../components/transfer/TransferModals";
 import TransferDone from "../components/TransferDone";
 import type { TransferPhase, TransferSummary } from "../components/TransferDone";
 import { formatCurrency } from "../utils/currency";
+import { toDateKey } from "../utils/date";
 import {
     parseAmount,
     todayIso,
@@ -27,6 +28,7 @@ import { usePendingTransfers } from "../hooks/usePendingTransfers";
 import TransferCard from "../components/transfer/TransferCard";
 import HelpCard from "../components/faq/HelpCard";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
+import { useSearchParams } from "react-router";
 
 type Step = "form" | "bankid" | "done";
 
@@ -47,8 +49,10 @@ export default function TransferPage() {
     if (pendingTransfers.length > 0) console.log(pendingTransfers); // fular till denna
 
     const [name, setName] = useState("");
+    const [searchParams] = useSearchParams();
+    const accountIdParam = searchParams.get("account");
     const [fromId, setFromId] = useState<string | null>(null);
-    const [toId, setToId] = useState<string | null>(null);
+    const [toId, setToId] = useState<string | null>(accountIdParam);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
     const recurrence = useRecurrence();
@@ -66,12 +70,14 @@ export default function TransferPage() {
     const amountValue = parseAmount(amount);
     const over = !!fromAccount && amountValue > fromAccount.balance;
     const isExternal = !!toAccount && !toAccount.own;
+    const dateInPast = date < toDateKey(new Date().toISOString());
 
     const canSubmit =
         !!fromAccount &&
         !!toAccount &&
         amountValue > 0 &&
-        !over;
+        !over &&
+        !dateInPast;
 
     const ctaHint = canSubmit ? "" : t("page-transfer.cta-hint-incomplete");
 
@@ -228,6 +234,7 @@ export default function TransferPage() {
                                 over={over}
                                 date={date}
                                 onDateChange={setDate}
+                                dateInPast={dateInPast}
                                 recurring={recurring}
                                 onRecurringChange={recurrence.setRecurring}
                                 recurrence={recurrence.fieldProps}
