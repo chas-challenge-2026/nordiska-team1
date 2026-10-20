@@ -105,7 +105,7 @@ Displays active database stats and prompts for an optional customer limit or ful
 | `--db <name>` | Target PostgreSQL database name | Auto-detected from `infra/.env` |
 | `--limit <N>` | Limit benchmark to first N customers | `0` (unlimited, full database) |
 | `--poll <seconds>`| Progress telemetry polling interval | `2` seconds |
-| `--year <YYYY>` | Reporting tax & statement year | `2025` |
+| `--year <YYYY>` | Reporting tax & statement year | `2026` |
 | `--no-clean` | Do not clean reporting tables before run | Disabled (cleans before staging) |
 | `--clean-storage`| Delete PDF files from worker volume | `true` |
 | `--help` | Show command line usage information | |

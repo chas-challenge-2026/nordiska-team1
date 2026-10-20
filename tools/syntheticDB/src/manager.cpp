@@ -626,7 +626,7 @@ static void help() {
 Usage: ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 [options]
   --customers N   Replace synthetic data with N customers (1..37,620,000)
   --seed N        Random seed (default: 42)
-  --year N        Reporting year (default: 2025; allowed: 2000..2100)
+  --year N        Reporting year (default: 2026; allowed: 2000..2100)
   --threads N     Generation threads (default: available CPU cores)
   --append        Add customers without replacing existing synthetic data
   --stress-text   Generate long transaction descriptions
@@ -647,16 +647,16 @@ Local Compose: infra/docker-compose.yml; secrets/selection: infra/.env (legacy i
 Synthetic PDFs use a separate volume; normal PDFs are preserved.
 Personal numbers count from the seed through valid dates 1905-01-01..2007-12-31,
 using individual numbers 000..999 and a calculated Luhn checksum.
-Everyone is aged 18..120 at the end of 2025. Oversized requests fail before DB changes.
+Everyone is aged 18..120 at the end of 2026. Oversized requests fail before DB changes.
 
 Standard benchmark setup:
-  ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4
+  ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2026 --threads 4
   ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic
 )";
 }
 
 struct SeedOptions {
-    int64_t customers = 10000, seed = 42, year = 2025;
+    int64_t customers = 10000, seed = 42, year = 2026;
     int64_t threads = std::max(1u, std::thread::hardware_concurrency());
     bool append = false, stress = false, keep_indexes = false;
 };
@@ -941,7 +941,7 @@ int main(int argc, char** argv) {
     if (!std::setlocale(LC_CTYPE, "C.UTF-8")) std::setlocale(LC_CTYPE, "");
     signal(SIGPIPE, SIG_IGN);
     try {
-        int64_t customers = 10000, seed = 42, year = 2025;
+        int64_t customers = 10000, seed = 42, year = 2026;
         int64_t threads = std::max(1u, std::thread::hardware_concurrency());
         bool seed_requested = false, status = false, reset = false, drop = false, append = false, stress = false, benchmark = false, menu = false, random_customer = false, delete_documents = false, keep_indexes = false;
         std::string target;

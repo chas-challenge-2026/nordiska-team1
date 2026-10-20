@@ -12,7 +12,7 @@ void print_help(const char* prog) {
               << "Usage: " << prog << " [options]\n\n"
               << "Options:\n"
               << "  --db <name>          Database name (default: auto-detect from infra/.env or nordiska_synthetic)\n"
-              << "  --year <YYYY>        Tax & statement reporting year (default: 2025)\n"
+              << "  --year <YYYY>        Tax & statement reporting year (default: 2026)\n"
               << "  --poll <seconds>     Drain progress polling interval in seconds (default: 2)\n"
               << "  --limit <N>          Limit number of customers/accounts (default: 0 = all)\n"
               << "  --no-clean           Do not truncate reporting tables before the run\n"

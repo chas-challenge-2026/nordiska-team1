@@ -23,7 +23,7 @@ The menu uses subtle colors for selection, active environment and operation resu
 ## Set up 10,000 customers from the command line
 
 ```bash
-./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4 &&
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2026 --threads 4 &&
 ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic &&
 ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --status
 ```
@@ -34,7 +34,7 @@ For creation of 10,000 customers or more, the tool temporarily defers eligible q
 
 Compose files are in `infra/`. Local secrets and selection stay in `infra/.env` (legacy `infra/v2/.env` is also supported), which the tool passes explicitly to Compose. Switching recreates all three services, checks their running database settings and rolls back if the switch fails. Database switching uses the tool’s `compose.override.yml` without changing shared infrastructure files. The backend-only configuration for local frontend development is preserved when active.
 
-The standard seed simulates customer activity during 2025:
+The standard seed simulates customer activity during 2026:
 
 - **10,000 customers and 15,436 accounts:** about 1.54 accounts per customer, ranging from 1 to 6.
 - About **734,000 ledger entries** and **148 MB** of database storage before PDFs.

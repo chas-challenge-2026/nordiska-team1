@@ -7,7 +7,7 @@ namespace nordiska::benchmark {
 
 struct BenchmarkOptions {
     std::string database;
-    int year = 2025;
+    int year = 2026;
     bool clean_first = true;
     int64_t limit = 0; // 0 = all accounts/customers
     int poll_interval_seconds = 2; // explicitly 2s as requested
