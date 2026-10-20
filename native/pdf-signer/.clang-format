@@ -1,0 +1,29 @@
+BasedOnStyle: LLVM
+
+# --- Header Fix ---
+SortIncludes: Never
+
+# --- Whitespace & Struct Fixes ---
+MaxEmptyLinesToKeep: 2
+# Keeps alignments
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+PointerAlignment: Left
+DerivePointerAlignment: false
+ColumnLimit: 100
+
+IndentWidth: 2
+TabWidth: 2
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: false
+  AfterControlStatement: false
+  AfterClass: true
+  AfterStruct: true
+  AfterEnum: true
+  AfterNamespace: true
+  BeforeElse: false
+  BeforeCatch: false
+  IndentBraces: false

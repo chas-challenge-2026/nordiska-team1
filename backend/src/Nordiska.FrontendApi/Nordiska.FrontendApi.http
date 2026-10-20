@@ -1,0 +1,119 @@
+@HostAddress = http://localhost:5031
+
+### 1. Get Weather Forecast (Public endpoint)
+GET {{HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### 2. Access protected test endpoint without token (Should return 401 Unauthorized)
+GET {{HostAddress}}/api/test/secure
+Accept: application/json
+
+### 1. Starta BankID-autentisering (Initiate)
+# Skickar personnummer och startar en ny BankID-session.
+POST {{HostAddress}}/api/auth/bankid/initiate
+Content-Type: application/json
+
+{
+  "personalNum": "198202116050"
+}
+
+###
+
+### 2. Poll/Hämta status för BankID (Collect)
+# Ersätt orderRef med det värde du fick tillbaka från Initiate ovan.
+POST {{HostAddress}}/api/auth/bankid/collect
+Content-Type: application/json
+
+{
+  "orderRef": "4a1d8213-33bc-452f-8a5e-2b7e12345678"
+}
+
+###
+
+### 3. Registrera ny kund
+# Skapar en ny användare med personnummer, namn, e-post och telefonnummer.
+POST {{HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "personalNum": "199205121234",
+  "name": "Erik Svensson",
+  "email": "erik.svensson@example.com",
+  "phoneNumber": "+46701234567"
+}
+
+
+### Save token from loginAnna response
+@authToken = {{loginAnna.response.body.token}}
+
+### 4. Access protected endpoint with valid JWT token (Should return 200 OK and show claims)
+GET {{HostAddress}}/api/test/secure
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+### 1. Create a new FAQ (Testdata)
+POST {{HostAddress}}/api/faqs
+Content-Type: application/json
+
+{
+  "question": "Hur spärrar jag mitt bankkort?",
+  "answer": "Du kan spärra ditt kort direkt i mobilappen eller genom att ringa kundtjänst på 0771-000 000.",
+  "category": "Kort",
+  "keywords": "spärra, stulet, kort, mastercard, visa"
+}
+### 3. Get faq by Id
+GET {{HostAddress}}/api/faqs/1
+
+
+### 4. Search by category 
+GET {{HostAddress}}/api/faqs/search?category=kort
+
+### 5. Search by free text
+# Search in quetions, anwers och keywords after "spärra"
+GET {{HostAddress}}/api/faqs/search?searchTerm=spärra
+
+### 6. Delete faq by id
+DELETE {{HostAddress}}/api/faqs/1
+
+
+### 6. Get current authenticated user profile via cookie or Bearer token
+GET {{HostAddress}}/api/auth/me
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### 7. Log out (clears auth cookie)
+POST {{HostAddress}}/api/auth/logout
+Accept: application/json
+
+###
+
+### 8. CORS Preflight OPTIONS request from React Vite frontend (Should return 204/200 with Access-Control-Allow-Origin)
+OPTIONS {{HostAddress}}/api/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: authorization, content-type
+
+###
+
+### 9. Query transactions with pagination (Page 1, 10 items)
+GET {{HostAddress}}/api/transactions?page=1&pageSize=10
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### 10. Filter transactions by type and date range
+GET {{HostAddress}}/api/transactions?type=deposit&fromDate=2026-09-01T00:00:00Z&toDate=2026-09-30T23:59:59Z
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+###
+
+### 11. Search transactions with min/max amount and sorting
+GET {{HostAddress}}/api/transactions?minAmount=50&maxAmount=10000&sortBy=amount&sortOrder=desc
+Authorization: Bearer {{authToken}}
+Accept: application/json

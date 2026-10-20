@@ -1,0 +1,422 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
+using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
+using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Contracts.Requests;
+using Nordiska.Modules.Banking.Contracts.Responses;
+using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Banking.Infrastructure.Db;
+
+namespace Nordiska.Modules.Banking.Infrastructure;
+
+public class TransactionService : ITransactionService
+{
+    private readonly ILogger<TransactionService> _logger;
+    private readonly ITransactionRepository _txRepo;
+    private readonly ISavingsAccountRepository _accRepo;
+    private readonly ISavingsGoalRepository? _goalRepo;
+    private readonly BankingDbContext? _dbContext;
+
+    public TransactionService(
+        ITransactionRepository txRepo,
+        ISavingsAccountRepository accRepo,
+        ILogger<TransactionService> logger,
+        ISavingsGoalRepository? goalRepo = null,
+        BankingDbContext? dbContext = null)
+    {
+        _txRepo = txRepo;
+        _accRepo = accRepo;
+        _logger = logger;
+        _goalRepo = goalRepo;
+        _dbContext = dbContext;
+    }
+
+    public async Task<IEnumerable<TransactionResponse>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
+    {
+        var entries = await _txRepo.QueryAsync(accountId, cancellationToken);
+        return entries.Select(ToResponse);
+    }
+
+    public async Task<PagedResult<TransactionResponse>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        var paged = await _txRepo.QueryPagedAsync(parameters, cancellationToken);
+        var mapped = paged.Items.Select(ToResponse).ToList();
+
+        return new PagedResult<TransactionResponse>(
+            mapped,
+            paged.TotalCount,
+            paged.Page,
+            paged.PageSize,
+            paged.TotalPages,
+            paged.HasNextPage,
+            paged.HasPreviousPage);
+    }
+
+    public async Task<TransactionResponse?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var item = await _txRepo.GetByIdAsync(id, cancellationToken);
+        if (item is null) return null;
+        return ToResponse(item);
+    }
+
+    public async Task<decimal> GetBalanceAsync(long accountId, CancellationToken cancellationToken = default)
+    {
+        var account = await _accRepo.GetByIdAsync(accountId, cancellationToken)
+            ?? throw new NotFoundException($"Account {accountId} not found.");
+
+        var entries = await _txRepo.QueryAsync(accountId, cancellationToken);
+        return entries.Sum(e => e.Amount);
+    }
+
+    public async Task<TransactionResponse> ExecuteAsync(TransactionRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0)
+            throw new ArgumentException("Transaction amount must be greater than zero.", nameof(request.Amount));
+
+        var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
+            ?? throw new NotFoundException($"Account {request.AccountId} not found.");
+
+        var isWithdrawal = string.Equals(request.Type, "withdrawal", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.Type, "withdraw", StringComparison.OrdinalIgnoreCase);
+        var isDeposit = string.Equals(request.Type, "deposit", StringComparison.OrdinalIgnoreCase);
+
+        if (!isWithdrawal && !isDeposit)
+            throw new ArgumentException($"Invalid transaction type '{request.Type}'. Allowed types are 'deposit' and 'withdrawal'.", nameof(request.Type));
+
+        decimal delta;
+        if (isWithdrawal)
+        {
+            var currentBalance = await GetBalanceAsync(request.AccountId, cancellationToken);
+            if (currentBalance < request.Amount)
+            {
+                throw new ConflictException($"Insufficient funds. Current balance is {currentBalance:N2}, requested withdrawal is {request.Amount:N2}.");
+            }
+
+            delta = -request.Amount;
+        }
+        else
+        {
+            delta = request.Amount;
+        }
+
+        var entry = new LedgerEntry
+        {
+            AccountId = request.AccountId,
+            Type = isWithdrawal ? "withdrawal" : "deposit",
+            Amount = delta,
+            Label = request.Label,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var txId = await _txRepo.CreateAsync(entry, cancellationToken);
+        entry.Id = txId;
+
+        account.Balance = await GetBalanceAsync(request.AccountId, cancellationToken);
+        account.UpdatedAt = DateTime.UtcNow;
+        await _accRepo.UpdateAsync(account, cancellationToken);
+
+        _logger.LogInformation("Executed verified ledger transaction {TxId} on account {AccountId} type={Type} amount={Amount}", entry.Id, entry.AccountId, entry.Type, entry.Amount);
+
+        return ToResponse(entry);
+    }
+
+    public async Task<TransactionResponse> TransferAsync(TransferRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0)
+            throw new ArgumentException("Transfer amount must be greater than zero.", nameof(request.Amount));
+
+        if (request.SourceAccountId == request.TargetAccountId)
+            throw new ArgumentException("Source and target accounts cannot be the same.", nameof(request.TargetAccountId));
+
+        var sourceAccount = await _accRepo.GetByIdAsync(request.SourceAccountId, cancellationToken)
+            ?? throw new NotFoundException($"Source account {request.SourceAccountId} was not found.");
+
+        var targetAccount = await _accRepo.GetByIdAsync(request.TargetAccountId, cancellationToken)
+            ?? throw new NotFoundException($"Target account {request.TargetAccountId} was not found.");
+
+        var currentBalance = await GetBalanceAsync(request.SourceAccountId, cancellationToken);
+        if (currentBalance < request.Amount)
+        {
+            throw new ConflictException($"Insufficient funds on source account. Current balance is {currentBalance:N2}, requested transfer is {request.Amount:N2}.");
+        }
+
+        var now = DateTime.UtcNow;
+        var correlationId = Guid.NewGuid();
+
+        // 1. Withdrawal on source account
+        var withdrawalEntry = new LedgerEntry
+        {
+            AccountId = request.SourceAccountId,
+            Type = "transfer",
+            Amount = -request.Amount,
+            Label = request.Label,
+            TargetAccountId = request.TargetAccountId,
+            CorrelationId = correlationId,
+            CreatedAt = now
+        };
+        var withdrawalId = await _txRepo.CreateAsync(withdrawalEntry, cancellationToken);
+        withdrawalEntry.Id = withdrawalId;
+
+        // 2. Deposit on target account
+        var depositEntry = new LedgerEntry
+        {
+            AccountId = request.TargetAccountId,
+            Type = "transfer",
+            Amount = request.Amount,
+            Label = request.Label,
+            TargetAccountId = request.SourceAccountId,
+            CorrelationId = correlationId,
+            CreatedAt = now
+        };
+        await _txRepo.CreateAsync(depositEntry, cancellationToken);
+
+        // 3. Update cached balance snapshots
+        sourceAccount.Balance = await GetBalanceAsync(request.SourceAccountId, cancellationToken);
+        sourceAccount.UpdatedAt = now;
+        await _accRepo.UpdateAsync(sourceAccount, cancellationToken);
+
+        targetAccount.Balance = await GetBalanceAsync(request.TargetAccountId, cancellationToken);
+        targetAccount.UpdatedAt = now;
+        await _accRepo.UpdateAsync(targetAccount, cancellationToken);
+
+        _logger.LogInformation("Executed funds transfer from account {Source} to {Target} amount={Amount}", request.SourceAccountId, request.TargetAccountId, request.Amount);
+
+        return ToResponse(withdrawalEntry);
+    }
+
+    public async Task<TransactionResponse> CreatePlannedAsync(PlannedTransactionRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0)
+            throw new ArgumentException("Planned amount must be greater than zero.", nameof(request.Amount));
+
+        if (request.PlannedDate.Date < DateTime.UtcNow.Date)
+            throw new ArgumentException("Planned date cannot be in the past.", nameof(request.PlannedDate));
+
+        var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
+            ?? throw new NotFoundException($"Account {request.AccountId} was not found.");
+
+        var entry = new LedgerEntry
+        {
+            AccountId = request.AccountId,
+            Type = request.Type.ToLowerInvariant(),
+            Amount = request.Amount,
+            Label = request.Label,
+            TargetAccountId = request.TargetAccountId,
+            IsPlanned = true,
+            PlannedDate = request.PlannedDate,
+            Repeating = request.Repeating,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var txId = await _txRepo.CreateAsync(entry, cancellationToken);
+        entry.Id = txId;
+
+        _logger.LogInformation("Created planned transaction {TxId} for account {AccountId} on {PlannedDate}", entry.Id, entry.AccountId, entry.PlannedDate);
+
+        return ToResponse(entry);
+    }
+
+    public async Task<bool> CancelPlannedAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var entry = await _txRepo.GetByIdAsync(id, cancellationToken);
+        if (entry is null) return false;
+
+        if (!entry.IsPlanned)
+        {
+            throw new ConflictException("Cannot cancel an executed transaction. Only planned transactions can be cancelled.");
+        }
+
+        return await _txRepo.DeleteAsync(id, cancellationToken);
+    }
+
+    public async Task<TransactionResponse?> ProcessPlannedTransactionAsync(long ledgerEntryId, CancellationToken cancellationToken = default)
+    {
+        var entry = await _txRepo.GetByIdAsync(ledgerEntryId, cancellationToken);
+        if (entry is null || !entry.IsPlanned)
+        {
+            _logger.LogWarning("Planned transaction {TxId} not found or is not marked as planned.", ledgerEntryId);
+            return null;
+        }
+
+        SavingsGoal? savingsGoal = null;
+        if (entry.SavingsGoalId.HasValue && _goalRepo is not null)
+        {
+            savingsGoal = await _goalRepo.GetByIdAsync(entry.SavingsGoalId.Value, cancellationToken);
+            if (savingsGoal is not null && string.Equals(savingsGoal.Status, "paused", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Savings goal {GoalId} is paused. Skipping planned transfer for transaction {TxId}.", savingsGoal.Id, entry.Id);
+
+                // Advance recurring schedule to next period without transferring money
+                if (!string.IsNullOrWhiteSpace(entry.Repeating))
+                {
+                    var rep = entry.Repeating.Trim().ToLowerInvariant();
+                    var nextDate = rep switch
+                    {
+                        "week" => (entry.PlannedDate ?? DateTime.UtcNow).AddDays(7),
+                        "month" => (entry.PlannedDate ?? DateTime.UtcNow).AddMonths(1),
+                        "year" => (entry.PlannedDate ?? DateTime.UtcNow).AddYears(1),
+                        _ => (DateTime?)null
+                    };
+
+                    if (nextDate.HasValue)
+                    {
+                        entry.PlannedDate = nextDate.Value;
+                        await _txRepo.UpdateAsync(entry, cancellationToken);
+                        _logger.LogInformation("Advanced paused recurring planned transaction {TxId} to next date {NextDate}", entry.Id, nextDate.Value);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        var isTransfer = string.Equals(entry.Type, "transfer", StringComparison.OrdinalIgnoreCase) || entry.TargetAccountId.HasValue;
+        var isWithdrawal = string.Equals(entry.Type, "withdrawal", StringComparison.OrdinalIgnoreCase) || string.Equals(entry.Type, "withdraw", StringComparison.OrdinalIgnoreCase);
+        var isDeposit = string.Equals(entry.Type, "deposit", StringComparison.OrdinalIgnoreCase);
+
+        if (!isTransfer && !isWithdrawal && !isDeposit)
+        {
+            _logger.LogError("Unsupported transaction type '{Type}' for planned transaction {TxId}.", entry.Type, entry.Id);
+            return null;
+        }
+
+        IDbContextTransaction? transaction = null;
+        if (_dbContext is not null && _dbContext.Database.CurrentTransaction is null)
+        {
+            transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        }
+
+        try
+        {
+            TransactionResponse result;
+            try
+            {
+                if (isTransfer)
+                {
+                    if (!entry.TargetAccountId.HasValue)
+                    {
+                        _logger.LogError("Planned transfer {TxId} has no TargetAccountId specified.", entry.Id);
+                        if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+                        return null;
+                    }
+
+                    result = await TransferAsync(
+                        new TransferRequest(entry.AccountId, entry.TargetAccountId.Value, entry.Amount, entry.Label),
+                        cancellationToken);
+                }
+                else
+                {
+                    result = await ExecuteAsync(
+                        new TransactionRequest(entry.AccountId, isWithdrawal ? "withdrawal" : "deposit", entry.Amount, entry.Label),
+                        cancellationToken);
+                }
+            }
+            catch (ConflictException ex)
+            {
+                _logger.LogWarning(ex, "Failed to execute planned transaction {TxId} on account {AccountId} due to business rule violation (e.g. insufficient funds): {Message}", entry.Id, entry.AccountId, ex.Message);
+                if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error executing planned transaction {TxId} on account {AccountId}: {Message}", entry.Id, entry.AccountId, ex.Message);
+                if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+
+            if (savingsGoal is not null)
+            {
+                savingsGoal.CurrentAmount += entry.Amount;
+                savingsGoal.UpdatedAt = DateTime.UtcNow;
+                if (savingsGoal.CurrentAmount >= savingsGoal.TargetAmount && !string.Equals(savingsGoal.Status, "completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    savingsGoal.Status = "completed";
+                    _logger.LogInformation("Savings goal {GoalId} reached target amount {TargetAmount}. Status set to completed.", savingsGoal.Id, savingsGoal.TargetAmount);
+                }
+
+                await _goalRepo!.UpdateAsync(savingsGoal, cancellationToken);
+            }
+
+            // Handle recurring or single-execution cleanup
+            if (!string.IsNullOrWhiteSpace(entry.Repeating))
+            {
+                var rep = entry.Repeating.Trim().ToLowerInvariant();
+                var nextDate = rep switch
+                {
+                    "week" => (entry.PlannedDate ?? DateTime.UtcNow).AddDays(7),
+                    "month" => (entry.PlannedDate ?? DateTime.UtcNow).AddMonths(1),
+                    "year" => (entry.PlannedDate ?? DateTime.UtcNow).AddYears(1),
+                    _ => (DateTime?)null
+                };
+
+                if (nextDate.HasValue)
+                {
+                    entry.PlannedDate = nextDate.Value;
+                    await _txRepo.UpdateAsync(entry, cancellationToken);
+                    _logger.LogInformation("Advanced recurring planned transaction {TxId} to next date {NextDate} (repeating: {Repeating})", entry.Id, nextDate.Value, entry.Repeating);
+
+                    if (transaction is not null)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    return result;
+                }
+            }
+
+            // Single execution plan completed -> remove the planned entry
+            await _txRepo.DeleteAsync(entry.Id, cancellationToken);
+            _logger.LogInformation("Consumed and removed single planned transaction {TxId} for account {AccountId}", entry.Id, entry.AccountId);
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            _logger.LogError(ex, "Failed to complete planned transaction {TxId}. Entire operation rolled back.", entry.Id);
+            throw;
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
+    }
+
+    public async Task<IEnumerable<TransactionResponse>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        var entries = await _txRepo.GetByCorrelationIdAsync(correlationId, cancellationToken);
+        return entries.Select(ToResponse);
+    }
+
+    private static TransactionResponse ToResponse(LedgerEntry l)
+        => new(
+            l.Id,
+            l.AccountId,
+            l.Type,
+            l.Amount,
+            l.CreatedAt,
+            l.Label,
+            l.TargetAccountId,
+            l.IsPlanned,
+            l.PlannedDate,
+            l.Repeating,
+            l.CorrelationId
+        );
+}

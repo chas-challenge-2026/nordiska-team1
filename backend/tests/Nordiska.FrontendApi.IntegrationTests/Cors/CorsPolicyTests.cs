@@ -1,0 +1,72 @@
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit;
+
+using Nordiska.FrontendApi.IntegrationTests.Authentication;
+
+namespace Nordiska.FrontendApi.IntegrationTests.Cors;
+
+public class CorsPolicyTests : IClassFixture<CustomAuthWebApplicationFactory>
+{
+    private readonly HttpClient _client;
+
+    public CorsPolicyTests(CustomAuthWebApplicationFactory factory)
+    {
+        _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task Preflight_FromAllowedViteOrigin_Returns_CorsHeaders()
+    {
+        // Arrange
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
+        request.Headers.Add("Origin", "http://localhost:5173");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+        request.Headers.Add("Access-Control-Request-Headers", "authorization,content-type");
+
+        // Act
+        using var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
+        response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain("http://localhost:5173");
+        response.Headers.GetValues("Access-Control-Allow-Credentials").Should().Contain("true");
+    }
+
+    [Fact]
+    public async Task Preflight_FromUntrustedOrigin_DoesNotInclude_AllowOriginHeader()
+    {
+        // Arrange
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
+        request.Headers.Add("Origin", "http://malicious-site.com");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+
+        // Act
+        using var response = await _client.SendAsync(request);
+
+        // Assert
+        response.Headers.Contains("Access-Control-Allow-Origin").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Preflight_DeleteMethod_IsAllowed_ByPolicy()
+    {
+        // Arrange
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/transactions/planned/45");
+        request.Headers.Add("Origin", "http://localhost:5173");
+        request.Headers.Add("Access-Control-Request-Method", "DELETE");
+        request.Headers.Add("Access-Control-Request-Headers", "authorization,content-type");
+
+        // Act
+        using var response = await _client.SendAsync(request);
+
+        // Assert: DELETE should be in allowed methods header
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
+        response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain("http://localhost:5173");
+        response.Headers.TryGetValues("Access-Control-Allow-Methods", out var allowedMethods).Should().BeTrue();
+        string.Join(",", allowedMethods!).Should().Contain("DELETE");
+    }
+}

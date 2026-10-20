@@ -1,7 +1,13 @@
 services:
-  app:
-    ports:
-      - "8080:8080"
   db:
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      - ./postgres/permissions/post-migration-permissions.development.sql:/opt/nordiska/post-migration-permissions.sql:ro
+
+  app:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:8080:8080"

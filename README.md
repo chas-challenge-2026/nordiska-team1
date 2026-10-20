@@ -1,78 +1,93 @@
-# Nordiska Sparbanken — Koduppgift
+# Quickstart Setup Guide
 
-Detta repo innehåller v1 av Nordiska Sparbankens kundportal. Koden är **avsiktligt skriven som spaghetti** — det är en pedagogisk utgångspunkt. Din uppgift är att refaktorera den till v2.
+Run all commands starting from the repository root (`nordiska-team1`).
 
-## Snabbstart
+---
+
+## 1. Local Initialization (DevSetup)
+
+Generates secrets into `infra/.env`, boots the database, runs migrations, and applies permissions:
 
 ```bash
-git clone <repo-url>
-cd ChasChallenge/infra
-docker compose up
+dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- .
 ```
 
-Öppna [http://localhost:8080](http://localhost:8080) i webbläsaren.
+---
 
-**Testinloggning:**
-| E-post | Lösenord |
-|--------|----------|
-| anna@example.com | password123 |
-| erik@example.com | password123 |
+## 2. Start Application (Choose One)
 
-## Vad som fungerar i v1
+### Option A: Full Docker Stack (All Services in Docker)
+Best for testing the entire system together:
 
-- Inloggning med e-post och lösenord
-- Dashboard visar saldo och beräknad årsränta per konto
-- Insättning och uttag (fungerar korrekt vid en användare i taget)
-- Mailbekräftelse vid insättning och uttag (levereras bara om en SMTP-server finns, fel syns aldrig)
-- Nedladdning av skatteunderlag som fil
-- FAQ-sidan svarar på vanliga frågor (enkel nyckelordsmatchning)
-- Utloggning
-
-## Vad som inte fungerar
-
-- **Parallella insättningar korrupterar saldo** — race condition, ingen transaktion eller radlåsning
-- **Skatteunderlag tar lång tid** — `Thread.Sleep(50)` per transaktion blockerar request-tråden
-- **MD5-lösenord** — kryptografiskt brutet, enkelt att knäcka med rainbow tables
-- **Session löper ut om ett år** — utloggning rensar inte serversidans session
-- **FAQ-assistenten svarar ofta fel** - första nyckelordsträffen vinner, ingen rankning, ingen normalisering utöver gemener
-- **Mail skickas inline från sidhanteraren** - `SmtpClient` direkt i Deposit-handlern, ingen kö, ingen retry, fel sväljs tyst
-- **Inga felloggar** — alla undantag sväljs, ingen spårbarhet
-- **Inloggningsuppgifter i källkoden** — connectionstring med lösenord i `appsettings.json` och hårdkodad fallback i varje fil
-
-## Vad ska ni bygga
-
-Se [docs/v2-targets.md](docs/v2-targets.md) för fullständig specifikation.
-
-Kortversion:
-- .NET 8 Web API + EF Core 8 + ledger-mönster (ersätter direkta balance-uppdateringar)
-- React 18 SPA (ersätter Razor Pages)
-- BCrypt-lösenord + JWT-autentisering
-- Bakgrundsjobb för PDF-generering
-- Regelstyrd FAQ-sökning mot kontrollerad FAQ-databas med korrekt träfflogik
-- Notifieringar som egen komponent med kö och retry
-- Rate limiting på känsliga endpoints
-- Native C/C++-moduler för batch-PDF och PDF-signering
-- Strukturerad loggning och /health-endpoint
-
-## Dokumentation
-
-| Fil | Innehåll |
-|-----|----------|
-| [docs/architecture.md](docs/architecture.md) | v1-arkitektur, databasschema, sekvensdiagram |
-| [docs/known-bugs.md](docs/known-bugs.md) | Alla avsiktliga buggar förklarade med korrekta lösningar |
-| [docs/README-pain-points.md](docs/README-pain-points.md) | Vad som fungerar, vad som inte fungerar, var v2 bör börja |
-| [docs/v2-targets.md](docs/v2-targets.md) | Fullständig kravspec för v2 |
-| [native/README.md](native/README.md) | Spec för native C/C++-moduler |
-
-## Mappstruktur
-
+```bash
+cd infra
+docker compose up -d --build
+cd ..
 ```
-ChasChallenge/
-  backend/NordiskaPortal/   .NET 6 Razor Pages (v1 monolith)
-  frontend/                 (tom — Razor Pages är frontendet i v1)
-  native/                   (tom — se native/README.md för v2-spec)
-  infra/
-    docker-compose.yml      PostgreSQL 12 + app-container
-    seed.sql                Databasschema och testdata
-  docs/                     Arkitektur, kända buggar, v2-mål
+* Web App available at: **http://localhost:8080**
+
+### Option B: Frontend Hot-Reload Workflow (Local Dev)
+Best for frontend work. Runs backend in Docker and Vite locally with hot-reloading:
+
+```bash
+cd frontend
+npm install                      # First time only
+npm run setup:local-backend      # Boots backend in Docker on port 5031
+npm run dev                      # Starts Vite with instant hot-reload
 ```
+* Frontend (Vite HMR): **http://localhost:5173**
+* Backend API: **http://localhost:5031** (Scalar docs at `/scalar/v1`)
+
+---
+
+## 3. Synthetic Database
+
+Switch to a separate database seeded with test accounts and transactions.
+
+### Interactive Menu (Recommended)
+```bash
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64
+```
+* Select **Create synthetic data** (e.g. 10k customers).
+* Select **Switch to SYNTHETIC DB**.
+* Select **Random customer login** to get test credentials (`password123`).
+
+### CLI One-Liners
+```bash
+# 1. Generate 10,000 customers
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000
+
+# 2. Switch running stack to synthetic DB
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic
+
+# 3. Print test customer credentials for web login
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --get-random-customer
+
+# 4. Switch back to normal database anytime:
+./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_v2
+```
+
+---
+
+## 4. Teardown & Reset
+
+Run from `infra/`:
+
+* **Stop stack (preserves database data):**
+  ```bash
+  cd infra
+  docker compose down
+  ```
+
+* **Full wipe (removes containers, networks, and database volumes):**
+  ```bash
+  cd infra
+  docker compose down -v
+  ```
+
+* **Complete reset (also removes locally built images):**
+  ```bash
+  cd infra
+  docker compose down -v --rmi local
+  ```
+

@@ -1,0 +1,48 @@
+using Nordiska.BuildingBlocks.Database;
+using Nordiska.Modules.Inbox.Contracts.Requests;
+using Nordiska.Modules.Inbox.Contracts.Responses;
+
+namespace Nordiska.Modules.Inbox.Application;
+
+public interface IInboxService
+{
+    Task<PagedResult<ThreadSummaryResponse>> GetThreadsAsync(long customerId, InboxQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<UnreadCountResponse> GetUnreadCountAsync(long customerId, CancellationToken cancellationToken = default);
+    Task<ThreadDetailResponse?> GetThreadDetailsAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
+    Task<ThreadDetailResponse> CreateSupportTicketAsync(long customerId, CreateThreadRequest request, CancellationToken cancellationToken = default);
+    Task<MessageResponse?> ReplyToThreadAsync(long customerId, long threadId, ReplyThreadRequest request, CancellationToken cancellationToken = default);
+    Task<bool> MarkAsReadAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
+    Task<bool> ArchiveThreadAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
+    Task<bool> RestoreThreadAsync(long customerId, long threadId, CancellationToken cancellationToken = default);
+    Task<bool> CloseThreadAsync(long customerId, long threadId, bool isStaff, CancellationToken cancellationToken = default);
+    Task<bool> ReopenThreadAsync(long customerId, long threadId, bool isStaff, CancellationToken cancellationToken = default);
+    Task<MessageResponse?> AddStaffReplyAsync(long staffId, long threadId, StaffReplyRequest request, CancellationToken cancellationToken = default);
+
+    // Admin Threads & Broadcast
+    Task<PagedResult<AdminThreadSummaryResponse>> GetAdminThreadsAsync(AdminThreadQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<ThreadDetailResponse?> GetAdminThreadDetailsAsync(long threadId, CancellationToken cancellationToken = default);
+    Task<int> CreateAdminThreadAsync(CreateAdminThreadRequest request, CancellationToken cancellationToken = default);
+
+    // Notifications
+    Task<PagedResult<CustomerNotificationResponse>> GetNotificationsAsync(long customerId, NotificationQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<bool> MarkNotificationReadAsync(long customerId, long notificationId, CancellationToken cancellationToken = default);
+    Task<int> MarkAllNotificationsReadAsync(long customerId, CancellationToken cancellationToken = default);
+    Task CreateSavingsGoalCompletedNotificationAsync(long customerId, long savingsGoalId, string goalTitle, CancellationToken cancellationToken = default);
+
+    // Digital Document Archive
+    Task<PagedResult<DocumentResponse>> GetDocumentsAsync(long customerId, DocumentQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<GeneralDocumentResponse>> GetGeneralDocumentsAsync(CancellationToken cancellationToken = default);
+    Task<DocumentDownloadResult?> DownloadDocumentAsync(long customerId, long documentId, CancellationToken cancellationToken = default);
+    Task<long> RegisterCustomerDocumentAsync(long customerId, string documentType, string title, string fileName, string mimeType, string storageKey, long fileSizeBytes, string sha256, string sourceType, string? sourceId = null, CancellationToken cancellationToken = default);
+
+    // Terms and Conditions Acceptance (NOR-254)
+    Task<IReadOnlyList<PendingTermResponse>> GetPendingTermsAsync(long customerId, CancellationToken cancellationToken = default);
+    Task<TermAcceptanceResult> AcceptTermAsync(long customerId, long termId, CancellationToken cancellationToken = default);
+    Task<TermResponse> PublishTermAsync(PublishTermRequest request, CancellationToken cancellationToken = default);
+
+    // Overview & Unified Feed (UI Aggregation)
+    Task<InboxOverviewResponse> GetOverviewAsync(long customerId, CancellationToken cancellationToken = default);
+    Task<PagedResult<InboxFeedItemResponse>> GetFeedAsync(long customerId, FeedQueryParameters parameters, CancellationToken cancellationToken = default);
+    Task<bool> MarkFeedItemAsReadAsync(long customerId, string feedId, CancellationToken cancellationToken = default);
+    Task<MarkAllReadResponse> MarkAllAsReadAsync(long customerId, CancellationToken cancellationToken = default);
+}

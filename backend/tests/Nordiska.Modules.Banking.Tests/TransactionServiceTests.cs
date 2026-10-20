@@ -1,0 +1,767 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Nordiska.BuildingBlocks.Database;
+using Nordiska.BuildingBlocks.Database.Errors;
+using Nordiska.Modules.Banking.Application;
+using Nordiska.Modules.Banking.Contracts.Requests;
+using Nordiska.Modules.Banking.Contracts.Responses;
+using Nordiska.Modules.Banking.Domain;
+using Nordiska.Modules.Banking.Infrastructure;
+using Xunit;
+
+namespace Nordiska.Modules.Banking.Tests;
+
+public class TransactionServiceTests
+{
+    private class FakeSavingsRepo : ISavingsAccountRepository
+    {
+        private readonly List<SavingsAccount> _store = new();
+        private long _next = 1;
+
+        public FakeSavingsRepo(IEnumerable<SavingsAccount>? seed = null)
+        {
+            if (seed != null)
+            {
+                _store.AddRange(seed);
+                _next = (_store.MaxBy(s => s.Id)?.Id ?? 0) + 1;
+            }
+        }
+
+        public Task<IEnumerable<SavingsAccount>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IEnumerable<SavingsAccount>>(_store.ToList());
+
+        public Task<IEnumerable<SavingsAccount>> GetByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IEnumerable<SavingsAccount>>(_store.Where(s => s.CustomerId == customerId).ToList());
+
+        public Task<SavingsAccount?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.FirstOrDefault(s => s.Id == id));
+
+        public Task<int> CountFavoritesByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.Count(s => s.CustomerId == customerId && s.IsFavorite && s.Status == "active"));
+
+        public Task<long> CreateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+        {
+            entity.Id = _next++;
+            _store.Add(entity);
+            return Task.FromResult(entity.Id);
+        }
+
+        public Task UpdateAsync(SavingsAccount entity, CancellationToken cancellationToken = default)
+        {
+            var idx = _store.FindIndex(s => s.Id == entity.Id);
+            if (idx >= 0) _store[idx] = entity;
+            return Task.CompletedTask;
+        }
+    }
+
+    private class FakeTxRepo : ITransactionRepository
+    {
+        private readonly List<LedgerEntry> _store = new();
+        private long _next = 1;
+
+        public FakeTxRepo(IEnumerable<LedgerEntry>? seed = null)
+        {
+            if (seed != null)
+            {
+                _store.AddRange(seed);
+                _next = (_store.MaxBy(t => t.Id)?.Id ?? 0) + 1;
+            }
+        }
+
+        public Task<IEnumerable<LedgerEntry>> QueryAsync(long? accountId = null, CancellationToken cancellationToken = default)
+        {
+            var q = _store.Where(l => !l.IsPlanned).AsEnumerable();
+            if (accountId.HasValue) q = q.Where(l => l.AccountId == accountId.Value);
+            return Task.FromResult<IEnumerable<LedgerEntry>>(q.ToList());
+        }
+
+        public Task<PagedResult<LedgerEntry>> QueryPagedAsync(TransactionQueryParameters parameters, CancellationToken cancellationToken = default)
+        {
+            var q = _store.AsEnumerable();
+
+            if (parameters.AccountIds != null && parameters.AccountIds.Count > 0)
+            {
+                q = q.Where(l => parameters.AccountIds.Contains(l.AccountId));
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.Type))
+            {
+                var typeLower = parameters.Type.Trim().ToLowerInvariant();
+                q = q.Where(l => l.Type.ToLowerInvariant() == typeLower);
+            }
+
+            if (parameters.IsPlanned.HasValue)
+            {
+                q = q.Where(l => l.IsPlanned == parameters.IsPlanned.Value);
+            }
+
+            if (parameters.FromDate.HasValue)
+            {
+                q = q.Where(l => l.CreatedAt >= parameters.FromDate.Value);
+            }
+
+            if (parameters.ToDate.HasValue)
+            {
+                q = q.Where(l => l.CreatedAt <= parameters.ToDate.Value);
+            }
+
+            if (parameters.MinAmount.HasValue)
+            {
+                q = q.Where(l => l.Amount >= parameters.MinAmount.Value);
+            }
+
+            if (parameters.MaxAmount.HasValue)
+            {
+                q = q.Where(l => l.Amount <= parameters.MaxAmount.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                var term = parameters.SearchTerm.Trim().ToLowerInvariant();
+                q = q.Where(l => l.Type.ToLowerInvariant().Contains(term) 
+                                 || l.Id.ToString().Contains(term) 
+                                 || l.AccountId.ToString().Contains(term));
+            }
+
+            if (parameters.CorrelationId.HasValue)
+            {
+                q = q.Where(l => l.CorrelationId == parameters.CorrelationId.Value);
+            }
+
+            var totalCount = q.Count();
+
+            var isAsc = string.Equals(parameters.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+            var sortBy = parameters.SortBy?.Trim().ToLowerInvariant();
+
+            q = sortBy switch
+            {
+                "amount" => isAsc ? q.OrderBy(l => l.Amount).ThenBy(l => l.Id) : q.OrderByDescending(l => l.Amount).ThenByDescending(l => l.Id),
+                _ => isAsc ? q.OrderBy(l => l.CreatedAt).ThenBy(l => l.Id) : q.OrderByDescending(l => l.CreatedAt).ThenByDescending(l => l.Id)
+            };
+
+            var page = parameters.NormalizedPage;
+            var pageSize = parameters.NormalizedPageSize;
+
+            var items = q.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            return Task.FromResult(PagedResult<LedgerEntry>.Create(items, totalCount, page, pageSize));
+        }
+
+        public Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_store.FirstOrDefault(l => l.Id == id));
+
+        public Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
+        {
+            var pending = _store
+                .Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc)
+                .OrderBy(l => l.PlannedDate)
+                .ThenBy(l => l.Id)
+                .ToList();
+            return Task.FromResult(pending);
+        }
+
+        public Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            entry.Id = _next++;
+            _store.Add(entry);
+            return Task.FromResult(entry.Id);
+        }
+
+        public Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+        {
+            var idx = _store.FindIndex(l => l.Id == entry.Id);
+            if (idx >= 0)
+            {
+                _store[idx] = entry;
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
+        {
+            var idx = _store.FindIndex(l => l.Id == id);
+            if (idx >= 0)
+            {
+                _store.RemoveAt(idx);
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
+
+        public Task<IEnumerable<LedgerEntry>> GetByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken = default)
+        {
+            var entries = _store.Where(l => l.CorrelationId == correlationId).ToList();
+            return Task.FromResult<IEnumerable<LedgerEntry>>(entries);
+        }
+
+        public int Count => _store.Count;
+    }
+
+    [Fact]
+    public async Task Query_ReturnsFilteredTransactions()
+    {
+        var seed = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 2, AccountId = 2, Type = "withdrawal", Amount = -50, CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seed);
+        var accRepo = new FakeSavingsRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var res = await svc.QueryAsync(1);
+
+        Assert.Single(res);
+        Assert.Equal(1, res.First().AccountId);
+    }
+
+    [Fact]
+    public async Task QueryPaged_ReturnsPaginatedAndMetadata()
+    {
+        var baseDate = DateTime.UtcNow;
+        var seed = Enumerable.Range(1, 25).Select(i => new LedgerEntry
+        {
+            Id = i,
+            AccountId = 1,
+            Type = i % 2 == 0 ? "deposit" : "withdrawal",
+            Amount = i * 10,
+            CreatedAt = baseDate.AddMinutes(i)
+        }).ToList();
+
+        var txRepo = new FakeTxRepo(seed);
+        var accRepo = new FakeSavingsRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var page1 = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, Page: 1, PageSize: 10));
+        Assert.Equal(25, page1.TotalCount);
+        Assert.Equal(10, page1.Items.Count);
+        Assert.Equal(1, page1.Page);
+        Assert.Equal(3, page1.TotalPages);
+        Assert.True(page1.HasNextPage);
+        Assert.False(page1.HasPreviousPage);
+
+        var page3 = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, Page: 3, PageSize: 10));
+        Assert.Equal(5, page3.Items.Count);
+        Assert.Equal(3, page3.Page);
+        Assert.False(page3.HasNextPage);
+        Assert.True(page3.HasPreviousPage);
+    }
+
+    [Fact]
+    public async Task QueryPaged_FiltersByTypeAndDateRange()
+    {
+        var baseDate = new DateTime(2026, 9, 1, 10, 0, 0, DateTimeKind.Utc);
+        var seed = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100, CreatedAt = baseDate.AddDays(1) },
+            new LedgerEntry { Id = 2, AccountId = 1, Type = "withdrawal", Amount = -50, CreatedAt = baseDate.AddDays(2) },
+            new LedgerEntry { Id = 3, AccountId = 1, Type = "deposit", Amount = 200, CreatedAt = baseDate.AddDays(5) },
+            new LedgerEntry { Id = 4, AccountId = 1, Type = "deposit", Amount = 300, CreatedAt = baseDate.AddDays(10) }
+        };
+
+        var txRepo = new FakeTxRepo(seed);
+        var accRepo = new FakeSavingsRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var res = await svc.QueryPagedAsync(new TransactionQueryParameters(
+            AccountIds: new[] { 1L },
+            Type: "deposit",
+            FromDate: baseDate.AddDays(2),
+            ToDate: baseDate.AddDays(6)));
+
+        Assert.Single(res.Items);
+        Assert.Equal(3, res.Items.First().Id);
+        Assert.Equal(200, res.Items.First().Amount);
+    }
+
+    [Fact]
+    public async Task QueryPaged_WithIsPlannedFilter_FiltersPlannedAndExecutedTransactionsCorrectly()
+    {
+        var seed = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100, IsPlanned = false, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 2, AccountId = 1, Type = "withdrawal", Amount = -50, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(5), CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 3, AccountId = 1, Type = "deposit", Amount = 500, IsPlanned = false, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 4, AccountId = 1, Type = "withdrawal", Amount = -200, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(10), CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seed);
+        var accRepo = new FakeSavingsRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        // 1. Filter only planned transactions
+        var plannedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: true));
+        Assert.Equal(2, plannedResult.Items.Count);
+        Assert.All(plannedResult.Items, item => Assert.True(item.IsPlanned));
+
+        // 2. Filter only executed (non-planned) transactions
+        var executedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: false));
+        Assert.Equal(2, executedResult.Items.Count);
+        Assert.All(executedResult.Items, item => Assert.False(item.IsPlanned));
+
+        // 3. Filter without isPlanned parameter (returns all)
+        var allResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }));
+        Assert.Equal(4, allResult.Items.Count);
+    }
+
+    [Fact]
+    public async Task GetBalance_ReturnsSumOfAllLedgerEntries()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "SE100" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 1000m, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 2, AccountId = 1, Type = "withdrawal", Amount = -250m, CreatedAt = DateTime.UtcNow },
+            new LedgerEntry { Id = 3, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var balance = await svc.GetBalanceAsync(1);
+
+        Assert.Equal(1250m, balance);
+    }
+
+    [Fact]
+    public async Task Execute_Deposit_CreatesPositiveLedgerEntryAndIncreasesBalance()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "deposit", 150m, Label: "Lön");
+        var res = await svc.ExecuteAsync(req);
+
+        Assert.Equal(1, res.AccountId);
+        Assert.Equal(150m, res.Amount);
+        Assert.Equal("deposit", res.Type);
+        Assert.Equal("Lön", res.Label);
+
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(150m, balance);
+    }
+
+    [Fact]
+    public async Task Execute_Withdrawal_WhenSufficientFunds_CreatesNegativeLedgerEntryAndDecreasesBalance()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "withdrawal", 200m);
+        var res = await svc.ExecuteAsync(req);
+
+        Assert.Equal(1, res.AccountId);
+        Assert.Equal(-200m, res.Amount);
+        Assert.Equal("withdrawal", res.Type);
+
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(300m, balance);
+    }
+
+    [Fact]
+    public async Task Execute_Withdrawal_WhenInsufficientFunds_ThrowsAndCreatesNoEntry()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 50m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "withdrawal", 100m);
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.ExecuteAsync(req));
+
+        Assert.Equal(1, txRepo.Count); // No new entry created
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(50m, balance);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public async Task Execute_InvalidAmount_ThrowsArgumentException(decimal invalidAmount)
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransactionRequest(1, "deposit", invalidAmount);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.ExecuteAsync(req));
+    }
+
+    [Fact]
+    public async Task Transfer_TransfersFundsBetweenAccounts()
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransferRequest(1, 2, 200m, "Överföring spar");
+        var res = await svc.TransferAsync(req);
+
+        Assert.Equal(1, res.AccountId);
+        Assert.Equal(-200m, res.Amount);
+        Assert.Equal("transfer", res.Type);
+        Assert.Equal(2, res.TargetAccountId);
+        Assert.Equal("Överföring spar", res.Label);
+
+        Assert.Equal(300m, await svc.GetBalanceAsync(1));
+        Assert.Equal(200m, await svc.GetBalanceAsync(2));
+    }
+
+    [Fact]
+    public async Task Transfer_SameAccount_ThrowsArgumentException()
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc1 });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransferRequest(1, 1, 100m);
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.TransferAsync(req));
+    }
+
+    [Fact]
+    public async Task Transfer_InsufficientFunds_ThrowsConflictException()
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 50m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new TransferRequest(1, 2, 100m);
+        await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(req));
+    }
+
+    [Fact]
+    public async Task CancelPlanned_ExecutedTransaction_ThrowsConflictException()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 50m, IsPlanned = false, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(1));
+    }
+
+    [Fact]
+    public async Task CreatePlanned_CreatesPlannedEntry_DoesNotAffectBalance()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var plannedDate = DateTime.UtcNow.AddMonths(1);
+        var req = new PlannedTransactionRequest(1, "withdrawal", 1200m, plannedDate, "Hyra");
+
+        var res = await svc.CreatePlannedAsync(req);
+
+        Assert.True(res.IsPlanned);
+        Assert.Equal(plannedDate, res.PlannedDate);
+        Assert.Equal("Hyra", res.Label);
+        Assert.Equal(1, res.AccountId);
+
+        var balance = await svc.GetBalanceAsync(1);
+        Assert.Equal(0m, balance); // Planned entries do not change balance
+    }
+
+    [Fact]
+    public async Task CancelPlanned_RemovesPlannedTransaction()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 10, AccountId = 1, Type = "withdrawal", Amount = -500m, IsPlanned = true, PlannedDate = DateTime.UtcNow.AddDays(5) }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var deleted = await svc.CancelPlannedAsync(10);
+        Assert.True(deleted);
+
+        var fetched = await svc.GetByIdAsync(10);
+        Assert.Null(fetched);
+    }
+
+    [Fact]
+    public async Task Execute_Withdrawal_ExactBalance_EmptiesAccount()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 300m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var res = await svc.ExecuteAsync(new TransactionRequest(1, "withdrawal", 300m));
+
+        Assert.Equal(-300m, res.Amount);
+        Assert.Equal(0m, await svc.GetBalanceAsync(1));
+        Assert.Equal(0m, acc.Balance);
+    }
+
+    [Theory]
+    [InlineData("transfer")]
+    [InlineData("uttag")]
+    [InlineData("")]
+    public async Task Execute_InvalidType_ThrowsArgumentException(string type)
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.ExecuteAsync(new TransactionRequest(1, type, 100m)));
+
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
+    public async Task Execute_AccountNotFound_ThrowsNotFoundException()
+    {
+        var accRepo = new FakeSavingsRepo();
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.ExecuteAsync(new TransactionRequest(99, "deposit", 100m)));
+
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-50)]
+    public async Task Transfer_InvalidAmount_ThrowsArgumentException(decimal invalidAmount)
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
+        var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.TransferAsync(new TransferRequest(1, 2, invalidAmount)));
+
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
+    public async Task Transfer_SourceNotFound_ThrowsNotFoundException()
+    {
+        var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
+        var accRepo = new FakeSavingsRepo(new[] { acc2 });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.TransferAsync(new TransferRequest(99, 2, 100m)));
+
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
+    public async Task Transfer_TargetNotFound_ThrowsAndCreatesNoEntries()
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc1 });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.TransferAsync(new TransferRequest(1, 99, 100m)));
+
+        Assert.Equal(1, txRepo.Count);
+        Assert.Equal(500m, await svc.GetBalanceAsync(1));
+    }
+
+    [Fact]
+    public async Task Transfer_InsufficientFunds_CreatesNoEntries()
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 99.99m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(new TransferRequest(1, 2, 100m)));
+
+        Assert.Equal(1, txRepo.Count);
+        Assert.Equal(0m, await svc.GetBalanceAsync(2));
+    }
+
+    [Fact]
+    public async Task Transfer_ExactBalance_EmptiesSourceAccount()
+    {
+        var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 750m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        await svc.TransferAsync(new TransferRequest(1, 2, 750m));
+
+        Assert.Equal(0m, await svc.GetBalanceAsync(1));
+        Assert.Equal(750m, await svc.GetBalanceAsync(2));
+        Assert.Equal(0m, acc1.Balance);
+        Assert.Equal(750m, acc2.Balance);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1200)]
+    public async Task CreatePlanned_InvalidAmount_ThrowsArgumentException(decimal invalidAmount)
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new PlannedTransactionRequest(1, "withdrawal", invalidAmount, DateTime.UtcNow.AddMonths(1), "Hyra");
+
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.CreatePlannedAsync(req));
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
+    public async Task CreatePlanned_WithPastDate_ThrowsArgumentException()
+    {
+        var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
+        var accRepo = new FakeSavingsRepo(new[] { acc });
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var pastDate = DateTime.UtcNow.AddDays(-1);
+        var req = new PlannedTransactionRequest(1, "withdrawal", 500m, pastDate, "Gamla pengar");
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => svc.CreatePlannedAsync(req));
+        Assert.Contains("past", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
+    public async Task CreatePlanned_AccountNotFound_ThrowsNotFoundException()
+    {
+        var accRepo = new FakeSavingsRepo();
+        var txRepo = new FakeTxRepo();
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var req = new PlannedTransactionRequest(99, "withdrawal", 1200m, DateTime.UtcNow.AddMonths(1), "Hyra");
+
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.CreatePlannedAsync(req));
+        Assert.Equal(0, txRepo.Count);
+    }
+
+    [Fact]
+    public async Task CancelPlanned_NotFound_ReturnsFalse()
+    {
+        var svc = new TransactionService(new FakeTxRepo(), new FakeSavingsRepo(), new TestLogger<TransactionService>());
+
+        var deleted = await svc.CancelPlannedAsync(123);
+
+        Assert.False(deleted);
+    }
+
+    [Fact]
+    public async Task CancelPlanned_ExecutedTransaction_ThrowsAndKeepsEntry()
+    {
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 5, AccountId = 1, Type = "deposit", Amount = 500m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seedTx);
+        var svc = new TransactionService(txRepo, new FakeSavingsRepo(), new TestLogger<TransactionService>());
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(5));
+
+        Assert.NotNull(await svc.GetByIdAsync(5));
+    }
+
+    [Fact]
+    public async Task TransferAsync_AssignsSameCorrelationId_ToBothEntries()
+    {
+        var sourceAcc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "SRC", Balance = 1000m };
+        var targetAcc = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "TGT", Balance = 100m };
+        var seedTx = new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 1000m, CreatedAt = DateTime.UtcNow }
+        };
+
+        var txRepo = new FakeTxRepo(seedTx);
+        var accRepo = new FakeSavingsRepo(new[] { sourceAcc, targetAcc });
+        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+
+        var result = await svc.TransferAsync(new TransferRequest(1, 2, 250m, "Överföring buffert"));
+
+        Assert.NotNull(result.CorrelationId);
+        Assert.NotEqual(Guid.Empty, result.CorrelationId.Value);
+
+        var related = (await svc.GetByCorrelationIdAsync(result.CorrelationId.Value)).ToList();
+        Assert.Equal(2, related.Count);
+
+        var withdrawal = related.Single(t => t.AccountId == 1);
+        var deposit = related.Single(t => t.AccountId == 2);
+
+        Assert.Equal(-250m, withdrawal.Amount);
+        Assert.Equal(250m, deposit.Amount);
+        Assert.Equal(result.CorrelationId, withdrawal.CorrelationId);
+        Assert.Equal(result.CorrelationId, deposit.CorrelationId);
+    }
+}
