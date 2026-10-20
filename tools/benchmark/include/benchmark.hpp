@@ -32,6 +32,13 @@ struct BenchmarkResult {
     int64_t documents_in_db = 0;
     LatencyStats latency;
     WorkerEnvironment worker_env;
+
+    // Timestamps
+    std::string run_timestamp;
+    std::string stage_start_time;
+    std::string stage_end_time;
+    std::string drain_start_time;
+    std::string drain_end_time;
 };
 
 class BenchmarkRunner {

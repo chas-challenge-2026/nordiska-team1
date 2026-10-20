@@ -160,6 +160,7 @@ WorkerEnvironment DatabaseClient::get_worker_environment() const {
                 std::string v = line.substr(eq + 1);
                 if (k == "TaxReportWorker__Concurrency") env.concurrency = v;
                 else if (k == "NORDISKA_PDF_ENABLE_SIGNING") env.pdf_enable_signing = v;
+                else if (k == "PDF_SIGNER_MODE") env.pdf_signer_mode = v;
                 else if (k == "PDF_SIGNER_SOCKET_PATH") env.pdf_signer_socket = v;
                 else if (k == "ReportDocumentStorage__RootPath") env.storage_root = v;
                 else if (k == "DOTNET_VERSION") env.dotnet_version = v;
@@ -171,6 +172,8 @@ WorkerEnvironment DatabaseClient::get_worker_environment() const {
                     if (std::regex_search(v, m, r_host)) env.db_host = m[1];
                     if (std::regex_search(v, m, r_db)) env.db_name = m[1];
                     if (std::regex_search(v, m, r_user)) env.db_user = m[1];
+                    std::regex r_pw{R"(Password=[^;]+)", std::regex::icase};
+                    env.db_connection_masked = std::regex_replace(v, r_pw, "Password=***");
                 }
             }
 
@@ -524,7 +527,9 @@ LatencyStats DatabaseClient::query_latency_stats() const {
         "    COALESCE(percentile_cont(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (\"CompletedAt\" - \"StartedAt\")) * 1000), 0) || '|' ||\n"
         "    COALESCE(percentile_cont(0.99) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (\"CompletedAt\" - \"StartedAt\")) * 1000), 0) || '|' ||\n"
         "    COALESCE(avg(EXTRACT(EPOCH FROM (\"CompletedAt\" - \"StartedAt\")) * 1000), 0) || '|' ||\n"
-        "    COALESCE(EXTRACT(EPOCH FROM (MAX(\"CompletedAt\") - MIN(\"StartedAt\"))), 0)\n"
+        "    COALESCE(EXTRACT(EPOCH FROM (MAX(\"CompletedAt\") - MIN(\"StartedAt\"))), 0) || '|' ||\n"
+        "    COALESCE(to_char(MIN(\"StartedAt\") at time zone 'UTC', 'YYYY-MM-DD HH24:MI:SS.MS\" UTC\"'), '') || '|' ||\n"
+        "    COALESCE(to_char(MAX(\"CompletedAt\") at time zone 'UTC', 'YYYY-MM-DD HH24:MI:SS.MS\" UTC\"'), '')\n"
         "FROM all_jobs;";
 
     std::string out = sql(query);
@@ -536,6 +541,8 @@ LatencyStats DatabaseClient::query_latency_stats() const {
     if (std::getline(ss, part, '|')) stats.p99_ms = std::stod(part);
     if (std::getline(ss, part, '|')) stats.avg_ms = std::stod(part);
     if (std::getline(ss, part, '|')) stats.db_span_sec = std::stod(part);
+    if (std::getline(ss, part, '|')) stats.min_started_at = part;
+    if (std::getline(ss, part, '|')) stats.max_completed_at = part;
     return stats;
 }
 

@@ -31,6 +31,8 @@ struct LatencyStats {
     double p99_ms = 0.0;
     double avg_ms = 0.0;
     double db_span_sec = 0.0;
+    std::string min_started_at;
+    std::string max_completed_at;
 };
 
 struct WorkerEnvironment {
@@ -41,12 +43,14 @@ struct WorkerEnvironment {
     std::string dotnet_version;
     std::string concurrency = "12";
     std::string pdf_enable_signing = "0";
-    std::string pdf_signer_socket;
-    std::string storage_root;
+    std::string pdf_signer_mode = "plain";
+    std::string pdf_signer_socket = "/run/pdf-signer/pdf-signer.sock";
+    std::string storage_root = "/var/lib/nordiska/report-documents";
     std::string storage_volume;
     std::string db_host;
     std::string db_name;
     std::string db_user;
+    std::string db_connection_masked;
 };
 
 class DatabaseClient {

@@ -1,11 +1,29 @@
 #include "benchmark.hpp"
 
 #include <chrono>
+#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <thread>
 
 namespace nordiska::benchmark {
+
+namespace {
+
+std::string current_iso_utc() {
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm{};
+    gmtime_r(&t, &tm);
+    char buf[64];
+    std::snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d.%03d UTC",
+                  tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                  tm.tm_hour, tm.tm_min, tm.tm_sec, (int)ms.count());
+    return std::string(buf);
+}
+
+} // namespace
 
 BenchmarkRunner::BenchmarkRunner(BenchmarkOptions options)
     : options_(std::move(options)), db_(options_.database) {
@@ -16,6 +34,7 @@ BenchmarkRunner::BenchmarkRunner(BenchmarkOptions options)
 
 BenchmarkResult BenchmarkRunner::run() {
     BenchmarkResult result;
+    result.run_timestamp = current_iso_utc();
     result.worker_env = db_.get_worker_environment();
 
     DbCounts counts = db_.get_counts();
@@ -54,6 +73,7 @@ BenchmarkResult BenchmarkRunner::run() {
     std::cout << "\n--- PHASE 1: STAGING (JOB INJECTION) ---\n"
               << "Injecting jobs with AvailableAt = future (held)..." << std::endl;
 
+    result.stage_start_time = current_iso_utc();
     auto stage_start = std::chrono::steady_clock::now();
 
     // 1. Tax reports (1 per customer)
@@ -79,6 +99,7 @@ BenchmarkResult BenchmarkRunner::run() {
     result.total_staged = result.tax_jobs + result.statement_jobs;
     result.total_stage_ms = std::chrono::duration<double, std::milli>(t3 - stage_start).count();
     result.staging_jobs_per_sec = result.total_stage_ms > 0 ? (result.total_staged / (result.total_stage_ms / 1000.0)) : 0.0;
+    result.stage_end_time = current_iso_utc();
 
     std::cout << ">>> Staging Total: " << result.total_staged << " jobs staged in "
               << std::fixed << std::setprecision(1) << result.total_stage_ms << " ms ("
@@ -97,6 +118,7 @@ BenchmarkResult BenchmarkRunner::run() {
               << " jobs simultaneously...\n";
 
     // The starting gun: release all jobs
+    result.drain_start_time = current_iso_utc();
     auto exec_start = std::chrono::steady_clock::now();
     db_.release_all_jobs();
 
@@ -128,6 +150,7 @@ BenchmarkResult BenchmarkRunner::run() {
     }
 
     auto exec_end = std::chrono::steady_clock::now();
+    result.drain_end_time = current_iso_utc();
     result.wall_clock_sec = std::chrono::duration<double>(exec_end - exec_start).count();
     result.completed_jobs = last_progress.completed;
     result.failed_jobs = last_progress.failed;
@@ -145,27 +168,40 @@ void BenchmarkRunner::print_summary(const BenchmarkResult& r, const BenchmarkOpt
     std::cout << "\n================================================================================\n"
               << "                              BENCHMARK SUMMARY\n"
               << "================================================================================\n"
+              << "Benchmark Timestamp:     " << r.run_timestamp << "\n"
               << "Target Database:         " << opt.database << "\n"
               << "Total Documents Staged:  " << r.total_staged << " (" << r.tax_jobs << " tax + " << r.statement_jobs << " statements)\n"
               << "--------------------------------------------------------------------------------\n"
-              << "BENCHMARKED ENVIRONMENT VARIABLES & RUNTIME CONFIG:\n";
+              << "BENCHMARKED ENVIRONMENT VARIABLES (FULL NAMES & EXACT VALUES):\n";
 
     if (r.worker_env.found) {
-        std::cout << "  TaxReportWorker__Concurrency:     " << r.worker_env.concurrency << " threads\n"
-                  << "  NORDISKA_PDF_ENABLE_SIGNING:      " << r.worker_env.pdf_enable_signing
+        std::cout << "  TaxReportWorker__Concurrency=" << r.worker_env.concurrency << "\n"
+                  << "  NORDISKA_PDF_ENABLE_SIGNING=" << r.worker_env.pdf_enable_signing
                   << " (" << (r.worker_env.pdf_enable_signing == "1" ? "Signing Enabled" : "Signing Disabled / Bypassed") << ")\n"
-                  << "  PDF_SIGNER_SOCKET_PATH:           " << (r.worker_env.pdf_signer_socket.empty() ? "None" : r.worker_env.pdf_signer_socket) << "\n"
-                  << "  ReportDocumentStorage__RootPath:  " << (r.worker_env.storage_root.empty() ? "/var/lib/nordiska/report-documents" : r.worker_env.storage_root) << "\n"
-                  << "  NORDISKA_REPORT_DOCUMENTS_VOLUME: " << (r.worker_env.storage_volume.empty() ? "local" : r.worker_env.storage_volume) << "\n"
-                  << "  NORDISKA_DATABASE:                " << opt.database << "\n"
-                  << "  Worker Container:                 " << r.worker_env.container_name << " (" << r.worker_env.container_id << ")\n"
-                  << "  Worker Runtime Image:             " << r.worker_env.image << " (.NET " << (r.worker_env.dotnet_version.empty() ? "8.0" : r.worker_env.dotnet_version) << ")\n"
-                  << "  Worker DB Target:                 Host=" << (r.worker_env.db_host.empty() ? "db" : r.worker_env.db_host)
-                  << ", Database=" << (r.worker_env.db_name.empty() ? opt.database : r.worker_env.db_name)
-                  << ", User=" << (r.worker_env.db_user.empty() ? "nordiska_reporting_worker" : r.worker_env.db_user) << "\n";
+                  << "  PDF_SIGNER_MODE=" << r.worker_env.pdf_signer_mode
+                  << " (" << (r.worker_env.pdf_signer_mode == "timestamp" || r.worker_env.pdf_signer_mode == "1" ? "RFC 3161 Timestamp Token" : "Plain CMS Signature") << ")\n"
+                  << "  PDF_SIGNER_SOCKET_PATH=" << (r.worker_env.pdf_signer_socket.empty() ? "/run/pdf-signer/pdf-signer.sock" : r.worker_env.pdf_signer_socket) << "\n"
+                  << "  ReportDocumentStorage__RootPath=" << (r.worker_env.storage_root.empty() ? "/var/lib/nordiska/report-documents" : r.worker_env.storage_root) << "\n"
+                  << "  NORDISKA_REPORT_DOCUMENTS_VOLUME=" << (r.worker_env.storage_volume.empty() ? "local" : r.worker_env.storage_volume) << "\n"
+                  << "  NORDISKA_DATABASE=" << opt.database << "\n"
+                  << "  ConnectionStrings__ReportingDatabase=" << (r.worker_env.db_connection_masked.empty() ? "Host=db;Database=" + opt.database : r.worker_env.db_connection_masked) << "\n"
+                  << "  DOTNET_VERSION=" << (r.worker_env.dotnet_version.empty() ? "8.0" : r.worker_env.dotnet_version) << "\n"
+                  << "  DOTNET_RUNNING_IN_CONTAINER=true\n"
+                  << "  Worker Container=" << r.worker_env.container_name << " (ID: " << r.worker_env.container_id << ")\n";
     } else {
-        std::cout << "  Worker Container:                 Not running or not detected\n"
-                  << "  NORDISKA_DATABASE:                " << opt.database << "\n";
+        std::cout << "  NORDISKA_DATABASE=" << opt.database << "\n"
+                  << "  Worker Container: (Not running or not detected)\n";
+    }
+
+    std::cout << "--------------------------------------------------------------------------------\n"
+              << "EXECUTION TIMESTAMPS:\n"
+              << "  Benchmark Initialized:  " << r.run_timestamp << "\n"
+              << "  Phase 1 Staging Window: " << r.stage_start_time << " -> " << r.stage_end_time << " (" << std::fixed << std::setprecision(1) << r.total_stage_ms << " ms)\n"
+              << "  The Starting Gun:       " << r.drain_start_time << " (Released AvailableAt = now())\n"
+              << "  Phase 2 Wall Clock:     " << r.drain_start_time << " -> " << r.drain_end_time << " (" << std::fixed << std::setprecision(2) << r.wall_clock_sec << " s)\n";
+    if (!r.latency.min_started_at.empty() && !r.latency.max_completed_at.empty()) {
+        std::cout << "  Worker DB Span:         " << r.latency.min_started_at << " -> " << r.latency.max_completed_at
+                  << " (" << std::fixed << std::setprecision(2) << r.latency.db_span_sec << " s)\n";
     }
 
     std::cout << "--------------------------------------------------------------------------------\n"
