@@ -33,6 +33,22 @@ struct LatencyStats {
     double db_span_sec = 0.0;
 };
 
+struct WorkerEnvironment {
+    bool found = false;
+    std::string container_id;
+    std::string container_name;
+    std::string image;
+    std::string dotnet_version;
+    std::string concurrency = "12";
+    std::string pdf_enable_signing = "0";
+    std::string pdf_signer_socket;
+    std::string storage_root;
+    std::string storage_volume;
+    std::string db_host;
+    std::string db_name;
+    std::string db_user;
+};
+
 class DatabaseClient {
 public:
     explicit DatabaseClient(std::string database = "");
@@ -51,6 +67,7 @@ public:
     JobProgress poll_job_progress() const;
     LatencyStats query_latency_stats() const;
     int64_t count_generated_documents() const;
+    WorkerEnvironment get_worker_environment() const;
 
     static std::string detect_active_database();
 

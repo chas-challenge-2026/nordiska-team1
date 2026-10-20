@@ -16,6 +16,7 @@ BenchmarkRunner::BenchmarkRunner(BenchmarkOptions options)
 
 BenchmarkResult BenchmarkRunner::run() {
     BenchmarkResult result;
+    result.worker_env = db_.get_worker_environment();
 
     DbCounts counts = db_.get_counts();
     std::cout << "\n================================================================================\n"
@@ -26,6 +27,21 @@ BenchmarkResult BenchmarkRunner::run() {
               << counts.accounts << " accounts | " << counts.transactions << " transactions\n"
               << "Reporting Year:       " << options_.year << "\n"
               << "Polling Interval:     " << options_.poll_interval_seconds << " seconds\n";
+
+    if (result.worker_env.found) {
+        std::cout << "--------------------------------------------------------------------------------\n"
+                  << "BENCHMARKED WORKER ENVIRONMENT:\n"
+                  << "  Worker Container:   " << result.worker_env.container_name << " (" << result.worker_env.container_id << ")\n"
+                  << "  Runtime & Image:    " << result.worker_env.image << " (.NET " << (result.worker_env.dotnet_version.empty() ? "8.0" : result.worker_env.dotnet_version) << ")\n"
+                  << "  Worker Concurrency: " << result.worker_env.concurrency << " threads (TaxReportWorker__Concurrency)\n"
+                  << "  PDF Socket Signing: " << (result.worker_env.pdf_enable_signing == "1" ? "Enabled (1)" : "Disabled (0)") << " (NORDISKA_PDF_ENABLE_SIGNING)\n"
+                  << "  PDF Signer Socket:  " << (result.worker_env.pdf_signer_socket.empty() ? "None" : result.worker_env.pdf_signer_socket) << "\n"
+                  << "  Storage Volume:     " << (result.worker_env.storage_volume.empty() ? "local" : result.worker_env.storage_volume)
+                  << " -> " << (result.worker_env.storage_root.empty() ? "/var/lib/nordiska/report-documents" : result.worker_env.storage_root) << "\n"
+                  << "  Worker DB Target:   " << (result.worker_env.db_name.empty() ? db_.database() : result.worker_env.db_name)
+                  << " (Host: " << (result.worker_env.db_host.empty() ? "db" : result.worker_env.db_host)
+                  << ", User: " << (result.worker_env.db_user.empty() ? "nordiska_reporting_worker" : result.worker_env.db_user) << ")\n";
+    }
 
     if (options_.clean_first) {
         std::cout << "Cleaning previous reporting snapshots, jobs, and generated documents...\n";
@@ -129,8 +145,15 @@ void BenchmarkRunner::print_summary(const BenchmarkResult& r, const BenchmarkOpt
     std::cout << "\n================================================================================\n"
               << "                              BENCHMARK SUMMARY\n"
               << "================================================================================\n"
-              << "Target Database:         " << opt.database << "\n"
-              << "Total Documents Staged:  " << r.total_staged << " (" << r.tax_jobs << " tax + " << r.statement_jobs << " statements)\n"
+              << "Target Database:         " << opt.database << "\n";
+    if (r.worker_env.found) {
+        std::cout << "Benchmarked Worker:      Concurrency: " << r.worker_env.concurrency
+                  << " | Signing: " << (r.worker_env.pdf_enable_signing == "1" ? "Enabled" : "Disabled")
+                  << " | .NET " << (r.worker_env.dotnet_version.empty() ? "8.0" : r.worker_env.dotnet_version)
+                  << " | " << r.worker_env.container_name << "\n"
+                  << "PDF Storage Volume:      " << (r.worker_env.storage_volume.empty() ? "local" : r.worker_env.storage_volume) << "\n";
+    }
+    std::cout << "Total Documents Staged:  " << r.total_staged << " (" << r.tax_jobs << " tax + " << r.statement_jobs << " statements)\n"
               << "--------------------------------------------------------------------------------\n"
               << "PHASE 1: STAGING (JOB INJECTION)\n"
               << "  Tax Jobs Staging:      " << std::fixed << std::setprecision(1) << r.tax_stage_ms << " ms\n"

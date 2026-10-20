@@ -62,7 +62,14 @@ int main(int argc, char* argv[]) {
         try {
             nordiska::benchmark::DatabaseClient probe(options.database);
             auto counts = probe.get_counts();
-            std::cout << "Detected Active DB:    " << probe.database() << "\n"
+            auto env = probe.get_worker_environment();
+            std::cout << "Detected Active DB:    " << probe.database() << "\n";
+            if (env.found) {
+                std::cout << "Worker Container:      " << env.container_name << " (ID: " << env.container_id << ")\n"
+                          << "Worker Concurrency:    " << env.concurrency << " threads\n"
+                          << "PDF Socket Signing:    " << (env.pdf_enable_signing == "1" ? "Enabled (1)" : "Disabled (0)") << "\n";
+            }
+            std::cout << "Available Customers:   " << counts.customers << "\n"
                       << "Available Customers:   " << counts.customers << "\n"
                       << "Available Accounts:    " << counts.accounts << "\n"
                       << "Ledger Transactions:   " << counts.transactions << "\n"

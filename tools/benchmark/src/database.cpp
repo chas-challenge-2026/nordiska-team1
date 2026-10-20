@@ -133,6 +133,62 @@ std::string DatabaseClient::find_db_container() const {
     return "nordiska-v2-db-1";
 }
 
+WorkerEnvironment DatabaseClient::get_worker_environment() const {
+    WorkerEnvironment env;
+    try {
+        std::string info = run_cmd({
+            "docker", "ps",
+            "--filter", "label=com.docker.compose.project=nordiska-v2",
+            "--filter", "label=com.docker.compose.service=reporting-worker",
+            "--format", "{{.ID}}\t{{.Names}}\t{{.Image}}"
+        });
+        if (info.empty()) {
+            info = run_cmd({"docker", "ps", "--filter", "name=reporting-worker", "--format", "{{.ID}}\t{{.Names}}\t{{.Image}}"});
+        }
+        if (!info.empty()) {
+            std::istringstream iss(info);
+            iss >> env.container_id >> env.container_name >> env.image;
+            env.found = true;
+
+            std::string env_output = run_cmd({"docker", "inspect", env.container_id, "--format", "{{range .Config.Env}}{{println .}}{{end}}"});
+            std::istringstream env_stream(env_output);
+            std::string line;
+            while (std::getline(env_stream, line)) {
+                auto eq = line.find('=');
+                if (eq == std::string::npos) continue;
+                std::string k = line.substr(0, eq);
+                std::string v = line.substr(eq + 1);
+                if (k == "TaxReportWorker__Concurrency") env.concurrency = v;
+                else if (k == "NORDISKA_PDF_ENABLE_SIGNING") env.pdf_enable_signing = v;
+                else if (k == "PDF_SIGNER_SOCKET_PATH") env.pdf_signer_socket = v;
+                else if (k == "ReportDocumentStorage__RootPath") env.storage_root = v;
+                else if (k == "DOTNET_VERSION") env.dotnet_version = v;
+                else if (k == "ConnectionStrings__ReportingDatabase") {
+                    std::regex r_host{R"((?:^|;)Host=([^;]+))", std::regex::icase};
+                    std::regex r_db{R"((?:^|;)Database=([^;]+))", std::regex::icase};
+                    std::regex r_user{R"((?:^|;)Username=([^;]+))", std::regex::icase};
+                    std::smatch m;
+                    if (std::regex_search(v, m, r_host)) env.db_host = m[1];
+                    if (std::regex_search(v, m, r_db)) env.db_name = m[1];
+                    if (std::regex_search(v, m, r_user)) env.db_user = m[1];
+                }
+            }
+
+            std::string mount_output = run_cmd({"docker", "inspect", env.container_id, "--format", "{{range .Mounts}}{{println .Type .Name .Destination}}{{end}}"});
+            std::istringstream mount_stream(mount_output);
+            while (std::getline(mount_stream, line)) {
+                std::istringstream mls(line);
+                std::string mtype, mname, mdest;
+                mls >> mtype >> mname >> mdest;
+                if (mdest == "/var/lib/nordiska/report-documents" || (!env.storage_root.empty() && mdest == env.storage_root)) {
+                    env.storage_volume = mname;
+                }
+            }
+        }
+    } catch (...) {}
+    return env;
+}
+
 DatabaseClient::DatabaseClient(std::string database) {
     repo_root_ = find_repo_root();
     if (database.empty()) {

@@ -31,6 +31,7 @@ struct BenchmarkResult {
     int64_t failed_jobs = 0;
     int64_t documents_in_db = 0;
     LatencyStats latency;
+    WorkerEnvironment worker_env;
 };
 
 class BenchmarkRunner {
