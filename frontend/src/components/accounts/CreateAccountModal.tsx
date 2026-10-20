@@ -44,14 +44,14 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
     const [accountType, setAccountType] = useState<AccountTypes | "">("");
     const [initialDeposit, setInitialDeposit] = useState("");
     const [accountTypeError, setAccountTypeError] = useState<string>();
-    const [depositError, setDepositError] = useState<string>();
+    // const [depositError, setDepositError] = useState<string>();
 
     function resetForm() {
         setAccountName("");
         setAccountType("");
         setInitialDeposit("");
         setAccountTypeError(undefined);
-        setDepositError(undefined);
+        // setDepositError(undefined);
         createAccount.reset();
     }
 
@@ -69,10 +69,10 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
 
         const parsedDeposit = initialDeposit.trim() === "" ? undefined : Number(initialDeposit);
         if (parsedDeposit !== undefined && Number.isNaN(parsedDeposit)) {
-            setDepositError(t("accounts-route.invalid-amount"));
+            // setDepositError(t("accounts-route.invalid-amount"));
             hasError = true;
         } else {
-            setDepositError(undefined);
+            // setDepositError(undefined);
         }
 
 
@@ -147,7 +147,7 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
                     </select>
                 </div>
 
-                <InputField
+                {/* <InputField
                     name="initialDeposit"
                     type="number"
                     label={t("accounts-route.initial-deposit")}
@@ -156,7 +156,7 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
                     onChange={setInitialDeposit}
                     error={depositError}
                     suffix="sek"
-                />
+                /> */}
                 {createAccount.isError && (
                     <p className="text-sm text-red-700">{t("accounts-route.create-account-error")}</p>
                 )}
