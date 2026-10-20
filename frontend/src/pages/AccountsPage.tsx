@@ -85,9 +85,7 @@ export default function AccountsPage() {
                 <SavingsGoalSection
                     savingGoal={existingSavingGoal}
                     accountAmount={expandedAccount?.balance}
-                    onDeposit={() => {
-                        navigate("/transfer")
-                    }}
+                    onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
                     onEdit={(newGoal) => {
                         setIsSavingGoalOpen(true);
                         setNewGoal(newGoal);

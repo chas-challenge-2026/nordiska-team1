@@ -28,6 +28,7 @@ import { usePendingTransfers } from "../hooks/usePendingTransfers";
 import TransferCard from "../components/transfer/TransferCard";
 import HelpCard from "../components/faq/HelpCard";
 import HelpCardBubble from "../components/faq/HelpCardBubble";
+import { useSearchParams } from "react-router";
 
 type Step = "form" | "bankid" | "done";
 
@@ -48,8 +49,10 @@ export default function TransferPage() {
     if (pendingTransfers.length > 0) console.log(pendingTransfers); // fular till denna
 
     const [name, setName] = useState("");
+    const [searchParams] = useSearchParams();
+    const accountIdParam = searchParams.get("account");
     const [fromId, setFromId] = useState<string | null>(null);
-    const [toId, setToId] = useState<string | null>(null);
+    const [toId, setToId] = useState<string | null>(accountIdParam);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(todayIso());
     const recurrence = useRecurrence();
