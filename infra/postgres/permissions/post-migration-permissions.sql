@@ -90,7 +90,8 @@ GRANT USAGE
     TO nordiska_reporting_worker;
 
 GRANT DELETE
-    ON TABLE faq.faq_entries
+    ON TABLE faq.faq_entries,
+             banking.savings_goals
     TO nordiska_api;
 
 -- Allow nordiska_api to UPDATE and DELETE planned ledger entries while preventing TRUNCATE.
