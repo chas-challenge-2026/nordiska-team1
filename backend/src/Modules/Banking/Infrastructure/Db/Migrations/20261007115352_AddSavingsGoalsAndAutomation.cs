@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -82,6 +82,8 @@ namespace Nordiska.Modules.Banking.Infrastructure.Db.Migrations
                 principalTable: "savings_goals",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.SetNull);
+
+            migrationBuilder.Sql("DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'nordiska_api') THEN GRANT DELETE ON TABLE banking.savings_goals TO nordiska_api; END IF; END $$;");
         }
 
         /// <inheritdoc />
