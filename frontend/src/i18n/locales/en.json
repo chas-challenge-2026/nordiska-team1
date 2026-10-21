@@ -127,6 +127,7 @@
  
 
     "accounts-route": {
+        "create-new-account": "Create new account",
         "info": "Account Information",
         "overview": "Balance & Actions",
         "favorite-error": "You can have a maximum of 4 favorite accounts. Remove a favorite to add a new one.",
