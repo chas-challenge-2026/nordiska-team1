@@ -5,6 +5,7 @@ import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
 import { useCreateSavingsGoal, useUpdateSavingsGoal, useDeleteSavingsGoal, } from "../../hooks/useAccounts";
 import type { SavingGoal } from "../../services/accountsService";
 import { useTranslation } from "react-i18next";
+import { LoadingState, ErrorState } from "../StatusMessage";
 
 type HandleSavingsGoalModalProps = {
     accountNumber: string;
@@ -198,85 +199,92 @@ export default function HandleSavingsGoalModal({
             onClose={handleClose}
             title={existingSavingGoal && !newGoal ? t("accounts-route.handle-saving-goal.edit-title") : t("accounts-route.handle-saving-goal.create-title")}
         >
-            {isSaving && (<p>{t("accounts-route.handle-saving-goal.saving")}</p>)}
-            {hasError && (<p className="text-sm text-red-700">{t("accounts-route.handle-saving-goal.save-error")}</p>)}
+            {isSaving && (
+                <div className="p-10"> <LoadingState message={t("accounts-route.handle-saving-goal.saving")}/> </div>   
+            )}
+            {hasError && (
+                <div className="p-10"> <ErrorState message={t("accounts-route.handle-saving-goal.save-error")}/> </div>
+            )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-                <p className="border-y mt-8 text-secondary/70 border-secondary/30">{accountName ? `${accountName} ${accountNumber}` : accountNumber}</p>
-                <h2 className="text-lg font-semibold text-dark-navy"> {existingSavingGoal && !newGoal ? t("accounts-route.handle-saving-goal.edit-title") : t("accounts-route.handle-saving-goal.create-title")} </h2>
+            {!isSaving && !hasError &&(
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
+                    <p className="border-y mt-8 text-secondary/70 border-secondary/30">{accountName ? `${accountName} ${accountNumber}` : accountNumber}</p>
+                    <h2 className="text-lg font-semibold text-dark-navy"> {existingSavingGoal && !newGoal ? t("accounts-route.handle-saving-goal.edit-title") : t("accounts-route.handle-saving-goal.create-title")} </h2>
 
-                <InputField
-                    name="title"
-                    type="text"
-                    label={t("accounts-route.handle-saving-goal.title-label")}
-                    placeholder={t("accounts-route.handle-saving-goal.title-placeholder")}
-                    value={formData.title}
-                    onChange={(value) => updateFormField("title", value)}
-                    error={errors.titleError}
-                    required
-                />
-
-                <InputField
-                    name="amount"
-                    type="number"
-                    label={t("accounts-route.handle-saving-goal.amount-label")}
-                    placeholder="40000"
-                    value={formData.targetAmount}
-                    onChange={(value) => updateFormField("targetAmount", value)}
-                    error={errors.amountError}
-                    suffix="sek"
-                    required
-                />
-
-                <div>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-dark-navy">
-                        <input
-                            type="checkbox"
-                            checked={hasDate}
-                            onChange={(e) => {
-                                const checked = e.target.checked;
-                                setHasDate(checked);
-                                if (!checked) {
-                                    updateFormField("targetDate", "");
-                                    setErrors((prev) => ({...prev,dateError: undefined,}));
-                                }
-                            }}
-                            className="h-4 w-4 cursor-pointer"
-                        />
-                        {t("accounts-route.handle-saving-goal.date-checkbox")}
-                    </label>
-                </div>
-
-                {hasDate && (
                     <InputField
-                        name="targetDate"
-                        type="date"
-                        placeholder=""
-                        label={t("accounts-route.handle-saving-goal.date-checkbox")}
-                        value={formData.targetDate}
-                        onChange={(value) => updateFormField("targetDate", value)}
-                        error={errors.dateError}
+                        name="title"
+                        type="text"
+                        label={t("accounts-route.handle-saving-goal.title-label")}
+                        placeholder={t("accounts-route.handle-saving-goal.title-placeholder")}
+                        value={formData.title}
+                        onChange={(value) => updateFormField("title", value)}
+                        error={errors.titleError}
+                        required
                     />
-                )}
 
-                { existingSavingGoal && !newGoal && (
+                    <InputField
+                        name="amount"
+                        type="number"
+                        label={t("accounts-route.handle-saving-goal.amount-label")}
+                        placeholder="40000"
+                        value={formData.targetAmount}
+                        onChange={(value) => updateFormField("targetAmount", value)}
+                        error={errors.amountError}
+                        suffix="sek"
+                        required
+                    />
 
-                    <button
-                        type="button"
-                        onClick={handleDelete}
-                        disabled={deleteSavingsGoal.isPending}
-                        className="group my-5 inline-flex min-w-0 flex-1 items-center justify-center rounded-lg bg-white border px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-600 hover:text-white duration-200 ease-in disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:flex-none sm:text-sm cursor-pointer"
-                    >
-                        <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-red-600 mask-[url('/icons/close.svg')] duration-200 ease-in mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5 group-hover:bg-white"/>
+                    <div>
+                        <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-dark-navy">
+                            <input
+                                type="checkbox"
+                                checked={hasDate}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setHasDate(checked);
+                                    if (!checked) {
+                                        updateFormField("targetDate", "");
+                                        setErrors((prev) => ({...prev,dateError: undefined,}));
+                                    }
+                                }}
+                                className="h-4 w-4 cursor-pointer"
+                            />
+                            {t("accounts-route.handle-saving-goal.date-checkbox")}
+                        </label>
+                    </div>
 
-                        {deleteSavingsGoal.isPending
-                            ? t("accounts-route.handle-saving-goal.deleting")
-                            : t("accounts-route.handle-saving-goal.delete-goal")}
-                    </button>
-                )}
+                    {hasDate && (
+                        <InputField
+                            name="targetDate"
+                            type="date"
+                            placeholder=""
+                            label={t("accounts-route.handle-saving-goal.date-checkbox")}
+                            value={formData.targetDate}
+                            onChange={(value) => updateFormField("targetDate", value)}
+                            error={errors.dateError}
+                        />
+                    )}
 
-                <CollapsibleFormBtns onClose={handleClose} submitDisabled={isSaving}/>
-            </form>
+                    { existingSavingGoal && !newGoal && (
+
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={deleteSavingsGoal.isPending}
+                            className="group my-5 inline-flex min-w-0 flex-1 items-center justify-center rounded-lg bg-white border px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-600 hover:text-white duration-200 ease-in disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:flex-none sm:text-sm cursor-pointer"
+                        >
+                            <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-red-600 mask-[url('/icons/close.svg')] duration-200 ease-in mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5 group-hover:bg-white"/>
+
+                            {deleteSavingsGoal.isPending
+                                ? t("accounts-route.handle-saving-goal.deleting")
+                                : t("accounts-route.handle-saving-goal.delete-goal")}
+                        </button>
+                    )}
+
+                    <CollapsibleFormBtns onClose={handleClose} submitDisabled={isSaving}/>
+                </form>
+            )}
+
         </Modal>
     );
 }
