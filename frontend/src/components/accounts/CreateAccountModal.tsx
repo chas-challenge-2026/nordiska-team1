@@ -98,7 +98,7 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
     return (
         <Modal isOpen={isModalOpen} onClose={onClose} onCloseAnimationComplete={resetForm} title={t("accounts-route.new-account")}>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-                <h2 className="text-lg font-semibold text-dark-navy">{t("accounts-route.new-account")}</h2>
+                <h2 className="text-lg font-semibold text-dark-navy">{t("accounts-route.create-new-account")}</h2>
 
                 <InputField
                     name="accountName"
