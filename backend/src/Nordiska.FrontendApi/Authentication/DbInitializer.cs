@@ -1021,261 +1021,119 @@ public class DbInitializer
             return;
         }
 
-        var faqPairs = new (string SvQ, string SvA, string SvCat, string SvKey, string EnQ, string EnA, string EnCat, string EnKey, Guid RelationId, int SvHelpful, int EnHelpful)[]
-        {
-            (
-                "Hur gör jag ett uttag?",
-                "Du kan enkelt göra uttag och överföringar under fliken “Överföringar”. Där kan du föra över pengar mellan dina egna konton eller till dina sparade mottagare. Du kan också schemalägga återkommande överföringar veckovis, månadsvis eller årsvis.",
-                "Överföringar",
-                "uttag, uttagning, ta ut pengar, överföring, föra över pengar, överföra pengar, flytta pengar, ta ut, uttaget, uttagsgräns, stående överföring, återkommande överföring, schemalägga överföring, mottagare, mellan konton",
-                "How do I withdraw money?",
-                "You can easily make withdrawals and transfers under the “Transfers” tab. There, you can transfer money between your own accounts or to your saved recipients. You can also schedule recurring transfers on a weekly, monthly, or yearly basis.",
-                "Transfers",
-                "withdrawal, withdrawals, withdraw money, take out money, transfer, money transfer, transfer money, move money, withdrawal limit, recurring transfer, scheduled transfer, standing transfer, saved recipient, between accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000001"),
-                8,
-                4
-            ),
-            (
-                "När betalas räntan ut?",
-                "Räntan beräknas dagligen och betalas ut den 31 december varje år.",
-                "Ränta",
-                "ränta, räntan, räntesats, procent, utbetalning",
-                "When is interest paid?",
-                "Interest is calculated daily and paid on December 31st each year.",
-                "Interest",
-                "interest, rate, payment, percentage, yield",
-                Guid.Parse("a0000001-0000-0000-0000-000000000002"),
-                9,
-                6
-            ),
-            (
-                "Hur gör jag en insättning?",
-                "Gå till fliken “Överföringar” och välj alternativet för insättning. Ange beloppet och bekräfta transaktionen. När insättningen har genomförts visas pengarna på ditt konto.",
-                "Överföringar",
-                "insättning, sätta in pengar, sätt in pengar, insätta pengar, överföra pengar, fylla på konto, insättningsbelopp, insättningsalternativ, transaktion",
-                "How do I make a deposit?",
-                "Go to the Transfers tab and select the deposit option. Enter the amount and confirm the transaction. Once the deposit has been completed, the money will appear in your account.",
-                "Transfers",
-                "deposit, make a deposit, deposit money, add money, transfer money, top up account, deposit amount, deposit option, transaction",
-                Guid.Parse("a0000001-0000-0000-0000-000000000003"),
-                5,
-                2
-            ),
-            (
-                "Var hittar jag mitt årsbesked?",
-                "Ditt årsbesked ingår i skatteunderlaget. Du kan ladda ner skatteunderlaget under fliken “Bankkonton” genom att klicka på knappen “Skatteunderlag” högst upp på sidan.\nDu hittar även ditt årsbesked i din inbox under fliken “Dokument”.",
-                "Rapporter",
-                "årsbesked, årsbeskedet, skatteunderlag, skatteunderlaget, skatt, deklaration, deklarationen, skattedokument, dokument, ladda ner årsbesked, hitta årsbesked, bankkonton, inkorg, räntebesked",
-                "Where can I find my annual statement?",
-                "Your annual statement is included in your tax statement. You can download the tax statement under the \"Bank Accounts\" tab by clicking the \"Tax Report\" button at the top of the page.\nYou can also find your annual statement in your inbox under the \"Documents\" tab.",
-                "Reports",
-                "annual statement, year-end statement, tax statement, tax documentation, tax return, tax declaration, download annual statement, find annual statement, bank accounts, inbox, documents, interest statement",
-                Guid.Parse("a0000001-0000-0000-0000-000000000004"),
-                7,
-                -2
-            ),
-            (
-                "Hur får jag ett kontoutdrag?",
-                "Gå till fliken \"Bankkonton\" och välj det konto du vill ha ett kontoutdrag för i menyn. Längst ner på sidan hittar du knappen \"Kontoutdrag\", där du kan skapa och ladda ner ett kontoutdrag för det valda kontot.",
-                "Rapporter",
-                "kontoutdrag, kontoutdraget, utdrag, bankutdrag, kontoöversikt, transaktioner, transaktionshistorik, kontohistorik, betalningshistorik, skapa kontoutdrag, ladda ner kontoutdrag, bankkonton",
-                "How do I get an account statement?",
-                "Go to the \"Bank Accounts\" tab and select the account you want an account statement for from the menu. At the bottom of the page, you will find the \"Account Statement\" button, where you can generate a statement for the selected account.",
-                "Reports",
-                "account statement, bank statement, statement, transaction history, transactions, account history, payment history, generate account statement, download account statement, bank accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000005"),
-                6,
-                1
-            ),
-            (
-                "Var hittar jag villkoren för mitt sparkonto?",
-                "Du hittar villkoren för ditt sparkonto i din inkorg under fliken \"Villkor\". Öppna inkorgen genom att klicka på ikonen längst upp till höger i menyn.",
-                "Villkor",
-                "villkor, villkoren, sparkonto, sparkontovillkor, kontoavtal, avtal, regler, avtalsvillkor, läsa villkor, hitta villkor, inkorg",
-                "Where can I find the terms for my savings account?",
-                "You can find the terms and conditions for your savings account in your inbox under the \"Terms and Conditions\" tab. Open your inbox by clicking the icon in the top-right corner of the menu.",
-                "Terms",
-                "terms and conditions, savings account, account terms, agreement, account agreement, rules, contractual terms, view terms, find terms, inbox",
-                Guid.Parse("a0000001-0000-0000-0000-000000000006"),
-                -3,
-                3
-            ),
-            (
-                "Hur öppnar jag ett nytt sparkonto?",
-                "Gå till fliken \"Bankkonton\" och klicka på knappen \"Nytt Konto\". Välj vilken typ av konto du vill öppna. Du kan också välja att namnge kontot om du vill.",
-                "Konton",
-                "öppna konto, öppna sparkonto, nytt konto, nytt sparkonto, skapa konto, skapa sparkonto, lägga till konto, bankkonto, sparkonto, kontotyp, namnge konto, nytt bankkonto",
-                "How do I open a new savings account?",
-                "Go to the \"Bank Accounts\" tab and click the \"New Account\" button. Choose the type of account you want to open. You can also give the account a name if you wish.",
-                "Accounts",
-                "open account, open savings account, new account, new savings account, create account, create savings account, add account, bank account, savings account, account type, name an account, new bank account",
-                Guid.Parse("a0000001-0000-0000-0000-000000000007"),
-                10,
-                8
-            ),
-            (
-                "Hur avslutar jag mitt sparkonto?",
-                "För att avsluta ditt sparkonto behöver du först ta ut hela saldot. Gå till fliken \"Bankkonton\" och välj det konto du vill avsluta i menyn. När saldot är 0,00 kr visas en röd knapp längst ner på sidan med texten \"Avsluta Konto\". Klicka på knappen för att avsluta kontot.",
-                "Konton",
-                "avsluta konto, avsluta sparkonto, stänga konto, stänga sparkonto, säga upp konto, ta bort konto, avsluta kontot, kontosaldo, nollsaldo, saldo, ta ut pengar, Avsluta Konto",
-                "How do I close my savings account?",
-                "To close your savings account, you must first withdraw the entire balance. Go to the \"Bank Accounts\" tab and select the account you want to close from the menu. When the balance is 0.00 SEK, a red button labelled \"Close Account\" will appear at the bottom of the page. Click the button to close the account.",
-                "Accounts",
-                "close account, close savings account, closing an account, terminate account, cancel account, remove account, account balance, zero balance, withdraw money, empty account, Close Account",
-                Guid.Parse("a0000001-0000-0000-0000-000000000008"),
-                -5,
-                -8
-            ),
-            (
-                "Vilka villkor gäller för mitt sparkonto?",
-                "Du hittar de aktuella villkoren för ditt sparkonto i din inkorg under fliken \"Villkor\". Öppna inkorgen genom att klicka på ikonen längst upp till höger i menyn.",
-                "Villkor",
-                "villkor, sparkonto, sparkontovillkor, kontovillkor, regler, avgifter, ränta, avtalsvillkor, kontoavtal, aktuella villkor, läsa villkor, hitta villkor, dokument, inkorg",
-                "What terms and conditions apply to my savings account?",
-                "You can find the current terms and conditions for your savings account in your inbox under the \"Terms and Conditions\" tab. Open your inbox by clicking the icon in the top-right corner of the menu.",
-                "Terms",
-                "terms and conditions, savings account, account terms, account rules, fees, interest rate, contractual terms, account agreement, current terms, view terms, find terms, documents, inbox",
-                Guid.Parse("a0000001-0000-0000-0000-000000000009"),
-                -1,
-                -4
-            ),
-            (
-                "Kan jag hantera mitt sparkonto via mobilen?",
-                "Ja, du kan hantera ditt sparkonto direkt i mobilen. Webbplatsen är mobilanpassad och fungerar lika bra på dator, surfplatta och mobiltelefon.",
-                "Hemsidan",
-                "hemsidan, Nordiska, mobil, mobilanpassad, sparkonto, saldo, kontohantering",
-                "Can I manage my savings account from my mobile phone?",
-                "Yes, you can manage your savings account directly from your mobile phone. The website is mobile-friendly and works just as well on a computer, tablet, or mobile phone.",
-                "Website",
-                "website, Nordiska, mobile, mobile friendly, savings account, balance, account management",
-                Guid.Parse("a0000001-0000-0000-0000-000000000010"),
-                4,
-                -1
-            ),
-            (
-                "Är Nordiskas hemsida säker att använda?",
-                "Ja, Nordiskas hemsida är utformad med säkerhet i fokus. Om du glömmer att logga ut själv loggas du automatiskt ut efter en period av inaktivitet. Det minskar risken för att någon annan kan få tillgång till ditt konto om du lämnar sidan öppen.",
-                "Hemsidan",
-                "hemsidan, säkerhet, säker, automatisk utloggning, logga ut, inaktivitet, konto, trygg",
-                "Is Nordiska's website safe to use?",
-                "Yes, Nordiska's website is designed with security in mind. If you forget to log out yourself, you will be automatically logged out after a period of inactivity. This helps reduce the risk of someone else accessing your account if you leave the website open.",
-                "Website",
-                "website, security, safe, automatic logout, log out, inactivity, account, secure",
-                Guid.Parse("a0000001-0000-0000-0000-000000000011"),
-                3,
-                5
-            ),
-            (
-                "Hur skapar jag ett sparmål?",
-                "Gå till fliken \"Bankkonton\" och välj det konto du vill skapa ett sparmål för. Klicka på knappen \"Skapa sparmål\". Ange ett namn på sparmålet och det belopp du vill spara ihop. Du kan även ange ett måldatum om du vill.\nNär sparmålet har skapats kan du följa hur ditt sparande utvecklas och se hur nära du är att nå ditt mål. Du kan när som helst redigera eller ta bort ditt sparmål.",
-                "Konton",
-                "sparmål, skapa sparmål, nytt sparmål, sparande, sparmål för konto, målnamn, sparbelopp, målsumma, måldatum, följa sparande, sparutveckling, redigera sparmål, ändra sparmål, ta bort sparmål, radera sparmål, Skapa sparmål, Bankkonton",
-                "How do I create a savings goal?",
-                "Go to the \"Bank Accounts\" tab and select the account you want to create a savings goal for. Click the \"Create Savings Goal\" button. Enter a name for your savings goal and the amount you want to save. You can also set a target date if you wish.\nOnce your savings goal has been created, you can track your savings progress and see how close you are to reaching your goal. You can edit or delete your savings goal at any time.",
-                "Accounts",
-                "savings goal, create savings goal, new savings goal, savings, account savings goal, goal name, savings amount, target amount, target date, track savings, savings progress, edit savings goal, update savings goal, delete savings goal, remove savings goal, Create Savings Goal, Bank Accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000012"),
-                6,
-                2
-            ),
-            (
-                "Var kan jag se mina transaktioner?",
-                "Under fliken \"Transaktioner\" hittar du din samlade transaktionshistorik. Du kan filtrera transaktionerna efter ett specifikt konto, en tidsperiod eller transaktionstyp, till exempel insättningar och uttag.\nDu kan även se transaktionshistoriken för avslutade konton genom att markera \"Visa stängda konton\" i kontofiltret.",
-                "Transaktioner",
-                "transaktioner, transaktionshistorik, transaktionshistorik konto, kontohistorik, betalningshistorik, insättning, insättningar, uttag, uttagshistorik, filtrera transaktioner, söka transaktioner, transaktionstyp, tidsperiod, avslutade konton, stängda konton, Visa stängda konton",
-                "Where can I view my transactions?",
-                "Under the \"Transactions\" tab, you can find your complete transaction history. You can filter transactions by a specific account, a date range, or transaction type, such as deposits and withdrawals.\nYou can also view the transaction history of closed accounts by selecting \"Show closed accounts\" in the account filter.",
-                "Transactions",
-                "transactions, transaction history, account history, payment history, deposit, deposits, withdrawal, withdrawals, filter transactions, search transactions, transaction type, date range, closed accounts, view closed accounts, Show closed accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000013"),
-                4,
-                1
-            ),
-            (
-                "Var kan jag ändra mina kontaktuppgifter?",
-                "Klicka på hamburgermenyn uppe i högra hörnet och välj \"Inställningar\". Där kan du uppdatera din e-postadress och ditt telefonnummer.",
-                "Inställningar",
-                "kontaktuppgifter, ändra kontaktuppgifter, uppdatera kontaktuppgifter, e-post, e-postadress, ändra e-postadress, uppdatera e-post, telefonnummer, ändra telefonnummer, uppdatera telefonnummer, inställningar, personuppgifter, kontaktinformation, hamburgermeny",
-                "Where can I update my contact details?",
-                "Click the hamburger menu in the top-right corner and select \"Settings\". There, you can update your email address and phone number.",
-                "Settings",
-                "contact details, update contact details, change contact information, email, email address, change email address, update email, phone number, change phone number, update phone number, settings, personal information, contact information, hamburger menu",
-                Guid.Parse("a0000001-0000-0000-0000-000000000014"),
-                2,
-                0
-            ),
-            (
-                "Hur ändrar jag språk på hemsidan?",
-                "Klicka på hamburgermenyn uppe i högra hörnet. Längst ner i menyn hittar du språkinställningarna, där du kan välja vilket språk du vill använda. Nordiska.se stöder för närvarande svenska och engelska.",
-                "Inställningar",
-                "språk, byta språk, ändra språk, språkinställningar, språkval, svenska, engelska, hemsida, webbplats, språk på hemsidan, ändra språk på webbplatsen, inställningar, hamburgermeny",
-                "How do I change the language on the website?",
-                "Click the hamburger menu in the top-right corner. At the bottom of the menu, you will find the language settings, where you can choose your preferred language. Nordiska.se currently supports Swedish and English.",
-                "Settings",
-                "language, change language, switch language, language settings, language selection, Swedish, English, website, change website language, language preferences, settings, hamburger menu",
-                Guid.Parse("a0000001-0000-0000-0000-000000000015"),
-                1,
-                3
-            ),
-            (
-                "Var loggar jag ut?",
-                "Du loggar ut genom att klicka på \"Logga ut\" i hamburgermenyn uppe i högra hörnet.",
-                "Hemsidan",
-                "logga ut, loggar ut, utloggning, avsluta session, lämna kontot, logga ut från kontot, utloggningsknapp, Logga ut, hamburgermeny",
-                "Where can I log out?",
-                "You can log out by clicking \"Log Out\" in the hamburger menu in the top-right corner.",
-                "Website",
-                "log out, logout, sign out, log off, end session, leave account, log out of account, sign-out button, Log Out, hamburger menu",
-                Guid.Parse("a0000001-0000-0000-0000-000000000016"),
-                -2,
-                -6
-            ),
-            (
-                "Var hanterar jag mina planerade överföringar?",
-                "Under fliken \"Överföringar\" hittar du sektionen för dina planerade överföringar. Där kan du ändra datum och intervall för en planerad överföring eller ta bort den om du inte längre behöver den.",
-                "Överföringar",
-                "planerade överföringar, planerad överföring, schemalagda överföringar, återkommande överföring, stående överföring, hantera överföringar, redigera överföring, ändra överföring, ändra datum, ändra intervall, ta bort överföring, avbryta överföring, överföringsdatum, överföringsintervall",
-                "Where can I manage my scheduled transfers?",
-                "Under the \"Transfers\" tab, you will find the section for your scheduled transfers. There, you can change the date and frequency of a scheduled transfer or delete it if you no longer need it.",
-                "Transfers",
-                "scheduled transfers, scheduled transfer, recurring transfers, recurring transfer, standing order, manage transfers, edit transfer, update transfer, change date, change frequency, delete transfer, cancel transfer, transfer date, transfer frequency",
-                Guid.Parse("a0000001-0000-0000-0000-000000000017"),
-                5,
-                -3
-            )
-        };
+        List<FaqSeedPair>? seedPairs = null;
 
-        foreach (var pair in faqPairs)
+        // 1. Try reading from embedded resource
+        var assembly = typeof(DbInitializer).Assembly;
+        var resourceName = assembly.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("faq_seed_data.json", StringComparison.OrdinalIgnoreCase));
+
+        if (resourceName != null)
         {
-            var existingSv = await faqDb.FaqEntries.FirstOrDefaultAsync(f => (f.Question == pair.SvQ || f.RelationId == pair.RelationId) && f.Language == "sv");
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream != null)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                seedPairs = await System.Text.Json.JsonSerializer.DeserializeAsync<List<FaqSeedPair>>(stream, options);
+            }
+        }
+
+        // 2. Fallback to file system
+        if (seedPairs == null || seedPairs.Count == 0)
+        {
+            var candidates = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "Data", "faq_seed_data.json"),
+                Path.Combine(AppContext.BaseDirectory, "faq_seed_data.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "src", "Nordiska.FrontendApi", "Data", "faq_seed_data.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "Data", "faq_seed_data.json")
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    var json = await File.ReadAllTextAsync(candidate);
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    seedPairs = System.Text.Json.JsonSerializer.Deserialize<List<FaqSeedPair>>(json, options);
+                    if (seedPairs != null && seedPairs.Count > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (seedPairs == null || seedPairs.Count == 0)
+        {
+            return;
+        }
+
+        // 3. Batch synchronization with database
+        var existingEntries = await faqDb.FaqEntries.ToListAsync();
+
+        foreach (var pair in seedPairs)
+        {
+            // Swedish
+            var existingSv = existingEntries.FirstOrDefault(f => f.Language == "sv" && (f.RelationId == pair.RelationId || f.Question == pair.Sv.Question));
             if (existingSv == null)
             {
-                var entry = FaqEntry.Create(pair.SvQ, pair.SvA, pair.SvCat, pair.SvKey, "sv", pair.RelationId);
-                faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.SvHelpful;
+                var entry = FaqEntry.Create(pair.Sv.Question, pair.Sv.Answer, pair.Sv.Category, pair.Sv.Keywords, "sv", pair.RelationId);
+                if (pair.Sv.HelpfulCount != 0)
+                {
+                    faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.Sv.HelpfulCount;
+                }
                 faqDb.FaqEntries.Add(entry);
+                existingEntries.Add(entry);
             }
             else
             {
-                existingSv.ReviseEntry(pair.SvQ, pair.SvA, pair.SvCat, pair.SvKey, "sv");
-                faqDb.Entry(existingSv).Property(e => e.HelpfulCount).CurrentValue = pair.SvHelpful;
+                existingSv.ReviseEntry(pair.Sv.Question, pair.Sv.Answer, pair.Sv.Category, pair.Sv.Keywords, "sv");
+                if (pair.Sv.HelpfulCount != 0)
+                {
+                    faqDb.Entry(existingSv).Property(e => e.HelpfulCount).CurrentValue = pair.Sv.HelpfulCount;
+                }
             }
 
-            var existingEn = await faqDb.FaqEntries.FirstOrDefaultAsync(f => (f.Question == pair.EnQ || f.RelationId == pair.RelationId) && f.Language == "en");
+            // English
+            var existingEn = existingEntries.FirstOrDefault(f => f.Language == "en" && (f.RelationId == pair.RelationId || f.Question == pair.En.Question));
             if (existingEn == null)
             {
-                var entry = FaqEntry.Create(pair.EnQ, pair.EnA, pair.EnCat, pair.EnKey, "en", pair.RelationId);
-                faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.EnHelpful;
+                var entry = FaqEntry.Create(pair.En.Question, pair.En.Answer, pair.En.Category, pair.En.Keywords, "en", pair.RelationId);
+                if (pair.En.HelpfulCount != 0)
+                {
+                    faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.En.HelpfulCount;
+                }
                 faqDb.FaqEntries.Add(entry);
+                existingEntries.Add(entry);
             }
             else
             {
-                existingEn.ReviseEntry(pair.EnQ, pair.EnA, pair.EnCat, pair.EnKey, "en");
-                faqDb.Entry(existingEn).Property(e => e.HelpfulCount).CurrentValue = pair.EnHelpful;
+                existingEn.ReviseEntry(pair.En.Question, pair.En.Answer, pair.En.Category, pair.En.Keywords, "en");
+                if (pair.En.HelpfulCount != 0)
+                {
+                    faqDb.Entry(existingEn).Property(e => e.HelpfulCount).CurrentValue = pair.En.HelpfulCount;
+                }
             }
         }
 
         await faqDb.SaveChangesAsync();
+    }
+
+    private sealed class FaqSeedPair
+    {
+        public Guid RelationId { get; set; }
+        public FaqSeedItem Sv { get; set; } = new();
+        public FaqSeedItem En { get; set; } = new();
+    }
+
+    private sealed class FaqSeedItem
+    {
+        public string Question { get; set; } = string.Empty;
+        public string Answer { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Keywords { get; set; } = string.Empty;
+        public int HelpfulCount { get; set; }
     }
 
     private static async Task SeedOperationalMessagesAsync(BankingDbContext db)
