@@ -12,6 +12,17 @@ Generates secrets into `infra/.env`, boots the database, runs migrations, and ap
 dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- .
 ```
 
+> [!TIP]
+> **WSL / Ubuntu .NET SDK Requirement (`>= 8.0.400`):**  
+> If `dotnet run` fails with `CS0121: The call is ambiguous...` on collection expressions, your system has an older .NET 8 SDK installed (Ubuntu 24.04 APT packages ship `8.0.1xx`).  
+> Nordiska requires SDK version **8.0.400+** (as specified in `backend/global.json`). To install the latest SDK in WSL/Linux:
+> ```bash
+> curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
+> echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+> echo 'export PATH=$DOTNET_ROOT:$PATH' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+
 ---
 
 ## 2. Start Application (Choose One)
