@@ -10,7 +10,6 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -18,9 +17,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#define SIGNER_DEFAULT_WORKER_COUNT 128
-#define SIGNER_MAX_WORKER_COUNT 512
-#define SIGNER_QUEUE_SIZE 2048
+#define SIGNER_WORKER_COUNT 8
+#define SIGNER_QUEUE_SIZE 256
 
 /*---------------------INTERNAL----------------------*/
 
@@ -342,39 +340,27 @@ int signer_server_run(int shutdown_fd) {
     return 1;
   }
 
-  size_t worker_count = SIGNER_DEFAULT_WORKER_COUNT;
-  const char* env_workers = getenv("PDF_SIGNER_WORKER_COUNT");
-  if (!env_workers) {
-    env_workers = getenv("PDF_SIGNER_CONCURRENCY");
-  }
-  if (env_workers && *env_workers) {
-    int parsed = atoi(env_workers);
-    if (parsed > 0 && parsed <= SIGNER_MAX_WORKER_COUNT) {
-      worker_count = (size_t)parsed;
-    }
-  }
-
-  pthread_t*       threads = calloc(worker_count, sizeof(pthread_t));
-  signer_worker_t* workers = calloc(worker_count, sizeof(signer_worker_t));
-  pdf_signer_t**   signers = calloc(worker_count, sizeof(pdf_signer_t*));
-
-  if (!threads || !workers || !signers) {
-    free(threads);
-    free(workers);
-    free(signers);
-    queue_destroy(&queue);
-    return 1;
-  }
+  pthread_t       threads[SIGNER_WORKER_COUNT];
+  signer_worker_t workers[SIGNER_WORKER_COUNT];
+  pdf_signer_t*   signers[SIGNER_WORKER_COUNT] = {0};
 
   size_t created_signers = 0;
   size_t started_workers = 0;
-  int failed = 1;
-  int fd = -1;
-  struct sockaddr_un addr = {0};
 
-  for (size_t i = 0; i < worker_count; i++) {
+  for (size_t i = 0; i < SIGNER_WORKER_COUNT; i++) {
     if (pdf_signer_create(&signers[i]) != PDF_SIGN_OK) {
-      goto cleanup;
+      queue_shutdown(&queue);
+
+      for (size_t j = 0; j < started_workers; j++) {
+        pthread_join(threads[j], NULL);
+      }
+
+      for (size_t j = 0; j < created_signers; j++) {
+        pdf_signer_destroy(signers[j]);
+      }
+
+      queue_destroy(&queue);
+      return 1;
     }
 
     created_signers++;
@@ -383,25 +369,62 @@ int signer_server_run(int shutdown_fd) {
     workers[i].signer = signers[i];
 
     if (pthread_create(&threads[i], NULL, signer_worker_main, &workers[i]) != 0) {
-      goto cleanup;
+      queue_shutdown(&queue);
+
+      for (size_t j = 0; j < started_workers; j++) {
+        pthread_join(threads[j], NULL);
+      }
+
+      for (size_t j = 0; j < created_signers; j++) {
+        pdf_signer_destroy(signers[j]);
+      }
+
+      queue_destroy(&queue);
+      return 1;
     }
 
     started_workers++;
   }
 
-  fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
   if (fd < 0) {
     perror("socket");
-    goto cleanup;
+
+    queue_shutdown(&queue);
+
+    for (size_t i = 0; i < started_workers; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    for (size_t i = 0; i < created_signers; i++) {
+      pdf_signer_destroy(signers[i]);
+    }
+
+    queue_destroy(&queue);
+    return 1;
   }
 
-  addr.sun_family = AF_UNIX;
+  struct sockaddr_un addr = {0};
+  addr.sun_family         = AF_UNIX;
 
   const char* socket_path = runtime_config_signer_socket();
 
   if (strlen(socket_path) >= sizeof(addr.sun_path)) {
-    goto cleanup;
+    close(fd);
+
+    queue_shutdown(&queue);
+
+    for (size_t i = 0; i < started_workers; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    for (size_t i = 0; i < created_signers; i++) {
+      pdf_signer_destroy(signers[i]);
+    }
+
+    queue_destroy(&queue);
+    return 1;
   }
 
   strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
@@ -410,21 +433,64 @@ int signer_server_run(int shutdown_fd) {
 
   if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
     perror("bind");
-    goto cleanup;
+    close(fd);
+
+
+    queue_shutdown(&queue);
+
+    for (size_t i = 0; i < started_workers; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    for (size_t i = 0; i < created_signers; i++) {
+      pdf_signer_destroy(signers[i]);
+    }
+
+    queue_destroy(&queue);
+    return 1;
   }
 
   if (chmod(addr.sun_path, 0666) != 0) {
     perror("chmod");
-    goto cleanup;
+
+    close(fd);
+    unlink(addr.sun_path);
+
+    queue_shutdown(&queue);
+
+    for (size_t i = 0; i < started_workers; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    for (size_t i = 0; i < created_signers; i++) {
+      pdf_signer_destroy(signers[i]);
+    }
+
+    queue_destroy(&queue);
+    return -1;
   }
 
-  if (listen(fd, 256) != 0) {
+  if (listen(fd, 128) != 0) {
     perror("listen");
-    goto cleanup;
+
+    close(fd);
+    unlink(addr.sun_path);
+
+    queue_shutdown(&queue);
+
+    for (size_t i = 0; i < started_workers; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    for (size_t i = 0; i < created_signers; i++) {
+      pdf_signer_destroy(signers[i]);
+    }
+
+    queue_destroy(&queue);
+    return 1;
   }
 
-  printf("Signer service listening on %s with %zu workers\n", addr.sun_path, worker_count);
-  fflush(stdout);
+  printf("Signer service listening on %s with %d workers\n", addr.sun_path, SIGNER_WORKER_COUNT);
 
   struct pollfd fds[2] = {
       {
@@ -437,7 +503,7 @@ int signer_server_run(int shutdown_fd) {
       },
   };
 
-  failed = 0;
+  int failed = 0;
 
   for (;;) {
     int poll_result = poll(fds, 2, -1);
@@ -493,13 +559,8 @@ int signer_server_run(int shutdown_fd) {
     }
   }
 
-cleanup:
-  if (fd >= 0) {
-    close(fd);
-  }
-  if (addr.sun_path[0] != '\0') {
-    unlink(addr.sun_path);
-  }
+  close(fd);
+  unlink(addr.sun_path);
 
   queue_shutdown(&queue);
 
@@ -510,10 +571,6 @@ cleanup:
   for (size_t i = 0; i < created_signers; i++) {
     pdf_signer_destroy(signers[i]);
   }
-
-  free(threads);
-  free(workers);
-  free(signers);
 
   queue_destroy(&queue);
 
