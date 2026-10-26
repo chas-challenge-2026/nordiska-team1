@@ -341,4 +341,108 @@ public class SavingsAccountServiceTests
         Assert.Equal(2, favorites.Count());
         Assert.All(favorites, f => Assert.True(f.IsFavorite));
     }
+
+    [Fact]
+    public async Task GetInterestSummaryByCustomerId_WithMultipleActiveAccounts_ReturnsAccurateAggregatedInterest()
+    {
+        var yearStart = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var seed = new[]
+        {
+            new SavingsAccount
+            {
+                Id = 1,
+                CustomerId = 1,
+                AccountNumber = "NOR-111111",
+                AccountType = "saving",
+                Balance = 10000m,
+                InterestRate = 0.04m,
+                Status = "active",
+                CreatedAt = yearStart
+            },
+            new SavingsAccount
+            {
+                Id = 2,
+                CustomerId = 1,
+                AccountNumber = "NOR-222222",
+                AccountType = "saving",
+                Balance = 20000m,
+                InterestRate = 0.04m,
+                Status = "active",
+                CreatedAt = yearStart
+            }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var txRepo = new FakeTxRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>(), null, txRepo);
+
+        var individual1 = await service.GetByIdAsync(1);
+        var individual2 = await service.GetByIdAsync(2);
+
+        var summary = await service.GetInterestSummaryByCustomerIdAsync(1);
+
+        Assert.Equal(1, summary.CustomerId);
+        Assert.Equal(2, summary.ActiveAccountsCount);
+        Assert.Equal("SEK", summary.CurrencyCode);
+        Assert.Equal(individual1.AccruedInterestYtd + individual2.AccruedInterestYtd, summary.TotalAccruedInterestYtd);
+        Assert.Equal(individual1.EstimatedYearEndInterest + individual2.EstimatedYearEndInterest, summary.TotalEstimatedYearEndInterest);
+        Assert.True(summary.TotalAccruedInterestYtd > 0m);
+        Assert.True(summary.TotalEstimatedYearEndInterest > 0m);
+    }
+
+    [Fact]
+    public async Task GetInterestSummaryByCustomerId_WhenCustomerHasNoAccounts_ReturnsZeroSummary()
+    {
+        var repo = new FakeSavingsRepo(Array.Empty<SavingsAccount>());
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>());
+
+        var summary = await service.GetInterestSummaryByCustomerIdAsync(999);
+
+        Assert.Equal(999, summary.CustomerId);
+        Assert.Equal(0, summary.ActiveAccountsCount);
+        Assert.Equal(0m, summary.TotalAccruedInterestYtd);
+        Assert.Equal(0m, summary.TotalEstimatedYearEndInterest);
+    }
+
+    [Fact]
+    public async Task GetInterestSummaryByCustomerId_ExcludesClosedAccountsFromSummary()
+    {
+        var yearStart = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var seed = new[]
+        {
+            new SavingsAccount
+            {
+                Id = 1,
+                CustomerId = 1,
+                AccountNumber = "NOR-111111",
+                AccountType = "saving",
+                Balance = 10000m,
+                InterestRate = 0.04m,
+                Status = "active",
+                CreatedAt = yearStart
+            },
+            new SavingsAccount
+            {
+                Id = 2,
+                CustomerId = 1,
+                AccountNumber = "NOR-222222",
+                AccountType = "saving",
+                Balance = 0m,
+                InterestRate = 0.04m,
+                Status = "closed",
+                CreatedAt = yearStart
+            }
+        };
+
+        var repo = new FakeSavingsRepo(seed);
+        var txRepo = new FakeTxRepo();
+        var service = new SavingsAccountService(repo, new TestLogger<SavingsAccountService>(), null, txRepo);
+
+        var activeAccount = await service.GetByIdAsync(1);
+        var summary = await service.GetInterestSummaryByCustomerIdAsync(1);
+
+        Assert.Equal(1, summary.ActiveAccountsCount);
+        Assert.Equal(activeAccount.AccruedInterestYtd, summary.TotalAccruedInterestYtd);
+        Assert.Equal(activeAccount.EstimatedYearEndInterest, summary.TotalEstimatedYearEndInterest);
+    }
 }

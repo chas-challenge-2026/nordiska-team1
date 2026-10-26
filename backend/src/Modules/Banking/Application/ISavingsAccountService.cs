@@ -59,4 +59,11 @@ public interface ISavingsAccountService
     /// </summary>
     /// <param name="id">Account id.</param>
     Task<SavingsAccountResponse> CloseAccountAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Calculates an aggregated interest summary (accrued YTD and projected year-end) for all active accounts belonging to a customer.
+    /// </summary>
+    /// <param name="customerId">Customer id.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<AccountInterestSummaryResponse> GetInterestSummaryByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default);
 }
