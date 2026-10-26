@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { isAxiosError } from "axios";
-import { useBankIdCollect, useBankIdInitate, useLogin } from "../../hooks/useLogin";
+// import { useBankIdCollect, useBankIdInitate, useLogin } from "../../hooks/useLogin";
+import { useBankIdCollect, useBankIdInitate } from "../../hooks/useLogin";
 import {type BankIdInitRes } from "../../services/authService";
 import BankIdQrCode from "../auth/BankIdQrCode";
 import { BankIdLogo } from "../icons/BankIdIcons";
 import { autoStartUrl } from "../../utils/bankId";
 import BankIdChooser from "./BankIdChooser";
-import ManualLoginForm from "./ManualLoginForm";
-import { useUserStore } from "../../store/userStore";
-import { useLogout } from "../../hooks/useLogout";
+// import ManualLoginForm from "./ManualLoginForm";
+// import { useUserStore } from "../../store/userStore";
+// import { useLogout } from "../../hooks/useLogout";
 
 type Step = "choose" | "otherDevice" | "thisDevice" | "manual";
 
@@ -30,16 +31,16 @@ export default function LoginCard() {
     const [orderRef, setOrderRef] = useState("");
     // Personnumret följer med när man trycker "Försök igen"
     const [personalNum, setPersonalNum] = useState<string>();
-    const [emailError, setEmailError] = useState<string>();
+    // const [emailError, setEmailError] = useState<string>();
 
     const { mutate: initiate, error: initError, reset: resetInit } = useBankIdInitate();
     const collect = useBankIdCollect(orderRef);
     const status = collect.data?.status;
     const hintCode = collect.data?.hintCode?.toLowerCase();
-    const { mutate: login, isPending: loginPending } = useLogin();
-    const clearUser = useUserStore((state) => state.logout);
-    const {mutate: logout} = useLogout();
-    const setUser = useUserStore((state) => state.setUser);
+    // const { mutate: login, isPending: loginPending } = useLogin();
+    // const clearUser = useUserStore((state) => state.logout);
+    // const {mutate: logout} = useLogout();
+    // const setUser = useUserStore((state) => state.setUser);
 
     useEffect(() => {
         if (status === "COMPLETE") {
@@ -56,7 +57,7 @@ export default function LoginCard() {
     function goTo(nextStep: Step) {
         clearOrder();
         setPersonalNum(undefined);
-        setEmailError(undefined);
+        // setEmailError(undefined);
         setStep(nextStep);
     }
 
@@ -102,34 +103,34 @@ export default function LoginCard() {
     // BankID-appen har öppnats och väntar på att användaren godkänner
     const waitingForApp = status === "PENDING" && (hintCode === "started" || hintCode === "usersign");
 
-    function handleEmailLogin(email: string, password: string) {
-        setEmailError(undefined);
-        login(
-            { email, password },
-            {
-                onSuccess: (user) => {
-                    if (user?.role === "Admin") {
-                        logout(undefined, {
-                            onSuccess: () => {
-                                clearUser("notAuthorized");
-                                setEmailError("Admin kan inte logga in här.");
-                            }
-                        })
-                        return;
-                    } 
-                    setUser(user);
-                    navigate("/")
-                },
-                onError: (err) => {
-                    const code = isAxiosError(err) ? err.response?.status : undefined;
-                    if (code === 401) setEmailError(t("login-route.invalid-credentials"));
-                    else if (code === 423) setEmailError(t("login-route.locked"));
-                    else if (code === 429) setEmailError(t("register-route.error-rate-limit"));
-                    else setEmailError(t("register-route.error-generic"));
-                },
-            }
-        );
-    }
+    // function handleEmailLogin(email: string, password: string) {
+    //     setEmailError(undefined);
+    //     login(
+    //         { email, password },
+    //         {
+    //             onSuccess: (user) => {
+    //                 if (user?.role === "Admin") {
+    //                     logout(undefined, {
+    //                         onSuccess: () => {
+    //                             clearUser("notAuthorized");
+    //                             setEmailError("Admin kan inte logga in här.");
+    //                         }
+    //                     })
+    //                     return;
+    //                 } 
+    //                 setUser(user);
+    //                 navigate("/")
+    //             },
+    //             onError: (err) => {
+    //                 const code = isAxiosError(err) ? err.response?.status : undefined;
+    //                 if (code === 401) setEmailError(t("login-route.invalid-credentials"));
+    //                 else if (code === 423) setEmailError(t("login-route.locked"));
+    //                 else if (code === 429) setEmailError(t("register-route.error-rate-limit"));
+    //                 else setEmailError(t("register-route.error-generic"));
+    //             },
+    //         }
+    //     );
+    // }
 
     if (step === "otherDevice" || step === "thisDevice") {
         return (
@@ -175,13 +176,13 @@ export default function LoginCard() {
                         >
                             {t("login-route.retry")}
                         </button>
-                        <button
+                        {/* <button
                             type="button"
                             onClick={() => goTo("manual")}
                             className="cursor-pointer text-sm font-semibold text-nordiska-blue underline"
                         >
                             {t("login-route.manual-link")}
-                        </button>
+                        </button> */}
                     </div>
                 )}
 
@@ -196,16 +197,16 @@ export default function LoginCard() {
         );
     }
 
-    if (step === "manual") {
-        return (
-            <ManualLoginForm
-                onEmailSubmit={handleEmailLogin}
-                emailPending={loginPending}
-                emailError={emailError}
-                onBack={() => goTo("choose")}
-            />
-        );
-    }
+    // if (step === "manual") {
+    //     return (
+    //         <ManualLoginForm
+    //             onEmailSubmit={handleEmailLogin}
+    //             emailPending={loginPending}
+    //             emailError={emailError}
+    //             onBack={() => goTo("choose")}
+    //         />
+    //     );
+    // }
 
     return (
         <BankIdChooser

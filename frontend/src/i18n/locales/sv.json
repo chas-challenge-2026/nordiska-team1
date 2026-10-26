@@ -125,6 +125,7 @@
         "list-title": "Transaktionshistorik"
     },
     "accounts-route": {
+        "create-new-account": "Skapa nytt konto",
         "info": "Kontoinformation",
         "overview": "Saldo & Åtgärder",
         "favorite-error": "Du kan ha max 4 favoritkonton. Ta bort en favorit för att lägga till en ny.",
