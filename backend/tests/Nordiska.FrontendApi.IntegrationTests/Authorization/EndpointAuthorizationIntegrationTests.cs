@@ -121,6 +121,7 @@ public class EndpointAuthorizationIntegrationTests : IClassFixture<CustomAuthWeb
     [InlineData("GET", "/api/reports/jobs/job_123")]
     [InlineData("GET", "/api/reports/tax-report?accountId=1&year=2025")]
     [InlineData("GET", "/api/test/secure")]
+    [InlineData("GET", "/api/faq/analytics/summary")]
     [InlineData("GET", "/api/faq/relation/00000000-0000-0000-0000-000000000001/related")]
     [InlineData("PUT", "/api/faq/relation/00000000-0000-0000-0000-000000000001/related")]
     public async Task ProtectedEndpoint_WithoutAuthCookie_Returns_401Unauthorized(string method, string url)

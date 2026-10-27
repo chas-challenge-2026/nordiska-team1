@@ -13,6 +13,7 @@ public interface IFaqRepository
 
     Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(
        string language,
+         string? category = null,
        CancellationToken cancellationToken = default);
     Task<FaqEntryResponse?> GetByIdAsync(
         int id,
@@ -85,6 +86,7 @@ public sealed class FaqService(
     FaqCacheInvalidator cacheInvalidator,
     FaqSearchLogQueue searchLogQueue,
     IFaqSearchLogRepository searchLogRepository,
+    IFaqViewLogRepository viewLogRepository,
     FaqViewLogQueue viewLogQueue)
 {
     public const int MaxRelatedFaqs = 5;
@@ -163,6 +165,8 @@ public sealed class FaqService(
     public async Task<FaqRankedMatch?> GetBestMatchAsync(
         string? query,
         string? language,
+        string? category = null,
+        string? sessionKey = null,
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = FaqSearchQuery.Normalize(query ?? string.Empty);
@@ -175,24 +179,30 @@ public sealed class FaqService(
             ? "sv"
             : Normalize(language);
 
-        var cacheKey = $"faq:best-match:{normalizedLanguage}|{normalizedQuery}";
+        var normalizedCategory = Normalize(category);
+        var cacheKey = $"faq:best-match:{normalizedLanguage}|{normalizedCategory}|{normalizedQuery}";
         if (cache.TryGetValue(
             cacheKey,
             out IReadOnlyList<FaqRankedMatch>? cached) &&
             cached is not null)
         {
-            return cached.FirstOrDefault(match => match.Score >= MinimumBestMatchScore);
+            var cachedMatch = cached.FirstOrDefault(match => match.Score >= MinimumBestMatchScore);
+            LogSearch(normalizedQuery, normalizedLanguage, cachedMatch is null ? 0 : 1, sessionKey);
+            return cachedMatch;
         }
 
         var changeToken = cacheInvalidator.GetChangeToken();
         var candidates = await repository.GetSearchCandidatesAsync(
             normalizedLanguage,
+            normalizedCategory.Length == 0 ? null : normalizedCategory,
             cancellationToken);
 
         var ranked = FaqSearchRanker.Rank(candidates, normalizedQuery);
 
         cache.Set(cacheKey, ranked, CreateEntryOptions(changeToken));
-        return ranked.FirstOrDefault(match => match.Score >= MinimumBestMatchScore);
+        var match = ranked.FirstOrDefault(candidate => candidate.Score >= MinimumBestMatchScore);
+        LogSearch(normalizedQuery, normalizedLanguage, match is null ? 0 : 1, sessionKey);
+        return match;
     }
 
     // lang is null when the caller doesn't care which language the entry is in
@@ -311,11 +321,13 @@ public sealed class FaqService(
 
     public async Task<IReadOnlyCollection<FaqEntryResponse>> SearchAsync(
         SearchFaqRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? sessionKey = null)
     {
         var cacheKey = $"faq:search:{Normalize(request.Lang)}|{Normalize(request.SearchTerm)}|{Normalize(request.Category)}|{Normalize(request.Keyword)}";
         if (cache.TryGetValue(cacheKey, out IReadOnlyCollection<FaqEntryResponse>? cached) && cached is not null)
         {
+            LogSearch(request.SearchTerm, request.Lang ?? "sv", cached.Count, sessionKey);
             return cached;
         }
 
@@ -323,6 +335,7 @@ public sealed class FaqService(
         var result = await repository.SearchAsync(request, cancellationToken);
 
         cache.Set(cacheKey, result, CreateEntryOptions(changeToken));
+        LogSearch(request.SearchTerm, request.Lang ?? "sv", result.Count, sessionKey);
         return result;
     }
 
@@ -331,7 +344,7 @@ public sealed class FaqService(
         string? sessionKey = null,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"faq:paged:{Normalize(parameters.Lang)}|{parameters.Page}|{parameters.PageSize}|{Normalize(parameters.SearchTerm)}|{Normalize(parameters.Category)}|{Normalize(parameters.Keyword)}";
+        var cacheKey = $"faq:paged:{Normalize(parameters.Lang)}|{parameters.Page}|{parameters.PageSize}|{Normalize(parameters.SearchTerm)}|{Normalize(parameters.Category)}|{Normalize(parameters.Keyword)}|{Normalize(parameters.SortBy)}|{Normalize(parameters.SortOrder)}";
         if (cache.TryGetValue(cacheKey, out PagedResult<FaqEntryResponse>? cached) && cached is not null)
         {
             LogSearch(parameters, cached.TotalCount, sessionKey);
@@ -354,6 +367,19 @@ public sealed class FaqService(
     {
         var since = DateTime.UtcNow.AddDays(-days);
         return await searchLogRepository.GetContentGapsAsync(language, since, limit, cancellationToken);
+    }
+
+    public async Task<FaqAnalyticsSummaryResponse> GetAnalyticsSummaryAsync(
+        string? language,
+        int days,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        var since = DateTime.UtcNow.AddDays(-days);
+        var searchesTask = searchLogRepository.GetAnalyticsAsync(language, since, limit, cancellationToken);
+        var viewsTask = viewLogRepository.GetAnalyticsAsync(language, since, limit, cancellationToken);
+        await Task.WhenAll(searchesTask, viewsTask);
+        return new FaqAnalyticsSummaryResponse(await searchesTask, await viewsTask);
     }
 
     public async Task<IReadOnlyList<string>> GetCategoriesAsync(
@@ -442,7 +468,18 @@ public sealed class FaqService(
             return;
         }
 
-        searchLogQueue.TryEnqueue(parameters.SearchTerm, parameters.Lang ?? "sv", resultCount, sessionKey);
+        LogSearch(parameters.SearchTerm, parameters.Lang ?? "sv", resultCount, sessionKey);
+    }
+
+    private void LogSearch(string? query, string language, int resultCount, string? sessionKey)
+    {
+        if (sessionKey is null || string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+
+        var normalizedLanguage = string.IsNullOrWhiteSpace(language) ? "sv" : Normalize(language);
+        searchLogQueue.TryEnqueue(query, normalizedLanguage, resultCount, sessionKey);
     }
 
     private static MemoryCacheEntryOptions CreateEntryOptions(IChangeToken changeToken)

@@ -34,3 +34,26 @@ public sealed record FaqContentGapResponse(
     int SearchCount,
     DateTime LastSearchedAt);
 
+public sealed record FaqPopularArticleResponse(
+    int Id,
+    string Question,
+    string Category,
+    string Lang,
+    int ViewCount);
+
+public sealed record FaqSearchAnalyticsResponse(
+    int TotalSearches,
+    int SuccessfulSearches,
+    int NoResultSearches,
+    int UniqueQueries,
+    double SuccessRatePercent,
+    IReadOnlyList<FaqContentGapResponse> TopContentGaps);
+
+public sealed record FaqViewAnalyticsResponse(
+    int TotalViews,
+    IReadOnlyList<FaqPopularArticleResponse> MostViewedArticles);
+
+public sealed record FaqAnalyticsSummaryResponse(
+    FaqSearchAnalyticsResponse Searches,
+    FaqViewAnalyticsResponse Views);
+

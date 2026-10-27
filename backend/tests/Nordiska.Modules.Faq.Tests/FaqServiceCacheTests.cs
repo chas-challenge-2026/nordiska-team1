@@ -25,6 +25,7 @@ public class FaqServiceCacheTests
         public int GetRelatedCalls { get; private set; }
         public int GetPopularCalls { get; private set; }
         public int GetSearchCandidatesCalls { get; private set; }
+        public string? LastSearchCandidateCategory { get; private set; }
         public Dictionary<Guid, List<Guid>> Relations { get; } = new();
 
         public FakeFaqRepo(IEnumerable<FaqEntryResponse>? seed = null)
@@ -69,11 +70,16 @@ public class FaqServiceCacheTests
             return Task.FromResult(result);
         }
 
-        public Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(string language, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(string language, string? category = null, CancellationToken cancellationToken = default)
         {
             GetSearchCandidatesCalls++;
+            LastSearchCandidateCategory = category;
             var normalizedLanguage = string.IsNullOrWhiteSpace(language) ? "sv" : language.Trim().ToLowerInvariant();
-            var result = _store.Where(entry => entry.Lang.ToLower() == normalizedLanguage).OrderBy(entry => entry.Id).ToList();
+            var result = _store
+                .Where(entry => entry.Lang.ToLower() == normalizedLanguage)
+                .Where(entry => string.IsNullOrWhiteSpace(category) || string.Equals(entry.Category, category, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(entry => entry.Id)
+                .ToList();
             return Task.FromResult((IReadOnlyCollection<FaqEntryResponse>)result);
         }
 
@@ -208,8 +214,23 @@ public class FaqServiceCacheTests
         public Task<IReadOnlyList<FaqContentGapResponse>> GetContentGapsAsync(string? language, DateTime since, int limit, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<FaqContentGapResponse>>(new List<FaqContentGapResponse>());
 
+        public Task<FaqSearchAnalyticsResponse> GetAnalyticsAsync(string? language, DateTime since, int limit, CancellationToken cancellationToken = default)
+            => Task.FromResult(new FaqSearchAnalyticsResponse(10, 7, 3, 6, 70, Array.Empty<FaqContentGapResponse>()));
+
         public Task<int> DeleteOlderThanAsync(DateTime cutoff, CancellationToken cancellationToken = default)
             => Task.FromResult(0);
+    }
+
+    private class FakeViewLogRepo : IFaqViewLogRepository
+    {
+        public Task AddRangeAsync(IReadOnlyCollection<FaqViewLog> logs, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task<int> DeleteOlderThanAsync(DateTime cutoff, CancellationToken cancellationToken = default)
+            => Task.FromResult(0);
+
+        public Task<FaqViewAnalyticsResponse> GetAnalyticsAsync(string? language, DateTime since, int limit, CancellationToken cancellationToken = default)
+            => Task.FromResult(new FaqViewAnalyticsResponse(12, Array.Empty<FaqPopularArticleResponse>()));
     }
 
     private static FaqSearchLogQueue CreateQueue()
@@ -219,7 +240,7 @@ public class FaqServiceCacheTests
         => new(new MemoryCache(new MemoryCacheOptions()), Options.Create(new FaqSearchLogOptions { Salt = "test-salt" }), NullLogger<FaqViewLogQueue>.Instance);
 
     private static FaqService CreateService(FakeFaqRepo repo, FaqSearchLogQueue? queue = null, FaqViewLogQueue? viewQueue = null)
-        => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator(), queue ?? CreateQueue(), new FakeSearchLogRepo(), viewQueue ?? CreateViewQueue());
+        => new(repo, new MemoryCache(new MemoryCacheOptions()), new FaqCacheInvalidator(), queue ?? CreateQueue(), new FakeSearchLogRepo(), new FakeViewLogRepo(), viewQueue ?? CreateViewQueue());
 
     [Fact]
     public async Task GetById_SecondCall_IsServedFromCache()
@@ -329,6 +350,58 @@ public class FaqServiceCacheTests
     }
 
     [Fact]
+    public async Task GetBestMatch_AppliesCategoryAndLogsSuccessfulResult()
+    {
+        var repo = new FakeFaqRepo(new[]
+        {
+            SearchEntry(1, "alpha question", category: "Savings"),
+            SearchEntry(2, "alpha question", category: "Cards")
+        });
+        var searchQueue = CreateQueue();
+        var service = CreateService(repo, searchQueue);
+
+        var result = await service.GetBestMatchAsync("alpha", "sv", "Savings", "session-7");
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Entry.Id);
+        Assert.Equal("savings", repo.LastSearchCandidateCategory);
+        Assert.True(searchQueue.Reader.TryRead(out var log));
+        Assert.Equal(1, log!.ResultCount);
+        Assert.Equal("sv", log.Language);
+    }
+
+    [Fact]
+    public async Task GetBestMatch_BelowThresholdIsLoggedAsNoResult()
+    {
+        var repo = new FakeFaqRepo(new[]
+        {
+            SearchEntry(1, "unrelated question", answer: "Mentions alpha only in answer")
+        });
+        var searchQueue = CreateQueue();
+        var service = CreateService(repo, searchQueue);
+
+        var result = await service.GetBestMatchAsync("alpha", "sv", sessionKey: "session-8");
+
+        Assert.Null(result);
+        Assert.True(searchQueue.Reader.TryRead(out var log));
+        Assert.Equal(0, log!.ResultCount);
+    }
+
+    [Fact]
+    public async Task GetAnalyticsSummary_CombinesSearchAndViewStatistics()
+    {
+        var service = CreateService(new FakeFaqRepo());
+
+        var summary = await service.GetAnalyticsSummaryAsync("sv", 30, 10);
+
+        Assert.Equal(10, summary.Searches.TotalSearches);
+        Assert.Equal(7, summary.Searches.SuccessfulSearches);
+        Assert.Equal(3, summary.Searches.NoResultSearches);
+        Assert.Equal(70, summary.Searches.SuccessRatePercent);
+        Assert.Equal(12, summary.Views.TotalViews);
+    }
+
+    [Fact]
     public async Task GetByLanguagePaged_CachesResult()
     {
         var repo = new FakeFaqRepo(new[] { Entry(1, "sv"), Entry(2, "en") });
@@ -340,6 +413,18 @@ public class FaqServiceCacheTests
         Assert.Equal(1, repo.QueryPagedCalls);
         Assert.Single(res1.Items);
         Assert.Equal("sv", res1.Items.First().Lang);
+    }
+
+    [Fact]
+    public async Task GetByLanguagePaged_DifferentSortOptionsUseSeparateCacheEntries()
+    {
+        var repo = new FakeFaqRepo(new[] { Entry(1, "sv"), Entry(2, "sv") });
+        var service = CreateService(repo);
+
+        await service.GetByLanguagePagedAsync(new FaqQueryParameters(Lang: "sv", SortBy: "helpful", SortOrder: "desc"));
+        await service.GetByLanguagePagedAsync(new FaqQueryParameters(Lang: "sv", SortBy: "views", SortOrder: "desc"));
+
+        Assert.Equal(2, repo.QueryPagedCalls);
     }
 
     [Fact]
