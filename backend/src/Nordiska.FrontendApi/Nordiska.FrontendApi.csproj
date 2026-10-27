@@ -59,6 +59,7 @@
 
   <ItemGroup>
     <None Update="Certificates\**" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Data\faq_seed_data.json" />
   </ItemGroup>
 
 </Project>
