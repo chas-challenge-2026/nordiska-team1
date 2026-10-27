@@ -210,22 +210,33 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             });
         }
         const auto& cust_id_val = root.at("customer_id");
-        if (!cust_id_val.is_number_unsigned() && !cust_id_val.is_number_integer()) {
+        if (cust_id_val.is_number_unsigned()) {
+            const auto u = cust_id_val.get<std::uint64_t>();
+            if (u == 0) {
+                return std::unexpected(IngestError{
+                    .kind = IngestErrorKind::InvalidInput,
+                    .path = "customer_id",
+                    .message = "customer_id must be greater than zero",
+                });
+            }
+            job.customer_id = u;
+        } else if (cust_id_val.is_number_integer()) {
+            const auto i = cust_id_val.get<std::int64_t>();
+            if (i <= 0) {
+                return std::unexpected(IngestError{
+                    .kind = IngestErrorKind::InvalidInput,
+                    .path = "customer_id",
+                    .message = "customer_id must be greater than zero",
+                });
+            }
+            job.customer_id = static_cast<std::uint64_t>(i);
+        } else {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
                 .path = "customer_id",
                 .message = "customer_id must be an unsigned integer",
             });
         }
-        const auto raw_cust_id = cust_id_val.get<std::int64_t>();
-        if (raw_cust_id <= 0) {
-            return std::unexpected(IngestError{
-                .kind = IngestErrorKind::InvalidInput,
-                .path = "customer_id",
-                .message = "customer_id must be greater than zero",
-            });
-        }
-        job.customer_id = static_cast<std::uint64_t>(raw_cust_id);
 
         job.schema_version = get_optional_string(root, "$schema_version", "1.0");
         job.customer_name = get_optional_string(root, "customer_name");
@@ -383,6 +394,27 @@ std::string simd_get_optional_string(simdjson::dom::object obj, std::string_view
     return std::string(fallback);
 }
 
+void simd_assign_optional_string(simdjson::dom::element val, std::string& target) {
+    std::string_view sv;
+    if (val.get(sv) == simdjson::SUCCESS) {
+        target.assign(sv);
+    }
+}
+
+std::optional<IngestError> simd_assign_required_string(simdjson::dom::element val, std::string& target,
+                                                       std::string_view key, std::string_view breadcrumb) {
+    std::string_view sv;
+    if (val.get(sv) != simdjson::SUCCESS) {
+        return IngestError{
+            .kind = IngestErrorKind::InvalidInput,
+            .path = std::string(breadcrumb) + "." + std::string(key),
+            .message = "field '" + std::string(key) + "' must be a string",
+        };
+    }
+    target.assign(sv);
+    return std::nullopt;
+}
+
 std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson::dom::element tx_elem) {
     simdjson::dom::object tx_obj;
     if (tx_elem.get(tx_obj) != simdjson::SUCCESS) {
@@ -403,55 +435,32 @@ std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson
         const auto val = field.value;
 
         if (key == "date") {
-            std::string_view sv;
-            if (val.get(sv) != simdjson::SUCCESS) {
-                return std::unexpected(IngestError{
-                    .kind = IngestErrorKind::InvalidInput,
-                    .path = ".date",
-                    .message = "field 'date' must be a string",
-                });
+            if (auto err = simd_assign_required_string(val, tx.date, "date", "")) {
+                return std::unexpected(*err);
             }
-            tx.date = std::string(sv);
             has_date = true;
         } else if (key == "description") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                tx.description = std::string(sv);
-            }
+            simd_assign_optional_string(val, tx.description);
         } else if (key == "amount_display") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                tx.amount_display = std::string(sv);
-            }
+            simd_assign_optional_string(val, tx.amount_display);
         } else if (key == "balance_after_display") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                tx.balance_after_display = std::string(sv);
-            }
+            simd_assign_optional_string(val, tx.balance_after_display);
         } else if (key == "amount_minor") {
             int64_t v = 0;
-            if (val.get(v) == simdjson::SUCCESS) {
-                tx.amount_minor = v;
-            } else {
+            if (val.get(v) != simdjson::SUCCESS) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
                     .path = ".amount_minor",
                     .message = "amount_minor must be an integer",
                 });
             }
+            tx.amount_minor = v;
         } else if (key == "type") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                tx.type = std::string(sv);
-            }
+            simd_assign_optional_string(val, tx.type);
         } else if (key == "currency") {
             std::string_view sv;
             if (val.get(sv) == simdjson::SUCCESS) {
-                if (sv == "SEK") {
-                    tx.currency = s_default_currency;
-                } else {
-                    tx.currency = std::string(sv);
-                }
+                tx.currency = (sv == "SEK") ? s_default_currency : std::string(sv);
             }
         }
     }
@@ -491,46 +500,22 @@ std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjs
         const auto val = field.value;
 
         if (key == "account_number") {
-            std::string_view sv;
-            if (val.get(sv) != simdjson::SUCCESS) {
-                return std::unexpected(IngestError{
-                    .kind = IngestErrorKind::InvalidInput,
-                    .path = std::string(breadcrumb) + ".account_number",
-                    .message = "field 'account_number' must be a string",
-                });
+            if (auto err = simd_assign_required_string(val, statement.account_number, "account_number", breadcrumb)) {
+                return std::unexpected(*err);
             }
-            statement.account_number = std::string(sv);
             has_acct_num = true;
         } else if (key == "account_name") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                statement.account_name = std::string(sv);
-            }
+            simd_assign_optional_string(val, statement.account_name);
         } else if (key == "currency") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                statement.currency = std::string(sv);
-            }
+            simd_assign_optional_string(val, statement.currency);
         } else if (key == "period") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                statement.period = std::string(sv);
-            }
+            simd_assign_optional_string(val, statement.period);
         } else if (key == "opening_balance") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                statement.opening_balance = std::string(sv);
-            }
+            simd_assign_optional_string(val, statement.opening_balance);
         } else if (key == "closing_balance") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                statement.closing_balance = std::string(sv);
-            }
+            simd_assign_optional_string(val, statement.closing_balance);
         } else if (key == "title") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                statement.title = std::string(sv);
-            }
+            simd_assign_optional_string(val, statement.title);
         } else if (key == "transactions") {
             tx_elem_holder = val;
             has_transactions = true;
@@ -596,52 +581,25 @@ std::expected<AnnualTaxReport, IngestError> simd_parse_annual_tax_report(simdjso
         const auto val = field.value;
 
         if (key == "tax_year") {
-            std::string_view sv;
-            if (val.get(sv) != simdjson::SUCCESS) {
-                return std::unexpected(IngestError{
-                    .kind = IngestErrorKind::InvalidInput,
-                    .path = std::string(breadcrumb) + ".tax_year",
-                    .message = "field 'tax_year' must be a string",
-                });
+            if (auto err = simd_assign_required_string(val, report.tax_year, "tax_year", breadcrumb)) {
+                return std::unexpected(*err);
             }
-            report.tax_year = std::string(sv);
             has_year = true;
         } else if (key == "account_number") {
-            std::string_view sv;
-            if (val.get(sv) != simdjson::SUCCESS) {
-                return std::unexpected(IngestError{
-                    .kind = IngestErrorKind::InvalidInput,
-                    .path = std::string(breadcrumb) + ".account_number",
-                    .message = "field 'account_number' must be a string",
-                });
+            if (auto err = simd_assign_required_string(val, report.account_number, "account_number", breadcrumb)) {
+                return std::unexpected(*err);
             }
-            report.account_number = std::string(sv);
             has_acct = true;
         } else if (key == "account_name") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                report.account_name = std::string(sv);
-            }
+            simd_assign_optional_string(val, report.account_name);
         } else if (key == "total_interest_earned") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                report.total_interest_earned = std::string(sv);
-            }
+            simd_assign_optional_string(val, report.total_interest_earned);
         } else if (key == "preliminary_tax_deducted") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                report.preliminary_tax_deducted = std::string(sv);
-            }
+            simd_assign_optional_string(val, report.preliminary_tax_deducted);
         } else if (key == "reported_to_authority") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                report.reported_to_authority = std::string(sv);
-            }
+            simd_assign_optional_string(val, report.reported_to_authority);
         } else if (key == "title") {
-            std::string_view sv;
-            if (val.get(sv) == simdjson::SUCCESS) {
-                report.title = std::string(sv);
-            }
+            simd_assign_optional_string(val, report.title);
         }
     }
 

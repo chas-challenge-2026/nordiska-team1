@@ -232,7 +232,17 @@ inline size_t screen_menu(const std::vector<std::string>& header, const std::vec
             rows.push_back(row++);
             std::cout << '\n';
         }
-        footer("Up/Down Navigate   Enter Select   Esc " + escape_action, geometry.first);
+        bool has_refresh = false;
+        for (const auto& option : options) {
+            if (option.enabled && (option.text.find("Refresh") != std::string::npos || option.text.find("refresh") != std::string::npos)) {
+                has_refresh = true;
+                break;
+            }
+        }
+        std::string footer_text = "Up/Down Navigate   Enter Select";
+        if (has_refresh) footer_text += "   R Refresh";
+        footer_text += "   Esc " + escape_action;
+        footer(footer_text, geometry.first);
         if (!notice.empty()) {
             auto tone = notice.starts_with("Error:") ? Tone::Error :
                         notice.starts_with("OK:") ? Tone::Success : Tone::Muted;
@@ -263,6 +273,13 @@ inline size_t screen_menu(const std::vector<std::string>& header, const std::vec
         auto current = dimensions();
         if (current != geometry) { geometry = current; draw(); }
         if ((ch == '\r' || ch == '\n') && options[selected].enabled) return selected;
+        if (ch == 'r' || ch == 'R') {
+            for (size_t i = 0; i < options.size(); ++i) {
+                if (options[i].enabled && (options[i].text.find("Refresh") != std::string::npos || options[i].text.find("refresh") != std::string::npos)) {
+                    return i;
+                }
+            }
+        }
         if (ch == '\x1b') {
             auto direction = escape_key();
             if (direction == '\x1b') throw Cancelled{};

@@ -44,7 +44,7 @@ class PdfSigner {
     sign_digest(std::span<const uint8_t, 32> digest, const SigningContext& context, double* call_seconds = nullptr) = 0;
 };
 
-// Creates one owning C signer adapter for reuse across documents. No global state.
+// Creates an owning Unix-domain-socket signer adapter for reuse across documents.
 [[nodiscard]] std::expected<std::unique_ptr<PdfSigner>, SigningError> create_native_pdf_signer();
 
 } // namespace nordiska

@@ -12,6 +12,17 @@ Generates secrets into `infra/.env`, boots the database, runs migrations, and ap
 dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- .
 ```
 
+> [!TIP]
+> **WSL / Ubuntu .NET SDK Requirement (`>= 8.0.400`):**  
+> If `dotnet run` fails with `CS0121: The call is ambiguous...` on collection expressions, your system has an older .NET 8 SDK installed (Ubuntu 24.04 APT packages ship `8.0.1xx`).  
+> Nordiska requires SDK version **8.0.400+** (as specified in `backend/global.json`). To install the latest SDK in WSL/Linux:
+> ```bash
+> curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
+> echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+> echo 'export PATH=$DOTNET_ROOT:$PATH' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+
 ---
 
 ## 2. Start Application (Choose One)
@@ -69,7 +80,39 @@ Switch to a separate database seeded with test accounts and transactions.
 
 ---
 
-## 4. Teardown & Reset
+## 4. Benchmarking Tool
+
+Benchmark the end-to-end reporting pipeline (tax reports and account statements) against the production `.NET` worker container, evaluating job staging, DB queue draining (`SKIP LOCKED`), native Haru PDF generation, PKCS#11 socket signing, and storage persistence.
+
+### Interactive TUI (Recommended)
+An interactive terminal controller to configure worker settings and run benchmarks:
+```bash
+./tools/bench-tui.sh
+```
+* **Signing Presets:** Toggle between Unsigned, Plain CMS, and Timestamped (RFC 3161 TSA).
+* **Worker Concurrency:** Adjust worker batch consumer concurrency slots on the fly.
+* **TSA Latency Simulation:** Configure simulated network latency and jitter.
+* **Run Benchmark:** Trigger whole-database benchmark runs directly from the menu.
+
+### CLI Usage
+Run the standalone C++23 benchmark binary directly:
+```bash
+# Run full whole-database benchmark (auto-detects database from infra/.env)
+./tools/benchmark/nordiska-benchmark
+
+# Test run limited to first 50 customers
+./tools/benchmark/nordiska-benchmark --limit 50
+
+# Target a specific database with 1-second progress polling
+./tools/benchmark/nordiska-benchmark --db nordiska_synthetic --poll 1
+```
+*(To rebuild the benchmark binary: `./tools/benchmark/build-linux-release.sh`)*
+
+For architecture details and metrics, see [tools/benchmark/README.md](tools/benchmark/README.md). For scalability benchmarks and latency percentiles, see [docs/benchmark-report.md](docs/benchmark-report.md).
+
+---
+
+## 5. Teardown & Reset
 
 Run from `infra/`:
 

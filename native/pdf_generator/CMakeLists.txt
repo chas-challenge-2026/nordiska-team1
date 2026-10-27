@@ -13,22 +13,30 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
+option(NORDISKA_BUILD_FUZZERS "Build native JSON-to-PDF fuzzing and replay targets" OFF)
+option(NORDISKA_FUZZ_SANITIZERS "Enable address/undefined sanitizers in fuzz builds" ON)
+if(NORDISKA_BUILD_FUZZERS AND NORDISKA_FUZZ_SANITIZERS)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        message(FATAL_ERROR "Fuzz sanitizers require a Clang or GCC compatible compiler")
+    endif()
+    # Instrument the implementation and fetched dependencies, not just the driver.
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all)
+    add_link_options(-fsanitize=address,undefined -fno-sanitize-recover=all)
+endif()
+
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 
 # 1. ZLIB (System package)
 find_package(ZLIB REQUIRED)
 
-# 2. OpenSSL (Requires OpenSSL >= 3.2.0 for CMS_final_digest)
-if(EXISTS "$ENV{HOME}/.local/openssl-3.3" AND NOT DEFINED OPENSSL_ROOT_DIR)
-    set(OPENSSL_ROOT_DIR "$ENV{HOME}/.local/openssl-3.3")
-endif()
+# 2. OpenSSL (SHA-256 hashing; CMS signing runs in the external signer service)
 if(DEFINED OPENSSL_ROOT_DIR)
     set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
     list(APPEND CMAKE_BUILD_RPATH "${OPENSSL_ROOT_DIR}/lib64" "${OPENSSL_ROOT_DIR}/lib")
     list(APPEND CMAKE_INSTALL_RPATH "${OPENSSL_ROOT_DIR}/lib64" "${OPENSSL_ROOT_DIR}/lib")
 endif()
-find_package(OpenSSL 3.2.0 REQUIRED COMPONENTS Crypto)
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
 # 3. Cairo (System package via pkg-config)
 find_package(PkgConfig REQUIRED)
@@ -119,7 +127,7 @@ target_link_libraries(nordiska_document_core PUBLIC
     PRIVATE OpenSSL::Crypto
 )
 
-# C ABI Shared Library for P/Invoke (.NET / Host Interop)
+# C-compatible shared library for host applications
 add_library(nordiska_pdf_generator_c_api SHARED
     src/c_api/pdf_generator_c_api.cpp
 )
@@ -135,24 +143,12 @@ target_link_libraries(nordiska_pdf_generator_c_api PRIVATE
     nordiska_document_input_json
 )
 
-# Diagnostics & Metrics Library
-add_library(nordiska_document_diagnostics STATIC
-    src/diagnostics/benchmark_metrics.cpp
-)
-target_include_directories(nordiska_document_diagnostics PUBLIC include)
-target_compile_features(nordiska_document_diagnostics PUBLIC cxx_std_23)
-
-# Benchmark Executable
-add_executable(pdf_generator_benchmark src/benchmark/main.cpp)
-target_link_libraries(pdf_generator_benchmark PRIVATE
-    nordiska_document_core
-    nordiska_document_input_json
-    nordiska_document_diagnostics
-    nordiska_pdf_generator_c_api
-)
-
 # Standalone CLI Subproject
 add_subdirectory(cli)
+
+if(NORDISKA_BUILD_FUZZERS)
+    add_subdirectory(tests/fuzz)
+endif()
 
 # Installation targets
 install(TARGETS nordiska_pdf_generator_c_api LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
@@ -162,23 +158,40 @@ if(BUILD_TESTING)
     target_link_libraries(nordiska_pdf_signing_tests PRIVATE nordiska_document_core OpenSSL::Crypto)
     add_test(NAME nordiska_pdf_signing_tests COMMAND nordiska_pdf_signing_tests)
 
-    add_executable(nordiska_diagnostics_tests tests/benchmark_metrics_tests.cpp)
-    target_link_libraries(nordiska_diagnostics_tests PRIVATE nordiska_document_diagnostics)
-    add_test(NAME nordiska_diagnostics_tests COMMAND nordiska_diagnostics_tests)
-
     add_executable(nordiska_json_ingestor_tests tests/json_ingestor_tests.cpp)
     target_link_libraries(nordiska_json_ingestor_tests PRIVATE nordiska_document_input_json nordiska_document_core)
     add_test(NAME nordiska_json_ingestor_tests COMMAND nordiska_json_ingestor_tests)
 
     add_executable(nordiska_pdf_generator_c_api_tests tests/pdf_generator_c_api_tests.cpp)
-    target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core)
+    target_link_libraries(nordiska_pdf_generator_c_api_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core OpenSSL::Crypto)
     add_test(NAME nordiska_pdf_generator_c_api_tests COMMAND nordiska_pdf_generator_c_api_tests)
+
+    add_executable(nordiska_adversarial_rendering_tests tests/adversarial_rendering_tests.cpp)
+    target_link_libraries(nordiska_adversarial_rendering_tests PRIVATE nordiska_document_core OpenSSL::Crypto)
+    add_test(NAME nordiska_adversarial_rendering_tests COMMAND nordiska_adversarial_rendering_tests)
+
+    add_executable(nordiska_adversarial_json_fuzz_tests tests/adversarial_json_fuzz_tests.cpp)
+    target_link_libraries(nordiska_adversarial_json_fuzz_tests PRIVATE nordiska_document_input_json nordiska_document_core OpenSSL::Crypto)
+    add_test(NAME nordiska_adversarial_json_fuzz_tests COMMAND nordiska_adversarial_json_fuzz_tests)
+
+    add_executable(nordiska_adversarial_c_api_tests tests/adversarial_c_api_tests.cpp)
+    target_link_libraries(nordiska_adversarial_c_api_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core OpenSSL::Crypto)
+    add_test(NAME nordiska_adversarial_c_api_tests COMMAND nordiska_adversarial_c_api_tests)
+
+    add_executable(nordiska_adversarial_signing_tests tests/adversarial_signing_tests.cpp)
+    target_link_libraries(nordiska_adversarial_signing_tests PRIVATE nordiska_document_core OpenSSL::Crypto)
+    add_test(NAME nordiska_adversarial_signing_tests COMMAND nordiska_adversarial_signing_tests)
 
     set_tests_properties(
         nordiska_pdf_signing_tests
-        nordiska_diagnostics_tests
         nordiska_json_ingestor_tests
         nordiska_pdf_generator_c_api_tests
-        PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        nordiska_adversarial_rendering_tests
+        nordiska_adversarial_json_fuzz_tests
+        nordiska_adversarial_c_api_tests
+        nordiska_adversarial_signing_tests
+        PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0"
     )
 endif()

@@ -156,6 +156,52 @@ inline std::optional<char> map_codepoint_to_cp1252(uint32_t cp) noexcept {
     case 0x2021: // DOUBLE DAGGER (‡)
         return static_cast<char>(0x87);
 
+    // Transliteration fallbacks for common European letters outside CP1252
+    case 0x0106: // LATIN CAPITAL LETTER C WITH ACUTE (Ć)
+    case 0x010C: // LATIN CAPITAL LETTER C WITH CARON (Č)
+        return 'C';
+    case 0x0107: // LATIN SMALL LETTER C WITH ACUTE (ć)
+    case 0x010D: // LATIN SMALL LETTER C WITH CARON (č)
+        return 'c';
+    case 0x010E: // LATIN CAPITAL LETTER D WITH CARON (Ď)
+    case 0x0110: // LATIN CAPITAL LETTER D WITH STROKE (Đ)
+        return 'D';
+    case 0x010F: // LATIN SMALL LETTER D WITH CARON (ď)
+    case 0x0111: // LATIN SMALL LETTER D WITH STROKE (đ)
+        return 'd';
+    case 0x0141: // LATIN CAPITAL LETTER L WITH STROKE (Ł)
+        return 'L';
+    case 0x0142: // LATIN SMALL LETTER L WITH STROKE (ł)
+        return 'l';
+    case 0x0143: // LATIN CAPITAL LETTER N WITH ACUTE (Ń)
+    case 0x0147: // LATIN CAPITAL LETTER N WITH CARON (Ň)
+        return 'N';
+    case 0x0144: // LATIN SMALL LETTER N WITH ACUTE (ń)
+    case 0x0148: // LATIN SMALL LETTER N WITH CARON (ň)
+        return 'n';
+    case 0x0158: // LATIN CAPITAL LETTER R WITH CARON (Ř)
+        return 'R';
+    case 0x0159: // LATIN SMALL LETTER R WITH CARON (ř)
+        return 'r';
+    case 0x015A: // LATIN CAPITAL LETTER S WITH ACUTE (Ś)
+    case 0x015E: // LATIN CAPITAL LETTER S WITH CEDILLA (Ş)
+        return 'S';
+    case 0x015B: // LATIN SMALL LETTER S WITH ACUTE (ś)
+    case 0x015F: // LATIN SMALL LETTER S WITH CEDILLA (ş)
+        return 's';
+    case 0x0164: // LATIN CAPITAL LETTER T WITH CARON (Ť)
+        return 'T';
+    case 0x0165: // LATIN SMALL LETTER T WITH CARON (ť)
+        return 't';
+    case 0x0179: // LATIN CAPITAL LETTER Z WITH ACUTE (Ź)
+    case 0x017B: // LATIN CAPITAL LETTER Z WITH DOT ABOVE (Ż)
+        return 'Z';
+    case 0x017A: // LATIN SMALL LETTER Z WITH ACUTE (ź)
+    case 0x017C: // LATIN SMALL LETTER Z WITH DOT ABOVE (ż)
+        return 'z';
+    case 0x1E9E: // LATIN CAPITAL LETTER SHARP S (ẞ) -> ß (0xDF)
+        return static_cast<char>(0xDF);
+
     // Invisible / formatting zero-width characters (silently dropped)
     case 0x200B: // ZERO WIDTH SPACE
     case 0x200C: // ZERO WIDTH NON-JOINER
@@ -168,10 +214,220 @@ inline std::optional<char> map_codepoint_to_cp1252(uint32_t cp) noexcept {
     }
 }
 
+constexpr bool is_combining_mark(uint32_t cp) noexcept {
+    return (cp >= 0x0300 && cp <= 0x036F) || (cp >= 0x1DC0 && cp <= 0x1DFF) || (cp >= 0x20D0 && cp <= 0x20FF) ||
+           (cp >= 0xFE20 && cp <= 0xFE2F);
+}
+
+inline uint32_t compose_latin_pair(uint32_t base, uint32_t combining) noexcept {
+    switch (combining) {
+    case 0x0300: // COMBINING GRAVE ACCENT
+        switch (base) {
+        case 'A':
+            return 0x00C0;
+        case 'E':
+            return 0x00C8;
+        case 'I':
+            return 0x00CC;
+        case 'O':
+            return 0x00D2;
+        case 'U':
+            return 0x00D9;
+        case 'a':
+            return 0x00E0;
+        case 'e':
+            return 0x00E8;
+        case 'i':
+            return 0x00EC;
+        case 'o':
+            return 0x00F2;
+        case 'u':
+            return 0x00F9;
+        default:
+            return 0;
+        }
+    case 0x0301: // COMBINING ACUTE ACCENT
+        switch (base) {
+        case 'A':
+            return 0x00C1;
+        case 'E':
+            return 0x00C9;
+        case 'I':
+            return 0x00CD;
+        case 'O':
+            return 0x00D3;
+        case 'U':
+            return 0x00DA;
+        case 'Y':
+            return 0x00DD;
+        case 'a':
+            return 0x00E1;
+        case 'e':
+            return 0x00E9;
+        case 'i':
+            return 0x00ED;
+        case 'o':
+            return 0x00F3;
+        case 'u':
+            return 0x00FA;
+        case 'y':
+            return 0x00FD;
+        case 'C':
+        case 'c':
+        case 'N':
+        case 'n':
+        case 'S':
+        case 's':
+        case 'Z':
+        case 'z':
+            return base; // Latin transliteration
+        default:
+            return 0;
+        }
+    case 0x0302: // COMBINING CIRCUMFLEX ACCENT
+        switch (base) {
+        case 'A':
+            return 0x00C2;
+        case 'E':
+            return 0x00CA;
+        case 'I':
+            return 0x00CE;
+        case 'O':
+            return 0x00D4;
+        case 'U':
+            return 0x00DB;
+        case 'a':
+            return 0x00E2;
+        case 'e':
+            return 0x00EA;
+        case 'i':
+            return 0x00EE;
+        case 'o':
+            return 0x00F4;
+        case 'u':
+            return 0x00FB;
+        default:
+            return 0;
+        }
+    case 0x0303: // COMBINING TILDE
+        switch (base) {
+        case 'A':
+            return 0x00C3;
+        case 'N':
+            return 0x00D1;
+        case 'O':
+            return 0x00D5;
+        case 'a':
+            return 0x00E3;
+        case 'n':
+            return 0x00F1;
+        case 'o':
+            return 0x00F5;
+        default:
+            return 0;
+        }
+    case 0x0308: // COMBINING DIAERESIS (Umlaut)
+        switch (base) {
+        case 'A':
+            return 0x00C4;
+        case 'E':
+            return 0x00CB;
+        case 'I':
+            return 0x00CF;
+        case 'O':
+            return 0x00D6;
+        case 'U':
+            return 0x00DC;
+        case 'Y':
+            return 0x0178; // Ÿ (CP1252 0x9F)
+        case 'a':
+            return 0x00E4;
+        case 'e':
+            return 0x00EB;
+        case 'i':
+            return 0x00EF;
+        case 'o':
+            return 0x00F6;
+        case 'u':
+            return 0x00FC;
+        case 'y':
+            return 0x00FF;
+        default:
+            return 0;
+        }
+    case 0x030A: // COMBINING RING ABOVE
+        switch (base) {
+        case 'A':
+            return 0x00C5;
+        case 'a':
+            return 0x00E5;
+        case 'U':
+        case 'u':
+            return base;
+        default:
+            return 0;
+        }
+    case 0x0327: // COMBINING CEDILLA
+        switch (base) {
+        case 'C':
+            return 0x00C7;
+        case 'c':
+            return 0x00E7;
+        case 'S':
+        case 's':
+            return base;
+        default:
+            return 0;
+        }
+    case 0x030C: // COMBINING CARON
+        switch (base) {
+        case 'S':
+            return 0x0160; // Š
+        case 's':
+            return 0x0161; // š
+        case 'Z':
+            return 0x017D; // Ž
+        case 'z':
+            return 0x017E; // ž
+        case 'C':
+        case 'c':
+        case 'D':
+        case 'd':
+        case 'N':
+        case 'n':
+        case 'R':
+        case 'r':
+        case 'T':
+        case 't':
+            return base; // Latin transliteration
+        default:
+            return 0;
+        }
+    default:
+        return 0;
+    }
+}
+
 template <typename EmitFn> inline void decode_utf8_to_cp1252(std::string_view utf8, EmitFn&& emit) {
     std::size_t index = 0;
     while (index < utf8.size()) {
-        const uint32_t cp = decode_next_utf8_codepoint(utf8, index);
+        uint32_t cp = decode_next_utf8_codepoint(utf8, index);
+
+        // Fold any subsequent combining marks (NFD -> precomposed / transliterated)
+        while (index < utf8.size()) {
+            std::size_t peek_idx = index;
+            const uint32_t next_cp = decode_next_utf8_codepoint(utf8, peek_idx);
+            if (is_combining_mark(next_cp)) {
+                index = peek_idx; // consume combining mark
+                const uint32_t composed = compose_latin_pair(cp, next_cp);
+                if (composed != 0) {
+                    cp = composed;
+                }
+            } else {
+                break;
+            }
+        }
+
         const auto mapped = map_codepoint_to_cp1252(cp);
         if (mapped.has_value()) {
             emit(*mapped);

@@ -3,16 +3,11 @@
 # Script: setup-openssl-3.3.sh
 # Purpose: Builds and installs modern OpenSSL (v3.3.2) locally for developer workstations.
 #
-# WHY THIS IS NEEDED:
+# COMPATIBILITY HELPER:
 # -------------------
-# The Nordiska PDF signing subsystem requires OpenSSL >= 3.2.0 because it relies
-# on the cryptographic function `CMS_final_digest()`, which was introduced in
-# OpenSSL 3.2.0 (November 2023) to compute detached CMS SignedData digests.
-#
-# Most enterprise Linux LTS distributions (including Ubuntu 22.04/24.04 LTS and
-# Debian 12 Bookworm) standardize on the older OpenSSL 3.0.x LTS series via `apt`.
-# Without OpenSSL >= 3.2.0, native CMake builds and ctest unit test runs on host
-# developer machines will fail with an error indicating an unsuitable OpenSSL version.
+# The generator uses system OpenSSL >= 3.0 for hashing and signature tests.
+# CMS signing runs in the external signer service. This optional helper remains
+# because the repository's root Dockerfile still invokes it explicitly.
 #
 # WHAT THIS SCRIPT DOES TO YOUR SYSTEM:
 # -------------------------------------
@@ -25,8 +20,8 @@
 #    - Download and build artifacts are compiled in a temporary directory in /tmp
 #      and automatically cleaned up on exit.
 # 3. How the Project Uses It:
-#    - CMake (`native/pdf_generator/CMakeLists.txt`) automatically detects this
-#      directory if present and configures modern OpenSSL with runtime RPATH.
+#    - Pass -DOPENSSL_ROOT_DIR="$HOME/.local/openssl-3.3" to CMake to select
+#      this installation explicitly, with runtime RPATH.
 # 4. How to Uninstall / Revert:
 #    - Simply remove the directory at any time: `rm -rf ~/.local/openssl-3.3`
 # ==============================================================================

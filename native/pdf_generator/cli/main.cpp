@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <string_view>
+#include <strings.h>
 #include <unistd.h>
 #include <vector>
 
@@ -73,11 +74,19 @@ void print_usage(std::string_view program_name) {
 
 void print_version_info() {
     std::cout << "nordiska-pdf " << kVersion << " (Linux x86_64, C++23)\n"
-              << "Engines: libharu, cairo | Ingestors: nlohmann-json, simdjson\n";
+              << "Engines: libharu, cairo, native | Ingestors: nlohmann-json, simdjson\n";
 }
 
 CliOptions parse_cli(int argc, char* argv[]) {
     CliOptions options;
+
+    if (const char* env_engine = std::getenv("NORDISKA_PDF_ENGINE"); env_engine && *env_engine) {
+        options.renderer = env_engine;
+    }
+    if (const char* env_signing = std::getenv("NORDISKA_PDF_ENABLE_SIGNING"); env_signing && *env_signing) {
+        std::string_view val(env_signing);
+        options.enable_signing = (val == "1" || val == "true" || val == "TRUE" || val == "yes");
+    }
 
     for (int index = 1; index < argc; ++index) {
         const std::string_view argument = argv[index];
@@ -271,21 +280,23 @@ int main(int argc, char* argv[]) {
 
         // 2. Configure generator
         nordiska::GeneratorConfig config;
-        if (options.renderer == "haru") {
+        if (strcasecmp(options.renderer.c_str(), "haru") == 0 || strcasecmp(options.renderer.c_str(), "libharu") == 0) {
             config.engine = nordiska::PdfEngineKind::Libharu;
-        } else if (options.renderer == "cairo") {
+        } else if (strcasecmp(options.renderer.c_str(), "cairo") == 0) {
             config.engine = nordiska::PdfEngineKind::Cairo;
-        } else if (options.renderer == "native" || options.renderer == "fast") {
+        } else if (strcasecmp(options.renderer.c_str(), "native") == 0 ||
+                   strcasecmp(options.renderer.c_str(), "fast") == 0) {
             config.engine = nordiska::PdfEngineKind::Native;
         } else {
             std::cerr << "Error: unsupported renderer engine '" << options.renderer
-                      << "'. Supported: 'haru', 'cairo', 'native'\n";
+                      << "'. Supported: 'haru' ('libharu'), 'cairo', 'native'\n";
             return ExitCode::CliUsage;
         }
 
-        if (options.ingestor == "nlohmann") {
+        if (strcasecmp(options.ingestor.c_str(), "nlohmann") == 0) {
             config.ingestor = nordiska::JsonIngestorKind::Nlohmann;
-        } else if (options.ingestor == "simdjson") {
+        } else if (strcasecmp(options.ingestor.c_str(), "simdjson") == 0 ||
+                   strcasecmp(options.ingestor.c_str(), "simd") == 0) {
             config.ingestor = nordiska::JsonIngestorKind::Simdjson;
         } else {
             std::cerr << "Error: unsupported JSON ingestor '" << options.ingestor

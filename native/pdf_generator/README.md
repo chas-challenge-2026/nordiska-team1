@@ -11,9 +11,8 @@ Designed for direct FFI / P-Invoke integration from .NET services and standalone
 ```text
 native/pdf_generator/
 ├── include/nordiska/             # Public C++ interface headers
-│   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig)
+│   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig, PipelineTiming)
 │   ├── c_api/                    # C89 ABI boundary (pdf_generator_c_api.h)
-│   ├── diagnostics/              # Timing, metrics, and benchmark structures
 │   ├── domain/                   # CustomerBatch, Document, PdfRenderingJob
 │   ├── ingestion/                # JSON ingestor interface & factory
 │   ├── layout/                   # Deterministic layout structures (DocumentLayout)
@@ -24,13 +23,12 @@ native/pdf_generator/
 │   ├── c_api/                    # C ABI implementation & boundary validation
 │   ├── ingestion/                # simdjson (default) & nlohmann JSON parsers
 │   ├── layout/                   # LayoutBuilder (typography, tables, flow)
-│   ├── rendering/                # Native (default), Haru (bump arena), Cairo
-│   └── signing/                  # C signer adapter, PDF preparation & hashing
+│   ├── rendering/                # Native, Haru (default, bump arena), Cairo
+│   └── signing/                  # Socket signer adapter, PDF preparation & hashing
 ├── cli/                          # Standalone CLI binary (pdf_generator)
-├── src/benchmark/                # Multi-threaded performance harness
 ├── tests/                        # CTest automated test suites
-├── tools/                        # Code formatters, synthetic data generator & OpenSSL setup
-└── docs/                         # Golden customer batch specification
+├── tools/                        # Code formatters & OpenSSL setup helper
+└── docs/                         # Golden customer batch specification & signing docs
 ```
 
 ### The Generation Pipeline
@@ -72,12 +70,12 @@ GeneratedPdfs / C ABI Delivery Callback
 
 ### PDF Rendering Engines (`--renderer <engine>`)
 
-1. **`native` (`PdfEngineKind::Native`) — Default Recommended**:
+1. **`native` (`PdfEngineKind::Native`)**:
    - Zero-dependency direct PDF 1.4 compiler.
    - Formats Core-14 PostScript Type 1 Helvetica and Helvetica-Bold font dictionaries, text matrices (`BT`, `Tf`, `Tm`, `Tj`, `ET`), and vector line paths.
    - Zero-allocation numeric formatting via `<charconv>` (`std::to_chars`).
    - Produces the smallest file size (1.67 KB compressed) and fastest throughput (>44k docs/s).
-2. **`haru` (`PdfEngineKind::Libharu`)**:
+2. **`haru` (`PdfEngineKind::Libharu`) — Default**:
    - Classical C library backend optimized with a thread-local bump arena (`HaruBumpArena` via `HPDF_NewEx`).
    - Allocations are $\mathcal{O}(1)$ pointer bumps, eliminating libc `ptmalloc` lock contention.
 3. **`cairo` (`PdfEngineKind::Cairo`)**:
@@ -102,12 +100,11 @@ GeneratedPdfs / C ABI Delivery Callback
 - CMake 3.25+
 - Ninja build system
 - Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
-- OpenSSL >= 3.2.0 (Required for CMS SignedData digest signing with `CMS_final_digest`)
-  - *Ubuntu / Debian LTS Notice*: Most LTS distributions ship OpenSSL 3.0.x by default. On Ubuntu 22.04/24.04 or Debian 12 developer workstations, run the provided local setup script to build and install OpenSSL 3.3.2 into `~/.local/openssl-3.3/` (isolated, non-root, no system changes):
-    ```bash
-    ./tools/setup-openssl-3.3.sh
-    ```
-    CMake automatically auto-detects this path when configuring.
+- OpenSSL >= 3.0 for SHA-256 hashing and signature tests (`libssl-dev`).
+  CMS signing runs in the external signer service. A custom OpenSSL installation
+  can be selected with `-DOPENSSL_ROOT_DIR=<path>`. The optional
+  `tools/setup-openssl-3.3.sh` helper remains for the root Dockerfile, which still
+  calls it; standalone generator builds can use system OpenSSL.
 - Third-party libraries:
   - ZLIB (system package: `zlib1g-dev`)
   - Cairo 2D graphics (system package: `libcairo2-dev`)
@@ -154,7 +151,6 @@ cmake --build build/release -j
 Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/release/`):
 - `libnordiska_pdf_generator_c_api.so`: Exported C ABI shared library for .NET P/Invoke.
 - `pdf_generator`: Standalone CLI worker.
-- `pdf_generator_benchmark`: Multi-worker benchmarking tool.
 - `nordiska_*_tests`: CTest unit test executables.
 
 ---
@@ -180,7 +176,53 @@ const char* nordiska_pdf_v1_get_last_error(void);
 const char* nordiska_pdf_v1_status_name(int status_code);
 ```
 
+The C API uses Libharu by default. Set `NORDISKA_PDF_ENGINE=native`,
+`NORDISKA_PDF_ENGINE=haru` (or `libharu`), or `NORDISKA_PDF_ENGINE=cairo`
+before generation to compare engines without rebuilding the library. Values
+are case-insensitive; an unset or empty value retains Libharu. Unknown values
+return invalid argument with no delivery callback. Signing configuration is
+independent of the selected renderer.
+
+#### V2 API (Future Preparation — Not Yet in Production)
+
+> **Note:** The V2 C API (`nordiska_pdf_v2_generate_customer_batch` and
+> `nordiska_pdf_v2_generate_customer_batch_instrumented`) is **preparation for
+> future adoption** and is **not yet used in production or by the .NET worker**.
+> Its main purpose is to eliminate duplicate hashing in the rest of the
+> application: because the native generator already computes the SHA-256 digest
+> of each complete delivered PDF (including any inserted signature), V2 exposes
+> that checksum directly (`sha256_hex`, 64 lowercase hex characters + NUL
+> terminator on `nordiska_pdf_document_view_v2`) so host callers do not need to
+> re-hash PDF bytes after delivery.
+
+Existing V1 functions and struct layouts remain completely unchanged for full
+backward compatibility. Status codes, environment configuration, atomic delivery
+and `nordiska_pdf_v1_get_last_error` are shared between V1 and V2.
+
+Both entry points are stateless: each call resolves the current environment
+configuration, constructs its own generator components and releases them when
+the call returns. Concurrent calls generate independent customer batches.
+There is no caller-owned generator handle or create/destroy lifecycle.
+
+Timing collection is explicit. The normal V1 and V2 entry points pass no timing
+collector, so the pipeline skips profiling clock reads and accumulation. Use
+`nordiska_pdf_v1_generate_customer_batch_instrumented` or
+`nordiska_pdf_v2_generate_customer_batch_instrumented` to collect phase timings
+while using the same generation, validation and delivery code. V2 adds the
+artifact hash field to the callback view.
+
+After an instrumented call returns, copy its measurements with
+`nordiska_pdf_v1_get_last_timing`; this shared helper serves both versions.
+It returns the latest completed instrumented call's timings on the calling
+thread. Normal calls leave that snapshot intact. A fresh thread sees zeros;
+an instrumented failure reports work recorded before failure, or zeros when
+arguments fail validation. Totals cover the native pipeline and exclude
+configuration, component construction and callback delivery. Nested
+instrumented calls have separate local collectors; each publishes its snapshot
+when it returns. No environment variable is needed to choose instrumentation.
+
 #### Status Codes (`nordiska_pdf_status`):
+
 - `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
 - `1`: `NORDISKA_PDF_INVALID_ARGUMENT` — Null buffer, zero length, or null callback.
 - `2`: `NORDISKA_PDF_INVALID_INPUT` — JSON parse or domain validation error.
@@ -213,6 +255,7 @@ const char* nordiska_pdf_v1_status_name(int status_code);
 - `--no-compression`: Disable Flate stream compression for maximum rendering speed.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
 - `--signing`: Call the PDF signer service via Unix domain socket and embed its CMS hex in generated documents (default: `false`).
+- `--signature-capacity <n>`: Reserved CMS hex characters (default: `8192`).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.
@@ -230,6 +273,10 @@ cat input.json | ./build/release/pdf_generator -o output/ --json-summary
 ---
 
 ## 7. Testing & Code Quality
+
+For interactive, unsigned JSON-to-PDF fuzzing with AFL++, see
+[tests/fuzz/README.md](tests/fuzz/README.md). Fuzz targets are opt-in and are not
+included in normal builds.
 
 ```bash
 # 1. Format native C++ code

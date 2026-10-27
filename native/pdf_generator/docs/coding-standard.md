@@ -32,8 +32,9 @@ From `native/pdf_generator`:
 ```bash
 ./tools/format-native.sh
 ./tools/check-format.sh
-cmake --build --preset default
-ctest --test-dir build --output-on-failure
+cmake --preset debug
+cmake --build --preset debug
+ctest --preset debug
 ```
 
 `check-format.sh` is suitable for a pre-commit hook or CI job and fails if any
