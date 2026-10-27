@@ -12,6 +12,21 @@ static const char* env_or_default(const char* name, const char* fallback) {
   return value;
 }
 
+static unsigned int env_or_default_int(const char* name, unsigned int fallback) {
+  const char* value = getenv(name);
+
+  if (!value || value[0] == '\0') {
+    return fallback;
+  }
+
+  int int_val = atoi(value);
+  if (int_val == 0) {
+    return fallback;
+  }
+
+  return int_val;
+}
+
 const char* runtime_config_pkcs11_provider(void) {
   return env_or_default("PDF_SIGNER_PKCS11_PROVIDER", "pkcs11");
 }
@@ -39,4 +54,12 @@ const char* runtime_config_signer_socket(void) {
 
 const char* runtime_config_tsa_url(void) {
   return env_or_default("PDF_SIGNER_TSA_URL", "http://127.0.0.1:8081/");
+}
+
+unsigned int runtime_config_tsa_worker_count(void) {
+  return env_or_default_int("TSA_WORKER_COUNT", 8);
+}
+
+unsigned int runtime_config_tsa_http_worker_count(void) {
+  return env_or_default_int("TSA_HTTP_WORKER_COUNT", 8);
 }

@@ -45,12 +45,14 @@ static key_secret_result_t tsa_secret_callback(key_secret_kind_t kind, const key
 
   const char* pin = getenv("PDF_SIGNER_PKCS11_PIN");
   if (!pin) {
+    fprintf(stderr, "TSA SERVER: Unable to get PKCS11_PIN\n");
     return KEY_SECRET_ERROR;
   }
 
   size_t len = strlen(pin);
 
   if (len == 0 || len > buffer_len) {
+    fprintf(stderr, "TSA SERVER: invalid secret\n");
     return KEY_SECRET_ERROR;
   }
 
@@ -147,6 +149,7 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
 
   tsa_server_t* server = calloc(1, sizeof(*server));
   if (!server) {
+    fprintf(stderr, "TSA SERVER: failed to allocate memory for server struct\n");
     return TSA_SERVER_INTERNAL_ERROR;
   }
   atomic_init(&server->next_serial, 1);
@@ -161,6 +164,7 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
   server->key_loader = key_loader_create(&loader_config);
 
   if (!server->key_loader) {
+    fprintf(stderr, "TSA SERVER: Missing keyloader\n");
     tsa_server_destroy(server);
     return TSA_SERVER_CRYPTO_ERROR;
   }
@@ -178,6 +182,7 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
   key_status_t key_status = key_load(server->key_loader, &key_spec, &credentials, &server->key);
 
   if (key_status != KEY_STATUS_OK) {
+    fprintf(stderr, "TSA SERVER: Failed to load key\n");
     tsa_server_destroy(server);
     return TSA_SERVER_CRYPTO_ERROR;
   }
@@ -185,26 +190,32 @@ tsa_server_status_t tsa_server_create(tsa_server_t** out) {
   cert_status_t cert_status = cert_load_file(runtime_config_tsa_cert(), &server->cert);
 
   if (cert_status != CERT_STATUS_OK) {
+    fprintf(stderr, "TSA SERVER: Failed to load cert\n");
     tsa_server_destroy(server);
     return TSA_SERVER_CERTIFICATE_ERROR;
   }
 
   if (X509_check_private_key(server->cert.certificate, server->key.pkey) != 1) {
+    fprintf(stderr, "TSA SERVER: Key and cert check failed\n");
     tsa_server_destroy(server);
     return TSA_SERVER_CERTIFICATE_ERROR;
   }
 
-  server->worker_count = 8;
+  server->worker_count = runtime_config_tsa_worker_count();
+
+  fprintf(stderr, "TSA_WORKER_COUNT: %ld\n", server->worker_count);
 
   server->workers = calloc(server->worker_count, sizeof(*server->workers));
 
   if (!server->workers) {
+    fprintf(stderr, "TSA SERVER: Failed to create workers\n");
     tsa_server_destroy(server);
     return TSA_SERVER_INTERNAL_ERROR;
   }
 
   for (size_t i = 0; i < server->worker_count; i++) {
     if (!tsa_worker_init(server, &server->workers[i])) {
+      fprintf(stderr, "TSA SERVER: Failed to init worker: %ld\n", i);
       tsa_server_destroy(server);
       return TSA_SERVER_CONTEXT_ERROR;
     }
