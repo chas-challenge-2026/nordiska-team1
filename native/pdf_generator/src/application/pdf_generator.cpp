@@ -159,7 +159,7 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
     for (const Document& doc : job.documents) {
         // Stage 2: Layout document geometry and pagination
         const auto t_layout_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto layout_res = LayoutBuilder::build(doc);
+        auto layout_res = LayoutBuilder::build(doc, {.customer_name = job.customer_name});
         if (!layout_res) {
             return std::unexpected(GeneratorError{std::move(layout_res).error(), doc.document_id});
         }

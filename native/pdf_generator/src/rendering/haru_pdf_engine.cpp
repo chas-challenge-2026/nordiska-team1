@@ -15,6 +15,8 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace nordiska {
@@ -249,6 +251,7 @@ class HaruEngineImpl final : public PdfEngine::Impl {
             return std::unexpected(make_render_error("libharu: failed to load required Helvetica fonts"));
         }
 
+        std::unordered_map<const RasterImage*, HPDF_Image> images;
         for (const PageLayout& page_layout : layout.pages) {
             HPDF_Page page = HPDF_AddPage(pdf.get());
             if (page == nullptr) {
@@ -258,33 +261,48 @@ class HaruEngineImpl final : public PdfEngine::Impl {
             HPDF_Page_SetWidth(page, page_layout.width);
             HPDF_Page_SetHeight(page, page_layout.height);
 
-            // Draw Lines
-            for (const PositionedLine& line : page_layout.lines) {
-                HPDF_Page_SetLineWidth(page, line.line_width);
-                HPDF_Page_MoveTo(page, line.x1, page_layout.height - line.y1);
-                HPDF_Page_LineTo(page, line.x2, page_layout.height - line.y2);
-                HPDF_Page_Stroke(page);
-            }
-
-            // Draw Texts
-            HPDF_Page_BeginText(page);
-            for (const PositionedText& text : page_layout.texts) {
-                HPDF_Font active_font = text.weight == FontWeight::Bold ? font_bold : font_normal;
-                HPDF_Page_SetFontAndSize(page, active_font, text.font_size);
-                const float haru_y = page_layout.height - text.y;
-                if (is_pure_ascii(text.text)) {
-                    HPDF_Page_TextOut(page, text.x, haru_y, text.text.c_str());
-                } else {
-                    t_cp1252_scratch.clear();
-                    utf8_to_cp1252_append(text.text, t_cp1252_scratch);
-                    HPDF_Page_TextOut(page, text.x, haru_y, t_cp1252_scratch.c_str());
+            for (const auto& command : page_layout.commands) {
+                std::visit(
+                    [&](const auto& item) {
+                        using T = std::decay_t<decltype(item)>;
+                        if constexpr (std::is_same_v<T, PositionedText>) {
+                            HPDF_Page_SetRGBFill(page, item.color.red, item.color.green, item.color.blue);
+                            HPDF_Page_BeginText(page);
+                            HPDF_Page_SetFontAndSize(page, item.weight == FontWeight::Bold ? font_bold : font_normal,
+                                                     item.font_size);
+                            t_cp1252_scratch.clear();
+                            utf8_to_cp1252_append(item.text, t_cp1252_scratch);
+                            HPDF_Page_TextOut(page, item.x, page_layout.height - item.y, t_cp1252_scratch.c_str());
+                            HPDF_Page_EndText(page);
+                        } else if constexpr (std::is_same_v<T, PositionedLine>) {
+                            HPDF_Page_SetRGBStroke(page, item.color.red, item.color.green, item.color.blue);
+                            HPDF_Page_SetLineWidth(page, item.line_width);
+                            HPDF_Page_MoveTo(page, item.x1, page_layout.height - item.y1);
+                            HPDF_Page_LineTo(page, item.x2, page_layout.height - item.y2);
+                            HPDF_Page_Stroke(page);
+                        } else if constexpr (std::is_same_v<T, FilledRectangle>) {
+                            HPDF_Page_SetRGBFill(page, item.color.red, item.color.green, item.color.blue);
+                            HPDF_Page_Rectangle(page, item.x, page_layout.height - item.y - item.height, item.width,
+                                                item.height);
+                            HPDF_Page_Fill(page);
+                        } else {
+                            auto [entry, inserted] = images.try_emplace(item.image, nullptr);
+                            if (inserted) {
+                                entry->second =
+                                    HPDF_LoadRawImageFromMem(pdf.get(), item.image->rgb.data(), item.image->width,
+                                                             item.image->height, HPDF_CS_DEVICE_RGB, 8);
+                            }
+                            if (entry->second) {
+                                HPDF_Page_DrawImage(page, entry->second, item.x,
+                                                    page_layout.height - item.y - item.height, item.width, item.height);
+                            }
+                        }
+                    },
+                    command);
+                if (error.code != HPDF_OK || t_haru_arena.budget_exceeded) {
+                    return std::unexpected(make_render_error("libharu: drawing command failed"));
                 }
-                if (error.code == HPDF_FAILED_TO_ALLOC_MEM || error.code == HPDF_FAILD_TO_ALLOC_MEM ||
-                    t_haru_arena.budget_exceeded) {
-                    return std::unexpected(make_render_error("libharu: memory arena budget exceeded"));
-                }
             }
-            HPDF_Page_EndText(page);
         }
 
         if (HPDF_SaveToStream(pdf.get()) != HPDF_OK) {

@@ -31,8 +31,8 @@ std::vector<uint8_t> generate_sample_pdf(nordiska::PdfEngineKind engine) {
     layout.pages.push_back(nordiska::PageLayout{
         .width = 612.0F,
         .height = 792.0F,
-        .texts = {nordiska::PositionedText{.x = 54.0F, .y = 54.0F, .text = "Test PDF", .font_size = 12.0F}},
-        .lines = {nordiska::PositionedLine{.x1 = 54.0F, .y1 = 70.0F, .x2 = 558.0F, .y2 = 70.0F, .line_width = 1.0F}},
+        .commands = {nordiska::PositionedText{.x = 54.0F, .y = 54.0F, .text = "Test PDF", .font_size = 12.0F},
+                     nordiska::PositionedLine{.x1 = 54.0F, .y1 = 70.0F, .x2 = 558.0F, .y2 = 70.0F, .line_width = 1.0F}},
     });
     nordiska::PdfEngine renderer(engine, /*compression=*/false);
     auto res = renderer.render(layout, /*tail_capacity=*/8192 + 2048);

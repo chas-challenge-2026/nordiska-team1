@@ -17,6 +17,7 @@ native/pdf_generator/
 │   ├── ingestion/                # JSON ingestor interface & factory
 │   ├── layout/                   # Deterministic layout structures (DocumentLayout)
 │   ├── rendering/                # PDF rendering engine abstraction (PdfEngine)
+│   ├── text/                     # Shared encoding and standard-font metrics
 │   └── signing/                  # Digest signing interface & PDF preparation
 ├── src/                          # Subsystem implementations
 │   ├── application/              # PdfGenerator pipeline driver
@@ -46,7 +47,8 @@ Raw JSON Buffer (UTF-8)
          ▼  [2. Layout Stage]
    LayoutBuilder
    - Typography, column metrics & pagination
-   - Generates PositionedLine and PositionedText
+   - Composes branded page furniture and flowing tables
+   - Generates ordered text, line, rectangle, and image commands
          │
          ▼
    DocumentLayout (deterministic coordinate geometry)
@@ -64,6 +66,9 @@ Raw JSON Buffer (UTF-8)
 GeneratedPdfs / C ABI Delivery Callback
 ```
 
+See [Branded report layout](docs/report-design.md) for style/resource ownership,
+IR commands, pagination, font substitution, and local synthetic previews.
+
 ---
 
 ## Pluggable Engines & Ingestors
@@ -72,9 +77,9 @@ GeneratedPdfs / C ABI Delivery Callback
 
 1. **`native` (`PdfEngineKind::Native`)**:
    - Zero-dependency direct PDF 1.4 compiler.
-   - Formats Core-14 PostScript Type 1 Helvetica and Helvetica-Bold font dictionaries, text matrices (`BT`, `Tf`, `Tm`, `Tj`, `ET`), and vector line paths.
+   - Formats Core-14 PostScript Type 1 Helvetica and Helvetica-Bold font dictionaries, text matrices (`BT`, `Tf`, `Tm`, `Tj`, `ET`), colored vector paths, rectangles, and shared image XObjects.
    - Zero-allocation numeric formatting via `<charconv>` (`std::to_chars`).
-   - Produces the smallest file size (1.67 KB compressed) and fastest throughput (>44k docs/s).
+   - Reuses precompressed image pixels directly. See the report-design notes for the measured cost of branded output.
 2. **`haru` (`PdfEngineKind::Libharu`) — Default**:
    - Classical C library backend optimized with a thread-local bump arena (`HaruBumpArena` via `HPDF_NewEx`).
    - Allocations are $\mathcal{O}(1)$ pointer bumps, eliminating libc `ptmalloc` lock contention.
