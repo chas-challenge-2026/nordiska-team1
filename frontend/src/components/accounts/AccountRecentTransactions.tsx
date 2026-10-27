@@ -18,7 +18,7 @@ export default function AccountRecentTransactions({accountId}: AccountRecentTran
 
     return (
         <section aria-labelledby="account-recent-transactions-heading" className="bg-white -mt-1">
-            <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.transactions-section.title")}</h2>
+            <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pt-1 pl-1">{t("accounts-route.transactions-section.title")}</h2>
             
             <div className="border border-nordiska-blue/50 bg-light-gray/30 sm:p-2">
                 {/* LOADING & ERROR */}

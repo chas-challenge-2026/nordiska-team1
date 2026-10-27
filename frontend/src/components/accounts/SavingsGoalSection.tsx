@@ -21,7 +21,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
     if (!savingGoal) {
         return (
             <section aria-labelledby="savings-goal-heading">
-                <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
+                <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pl-1">{t("accounts-route.savings-goal-title")}</h2>
 
                 <div className="border border-nordiska-blue/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
                     <div className="mt-5 flex w-28 items-center justify-center">
@@ -78,7 +78,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
 
     return (
         <section aria-labelledby="savings-goal-heading" className="bg-white -mt-1">
-            <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
+            <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pl-1 pt-1">{t("accounts-route.savings-goal-title")}</h2>
             <div className="border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:p-4">
             <div className="mb-2 flex flex-col items-start justify-between">
                 <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.your-goal")}</p>
@@ -87,7 +87,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
 
             <div className="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
                 <div className="relative mx-auto h-40 w-40 max-sm:h-36 max-sm:w-36">
-                    <PercentagePieChart percentage={roundedPercentage} isCompleted={isCompleted} />
+                    <PercentagePieChart percentage={roundedPercentage} />
                 </div>
 
                 <div className="min-w-0">
