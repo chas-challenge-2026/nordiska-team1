@@ -19,8 +19,9 @@ JSON -> PdfRenderingJob -> LayoutBuilder -> DocumentLayout -> PdfEngine -> signi
 
 - **Domain and ingestion** retain the existing customer/document schema.
   `LayoutContext` borrows the batch's customer name during layout; generated
-  text owns its strings. No address or current interest rate is invented when
-  the input does not provide one.
+  text owns its strings. Each recipient receives the explicitly requested dummy
+  address (`Gatnamnet 32`, `123 45 Staden`, `SE`) until real address data is part
+  of the input contract. Current interest rates are omitted when unavailable.
 - **ReportStyle** contains presentation values and a version identifier. The
   current version is compiled with the generator, so a deployment pins the
   style and prepared asset together. It is not a dynamic theme registry.
@@ -60,6 +61,14 @@ If a second brand becomes a real requirement, pass an immutable style/resource
 bundle explicitly at the layout boundary instead of introducing per-job asset
 loading or backend-specific branding.
 
+## Typography
+
+The shared style defines semantic text roles: 22 pt bold title, 12 pt bold band
+subtitle, 13 pt bold section heading, 11 pt regular body/address, 11 pt bold table
+heading, and 6 pt footer. Field labels use bold with regular values on the same
+baseline; the bank name in the footer is bold. Address baselines are 14.84 pt
+apart. Both report compositions use these shared roles.
+
 ## Pagination and validation
 
 Tables reserve the footer area and repeat headings on continuation pages.
@@ -85,7 +94,8 @@ content in fixtures, screenshots, issue attachments, or committed previews.
 
 ## Local performance comparison
 
-Release-mode smoke measurement against the pre-change branch head, on the same
+Release-mode smoke measurement of the initial branded implementation (`078528a`,
+before the typography adjustments) against the pre-change branch head, on the same
 machine: five rounds of 300 warmed, unsigned V1 C API calls, using the golden
 synthetic batch (one statement and one tax report). Times include both PDFs,
 configuration/component construction, hashing, and callback delivery.

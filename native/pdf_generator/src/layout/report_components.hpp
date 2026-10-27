@@ -22,7 +22,10 @@ class Composer {
     Composer(std::string_view heading, std::string_view subtitle, std::string_view recipient,
              const ReportStyle& style = kNordiskaReportStyle);
 
-    void paragraph(std::string_view text, float size = 10, FontWeight weight = FontWeight::Normal);
+    void paragraph(std::string_view text);
+    void paragraph(std::string_view text, TextStyle typography);
+    void section_heading(std::string_view text);
+    void field(std::string_view label, std::string_view value);
     void gap(float points);
     void begin_table(std::span<const Column> columns);
     void row(std::span<const std::string> cells, FontWeight weight = FontWeight::Normal);

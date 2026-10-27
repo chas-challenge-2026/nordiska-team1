@@ -99,7 +99,7 @@ void test_branding_and_continuations() {
         require(has_text(page, "Uppgift") && has_text(page, "Datum") && has_text(page, "Belopp") &&
                     has_text(page, "Saldo"),
                 "Every table continuation must repeat the column headers");
-        require(has_text(page, "Nordiska Bankaktiebolaget | Organisationsnummer: 556760-6032"),
+        require(has_text(page, "Nordiska Bankaktiebolaget |") && has_text(page, " Organisationsnummer: 556760-6032"),
                 "Each page must include the correct bank identity");
         require(has_text(page, "Sida " + std::to_string(i + 1) + " av " + std::to_string(layout->pages.size())),
                 "Page totals must be resolved after pagination");
@@ -110,6 +110,66 @@ void test_branding_and_continuations() {
         }
     }
     require(dates == 100, "Pagination must not drop or duplicate transactions");
+}
+
+void test_reference_typography_and_dummy_address() {
+    const auto check = [](const DocumentLayout& layout, std::string_view heading, std::string_view subtitle) {
+        const auto& page = layout.pages.front();
+        const auto find = [&](std::string_view value) -> const PositionedText& {
+            for (const auto& command : page.commands) {
+                if (const auto* text = std::get_if<PositionedText>(&command); text && text->text == value) {
+                    return *text;
+                }
+            }
+            throw std::runtime_error("Expected report text is missing");
+        };
+        const auto& title = find(heading);
+        require(title.font_size == 22 && title.weight == FontWeight::Bold,
+                "Title must match the reference's 22 pt bold");
+        const auto& band_subtitle = find(subtitle);
+        require(band_subtitle.font_size == 12 && band_subtitle.weight == FontWeight::Bold,
+                "Band subtitle must match the reference's 12 pt bold");
+        const auto& recipient = find("Anna Exempel");
+        require(recipient.font_size == 11 && recipient.weight == FontWeight::Normal,
+                "Recipient must use 11 pt regular text");
+        float baseline = recipient.y;
+        for (const auto line : {"Gatnamnet 32", "123 45 Staden", "SE"}) {
+            const auto& address = find(line);
+            require(address.font_size == 11 && address.weight == FontWeight::Normal && address.x == recipient.x,
+                    "Every report must use the same dummy address styling and alignment");
+            require(std::abs(address.y - baseline - 14.84F) < 0.01F,
+                    "Address must follow the reference's line spacing");
+            baseline = address.y;
+        }
+        const auto& label = find("Kontonummer: ");
+        const auto& value = find("DEMO-10001");
+        require(label.font_size == 11 && label.weight == FontWeight::Bold && value.font_size == 11 &&
+                    value.weight == FontWeight::Normal && label.y == value.y,
+                "Field labels must be bold and values regular on the same baseline");
+        require(std::abs(value.x - label.x - text_width(label.text, 11, FontWeight::Bold)) < 0.01F,
+                "Field values must follow measured label widths");
+        const auto& table_heading = find("Uppgift");
+        require(table_heading.font_size == 11 && table_heading.weight == FontWeight::Bold,
+                "Table headings must match the reference's 11 pt bold");
+        require(find("Nordiska Bankaktiebolaget |").weight == FontWeight::Bold &&
+                    find(" Organisationsnummer: 556760-6032").weight == FontWeight::Normal,
+                "Footer must preserve the reference's mixed emphasis");
+        check_bounds(layout);
+    };
+    auto statement_layout = LayoutBuilder::build_statement(statement(), {.customer_name = "Anna Exempel"});
+    require(statement_layout.has_value(), "Statement typography fixture must build");
+    check(*statement_layout, "Kontoutdrag", "Period: 2026-01-01 – 2026-01-31");
+    AnnualTaxReport tax{.tax_year = "2025", .account_number = "DEMO-10001"};
+    auto annual_layout = LayoutBuilder::build_tax_report(tax, {.customer_name = "Anna Exempel"});
+    require(annual_layout.has_value(), "Annual typography fixture must build");
+    check(*annual_layout, "Kontrolluppgift", "Inkomstår: 2025");
+
+    auto long_name = LayoutBuilder::build_statement(statement(), {.customer_name = std::string(2000, 'W')});
+    require(long_name.has_value(), "Long recipient name must flow without displacing the dummy address");
+    check_bounds(*long_name);
+    for (const auto line : {"Gatnamnet 32", "123 45 Staden", "SE"}) {
+        require(has_text(long_name->pages.front(), line), "Dummy address must remain on the first page");
+    }
 }
 
 void test_oversized_content() {
@@ -181,6 +241,7 @@ int main() {
     using namespace std::string_view_literals;
     test_wrapping();
     test_branding_and_continuations();
+    test_reference_typography_and_dummy_address();
     test_oversized_content();
     test_renderers_and_resource_reuse();
     std::cout << "Report layout tests passed\n";
