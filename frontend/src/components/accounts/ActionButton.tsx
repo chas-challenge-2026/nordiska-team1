@@ -19,7 +19,7 @@ export default function ActionButton({
 }: ActionButtonProps) {
 
     let bgColor = "bg-primary-blue";
-    let hoverBgColor = "hover:bg-nordiska-blue"
+    let hoverBgColor = "hover:bg-primary-hover"
     let textColor = "text-white"
     let hoverTextColor = "hover:text-white"
     let border = ""
@@ -37,7 +37,6 @@ export default function ActionButton({
             hoverIconColor = "group-hover:bg-white"
             break;
             
-
         case "cancel":
             bgColor = "bg-white"
             hoverBgColor = "hover:bg-error"
@@ -51,13 +50,9 @@ export default function ActionButton({
         case "regular":
         default:
             break;
-        
     }
 
-
-
     return (
-
         <button
             type="button"
             disabled={disabled || isPending}
@@ -68,9 +63,7 @@ export default function ActionButton({
             { prefixIcon &&
                 <span aria-hidden="true" style={{maskImage: `url("${prefixIcon}")`, WebkitMaskImage: `url("${prefixIcon}")`,}} className={`mr-2 h-6 w-6  mask-contain   mask-center mask-no-repeat ${iconColor} ${hoverIconColor}`}/>
             }
-            
                 {title}
         </button>
     )
-
 }

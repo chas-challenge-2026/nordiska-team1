@@ -85,7 +85,7 @@ export default function AccountsNavigation({
                                         </div>
 
                                         {account.isFavorite && 
-                                            <span aria-hidden="true" className="ml-3 h-4 w-4 shrink-0 mask-[url('/icons/star-solid.svg')] mask-contain mask-center mask-no-repeat bg-nordiska-blue"/>
+                                            <span aria-hidden="true" className="ml-3 h-4 w-4 shrink-0 mask-[url('/icons/star-solid.svg')] mask-contain mask-center mask-no-repeat bg-light-blue-accent"/>
                                         }
                                         
                                     </button>
@@ -154,7 +154,7 @@ export default function AccountsNavigation({
                                 </p>
                             </div>
                             {account.isFavorite && 
-                            <span aria-hidden="true" className="ml-3 h-5 w-5 shrink-0 mask-[url('/icons/star-solid.svg')] mask-contain mask-center mask-no-repeat bg-nordiska-blue"/>
+                            <span aria-hidden="true" className="ml-3 h-5 w-5 shrink-0 mask-[url('/icons/star-solid.svg')] mask-contain mask-center mask-no-repeat bg-light-blue-accent"/>
                          
                             }
                         </button>
