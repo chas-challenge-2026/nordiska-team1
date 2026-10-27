@@ -51,9 +51,14 @@
             Helpers for reading the logged in customer from the JWT claims.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.IsStaff(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            True if the authenticated user is an internal staff or admin member.
+            </summary>
+        </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetCustomerId(System.Security.Claims.ClaimsPrincipal)">
             <summary>
-            Returns the customer id from the token, or null if it is missing or not a number.
+            Returns the customer id from the token, or null if it is missing, not a number, or if the user is staff.
             </summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredCustomerId(System.Security.Claims.ClaimsPrincipal)">
@@ -64,7 +69,7 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetStaffId(System.Security.Claims.ClaimsPrincipal)">
             <summary>
-            Returns the staff id from the token claims ("staff_id", "sub", or NameIdentifier), or null if missing or not a number.
+            Returns the staff id from the token claims ("staff_id" or "sub" when user_type is staff), or null if missing or not a number.
             </summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredStaffId(System.Security.Claims.ClaimsPrincipal)">

@@ -204,8 +204,32 @@ public class TestAuthService : IAuthService
         return new AuthenticationResultDto(false, "Ogiltig e-postadress eller lösenord.");
     }
 
-    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response)
+    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response, bool isStaff = false)
     {
+        if (isStaff)
+        {
+            StaffMember? staff = null;
+            if (long.TryParse(customerIdOrEmail, out var staffId))
+            {
+                staff = _staff.Values.FirstOrDefault(s => s.Id == staffId);
+            }
+
+            if (staff == null)
+            {
+                staff = _staff.Values.FirstOrDefault(s => s.Email == customerIdOrEmail);
+            }
+
+            if (staff != null)
+            {
+                var staffToken = await _jwtProvider.Generate(staff);
+                response.AppendAuthCookie(staffToken, 15);
+                var staffDto = new CustomerResponseDto(staff.Id, staff.Email ?? string.Empty, staff.FullName, staffToken);
+                return new AuthenticationResultDto(true, null, Token: staffToken, Customer: staffDto);
+            }
+
+            return new AuthenticationResultDto(false, "Handläggaren hittades inte.");
+        }
+
         Customer? customer = null;
         if (long.TryParse(customerIdOrEmail, out var id))
         {
@@ -249,6 +273,7 @@ public class TestJwtProvider : IJwtProvider
             new Claim(JwtRegisteredClaimNames.Sub, customer.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, customer.Email ?? string.Empty),
             new Claim("customer_id", customer.Id.ToString()),
+            new Claim("user_type", "customer"),
             new Claim(ClaimTypes.Role, "Customer")
         };
         return Task.FromResult(GenerateToken(claims));
@@ -261,6 +286,7 @@ public class TestJwtProvider : IJwtProvider
             new Claim(JwtRegisteredClaimNames.Sub, staff.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, staff.Email ?? string.Empty),
             new Claim("staff_id", staff.Id.ToString()),
+            new Claim("user_type", "staff"),
             new Claim(ClaimTypes.Role, staff.Role),
             new Claim("name", !string.IsNullOrWhiteSpace(staff.FullName) ? staff.FullName : (staff.Role == "Admin" ? "Administrator" : "Staff")),
             new Claim(ClaimTypes.Name, !string.IsNullOrWhiteSpace(staff.FullName) ? staff.FullName : (staff.Role == "Admin" ? "Administrator" : "Staff"))

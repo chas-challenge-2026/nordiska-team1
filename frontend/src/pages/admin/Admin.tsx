@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router"
+import { useNavigate, Navigate } from "react-router"
 import { useLogin } from "../../hooks/useLogin";
 import { useLogout } from "../../hooks/useLogout";
 import { useUserStore } from "../../store/userStore";
@@ -9,8 +9,6 @@ import { isAxiosError } from "axios";
 export default function Admin(){
     const navigate = useNavigate();
     const user = useUserStore((state) => state.user);
-
-    if(user?.role === "Customer") {navigate("/")}
     const setUser = useUserStore((state) => state.setUser);
     const clearUser = useUserStore((state) => state.logout);
 
@@ -21,6 +19,10 @@ export default function Admin(){
     
     const { mutate: loginUser, isPending } = useLogin();
     const { mutate } = useLogout();
+
+    if (user?.role === "Customer") {
+        return <Navigate to="/" replace />;
+    }
 
     function handleLogout() {
         mutate(undefined, {
@@ -59,9 +61,11 @@ export default function Admin(){
         );
     }
 
+    const isAdmin = user?.role === "Admin";
+
     return (
         <main className="font-inter">
-            {!user ? (
+            {!isAdmin ? (
             <>
                 <div className="mt-10">
                     <h1 className="text-3xl text-center font-semibold mb-10">ADMIN</h1>
