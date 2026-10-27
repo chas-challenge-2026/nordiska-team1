@@ -19,6 +19,7 @@ import AccountStatementBtn from "../components/reports/AccountStatementButton";
 import { Reorder } from "motion/react";
 import DraggableSection from "../components/accounts/DraggableSection";
 import TotalBalanceAndBtns from "../components/accounts/TotalBalanceAndBtns";
+import CallToDeposit from "../components/accounts/CallToDeposit";
 
 export type SectionId = "transactions" | "savings" | "interest";
 
@@ -66,7 +67,7 @@ export default function AccountsPage() {
     const canClose = expandedAccount?.balance === 0;
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
 
-    const DEFAULT_ORDER: SectionId[] = ["transactions","savings","interest",];
+    const DEFAULT_ORDER: SectionId[] = ["interest","savings","transactions",];
 
     const sections = {
         transactions: (
@@ -78,7 +79,6 @@ export default function AccountsPage() {
             <>{expandedAccount &&
                 <InterestSection accruedInterestYtd={expandedAccount?.accruedInterestYtd} estimatedYearEndInterest={expandedAccount?.estimatedYearEndInterest} />
             }</>
-
         ),
         savings: (
             <>{expandedAccount &&
@@ -158,6 +158,8 @@ export default function AccountsPage() {
         );
     }
 
+    const displayName = expandedAccount?.accountName ? expandedAccount.accountName : t(`accounts-route.account-type-${expandedAccount?.accountType}`)
+
     return (
         <main className="min-h-screen w-full text-dark-navy mt-3 sm:mt-4 md:mt-10">
             <div className="mx-auto w-full max-w-7xl px-2 ">
@@ -212,8 +214,10 @@ export default function AccountsPage() {
                                     <div className="flex flex-col gap-3 border border-nordiska-blue/50 bg-primary-blue/10 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:p-5">
                                         <div className="min-w-0">
                                             <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{expandedAccount.accountNumber}</p>
-                                            <p className="mt-0.5 truncate text-xl font-bold text-dark-navy sm:mt-1 sm:text-3xl">
-                                                {expandedAccount.accountName || t(`accounts-route.account-type-${expandedAccount.accountType}`)}
+                                            <p 
+                                                title={displayName}
+                                                className="mt-0.5 truncate text-xl font-bold text-dark-navy sm:mt-1 sm:text-3xl">
+                                                {displayName}
                                             </p>
                                         </div>
 
@@ -223,30 +227,50 @@ export default function AccountsPage() {
                                         </div>
                                     </div>
 
-                                    {/* SAVING, TRANSACTIONS, INTEREST SECTIONS */}
-                                    <Reorder.Group
-                                        axis="y"
-                                        values={sectionOrder}
-                                        onReorder={handleReorder}
-                                        className="flex flex-col"
-                                    >
-                                        {sectionOrder.map((id) => (
-                                            <DraggableSection key={id} id={id}>
-                                                {sections[id]}
-                                            </DraggableSection>
-                                        ))}
-                                    </Reorder.Group>
+                                    {/* VISAS BEROENDE PÅ NOLLSALDO ELLER EJ */}
+                                    {expandedAccount.balance > 0 ? (
+
+                                        // Saving, Transactions, Interest SECTIONS
+                                        <Reorder.Group
+                                            axis="y"
+                                            values={sectionOrder}
+                                            onReorder={handleReorder}
+                                            className="flex flex-col"
+                                        >
+                                            {sectionOrder.map((id) => (
+                                                <DraggableSection key={id} id={id}>
+                                                    {sections[id]}
+                                                </DraggableSection>
+                                            ))}
+                                        </Reorder.Group>
+                                    ) : (
+                                        // Gör en insättning, Sätt ett sparmål
+                                        <>
+                                            <CallToDeposit accountId={expandedAccount.id}/>
+                                            {/* DIVIDER  */}
+                                            <div aria-hidden="true" className="mx-auto my-4 w-[99%] border-b-2 border-light-blue-accent sm:my-8" />
+                                            <SavingsGoalSection
+                                                savingGoal={existingSavingGoal}
+                                                accountAmount={expandedAccount?.balance}
+                                                onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
+                                                onEdit={(newGoal) => {
+                                                    setIsSavingGoalOpen(true);
+                                                    setNewGoal(newGoal);
+                                                }}
+                                            />
+                                        </>
+                                    )}
 
                                     {/* DIVIDER */}
-                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-8" />
+                                    <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-light-blue-accent sm:mt-8" />
 
                                     {/* OTHER ACTIONS */}
-                                    <h2 id="account-actions-heading" className="mt-4 mb-1 ml-1 text-base font-semibold text-dark-navy sm:mt-6 sm:text-xl">{t("accounts-route.actions")}</h2>
+                                    <h2 id="savings-goal-heading" className="mt-4 bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pl-1 sm:mt-6 ">{t("accounts-route.actions")}</h2>
 
-                                    <section aria-labelledby="account-actions-heading" className="my-4 sm:my-6">
-                                        <div className="grid gap-2 p-1 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+                                    <section aria-labelledby="account-actions-heading" className="py-4 px-2 border border-nordiska-blue/50 bg-light-gray/30 ">
+                                        <div className="grid gap-2 p-1 grid-cols-2 sm:gap-3 md:grid-cols-3">
                                             {favoriteError ? (
-                                                <div className="col-span-full rounded-lg border border-red-200 bg-red-50 py-3 text-center" role="alert">
+                                                <div className="col-span-full rounded-lg border border-red-200 bg-red-50 py-2 px-2 text-center" role="alert">
                                                     <p className="text-sm font-medium text-red-800">{favoriteError}</p>
                                                 </div>
                                             ) : (
@@ -291,15 +315,15 @@ export default function AccountsPage() {
 
                         {/* HELP / RELATED ARTICLES */}
                         <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm md:block">
-                            <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-nordiska-blue px-4 py-3">
+                            <div className="flex min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3">
                                 <div className="min-w-0 text-white">
-                                    <p className="truncate text-xs uppercase text-white/70">{t("generic.help-center")}</p>
-                                    <p className="mt-1 truncate text-md font-semibold">{t("generic.related-articles")}</p>
+                                    <p className="truncate text-xs uppercase text-dark-navy">{t("generic.help-center")}</p>
+                                    <p className="mt-1 truncate text-md font-semibold text-dark-navy">{t("generic.related-articles")}</p>
                                 </div>
                             </div>
 
                             <div className="p-4">
-                                <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={12} />
+                                <HelpCard searchTerms={t("accounts-route.help-card-search")} removeHeading numOfHits={8} />
                             </div>
                         </aside>
                     </div>
