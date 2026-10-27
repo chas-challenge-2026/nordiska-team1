@@ -56,8 +56,18 @@ public class TransactionsController : ControllerBase
         query ??= new TransactionQueryRequest();
         var requestedAccountIds = query.GetRequestedAccountIds();
 
-        if (User.IsAdmin())
+        if (User.IsStaff())
         {
+            if (requestedAccountIds == null || requestedAccountIds.Count == 0)
+            {
+                var emptyStaffResult = PagedResult<TransactionResponse>.Create(
+                    Array.Empty<TransactionResponse>(),
+                    0,
+                    query.Page,
+                    query.PageSize);
+                return FormatResult(emptyStaffResult, query.GroupByDate);
+            }
+
             var adminParams = query.ToDomainParameters(requestedAccountIds);
             var adminResult = await _service.QueryPagedAsync(adminParams, cancellationToken);
             return FormatResult(adminResult, query.GroupByDate);

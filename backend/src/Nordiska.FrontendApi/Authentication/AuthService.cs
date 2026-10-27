@@ -300,7 +300,7 @@ public class AuthService : IAuthService
         return new AuthenticationResultDto(true, null, Token: token, CollectData: completeData);
     }
 
-    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response)
+    public async Task<AuthenticationResultDto> RefreshSessionAsync(string customerIdOrEmail, HttpResponse response, bool isStaff = false)
     {
         if (string.IsNullOrWhiteSpace(customerIdOrEmail))
         {
@@ -309,26 +309,32 @@ public class AuthService : IAuthService
 
         var normalized = customerIdOrEmail.Trim();
 
-        // Check if session belongs to a StaffMember (RBAC)
-        StaffMember? staff = null;
-        if (long.TryParse(normalized, out var staffId))
+        // 1. If caller is staff, ONLY lookup in StaffMembers table
+        if (isStaff)
         {
-            staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Id == staffId && s.IsActive);
-        }
-        if (staff == null)
-        {
-            staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email == normalized && s.IsActive);
+            StaffMember? staff = null;
+            if (long.TryParse(normalized, out var staffId))
+            {
+                staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Id == staffId && s.IsActive);
+            }
+            if (staff == null)
+            {
+                staff = await _db.StaffMembers.FirstOrDefaultAsync(s => s.Email == normalized && s.IsActive);
+            }
+
+            if (staff != null)
+            {
+                var staffToken = await _jwtProvider.Generate(staff);
+                response.AppendAuthCookie(staffToken, _jwtOptions.TokenLifetimeInMinutes);
+
+                var staffDto = new CustomerResponseDto(staff.Id, staff.Email, staff.FullName, staffToken);
+                return new AuthenticationResultDto(true, null, Token: staffToken, Customer: staffDto);
+            }
+
+            return new AuthenticationResultDto(false, "Handläggaren hittades inte.");
         }
 
-        if (staff != null)
-        {
-            var staffToken = await _jwtProvider.Generate(staff);
-            response.AppendAuthCookie(staffToken, _jwtOptions.TokenLifetimeInMinutes);
-
-            var staffDto = new CustomerResponseDto(staff.Id, staff.Email, staff.FullName, staffToken);
-            return new AuthenticationResultDto(true, null, Token: staffToken, Customer: staffDto);
-        }
-
+        // 2. Regular customer session: ONLY lookup in Customers table, NEVER in StaffMembers!
         Customer? customer = null;
         if (long.TryParse(customerIdOrEmail, out var customerId))
         {

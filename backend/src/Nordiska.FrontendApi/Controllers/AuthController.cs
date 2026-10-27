@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Nordiska.FrontendApi.Authentication;
+using Nordiska.FrontendApi.Authentication.Claims;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.FrontendApi.Contracts.Responses;
 using Nordiska.FrontendApi.Filters;
@@ -343,17 +344,17 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshSession()
     {
-        var customerIdStr = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
-                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? User.FindFirst(JwtRegisteredClaimNames.Email)?.Value 
-                          ?? User.FindFirst(ClaimTypes.Email)?.Value;
+        var isStaff = User.IsStaff();
+        var idStr = isStaff
+            ? (User.GetStaffId()?.ToString() ?? User.FindFirst(JwtRegisteredClaimNames.Email)?.Value)
+            : (User.GetCustomerId()?.ToString() ?? User.FindFirst(JwtRegisteredClaimNames.Email)?.Value);
 
-        if (string.IsNullOrWhiteSpace(customerIdStr))
+        if (string.IsNullOrWhiteSpace(idStr))
         {
             return Unauthorized(new { message = "Ogiltig session." });
         }
 
-        var result = await _authService.RefreshSessionAsync(customerIdStr, Response);
+        var result = await _authService.RefreshSessionAsync(idStr, Response, isStaff);
 
         if (!result.IsSuccess)
         {

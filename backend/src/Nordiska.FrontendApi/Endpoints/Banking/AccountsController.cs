@@ -44,10 +44,12 @@ public class AccountsController : ControllerBase
         [FromQuery] bool? isFavorite,
         CancellationToken cancellationToken)
     {
-        // Filter in the query so other customers' accounts never leave the database
-        var results = User.IsAdmin()
-            ? await _service.GetAllAsync(isFavorite, cancellationToken)
-            : await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), isFavorite, cancellationToken);
+        if (User.IsStaff())
+        {
+            return Ok(Enumerable.Empty<SavingsAccountResponse>());
+        }
+
+        var results = await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), isFavorite, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(type))
         {
