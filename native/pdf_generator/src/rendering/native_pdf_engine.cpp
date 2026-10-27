@@ -2,12 +2,15 @@
 
 #include "nordiska/rendering/utf8_to_cp1252.hpp"
 
+#include <algorithm>
 #include <charconv>
 #include <cstdint>
 #include <format>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 #include <zlib.h>
 
@@ -15,9 +18,9 @@ namespace nordiska {
 
 namespace {
 
-inline void append_float_2(std::string& out, float val) {
+inline void append_float_2(std::string& out, float val, int precision = 2) {
     char buf[64];
-    auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), val, std::chars_format::fixed, 2);
+    auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), val, std::chars_format::fixed, precision);
     if (ec == std::errc{}) {
         out.append(buf, ptr - buf);
     } else {
@@ -25,58 +28,69 @@ inline void append_float_2(std::string& out, float val) {
     }
 }
 
-void build_page_content_stream(const PageLayout& page, std::string& stream_buf) {
-    stream_buf.clear();
+void append_color(std::string& out, Color color, std::string_view operation) {
+    append_float_2(out, color.red, 5);
+    out.push_back(' ');
+    append_float_2(out, color.green, 5);
+    out.push_back(' ');
+    append_float_2(out, color.blue, 5);
+    out.append(operation);
+}
 
-    // Draw Lines
-    if (!page.lines.empty()) {
-        float current_width = -1.0F;
-        for (const PositionedLine& line : page.lines) {
-            if (line.line_width != current_width) {
-                current_width = line.line_width;
-                append_float_2(stream_buf, current_width);
-                stream_buf.append(" w\n");
-            }
-            const float y1 = page.height - line.y1;
-            const float y2 = page.height - line.y2;
-            append_float_2(stream_buf, line.x1);
-            stream_buf.push_back(' ');
-            append_float_2(stream_buf, y1);
-            stream_buf.append(" m ");
-            append_float_2(stream_buf, line.x2);
-            stream_buf.push_back(' ');
-            append_float_2(stream_buf, y2);
-            stream_buf.append(" l S\n");
-        }
-    }
-
-    // Draw Texts
-    if (!page.texts.empty()) {
-        stream_buf.append("BT\n");
-        std::string_view current_font = "";
-        float current_font_size = -1.0F;
-
-        for (const PositionedText& text : page.texts) {
-            std::string_view font_tag = (text.weight == FontWeight::Bold) ? "/F2" : "/F1";
-            if (font_tag != current_font || text.font_size != current_font_size) {
-                current_font = font_tag;
-                current_font_size = text.font_size;
-                stream_buf.append(current_font);
-                stream_buf.push_back(' ');
-                append_float_2(stream_buf, current_font_size);
-                stream_buf.append(" Tf\n");
-            }
-            const float haru_y = page.height - text.y;
-            stream_buf.append("1 0 0 1 ");
-            append_float_2(stream_buf, text.x);
-            stream_buf.push_back(' ');
-            append_float_2(stream_buf, haru_y);
-            stream_buf.append(" Tm (");
-
-            append_pdf_escaped_text(stream_buf, text.text);
-            stream_buf.append(") Tj\n");
-        }
-        stream_buf.append("ET\n");
+void build_page_content_stream(const PageLayout& page, std::span<const RasterImage* const> images, std::string& out) {
+    out.clear();
+    for (const auto& command : page.commands) {
+        out.append("q\n");
+        std::visit(
+            [&](const auto& item) {
+                using T = std::decay_t<decltype(item)>;
+                if constexpr (std::is_same_v<T, PositionedText>) {
+                    append_color(out, item.color, " rg\nBT\n");
+                    out.append(item.weight == FontWeight::Bold ? "/F2 " : "/F1 ");
+                    append_float_2(out, item.font_size);
+                    out.append(" Tf\n1 0 0 1 ");
+                    append_float_2(out, item.x);
+                    out.push_back(' ');
+                    append_float_2(out, page.height - item.y);
+                    out.append(" Tm (");
+                    append_pdf_escaped_text(out, item.text);
+                    out.append(") Tj\nET\n");
+                } else if constexpr (std::is_same_v<T, PositionedLine>) {
+                    append_color(out, item.color, " RG\n");
+                    append_float_2(out, item.line_width);
+                    out.append(" w\n");
+                    append_float_2(out, item.x1);
+                    out.push_back(' ');
+                    append_float_2(out, page.height - item.y1);
+                    out.append(" m ");
+                    append_float_2(out, item.x2);
+                    out.push_back(' ');
+                    append_float_2(out, page.height - item.y2);
+                    out.append(" l S\n");
+                } else if constexpr (std::is_same_v<T, FilledRectangle>) {
+                    append_color(out, item.color, " rg\n");
+                    append_float_2(out, item.x);
+                    out.push_back(' ');
+                    append_float_2(out, page.height - item.y - item.height);
+                    out.push_back(' ');
+                    append_float_2(out, item.width);
+                    out.push_back(' ');
+                    append_float_2(out, item.height);
+                    out.append(" re f\n");
+                } else {
+                    const auto index = std::find(images.begin(), images.end(), item.image) - images.begin();
+                    append_float_2(out, item.width);
+                    out.append(" 0 0 ");
+                    append_float_2(out, item.height);
+                    out.push_back(' ');
+                    append_float_2(out, item.x);
+                    out.push_back(' ');
+                    append_float_2(out, page.height - item.y - item.height);
+                    out.append(std::format(" cm /Im{} Do\n", index));
+                }
+            },
+            command);
+        out.append("Q\n");
     }
 }
 
@@ -102,7 +116,22 @@ class NativeEngineImpl final : public PdfEngine::Impl {
         //   Content stream obj:     4 + 2 * i
         // Font F1 (Helvetica):      3 + 2 * num_pages
         // Font F2 (Helvetica-Bold): 4 + 2 * num_pages
-        const size_t total_objects = 4 + 2 * num_pages;
+        std::vector<const RasterImage*> images;
+        for (const auto& page : layout.pages) {
+            for (const auto& command : page.commands) {
+                if (const auto* image = std::get_if<PositionedImage>(&command);
+                    image && std::find(images.begin(), images.end(), image->image) == images.end()) {
+                    images.push_back(image->image);
+                }
+            }
+        }
+        const size_t first_image_id = 5 + 2 * num_pages;
+        const size_t total_objects = 4 + 2 * num_pages + images.size();
+        std::string image_resources = " /XObject << ";
+        for (size_t i = 0; i < images.size(); ++i) {
+            image_resources += std::format("/Im{} {} 0 R ", i, first_image_id + i);
+        }
+        image_resources += ">>";
         const size_t font_f1_id = 3 + 2 * num_pages;
         const size_t font_f2_id = 4 + 2 * num_pages;
 
@@ -154,13 +183,15 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                                       "   /Contents {} 0 R\n"
                                       "   /Resources <<\n"
                                       "     /Font << /F1 {} 0 R /F2 {} 0 R >>\n"
-                                      "     /ProcSet [ /PDF /Text ]\n"
+                                      "     {}\n"
+                                      "     /ProcSet [ /PDF /Text /ImageC ]\n"
                                       "   >>\n"
                                       ">>\nendobj\n",
-                                      page_obj_id, page.width, page.height, content_obj_id, font_f1_id, font_f2_id));
+                                      page_obj_id, page.width, page.height, content_obj_id, font_f1_id, font_f2_id,
+                                      image_resources));
 
             // Generate content stream
-            build_page_content_stream(page, t_stream_buf);
+            build_page_content_stream(page, images, t_stream_buf);
 
             // Write Content Stream Object
             object_offsets[content_obj_id] = pdf.size();
@@ -207,6 +238,31 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                                   "   /Encoding /WinAnsiEncoding\n"
                                   ">>\nendobj\n",
                                   font_f2_id));
+
+        // One image object per unique immutable resource, shared by all pages.
+        for (size_t i = 0; i < images.size(); ++i) {
+            const auto& image = *images[i];
+            std::vector<uint8_t> compressed;
+            std::span<const uint8_t> data = image.deflated_rgb;
+            if (data.empty()) {
+                uLongf size = compressBound(image.rgb.size());
+                compressed.resize(size);
+                if (compress(compressed.data(), &size, image.rgb.data(), image.rgb.size()) != Z_OK) {
+                    return std::unexpected(
+                        RenderError{RenderErrorKind::EngineError, "native: image compression failed"});
+                }
+                compressed.resize(size);
+                data = compressed;
+            }
+            const size_t id = first_image_id + i;
+            object_offsets[id] = pdf.size();
+            append_string(
+                std::format("{} 0 obj\n<< /Type /XObject /Subtype /Image /Width {} /Height {} "
+                            "/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {} >>\nstream\n",
+                            id, image.width, image.height, data.size()));
+            append_string({reinterpret_cast<const char*>(data.data()), data.size()});
+            append_string("\nendstream\nendobj\n");
+        }
 
         // 7. Cross-reference Table (xref)
         const size_t xref_offset = pdf.size();

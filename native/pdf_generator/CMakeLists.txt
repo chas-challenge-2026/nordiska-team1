@@ -113,6 +113,10 @@ add_library(nordiska_document_core STATIC
     src/rendering/cairo_pdf_engine.cpp
     src/rendering/native_pdf_engine.cpp
     src/layout/layout_builder.cpp
+    src/layout/report_components.cpp
+    src/layout/report_page_components.cpp
+    src/layout/brand_resources.cpp
+    src/text/text_metrics.cpp
     src/signing/pdf_signer.cpp
     src/signing/signature_slot_appender.cpp
 )
@@ -154,6 +158,11 @@ endif()
 install(TARGETS nordiska_pdf_generator_c_api LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
 if(BUILD_TESTING)
+    add_executable(nordiska_report_layout_tests tests/report_layout_tests.cpp)
+    target_link_libraries(nordiska_report_layout_tests PRIVATE nordiska_document_core)
+    target_include_directories(nordiska_report_layout_tests PRIVATE src/layout)
+    add_test(NAME nordiska_report_layout_tests COMMAND nordiska_report_layout_tests)
+
     add_executable(nordiska_pdf_signing_tests tests/pdf_signing_tests.cpp)
     target_link_libraries(nordiska_pdf_signing_tests PRIVATE nordiska_document_core OpenSSL::Crypto)
     add_test(NAME nordiska_pdf_signing_tests COMMAND nordiska_pdf_signing_tests)
@@ -183,6 +192,7 @@ if(BUILD_TESTING)
     add_test(NAME nordiska_adversarial_signing_tests COMMAND nordiska_adversarial_signing_tests)
 
     set_tests_properties(
+        nordiska_report_layout_tests
         nordiska_pdf_signing_tests
         nordiska_json_ingestor_tests
         nordiska_pdf_generator_c_api_tests

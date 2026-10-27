@@ -6,6 +6,7 @@
 
 #include <expected>
 #include <string>
+#include <string_view>
 
 namespace nordiska {
 
@@ -20,11 +21,18 @@ struct LayoutError {
     std::string message;
 };
 
+struct LayoutContext {
+    std::string_view customer_name;
+};
+
 class LayoutBuilder {
   public:
-    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build(const Document& doc);
-    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_statement(const AccountStatement& stmt);
-    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_tax_report(const AnnualTaxReport& tax);
+    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build(const Document& doc,
+                                                                          LayoutContext context = {});
+    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_statement(const AccountStatement& stmt,
+                                                                                    LayoutContext context = {});
+    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_tax_report(const AnnualTaxReport& tax,
+                                                                                     LayoutContext context = {});
 };
 
 } // namespace nordiska

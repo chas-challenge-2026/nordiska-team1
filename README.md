@@ -87,7 +87,7 @@ Benchmark the end-to-end reporting pipeline (tax reports and account statements)
 ### Interactive TUI (Recommended)
 An interactive terminal controller to configure worker settings and run benchmarks:
 ```bash
-./tools/bench-tui.sh
+./tools/benchmark/bench-tui.sh
 ```
 * **Signing Presets:** Toggle between Unsigned, Plain CMS, and Timestamped (RFC 3161 TSA).
 * **Worker Concurrency:** Adjust worker batch consumer concurrency slots on the fly.

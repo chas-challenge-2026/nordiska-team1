@@ -276,10 +276,11 @@ nordiska::Sha256Digest independent_hash(const std::vector<uint8_t>& bytes) {
 }
 
 void test_renderers() {
-    const nordiska::DocumentLayout layout{.pages = {
-                                              {.texts = {{.x = 40, .y = 50, .text = "Signing integration test"}}},
-                                              {.texts = {{.x = 40, .y = 50, .text = "Second page"}}},
-                                          }};
+    const nordiska::DocumentLayout layout{
+        .pages = {
+            {.commands = {nordiska::PositionedText{.x = 40, .y = 50, .text = "Signing integration test"}}},
+            {.commands = {nordiska::PositionedText{.x = 40, .y = 50, .text = "Second page"}}},
+        }};
     for (auto engine :
          {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
         nordiska::PdfEngine renderer(engine);
@@ -458,7 +459,7 @@ void test_socket_signer_adapter() {
         nordiska::PdfEngine renderer(engine);
         for (size_t i = 0; i < result->documents.size(); ++i) {
             const auto& document = result->documents[i];
-            auto layout = nordiska::LayoutBuilder::build(job->documents[i]);
+            auto layout = nordiska::LayoutBuilder::build(job->documents[i], {.customer_name = job->customer_name});
             require(layout.has_value(), "unsigned fixture layout failed");
             auto rendered = renderer.render(*layout);
             require(rendered.has_value(), "unsigned fixture render failed");
@@ -502,7 +503,8 @@ void test_real_cms() {
          {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
         nordiska::PdfEngine renderer(engine);
         auto rendered = renderer.render(
-            {.pages = {{.texts = {{.x = 40, .y = 50, .text = "Valid test signature; untrusted certificate"}}}}},
+            {.pages = {{.commands = {nordiska::PositionedText{
+                            .x = 40, .y = 50, .text = "Valid test signature; untrusted certificate"}}}}},
             16384 + nordiska::kSignatureUpdateOverhead);
         require(rendered.has_value(), "test rendering failed");
         auto& pdf = *rendered;

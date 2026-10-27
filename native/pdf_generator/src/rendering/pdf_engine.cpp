@@ -4,6 +4,7 @@
 #include "nordiska/rendering/haru_pdf_engine.hpp"
 #include "nordiska/rendering/native_pdf_engine.hpp"
 
+#include <cmath>
 #include <memory>
 #include <vector>
 
@@ -30,6 +31,20 @@ PdfEngine& PdfEngine::operator=(PdfEngine&&) noexcept = default;
 
 std::expected<std::vector<uint8_t>, RenderError> PdfEngine::render(const DocumentLayout& layout,
                                                                    size_t tail_capacity) const {
+    for (const auto& page : layout.pages) {
+        for (const auto& command : page.commands) {
+            if (const auto* placed = std::get_if<PositionedImage>(&command)) {
+                const auto* image = placed->image;
+                if (!image || image->width == 0 || image->height == 0 || image->width > 32767 ||
+                    image->height > 32767 ||
+                    static_cast<uint64_t>(image->width) * image->height * 3 != image->rgb.size() ||
+                    !std::isfinite(placed->width) || !std::isfinite(placed->height) || placed->width <= 0 ||
+                    placed->height <= 0) {
+                    return std::unexpected(RenderError{RenderErrorKind::EngineError, "Invalid RGB image resource"});
+                }
+            }
+        }
+    }
     return impl_->render(layout, tail_capacity);
 }
 
