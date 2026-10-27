@@ -218,13 +218,14 @@ public class FaqIntegrationTests : IAsyncLifetime
 
         (await client.GetAsync($"/api/faq/best-match?q={Uri.EscapeDataString(marker)}&lang=sv"))
             .StatusCode.Should().Be(HttpStatusCode.OK);
-        (await client.GetAsync($"/api/faq/best-match?q={Uri.EscapeDataString("missing-" + marker)}&lang=sv"))
+        var noMatchQuery = "missing" + marker;
+        (await client.GetAsync($"/api/faq/best-match?q={Uri.EscapeDataString(noMatchQuery)}&lang=sv"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
-        _searchMarkers.Add("missing-" + marker);
+        _searchMarkers.Add(noMatchQuery);
         await SeedViewsAsync((faqId, DateTime.UtcNow.AddMinutes(-1)), (faqId, DateTime.UtcNow));
 
         (await WaitForSearchLogsAsync(marker)).Should().NotBeEmpty();
-        (await WaitForSearchLogsAsync("missing-" + marker)).Should().NotBeEmpty();
+        (await WaitForSearchLogsAsync(noMatchQuery)).Should().NotBeEmpty();
         (await WaitForViewLogsAsync(faqId)).Should().HaveCountGreaterThanOrEqualTo(2);
 
         var admin = CreateFaqManageClient();
