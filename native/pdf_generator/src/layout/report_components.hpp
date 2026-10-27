@@ -11,7 +11,7 @@ namespace nordiska::report {
 
 struct Column {
     std::string_view heading;
-    float width;
+    float proportion; // Relative share of the common content width.
     bool right_aligned{false};
 };
 
@@ -41,7 +41,12 @@ class Composer {
     std::string heading_;
     std::string subtitle_;
     DocumentLayout document_;
-    std::vector<Column> columns_;
+    struct ResolvedColumn {
+        std::string_view heading;
+        float width;
+        bool right_aligned;
+    };
+    std::vector<ResolvedColumn> columns_;
     float y_{};
 };
 

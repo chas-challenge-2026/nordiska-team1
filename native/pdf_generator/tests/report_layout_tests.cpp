@@ -3,6 +3,7 @@
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/text/text_metrics.hpp"
 #include "pdf_test_helpers.hpp"
+#include "report_components.hpp"
 
 #include <algorithm>
 #include <array>
@@ -172,6 +173,114 @@ void test_reference_typography_and_dummy_address() {
     }
 }
 
+void test_shared_report_geometry() {
+    auto stmt = statement();
+    AnnualTaxReport tax{.tax_year = "2025",
+                        .account_number = stmt.account_number,
+                        .account_name = stmt.account_name,
+                        .total_interest_earned = "1 000,00 SEK",
+                        .preliminary_tax_deducted = "300,00 SEK",
+                        .reported_to_authority = "Skatteverket"};
+    auto account = LayoutBuilder::build_statement(stmt, {.customer_name = "Anna Exempel"});
+    auto annual = LayoutBuilder::build_tax_report(tax, {.customer_name = "Anna Exempel"});
+    require(account.has_value() && annual.has_value(), "Both reports must build");
+    const auto& first = account->pages.front();
+    const auto& second = annual->pages.front();
+    const auto shared_text = [](const PageLayout& page) {
+        std::vector<PositionedText> texts;
+        for (const auto& command : page.commands) {
+            if (const auto* text = std::get_if<PositionedText>(&command);
+                text && (text->y < 200 || text->y >= 780 || text->text == "Kontonummer: " ||
+                         text->text == "DEMO-10001" || text->text == "Uppgift")) {
+                texts.push_back(*text);
+            }
+        }
+        return texts;
+    };
+    const auto account_text = shared_text(first);
+    const auto annual_text = shared_text(second);
+    require(account_text.size() == annual_text.size(), "Shared page elements must have the same command count");
+    for (size_t i = 0; i < account_text.size(); ++i) {
+        const auto& a = account_text[i];
+        const auto& b = annual_text[i];
+        require(a.text == b.text && a.x == b.x && a.y == b.y && a.font_size == b.font_size && a.weight == b.weight &&
+                    a.color == b.color,
+                "Shared recipient, sender, fields, table heading and footer must be identical across report types");
+    }
+    const auto find_text = [](const PageLayout& page, std::string_view value) -> const PositionedText& {
+        for (const auto& command : page.commands) {
+            if (const auto* text = std::get_if<PositionedText>(&command); text && text->text == value) {
+                return *text;
+            }
+        }
+        throw std::runtime_error("Missing report label");
+    };
+    const auto same_label_style = [&](std::string_view account_label, std::string_view annual_label) {
+        const auto& a = find_text(first, account_label);
+        const auto& b = find_text(second, annual_label);
+        require(a.x == b.x && a.y == b.y && a.font_size == b.font_size && a.weight == b.weight && a.color == b.color,
+                "Different report labels must share geometry and typography");
+    };
+    same_label_style("Kontoutdrag", "Kontrolluppgift");
+    same_label_style("Period: 2026-01-01 – 2026-01-31", "Inkomstår: 2025");
+    same_label_style("Nordiska Flex", "Kontrolluppgift för ränteinkomst");
+    const auto& account_logo = std::get<PositionedImage>(first.commands.front());
+    const auto& annual_logo = std::get<PositionedImage>(second.commands.front());
+    require(account_logo.image == annual_logo.image && account_logo.x == annual_logo.x &&
+                account_logo.y == annual_logo.y && account_logo.width == annual_logo.width &&
+                account_logo.height == annual_logo.height,
+            "Both reports must use identical logo geometry");
+    const auto band = [](const PageLayout& page) -> const FilledRectangle& {
+        for (const auto& command : page.commands) {
+            if (const auto* rectangle = std::get_if<FilledRectangle>(&command)) {
+                return *rectangle;
+            }
+        }
+        throw std::runtime_error("Missing title band");
+    };
+    const auto& a = band(first);
+    const auto& b = band(second);
+    require(a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height && a.color == b.color,
+            "Both reports must use identical title band geometry");
+    for (const auto* layout : {&*account, &*annual}) {
+        size_t rules = 0;
+        for (const auto& command : layout->pages.front().commands) {
+            if (const auto* line = std::get_if<PositionedLine>(&command)) {
+                require(line->x1 == kNordiskaReportStyle.left && line->x2 == kNordiskaReportStyle.right,
+                        "Every table must span the shared content width regardless of column count");
+                ++rules;
+            }
+        }
+        require(rules > 1, "Each report must contain table rules");
+    }
+}
+
+void test_table_proportions_follow_content_width() {
+    ReportStyle style;
+    style.left = 90;
+    style.right = 500;
+    const auto check = [&](std::span<const report::Column> columns, std::span<const std::string> cells) {
+        report::Composer composer("Kontoutdrag", "Test", "Anna Exempel", style);
+        composer.begin_table(columns);
+        composer.row(cells);
+        auto layout = composer.finish();
+        for (const auto& command : layout.pages.front().commands) {
+            if (const auto* line = std::get_if<PositionedLine>(&command)) {
+                require(line->x1 == 90 && line->x2 == 500, "Tables must adapt to the shared content edges");
+            }
+            if (const auto* text = std::get_if<PositionedText>(&command); text && text->text == "Right edge") {
+                require(std::abs(text->x + text_width(text->text, text->font_size, text->weight) - 494) < 0.01F,
+                        "Last column must end at the shared right edge minus cell padding");
+            }
+        }
+    };
+    check(std::array{report::Column{"First", 1}, report::Column{"Last", 3, true}},
+          std::array<std::string, 2>{"Left", "Right edge"});
+    check(std::array{report::Column{"First", 4}, report::Column{"Second", 2}, report::Column{"Third", 1},
+                     report::Column{"Last", 3, true}},
+          std::array<std::string, 4>{"Left", "Middle", "Other", "Right edge"});
+}
+
 void test_oversized_content() {
     auto stmt = statement();
     stmt.title = std::string(2000, 'W');
@@ -242,6 +351,8 @@ int main() {
     test_wrapping();
     test_branding_and_continuations();
     test_reference_typography_and_dummy_address();
+    test_shared_report_geometry();
+    test_table_proportions_follow_content_width();
     test_oversized_content();
     test_renderers_and_resource_reuse();
     std::cout << "Report layout tests passed\n";

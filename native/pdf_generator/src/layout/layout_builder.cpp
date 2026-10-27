@@ -31,13 +31,12 @@ std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_statement(const 
     page.section_heading(stmt.account_name.empty() ? "Sparkonto" : stmt.account_name);
     page.field("Kontonummer: ", stmt.account_number);
     page.field("Valuta: ", stmt.currency);
-    page.gap(14.75F);
 
     constexpr std::array columns = {
-        report::Column{"Uppgift", 180},
-        report::Column{"Datum", 77},
-        report::Column{"Belopp", 96, true},
-        report::Column{"Saldo", 100.6F, true},
+        report::Column{"Uppgift", 40},
+        report::Column{"Datum", 17},
+        report::Column{"Belopp", 21, true},
+        report::Column{"Saldo", 22, true},
     };
     page.begin_table(columns);
     page.row(std::array<std::string, 4>{"Ingående saldo", "", "", stmt.opening_balance});
@@ -63,13 +62,11 @@ std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_tax_report(const
     // and table styling, with a content-specific summary and authority note.
     report::Composer page("Kontrolluppgift", "Inkomstår: " + tax.tax_year, context.customer_name);
     page.section_heading(tax.title.empty() ? "Kontrolluppgift för ränteinkomst" : tax.title);
-    page.gap(8);
     page.field("Kontonummer: ", tax.account_number);
     if (!tax.account_name.empty()) {
         page.field("Kontonamn: ", tax.account_name);
     }
-    page.gap(16);
-    constexpr std::array columns = {report::Column{"Uppgift", 290}, report::Column{"Belopp", 163.6F, true}};
+    constexpr std::array columns = {report::Column{"Uppgift", 64}, report::Column{"Belopp", 36, true}};
     page.begin_table(columns);
     page.row(std::array{std::string("Total intjänad ränta"), tax.total_interest_earned});
     page.row(std::array{std::string("Preliminärskatt avdragen"), tax.preliminary_tax_deducted});

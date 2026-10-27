@@ -13,8 +13,8 @@ its composition is inferred because no annual reference was available.
 JSON -> PdfRenderingJob -> LayoutBuilder -> DocumentLayout -> PdfEngine -> signing
                               |
                        report::Composer
-                         /          \
-                 ReportStyle      prepared logo
+                       /             \
+                 ReportStyle    page components -> prepared logo
 ```
 
 - **Domain and ingestion** retain the existing customer/document schema.
@@ -31,9 +31,12 @@ JSON -> PdfRenderingJob -> LayoutBuilder -> DocumentLayout -> PdfEngine -> signi
   the pixels once per process, safely across concurrent calls. Stateless C API
   construction does not decode the asset for every generator or batch.
 - **LayoutBuilder** selects a concrete report composition. `report::Composer`
-  owns one document's mutable page and table flow. It shares page furniture,
-  wrapping, right alignment, repeated headings, row continuation, and final
-  page numbering. It contains no renderer handles or signing logic.
+  owns one document's mutable page and table flow: wrapping, right alignment,
+  repeated headings, and row continuation. The private `report_page_components`
+  functions emit the shared logo/sender header, recipient/address block, title
+  band, footer, and page numbers. These functions own no document or flow state.
+  Both templates use this same path. Neither subsystem contains renderer handles
+  or signing logic.
 - **Text metrics and encoding** use the same WinAnsi normalization and standard
   Helvetica advances for wrapping and placement. The compatibility encoding
   include under `rendering/` remains available. The reference uses HK Nova;
@@ -71,6 +74,13 @@ apart. Both report compositions use these shared roles.
 
 ## Pagination and validation
 
+Table columns specify relative proportions, never absolute widths. `begin_table`
+resolves them against `ReportStyle::content_width()` and assigns the final column
+any rounding remainder so all tables end at the shared right margin. Table gap,
+cell padding, rules, and heading typography come from the shared implementation.
+The templates supply only report-specific headings, column proportions, and data.
+The annual preamble uses the same spacing as the statement.
+
 Tables reserve the footer area and repeat headings on continuation pages.
 Ordinary rows stay together; oversized rows continue at line boundaries without
 truncating cells. All fields, including long unbroken tokens and custom titles,
@@ -79,7 +89,10 @@ heading so arbitrary input cannot overflow the title band.
 
 `nordiska_report_layout_tests` checks Swedish text, normalization, long fields,
 page bounds, lossless row continuation, repeated branding and headers, image
-reuse, invalid resources, and rendering through all three engines. The existing
+reuse, invalid resources, and rendering through all three engines. Cross-report
+checks compare shared text geometry/typography, logos, title bands, footers, and
+table edges; two- and four-column tables are also checked with changed margins.
+The existing
 signing, C API, adversarial, and fuzz replay suites exercise the full pipeline.
 
 For a local visual preview with synthetic data:
