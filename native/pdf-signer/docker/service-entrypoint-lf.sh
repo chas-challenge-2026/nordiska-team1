@@ -8,11 +8,16 @@ export OPENSSL_MODULES=/usr/lib/x86_64-linux-gnu/ossl-modules
 
 : "${PDF_SIGNER_PKCS11_PIN:?PDF_SIGNER_PKCS11_PIN is required}"
 : "${PDF_SIGNER_PKCS11_SO_PIN:?PDF_SIGNER_PKCS11_SO_PIN is required}"
+: "${TSA_WORKER_COUNT:?TSA_WORKER_COUNT is required}"
+: "${TSA_HTTP_WORKER_COUNT:?TSA_HTTP_WORKER_COUNT is required}"
 
 PIN="$PDF_SIGNER_PKCS11_PIN"
 SO_PIN="$PDF_SIGNER_PKCS11_SO_PIN"
 
 export PDF_SIGNER_PKCS11_PIN
+export PDF_SIGNER_PKCS11_SO_PIN
+export TSA_WORKER_COUNT
+export TSA_HTTP_WORKER_COUNT
 
 mkdir -p .dev/softhsm/tokens
 mkdir -p tests/data

@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <sys/time.h>
+#include "runtime_config.h"
 
-#define TSA_HTTP_WORKER_COUNT 8
 #define TSA_HTTP_QUEUE_SIZE 256
 #define TSA_HTTP_MAX_HEADER_SIZE 8192
 #define TSA_HTTP_MAX_REQUEST_SIZE 65536
@@ -428,12 +428,16 @@ int tsa_http_server_run(tsa_server_t* server, int shutdown_fd, unsigned short po
     return -1;
   }
 
-  pthread_t         threads[TSA_HTTP_WORKER_COUNT];
-  tsa_http_worker_t workers[TSA_HTTP_WORKER_COUNT];
+  unsigned int tsa_http_worker_count = runtime_config_tsa_http_worker_count();
+
+  fprintf(stderr, "TSA_HTTP_SERVER_WORKER_COUNT: %d\n", tsa_http_worker_count);
+
+  pthread_t         threads[tsa_http_worker_count];
+  tsa_http_worker_t workers[tsa_http_worker_count];
 
   size_t started_workers = 0;
 
-  for (size_t i = 0; i < TSA_HTTP_WORKER_COUNT; i++) {
+  for (size_t i = 0; i < tsa_http_worker_count; i++) {
     workers[i].queue        = &queue;
     workers[i].server       = server;
     workers[i].worker_index = i;
