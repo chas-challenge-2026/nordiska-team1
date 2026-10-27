@@ -133,3 +133,7 @@ signing_samples/
 
 # Local installer script
 /dotnet-install.sh
+
+# Private customer PDF references kept only in the repository root.
+/*.pdf
+/*.PDF
