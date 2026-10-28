@@ -165,16 +165,19 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         var sortOrder = string.IsNullOrWhiteSpace(parameters.SortOrder)
             ? (sortBy == "id" ? "asc" : "desc")
             : parameters.SortOrder.Trim().ToLowerInvariant();
+        
+
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
         IOrderedQueryable<FaqEntry> orderedQuery = (sortBy, sortOrder) switch
         {
             ("helpful", "asc") => query.OrderBy(e => e.HelpfulCount).ThenBy(e => e.Id),
             ("helpful", _) => query.OrderByDescending(e => e.HelpfulCount).ThenBy(e => e.Id),
             ("views", "asc") => query
-                .OrderBy(e => db.FaqViewLogs.Count(view => view.FaqEntryId == e.Id && view.ViewedAt >= DateTime.UtcNow.AddDays(-30)))
+                .OrderBy(e => db.FaqViewLogs.Count(view => view.FaqEntryId == e.Id && view.ViewedAt >= thirtyDaysAgo))
                 .ThenBy(e => e.Id),
             ("views", _) => query
-                .OrderByDescending(e => db.FaqViewLogs.Count(view => view.FaqEntryId == e.Id && view.ViewedAt >= DateTime.UtcNow.AddDays(-30)))
+                .OrderByDescending(e => db.FaqViewLogs.Count(view => view.FaqEntryId == e.Id && view.ViewedAt >= thirtyDaysAgo))
                 .ThenBy(e => e.Id),
             ("id", "desc") => query.OrderByDescending(e => e.Id),
             _ => query.OrderBy(e => e.Id)
