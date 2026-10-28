@@ -84,10 +84,8 @@ export default function AccountsPage() {
         forecast: (
             <>{expandedAccount &&
                 <SavingsForecastSection
-                    accountId={expandedAccount.id}
                     balance={expandedAccount.balance}
                     interestRate={expandedAccount.interestRate}
-                    createdAt={expandedAccount.createdAt}
                     onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
                 />
             }</>

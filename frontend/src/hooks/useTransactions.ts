@@ -42,15 +42,6 @@ async function getAllTransactions(filters: TransactionFilterParams): Promise<Tra
     return items;
 }
 
-/** Alla genomförda transaktioner för ett konto från och med fromDate (ISO-sträng) */
-export function useAccountTransactionsSince(accountId: number, fromDate: string) {
-    const filters: TransactionFilterParams = { AccountIds: [accountId], IsPlanned: false, FromDate: fromDate };
-    return useQuery({
-        queryKey: [...transactionKey.all, "all", filters] as const,
-        queryFn: () => getAllTransactions(filters),
-    });
-}
-
 interface TransactionRowsOptions {
     closedAccountIds: ReadonlySet<number>;
     /** Insättningar/uttag filtreras på beloppets tecken, så att även överföringsben och ränta/skatt kommer med */
