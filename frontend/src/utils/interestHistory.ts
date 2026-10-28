@@ -1,17 +1,24 @@
 import type { Transaction } from "../services/transactionsService";
 import { toDateKey } from "./date";
 
-export type InterestHistoryPoint = {
-    /** Lokalt datum som YYYY-MM-DD */
-    date: string;
-    /** Ackumulerad ränta från periodens start till och med dagen */
-    interest: number;
-};
+const round2 = (value: number) => Math.round(value * 100) / 100;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export type InterestHistory = {
-    totalInterest: number;
-    points: InterestHistoryPoint[];
-};
+function startOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** Lägger till (eller drar ifrån) månader. Dagen kläms till månadens sista dag, t.ex. 31 jan + 1 mån = 28/29 feb */
+export function addMonths(date: Date, months: number): Date {
+    const daysInMonth = new Date(date.getFullYear(), date.getMonth() + months + 1, 0).getDate();
+    return new Date(date.getFullYear(), date.getMonth() + months, Math.min(date.getDate(), daysInMonth));
+}
+
+/** Antal dagar mellan idag och samma datum `months` månader bort (negativt = bakåt) */
+export function daysForMonths(months: number, today = new Date()): number {
+    const start = startOfDay(today);
+    return Math.round(Math.abs(addMonths(start, months).getTime() - start.getTime()) / MS_PER_DAY);
+}
 
 /** Början av lokala dagen för (idag - days + 1), dvs. första dagen i en period på `days` dagar */
 export function periodStart(days: number, today = new Date()): Date {
@@ -24,14 +31,14 @@ export function periodStart(days: number, today = new Date()): Date {
  * Saldot per dag tas fram genom att gå bakåt från nuvarande saldo och backa varje dags transaktioner.
  * Använder nuvarande räntesats, så resultatet är en uppskattning om räntan ändrats under perioden.
  */
-export function buildInterestHistory(
+export function calculateEarnedInterest(
     balance: number,
     interestRate: number,
     createdAt: string,
     transactions: Transaction[],
     days: number,
     today = new Date(),
-): InterestHistory {
+): number {
     const sumPerDay = new Map<string, number>();
     for (const tx of transactions) {
         if (tx.isPlanned) continue;
@@ -40,29 +47,82 @@ export function buildInterestHistory(
     }
 
     const createdKey = toDateKey(createdAt);
-    const dailyInterest: { date: string; interest: number }[] = [];
     let endOfDayBalance = balance;
+    let total = 0;
 
     for (let i = 0; i < days; i++) {
         const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
         const key = toDateKey(day.toISOString());
         const isOpen = !createdKey || key >= createdKey;
-        const interest = isOpen ? Math.max(endOfDayBalance, 0) * interestRate / 365 : 0;
-
-        dailyInterest.push({ date: key, interest });
+        if (isOpen) total += Math.max(endOfDayBalance, 0) * interestRate / 365;
         endOfDayBalance -= sumPerDay.get(key) ?? 0;
     }
 
-    // Startpunkt på 0 dagen före perioden, så att grafen alltid är en linje (även för 1 dag)
-    const startDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - days);
-    let accumulated = 0;
-    const points = [
-        { date: toDateKey(startDay.toISOString()), interest: 0 },
-        ...dailyInterest.reverse().map(({ date, interest }) => {
-            accumulated += interest;
-            return { date, interest: Math.round(accumulated * 100) / 100 };
-        }),
-    ];
+    return round2(total);
+}
 
-    return { totalInterest: Math.round(accumulated * 100) / 100, points };
+export type InterestForecast = {
+    withoutInterest: number;
+    withInterest: number;
+    difference: number;
+    totalDeposited: number;
+    depositCount: number;
+    endBalanceWith: number;
+};
+
+/** Insättningsdagar: idag, och vid månadsvis samma datum varje månad före periodens sista dag (12 mån = 12 insättningar) */
+function depositDates(today: Date, lastDay: Date, monthly: boolean): Date[] {
+    const dates: Date[] = [];
+    for (let month = 0; ; month++) {
+        const date = addMonths(today, month);
+        if (date >= lastDay) break;
+        dates.push(date);
+        if (!monthly) break;
+    }
+    return dates;
+}
+
+/**
+ * Prognos för de kommande `days` dagarna (från och med imorgon), med och utan en testinsättning.
+ * Samma modell som calculateEarnedInterest: enkel daglig ränta på dagens slutsaldo, saldo * ränta / 365.
+ */
+export function buildInterestForecast(
+    balance: number,
+    interestRate: number,
+    days: number,
+    depositAmount: number,
+    monthly: boolean,
+    today = new Date(),
+): InterestForecast {
+    const start = startOfDay(today);
+    const lastDay = new Date(start.getFullYear(), start.getMonth(), start.getDate() + days);
+    const deposits = depositAmount > 0 ? depositDates(start, lastDay, monthly) : [];
+
+    let balanceWith = balance;
+    let nextDeposit = 0;
+    let without = 0;
+    let withDeposit = 0;
+
+    for (let i = 0; i <= days; i++) {
+        const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        while (nextDeposit < deposits.length && deposits[nextDeposit] <= day) {
+            balanceWith += depositAmount;
+            nextDeposit++;
+        }
+        // Dagens ränta (i = 0) räknas redan som intjänad, prognosen börjar imorgon
+        if (i === 0) continue;
+
+        without += Math.max(balance, 0) * interestRate / 365;
+        withDeposit += Math.max(balanceWith, 0) * interestRate / 365;
+    }
+
+    const totalDeposited = deposits.length * depositAmount;
+    return {
+        withoutInterest: round2(without),
+        withInterest: round2(withDeposit),
+        difference: round2(withDeposit - without),
+        totalDeposited,
+        depositCount: deposits.length,
+        endBalanceWith: round2(balance + totalDeposited + withDeposit),
+    };
 }

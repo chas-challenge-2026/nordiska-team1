@@ -88,6 +88,7 @@ export default function AccountsPage() {
                     balance={expandedAccount.balance}
                     interestRate={expandedAccount.interestRate}
                     createdAt={expandedAccount.createdAt}
+                    onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
                 />
             }</>
         ),
