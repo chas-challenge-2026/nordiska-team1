@@ -19,11 +19,11 @@ function NoSavingGoalState() {
     return (
         <div className="flex h-screen flex-col items-center justify-center -mt-5">
             <div className="flex w-28 items-center justify-center">
-                <span aria-hidden="true" className="block h-16 w-16 bg-nordiska-orange mask-[url('/icons/target.svg')] mask-contain mask-center mask-no-repeat"/>
+                <span aria-hidden="true" className="block h-10 w-10 bg-nordiska-orange mask-[url('/icons/target.svg')] mask-contain mask-center mask-no-repeat"/>
             </div>
-            <p className="xl:text-lg font-semibold mt-1 text-dark-navy/80"> {t("no-saving-goal-state.title")} </p>
-            <p className="px-10 text-center text-sm mt-1 text-dark-navy/80"> {t("no-saving-goal-state.description")}</p>
-            <p className="mt-4 text-center text-[0.9em] font-semibold text-dark-navy/80 md:mt-6 xl:text-base">
+            <p className="font-semibold mt-1 text-dark-navy/80"> {t("no-saving-goal-state.title")} </p>
+            <p className="px-4 text-center text-[0.8em] mt-1 text-dark-navy/80"> {t("no-saving-goal-state.description")}</p>
+            <p className="mt-4 text-center text-sm font-semibold text-dark-navy/80 md:mt-6">
             {t("no-saving-goal-state.action")}{" "}<span onClick={() => navigate("/accounts")} className="inline-block cursor-pointer text-primary-blue hover:text-primary-hover">{t("page-navigation.accounts")}</span></p>
         </div>
     );
