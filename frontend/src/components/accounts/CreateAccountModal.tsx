@@ -108,6 +108,7 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
                     value={accountName}
                     onChange={setAccountName}
                 />
+                <span className="text-xs text-right -mt-3">{accountName.length}/40</span>
 
                 <div>
                     <div className="flex items-center justify-between">
