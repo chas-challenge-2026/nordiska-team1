@@ -167,11 +167,14 @@
         },
         "forecast-section": {
             "heading": "Savings forecast",
-            "period-label": "Select period",
+            "slider-label": "Choose number of days",
             "days": "{{count}} days",
+            "days_one": "{{count}} day",
             "earned-interest": "Interest earned last {{count}} days",
+            "earned-interest_one": "Interest earned last day",
             "tooltip": "Interest earned",
             "chart-label": "Chart of interest earned over the last {{count}} days",
+            "chart-label_one": "Chart of interest earned over the last day",
             "info": "Estimate based on the account balance each day and the current interest rate.",
             "loading": "Loading savings forecast...",
             "error": "Could not load the savings forecast"

@@ -165,11 +165,14 @@
         },
         "forecast-section": {
             "heading": "Sparprognos",
-            "period-label": "Välj period",
+            "slider-label": "Välj antal dagar",
             "days": "{{count}} dagar",
+            "days_one": "{{count}} dag",
             "earned-interest": "Intjänad ränta senaste {{count}} dagarna",
+            "earned-interest_one": "Intjänad ränta senaste dagen",
             "tooltip": "Intjänad ränta",
             "chart-label": "Diagram över intjänad ränta de senaste {{count}} dagarna",
+            "chart-label_one": "Diagram över intjänad ränta den senaste dagen",
             "info": "Uppskattning baserad på kontots saldo varje dag och nuvarande ränta.",
             "loading": "Laddar sparprognos...",
             "error": "Det gick inte att hämta sparprognosen"

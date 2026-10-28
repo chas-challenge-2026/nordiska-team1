@@ -53,11 +53,16 @@ export function buildInterestHistory(
         endOfDayBalance -= sumPerDay.get(key) ?? 0;
     }
 
+    // Startpunkt på 0 dagen före perioden, så att grafen alltid är en linje (även för 1 dag)
+    const startDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - days);
     let accumulated = 0;
-    const points = dailyInterest.reverse().map(({ date, interest }) => {
-        accumulated += interest;
-        return { date, interest: Math.round(accumulated * 100) / 100 };
-    });
+    const points = [
+        { date: toDateKey(startDay.toISOString()), interest: 0 },
+        ...dailyInterest.reverse().map(({ date, interest }) => {
+            accumulated += interest;
+            return { date, interest: Math.round(accumulated * 100) / 100 };
+        }),
+    ];
 
     return { totalInterest: Math.round(accumulated * 100) / 100, points };
 }
