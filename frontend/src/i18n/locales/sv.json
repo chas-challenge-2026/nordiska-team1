@@ -163,6 +163,17 @@
             "yearly-interest": "Beräknad årsränta",
             "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo"
         },
+        "forecast-section": {
+            "heading": "Sparprognos",
+            "period-label": "Välj period",
+            "days": "{{count}} dagar",
+            "earned-interest": "Intjänad ränta senaste {{count}} dagarna",
+            "tooltip": "Intjänad ränta",
+            "chart-label": "Diagram över intjänad ränta de senaste {{count}} dagarna",
+            "info": "Uppskattning baserad på kontots saldo varje dag och nuvarande ränta.",
+            "loading": "Laddar sparprognos...",
+            "error": "Det gick inte att hämta sparprognosen"
+        },
         "savings-goal": {
             "no-goal-title": "Sätt ett sparmål och följ ditt sparande",
             "no-goal-info": "Bestäm hur mycket du vill spara på kontot och följ hur ditt sparande växer.",

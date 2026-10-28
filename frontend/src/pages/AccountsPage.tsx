@@ -20,8 +20,9 @@ import { Reorder } from "motion/react";
 import DraggableSection from "../components/accounts/DraggableSection";
 import TotalBalanceAndBtns from "../components/accounts/TotalBalanceAndBtns";
 import CallToDeposit from "../components/accounts/CallToDeposit";
+import SavingsForecastSection from "../components/accounts/SavingsForecastSection";
 
-export type SectionId = "transactions" | "savings" | "interest";
+export type SectionId = "transactions" | "savings" | "interest" | "forecast";
 
 export default function AccountsPage() {
     const { t } = useTranslation();
@@ -67,7 +68,7 @@ export default function AccountsPage() {
     const canClose = expandedAccount?.balance === 0;
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
 
-    const DEFAULT_ORDER: SectionId[] = ["interest","savings","transactions",];
+    const DEFAULT_ORDER: SectionId[] = ["interest","forecast","savings","transactions",];
 
     const sections = {
         transactions: (
@@ -78,6 +79,16 @@ export default function AccountsPage() {
         interest: (
             <>{expandedAccount &&
                 <InterestSection accruedInterestYtd={expandedAccount?.accruedInterestYtd} estimatedYearEndInterest={expandedAccount?.estimatedYearEndInterest} />
+            }</>
+        ),
+        forecast: (
+            <>{expandedAccount &&
+                <SavingsForecastSection
+                    accountId={expandedAccount.id}
+                    balance={expandedAccount.balance}
+                    interestRate={expandedAccount.interestRate}
+                    createdAt={expandedAccount.createdAt}
+                />
             }</>
         ),
         savings: (
@@ -104,7 +115,11 @@ export default function AccountsPage() {
     });
 
     const accountId = expandedAccount?.id;
-    const sectionOrder = accountId ? sectionOrders[accountId] ?? DEFAULT_ORDER : DEFAULT_ORDER;
+    const savedOrder = accountId ? sectionOrders[accountId] : undefined;
+    // Sparade ordningar från innan en sektion fanns saknar den, lägg till nya sektioner sist
+    const sectionOrder = savedOrder
+        ? [...savedOrder.filter((id) => DEFAULT_ORDER.includes(id)), ...DEFAULT_ORDER.filter((id) => !savedOrder.includes(id))]
+        : DEFAULT_ORDER;
 
     function handleReorder(newOrder: SectionId[]) {
         if (!accountId) return;

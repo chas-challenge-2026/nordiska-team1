@@ -165,6 +165,17 @@
             "yearly-interest": "Estimated annual interest",
             "yearly-interest-info": "Annual interest is calculated based on the current balance."
         },
+        "forecast-section": {
+            "heading": "Savings forecast",
+            "period-label": "Select period",
+            "days": "{{count}} days",
+            "earned-interest": "Interest earned last {{count}} days",
+            "tooltip": "Interest earned",
+            "chart-label": "Chart of interest earned over the last {{count}} days",
+            "info": "Estimate based on the account balance each day and the current interest rate.",
+            "loading": "Loading savings forecast...",
+            "error": "Could not load the savings forecast"
+        },
         "savings-goal": {
             "no-goal-title": "Set a savings goal and track your progress",
             "no-goal-info": "Decide how much you want to save in your account and watch your savings grow.",
