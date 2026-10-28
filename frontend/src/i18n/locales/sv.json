@@ -22,6 +22,10 @@
         "of": "av",
         "transactions": "transaktioner",
         "balance": "Saldo",
+        "total": "Total",
+        "amount": "Summa",
+        "accrued": "Upplupen",
+        "forecast": "Prognos",
         "tax-report": "Skatteunderlag",
         "log-out": "Logga ut",
         "stay": "Stanna kvar",
@@ -158,9 +162,9 @@
             "no-transactions": "Det finns inga transaktioner kopplade till det här kontot"
         },
         "interest-section": {
-            "accured-interest": "Intjänad ränta",
-            "accured-interest-info": "Intjänad ränta beräknas från 1 januari varje år.",
-            "yearly-interest": "Beräknad årsränta",
+            "accured-interest": "Upplupen ränta",
+            "accured-interest-info": "Upplupen ränta beräknas från 1 januari varje år.",
+            "yearly-interest":"Prognos årsränta",
             "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo"
         },
         "savings-goal": {
@@ -224,7 +228,7 @@
         "closing": "Stänger...",
         "loading-account-types": "Laddar kontotyper...",
         "error-account-types": "Kunde inte hämta kontotyper",
-        "payback": "Intjänad och beräknad årsränta",
+        "payback": "Beräknad ränteprognos",
 
         "generate-statement": "Skapa kontoutdrag",
         "show-statement": "Visa kontoutdrag",
@@ -284,18 +288,35 @@
 
         "account-card":{
             "title": "Saldo",
-            "description": "Totalt saldo och saldon för favoritmarkerade konton",
+            "description": "Totalt saldo och saldo för konton",
             "description-no-favorites": "Favoritmarkera konton för att visa saldo här",
             "pending": "Laddar dina konton",
             "error": "Det gick inte att ladda dina konton",
             "total-balance": "Totalt saldo",
-            "hover-title": "Öppna konto"
+            "hover-title": "Öppna konto",
+            "hover-total": "Ditt totala saldo hos Nordiska."
+        },
+
+        "interest-card": {
+            "hover-total": "Total upplupen ränta och prognos på total ränteutbetalning",
+            "description": "Upplupen och prognos på årsränta",
+            "pending": "Beräknar din ränta",
+            "error": "Kunde inte beräkna din ränta"
+        },
+
+        "inbox-card": {
+            "title": "Aviseringar",
+            "description": "Dina senaste avieringar till inboxen",
+            "pending": "Laddar din inbox",
+            "error": "Det gick inte att hämta inboxen",
+            "aria-label": "Senaste aviseringar"
         },
 
         "transactions-card": {
             "closed-account": "stängt konto",
-            "title": "Senaste transaktioner",
-            "description": "Visar senaste transaktioner från alla konton",
+            "title": "Transaktioner",
+            "hover-title": "Visa transaktioner för",
+            "description": "Visar dina senaste transaktioner",
             "pending": "Laddar transaktioner",
             "error": "Det gick inte att ladda dina transaktioner",
             "transfer-type-transfer": "Överföring",
@@ -310,12 +331,13 @@
             "title": "Planerade överföringar",
             "description": "Visar dina planerade överföringar",
             "pending": "Laddar planerade överföringar",
-            "error": "Det gick inte att ladda planerade överföringar"
+            "error": "Det gick inte att ladda planerade överföringar",
+            "btn-hover": "Öppna överföringar"
         },
 
         "savings-card": {
             "title": "Sparmål",
-            "description": "Här ser du dina valda sparmål",
+            "description": "Utvecklingen på dina sparmål",
             "select": "Välj",
             "selected-count": "{{selected}}/{{max}}",
             "max-goals": "Max {{max}} sparmål",
@@ -324,7 +346,8 @@
             "error": "Kunde inte hämta sparmålen eller kontosaldon.",
             "achieved": "uppnått",
             "remaining": "kvar",
-            "empty-selection": "Välj ett eller flera sparmål för att visa dina framsteg."
+            "empty-selection": "Välj ett eller flera sparmål för att visa dina framsteg.",
+            "btn-hover": "Gå till sparmål tillhörande konto:"
         },
 
         "savings-eta": "Uppnås om {{time}}",

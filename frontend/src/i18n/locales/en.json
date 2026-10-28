@@ -22,6 +22,10 @@
         "of": "of",
         "transactions": "transactions",
         "balance": "Balance",
+        "total": "Total",
+        "amount": "Amount",
+        "accrued": "Accrued",
+        "forecast": "Projected",
         "tax-report": "Tax report",
         "log-out": "Log out",
         "stay": "Stay",
@@ -160,9 +164,9 @@
             "no-transactions": "There are no transactions associated with this account"
         },
         "interest-section": {
-            "accured-interest": "Interest earned",
-            "accured-interest-info": "Interest earned is calculated from January 1 each year.",
-            "yearly-interest": "Estimated annual interest",
+            "accured-interest": "Accrued interest",
+            "accured-interest-info": "Accrued interest is calculated from January 1 each year.",
+            "yearly-interest": "Projected annual interest",
             "yearly-interest-info": "Annual interest is calculated based on the current balance."
         },
         "savings-goal": {
@@ -226,7 +230,7 @@
         "closing": "Closing...",
         "loading-account-types": "Loading account types...",
         "error-account-types": "Could not retrieve account types.",
-        "payback": "Interest earned and estimated annual interest",
+        "payback": "Projected interest payout",
 
         "generate-statement": "Generate account statement",
         "show-statement": "View account statement",
@@ -285,18 +289,35 @@
 
     "account-card": {
         "title": "Balance",
-        "description": "Total balance and balances for favorite accounts",
+        "description": "Total balance and balances for accounts",
         "description-no-favorites": "Mark account as favorite to show balance here",
         "pending": "Loading your accounts",
         "error": "Oops... Something went wrong",
         "total-balance": "Total balance",
-        "hover-title": "Open account"
+        "hover-title": "Open account",
+        "hover-total": "Your total balance at Nordiska."
+    },
+
+    "interest-card": {
+        "hover-total": "Total accrued interest and projected total interest payout",
+        "description": "Accrued interest and projected annual interest",
+        "pending": "Calculating your interest",
+        "error": "Could not calculate your interest"
+    },
+
+    "inbox-card": {
+        "title": "Notifications",
+        "description": "Your latest notifications in your inbox",
+        "pending": "Loading your inbox",
+        "error": "Unable to load your inbox",
+        "aria-label": "Latest notifications"
     },
 
     "transactions-card": {
         "closed-account": "closed account",
-        "title": "Recent transactions",
-        "description": "Showing the latest transactions from all accounts",
+        "title": "Transactions",
+        "hover-title": "View transactions for",
+        "description": "Shows your latest transactions",
         "pending": "Loading transactions",
         "error": "Oops... Something went wrong",
         "transfer-type-transfer": "Transfer",
@@ -311,21 +332,23 @@
         "title": "Planned transfers",
         "description": "Shows your planned transfers",
         "pending": "Loading planned transfers",
-        "error": "Oops... Something went wrong"
+        "error": "Oops... Something went wrong",
+        "btn-hover": "Open transfers"
     },
 
     "savings-card": {
-    "title": "Savings Goals",
-    "description": "Here are your selected savings goals",
-    "select": "Select",
-    "selected-count": "{{selected}}/{{max}}",
-    "max-goals": "Max {{max}} savings goals",
-    "done": "Done",
-    "loading": "Loading savings goals...",
-    "error": "Could not retrieve savings goals or account balances.",
-    "achieved": "achieved",
-    "remaining": "remaining",
-    "empty-selection": "Select one or more savings goals to view your progress."
+        "title": "Savings Goals",
+        "description": "The progress of your savings goals",
+        "select": "Select",
+        "selected-count": "{{selected}}/{{max}}",
+        "max-goals": "Max {{max}} savings goals",
+        "done": "Done",
+        "loading": "Loading savings goals...",
+        "error": "Could not retrieve savings goals or account balances.",
+        "achieved": "achieved",
+        "remaining": "left",
+        "empty-selection": "Select one or more savings goals to view your progress.",
+        "btn-hover": "Go to savings goal for account:"
     },
 
     "savings-eta": "Reached in {{time}}",
