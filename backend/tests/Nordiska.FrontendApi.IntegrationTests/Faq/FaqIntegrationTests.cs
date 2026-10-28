@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Nordiska.BuildingBlocks.Database;
 using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.FrontendApi.IntegrationTests.Postgres;
 using Nordiska.Modules.Faq.Application;
@@ -93,6 +94,49 @@ public class FaqIntegrationTests : IAsyncLifetime
         results.Select(r => r.Id).Should().NotContain(otherId);
     }
 
+    [PostgresFact]
+    public async Task GetByLanguage_SortByHelpful_IsStableAcrossPages()
+    {
+        var category = NewCategory();
+        var low = await SeedArticleAsync(category, helpful: 1);
+        var high = await SeedArticleAsync(category, helpful: 3);
+        var middle = await SeedArticleAsync(category, helpful: 2);
+        var client = _factory.CreateClient();
+        var route = $"/api/faq/sv?pageSize=2&category={Uri.EscapeDataString(category)}&sortBy=helpful&sortOrder=desc";
+
+        var firstPage = await client.GetFromJsonAsync<PagedResult<FaqEntryResponse>>(route + "&page=1");
+        var secondPage = await client.GetFromJsonAsync<PagedResult<FaqEntryResponse>>(route + "&page=2");
+
+        firstPage!.Items.Select(entry => entry.Id).Should().Equal(high.Id, middle.Id);
+        secondPage!.Items.Select(entry => entry.Id).Should().Equal(low.Id);
+    }
+
+    [PostgresFact]
+    public async Task GetByLanguage_SortByViewsUsesRecentViewsAndIsStableAcrossPages()
+    {
+        var category = NewCategory();
+        var low = await SeedArticleAsync(category);
+        var high = await SeedArticleAsync(category);
+        var middle = await SeedArticleAsync(category);
+        var now = DateTime.UtcNow;
+        await SeedViewsAsync(
+            (high.Id, now.AddDays(-1)),
+            (high.Id, now.AddDays(-2)),
+            (middle.Id, now.AddDays(-3)),
+            (low.Id, now.AddDays(-45)),
+            (low.Id, now.AddDays(-46)),
+            (low.Id, now.AddDays(-47)));
+
+        var client = _factory.CreateClient();
+        var route = $"/api/faq/sv?pageSize=2&category={Uri.EscapeDataString(category)}&sortBy=views&sortOrder=desc";
+
+        var firstPage = await client.GetFromJsonAsync<PagedResult<FaqEntryResponse>>(route + "&page=1");
+        var secondPage = await client.GetFromJsonAsync<PagedResult<FaqEntryResponse>>(route + "&page=2");
+
+        firstPage!.Items.Select(entry => entry.Id).Should().Equal(high.Id, middle.Id);
+        secondPage!.Items.Select(entry => entry.Id).Should().Equal(low.Id);
+    }
+
      [PostgresFact]
     public async Task BestMatch_ReturnsHighestRankedFaq()
     {
@@ -124,13 +168,76 @@ public class FaqIntegrationTests : IAsyncLifetime
     [PostgresFact]
     public async Task BestMatch_NoMatch_ReturnsNoContent()
     {
-        var query = "zznomatch" + Guid.NewGuid().ToString("N");
+        var query = NewSearchMarker();
+        query = "zznomatch" + query;
+        _searchMarkers.Add(query);
 
         var client = _factory.CreateClient();
         var response = await client.GetAsync(
             $"/api/faq/best-match?q={Uri.EscapeDataString(query)}&lang=sv");
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [PostgresFact]
+    public async Task BestMatch_CategoryRestrictsCandidates()
+    {
+        var marker = "category" + Guid.NewGuid().ToString("N")[..10];
+        var selectedCategory = $"Savings-{Guid.NewGuid():N}";
+        var selectedId = await SeedFaqEntryAsync(
+            $"How does {marker} work?",
+            "Savings answer.",
+            selectedCategory,
+            "savings");
+        await SeedFaqEntryAsync(
+            $"How does {marker} work?",
+            "Cards answer.",
+            $"Cards-{Guid.NewGuid():N}",
+            "cards");
+
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync(
+            $"/api/faq/best-match?q={Uri.EscapeDataString(marker)}&lang=sv&category={Uri.EscapeDataString(selectedCategory)}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<FaqEntryResponse>();
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(selectedId);
+    }
+
+    [PostgresFact]
+    public async Task AnalyticsSummary_ReportsSearchMissesAndViews()
+    {
+        var marker = NewSearchMarker();
+        var faqId = await SeedFaqEntryAsync(
+            $"Question about {marker}?",
+            "Answer.",
+            NewCategory(),
+            marker);
+        var client = _factory.CreateClient();
+
+        (await client.GetAsync($"/api/faq/best-match?q={Uri.EscapeDataString(marker)}&lang=sv"))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        var noMatchQuery = "missing" + marker;
+        (await client.GetAsync($"/api/faq/best-match?q={Uri.EscapeDataString(noMatchQuery)}&lang=sv"))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        _searchMarkers.Add(noMatchQuery);
+        await SeedViewsAsync((faqId, DateTime.UtcNow.AddMinutes(-1)), (faqId, DateTime.UtcNow));
+
+        (await WaitForSearchLogsAsync(marker)).Should().NotBeEmpty();
+        (await WaitForSearchLogsAsync(noMatchQuery)).Should().NotBeEmpty();
+        (await WaitForViewLogsAsync(faqId)).Should().HaveCountGreaterThanOrEqualTo(2);
+
+        var admin = CreateFaqManageClient();
+        var summary = await admin.GetFromJsonAsync<FaqAnalyticsSummaryResponse>(
+            "/api/faq/analytics/summary?lang=sv&days=1&limit=10");
+
+        summary.Should().NotBeNull();
+        summary!.Searches.TotalSearches.Should().BeGreaterThanOrEqualTo(2);
+        summary.Searches.NoResultSearches.Should().BeGreaterThanOrEqualTo(1);
+        summary.Searches.TopContentGaps.Should().Contain(gap => gap.Query.Contains(marker));
+        summary.Views.TotalViews.Should().BeGreaterThanOrEqualTo(2);
+        summary.Views.MostViewedArticles.Should().Contain(article => article.Id == faqId && article.ViewCount >= 2);
     }
 
     [PostgresFact]

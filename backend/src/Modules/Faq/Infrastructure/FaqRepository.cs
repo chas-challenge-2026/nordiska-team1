@@ -70,11 +70,20 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
 
     public async Task<IReadOnlyCollection<FaqEntryResponse>> GetSearchCandidatesAsync(
         string language,
+        string? category = null,
         CancellationToken cancellationToken = default)
     {
         var normalizedLanguage = string.IsNullOrWhiteSpace(language) ? "sv" : language.Trim().ToLowerInvariant();
-        
-        var entries = await db.FaqEntries.AsNoTracking().Where(entry => entry.Language.ToLower() == normalizedLanguage).OrderBy(entry => entry.Id).ToListAsync(cancellationToken);
+        var query = db.FaqEntries.AsNoTracking()
+            .Where(entry => entry.Language.ToLower() == normalizedLanguage);
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            var normalizedCategory = category.Trim().ToLowerInvariant();
+            query = query.Where(entry => entry.Category.ToLower() == normalizedCategory);
+        }
+
+        var entries = await query.OrderBy(entry => entry.Id).ToListAsync(cancellationToken);
 
         return entries.Select(entry => entry.ToResponse()).ToList();
     }
@@ -150,9 +159,31 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         var totalCount = await query.CountAsync(cancellationToken);
         var page = parameters.Page < 1 ? 1 : parameters.Page;
         var pageSize = parameters.PageSize < 1 ? 20 : (parameters.PageSize > 100 ? 100 : parameters.PageSize);
+        var sortBy = string.IsNullOrWhiteSpace(parameters.SortBy)
+            ? "id"
+            : parameters.SortBy.Trim().ToLowerInvariant();
+        var sortOrder = string.IsNullOrWhiteSpace(parameters.SortOrder)
+            ? (sortBy == "id" ? "asc" : "desc")
+            : parameters.SortOrder.Trim().ToLowerInvariant();
+        
 
-        var entries = await query
-            .OrderBy(e => e.Id)
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+        IOrderedQueryable<FaqEntry> orderedQuery = (sortBy, sortOrder) switch
+        {
+            ("helpful", "asc") => query.OrderBy(e => e.HelpfulCount).ThenBy(e => e.Id),
+            ("helpful", _) => query.OrderByDescending(e => e.HelpfulCount).ThenBy(e => e.Id),
+            ("views", "asc") => query
+                .OrderBy(e => db.FaqViewLogs.Count(view => view.FaqEntryId == e.Id && view.ViewedAt >= thirtyDaysAgo))
+                .ThenBy(e => e.Id),
+            ("views", _) => query
+                .OrderByDescending(e => db.FaqViewLogs.Count(view => view.FaqEntryId == e.Id && view.ViewedAt >= thirtyDaysAgo))
+                .ThenBy(e => e.Id),
+            ("id", "desc") => query.OrderByDescending(e => e.Id),
+            _ => query.OrderBy(e => e.Id)
+        };
+
+        var entries = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

@@ -576,7 +576,7 @@
             API endpoints for managing and querying FAQ knowledge base entries.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetByLanguage(System.String,System.Int32,System.Int32,System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetByLanguage(System.String,System.Int32,System.Int32,System.String,System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves paginated FAQ entries for a specific language with optional search, category, and keyword filters.
             </summary>
@@ -586,6 +586,8 @@
             <param name="search">Free text search term across question, answer, and keywords.</param>
             <param name="category">Category filter (e.g. 'Ränta', 'Interest').</param>
             <param name="keyword">Keyword filter (e.g. 'ränta', 'deposit').</param>
+            <param name="sortBy">Optional sort field: id, helpful, or views (views are counted over the last 30 days).</param>
+            <param name="sortOrder">Optional direction: asc or desc. Defaults to asc for id and desc for helpful/views.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Paginated list of FAQ entries matching the criteria.</response>
             <response code="400">Validation failed for query parameters.</response>
@@ -606,6 +608,11 @@
             <response code="400">Validation failed for query parameters.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
             <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetAnalyticsSummary(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Returns aggregate FAQ search and view analytics. Requires the faq:manage permission.
+            </summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetCategories(System.String,System.Threading.CancellationToken)">
             <summary>
