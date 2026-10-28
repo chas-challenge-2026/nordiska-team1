@@ -376,10 +376,11 @@ public sealed class FaqService(
         CancellationToken cancellationToken = default)
     {
         var since = DateTime.UtcNow.AddDays(-days);
-        var searchesTask = searchLogRepository.GetAnalyticsAsync(language, since, limit, cancellationToken);
-        var viewsTask = viewLogRepository.GetAnalyticsAsync(language, since, limit, cancellationToken);
-        await Task.WhenAll(searchesTask, viewsTask);
-        return new FaqAnalyticsSummaryResponse(await searchesTask, await viewsTask);
+
+        var searchesTask = await searchLogRepository.GetAnalyticsAsync(language, since, limit, cancellationToken);
+        var viewsTask = await viewLogRepository.GetAnalyticsAsync(language, since, limit, cancellationToken);
+
+        return new FaqAnalyticsSummaryResponse(searchesTask, viewsTask);
     }
 
     public async Task<IReadOnlyList<string>> GetCategoriesAsync(
