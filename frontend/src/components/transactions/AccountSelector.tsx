@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { type Account } from "../../services/accountsService";
 import { useTranslation } from "react-i18next";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import PanelHeader from "./PanelHeader";
 
 interface AccountSelectorProps {
@@ -47,7 +47,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                     />
                     <span className="min-w-0">
                         <span className="block truncate text-xs text-dark-navy">
-                            {acc.accountNumber} • <span className="font-semibold">{formatCurrency(acc.balance)}</span>
+                            {acc.accountNumber} • <span className="font-semibold">{formatCurrencySmallSek(acc.balance)}</span>
                         </span>
                         <span className="mt-0.5 block truncate text-sm font-semibold">
                             {acc.accountName || t(`accounts-route.account-type-${acc.accountType}`)}
@@ -75,7 +75,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
     };
 
     return (
-        <div className={isSheet ? 'relative bg-white px-4 pb-4 text-dark-navy' : 'relative overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm'}>
+        <div className={isSheet ? 'relative bg-white px-4 pb-4 text-dark-navy' : 'relative overflow-hidden border border-gray-300 bg-white text-dark-navy shadow-md/30'}>
             {!isSheet && <PanelHeader subtitle={t("transactions-route.accounts-subtitle")} title={t("generic.account")} />}
 
             {isLoading && (

@@ -23,7 +23,7 @@ export default function ThreadList({ folder, page, search, selectedId, onPageCha
     return (
         <div className="bg-white shadow-card">
             <div className="bg-dark-navy px-4 py-3 text-white">
-                <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.view-message")}</span>
+                <span className="block text-xs uppercase text-white/80">{t("inbox.view-message")}</span>
                 <h2 className="font-bold">{t("inbox.select-message")}</h2>
             </div>
 

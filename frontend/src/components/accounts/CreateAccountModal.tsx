@@ -130,7 +130,7 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
                         onChange={(e) => setAccountType(e.target.value as AccountTypes)}
                         aria-invalid={!!accountTypeError}
                         aria-describedby={accountTypeError ? "accountType-error" : undefined}
-                        className={`mt-1 w-full rounded-md border bg-white px-3 py-2 ${accountTypeError ? "border-red-700" : "border-nordiska-blue"
+                        className={`mt-1 w-full rounded-md border bg-white px-3 py-2 ${accountTypeError ? "border-red-700" : "border-primary-hover"
                             }`}
                     >
                         <option value="" disabled>

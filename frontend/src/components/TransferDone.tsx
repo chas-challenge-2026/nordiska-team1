@@ -60,7 +60,7 @@ export default function TransferDone({
                     </p>
                     <div className="mt-6 flex max-w-full items-center gap-2 sm:max-w-[520px] sm:gap-4">
                         <div className="min-w-0 flex-1 border border-primary-blue/40 bg-primary-blue/10 px-4 py-3.5">
-                            <div className="text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
+                            <div className="text-[10px] font-medium uppercase tracking-wider text-primary-hover sm:text-xs">
                                 {t("generic.from")}
                             </div>
                             <div className="truncate text-[15px] font-bold text-dark-navy">
@@ -68,10 +68,10 @@ export default function TransferDone({
                             </div>
                         </div>
                         <div className="relative h-0.5 w-10 flex-none bg-[#E5EAF0] sm:w-28">
-                            <div className="absolute -top-1 left-0 h-2.5 w-2.5 animate-[dot-travel_1.8s_ease-in-out_infinite] rounded-full bg-nordiska-orange" />
+                            <div className="absolute -top-1 left-0 h-2.5 w-2.5 animate-[dot-travel_1.8s_ease-in-out_infinite] rounded-full bg-light-blue-accent" />
                         </div>
                         <div className="min-w-0 flex-1 border border-primary-blue/40 bg-primary-blue/10 px-4 py-3.5">
-                            <div className="text-[10px] font-medium uppercase tracking-wider text-nordiska-blue sm:text-xs">
+                            <div className="text-[10px] font-medium uppercase tracking-wider text-primary-hover sm:text-xs">
                                 {t("generic.to")}
                             </div>
                             <div className="truncate text-[15px] font-bold text-dark-navy">
@@ -96,7 +96,7 @@ export default function TransferDone({
                                 cx="38"
                                 cy="38"
                                 r="34"
-                                stroke="var(--color-nordiska-orange)"
+                                stroke="var(--color-light-blue-accent)"
                                 strokeWidth="3"
                                 strokeDasharray="214"
                                 className="animate-[ring-draw_0.7s_ease-out_both]"
@@ -113,7 +113,7 @@ export default function TransferDone({
                             ) : (
                                 <path
                                     d="M23 39.5 L34 50 L54 28"
-                                    stroke="var(--color-nordiska-blue)"
+                                    stroke="var(--color-primary-hover)"
                                     strokeWidth="4"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -134,12 +134,12 @@ export default function TransferDone({
                     </div>
 
                     {!isFailure && (
-                        <div className="mt-6 flex max-w-full flex-col gap-3 border border-nordiska-blue/50 bg-light-gray/30 px-4 py-4 sm:max-w-[520px] sm:px-5">
+                        <div className="mt-6 flex max-w-full flex-col gap-3 border border-primary-hover/50 bg-light-gray/30 px-4 py-4 sm:max-w-[520px] sm:px-5">
                             <SummaryRow
                                 label={t("page-transfer.bankid.amount")}
                                 value={summary.amount}
                             />
-                            <div aria-hidden="true" className="border-b-2 border-nordiska-orange" />
+                            <div aria-hidden="true" className="border-b-2 border-light-blue-accent" />
                             <SummaryRow
                                 label={t("generic.from")}
                                 value={summary.fromName}
@@ -166,7 +166,7 @@ export default function TransferDone({
                     <button
                         type="button"
                         onClick={onReset}
-                        className="mt-6 inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-nordiska-blue"
+                        className="mt-6 inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
                     >
                         {t(
                             isFailure

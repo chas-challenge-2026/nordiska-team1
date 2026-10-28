@@ -34,7 +34,7 @@ export default function DocumentsTab({ page, onPageChange }: DocumentsTabProps) 
     return (
         <div className="bg-white shadow-card">
             <div className="bg-dark-navy px-4 py-3 text-white">
-                <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.archive")}</span>
+                <span className="block text-xs uppercase text-white/80">{t("inbox.archive")}</span>
                 <h2 className="font-bold">{t("inbox.documents")}</h2>
             </div>
 

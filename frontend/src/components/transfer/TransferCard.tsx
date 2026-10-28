@@ -13,7 +13,7 @@ export default function TransferCard({ id, label, title, className, children }: 
     return (
         <section
             aria-labelledby={id}
-            className={`flex min-h-0 min-w-0 lg:min-h-full flex-col overflow-hidden bg-white md:border md:border-gray-200 md:shadow-sm ${className ?? ""}`}
+            className={`flex min-h-0 min-w-0 lg:min-h-full flex-col overflow-hidden bg-white md:border md:border-gray-300 md:shadow-md/30 ${className ?? ""}`}
         >
             {/* CARD HEADER */}
             <div className="flex min-h-22 items-center bg-dark-navy px-3 py-3 text-white sm:px-6">

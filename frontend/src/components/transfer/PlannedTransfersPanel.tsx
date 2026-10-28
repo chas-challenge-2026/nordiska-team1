@@ -54,7 +54,7 @@ export default function PlannedTransfersPanel({
                 {t("page-transfer.planned.footnote")}
             </p>
             {upcomingTransfers.length === 0 ? (
-                <div className="border border-nordiska-blue/50 bg-light-gray/30 p-4 text-center">
+                <div className="border border-primary-hover/50 bg-light-gray/30 p-4 text-center">
                     <span aria-hidden="true" className="mx-auto block h-10 w-10 bg-nordiska-orange mask-[url('/icons/transfers.svg')] mask-contain mask-center mask-no-repeat" />
                     <p className="mt-2 text-sm font-semibold text-dark-navy/80">{t("no-planned-state.title")}</p>
                     <p className="mt-1 text-xs text-dark-navy/70">{t("no-planned-state.description")}</p>

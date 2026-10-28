@@ -13,11 +13,11 @@ export default function CallToDeposit({accountId}: CallToDepositProps) {
 
     return (
             <section aria-labelledby="deposit-heading" className="mt-4 sm:mt-8">
-                <h2 id="deposit-heading" className="bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pl-1">        
+                <h2 id="deposit-heading" className="bg-dark-navy text-base font-medium text-white sm:text-lg pl-2">        
                     Starta ditt sparande     
                 </h2>
 
-                <div className="border border-nordiska-blue/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
+                <div className="border border-dark-navy/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
                     <p className="mt-5 text-center text-sm font-semibold text-dark-navy/80 sm:text-lg">
                         NÅGONTING HÄR OM ATT GÖRA EN PROGNOS?
                     </p>

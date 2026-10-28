@@ -184,7 +184,7 @@ export default function BankIdConfirm({
                             {initData && (
                                 <a
                                     href={autoStartUrl(initData.autoStartToken)}
-                                    className="text-sm font-semibold text-nordiska-blue underline"
+                                    className="text-sm font-semibold text-primary-hover underline"
                                 >
                                     {t("login-route.open-app-again")}
                                 </a>
@@ -207,7 +207,7 @@ export default function BankIdConfirm({
                                 <button
                                     type="button"
                                     onClick={() => start(mode)}
-                                    className="w-full cursor-pointer rounded-md border-0 bg-nordiska-blue py-3 text-base font-bold text-white hover:bg-login-bg"
+                                    className="w-full cursor-pointer rounded-md border-0 bg-primary-hover py-3 text-base font-bold text-white hover:bg-login-bg"
                                 >
                                     {t("login-route.retry")}
                                 </button>
