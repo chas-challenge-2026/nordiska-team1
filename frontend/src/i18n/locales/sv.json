@@ -139,6 +139,12 @@
         "account-type-flex": "Flexkonto",
         "account-type-fix": "Fasträntekonto",
         "account-type-premium": "Premiumkonto",
+        "best-rate": "Bäst ränta",
+        "account-type-desc-fix": "3 månaders bindningstid",
+        "account-type-desc-premium": "Vår högsta ränta för större sparbelopp",
+        "account-type-desc-flex": "Rörlig ränta och fria uttag",
+        "account-type-desc-saving": "Högräntekonto med förmånlig avkastning",
+        "account-type-desc-standard": "Tryggt vardagssparande",
         "account-name": "Kontonamn",
         "savings-goal-title": "Sparmål",
         "actions": "Kontohantering",
@@ -166,6 +172,21 @@
             "accured-interest-info": "Upplupen ränta beräknas från 1 januari varje år.",
             "yearly-interest":"Prognos årsränta",
             "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo"
+        },
+        "forecast-section": {
+            "heading": "Sparprognos",
+            "earned-interest": "Intjänad ränta",
+            "total": "Totalt <amount>{{amount}}</amount>",
+            "monthly-saving": "Månadssparande",
+            "saving-period": "Spartid",
+            "years": "{{count}} år",
+            "years-unit": "år",
+            "start-deposit": "Startinsättning",
+            "start-amount": "Startbelopp (kontots saldo)",
+            "interest-rate": "Ränta",
+            "edit": "Ändra {{label}}",
+            "move-money": "Flytta pengar hit",
+            "info": "Beräkningen utgår från kontots nuvarande saldo och ränta."
         },
         "savings-goal": {
             "no-goal-title": "Sätt ett sparmål och följ ditt sparande",
@@ -215,6 +236,9 @@
 
         "account-type-required": "kontotyp krävs",
         "select-account-type": "Välj kontotyp",
+        "create-forecast-info": "Exemplet bygger på kontotypens nuvarande ränta.",
+        "compare-accounts": "Jämför konton med en sparprognos",
+        "back-to-create": "Tillbaka",
 
         "initial-deposit": "Startinsättning",
         "interest-rate": "Ränta",

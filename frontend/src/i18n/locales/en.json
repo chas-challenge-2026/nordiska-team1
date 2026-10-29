@@ -141,6 +141,12 @@
         "account-type-flex": "Flexible savings account",
         "account-type-fix": "Fixed-term savings account",
         "account-type-premium": "Premium account",
+        "best-rate": "Best rate",
+        "account-type-desc-fix": "3-month lock-in",
+        "account-type-desc-premium": "Our top rate for larger savings",
+        "account-type-desc-flex": "Variable rate, free withdrawals",
+        "account-type-desc-saving": "High-yield savings account",
+        "account-type-desc-standard": "Safe everyday savings",
         "account-name": "Account name",
         "savings-goal-title": "Savings goal",
         "actions": "Account management",
@@ -168,6 +174,22 @@
             "accured-interest-info": "Accrued interest is calculated from January 1 each year.",
             "yearly-interest": "Projected annual interest",
             "yearly-interest-info": "Annual interest is calculated based on the current balance."
+        },
+        "forecast-section": {
+            "heading": "Savings forecast",
+            "earned-interest": "Earned interest",
+            "total": "Total <amount>{{amount}}</amount>",
+            "monthly-saving": "Monthly saving",
+            "saving-period": "Saving period",
+            "years": "{{count}} years",
+            "years_one": "{{count}} year",
+            "years-unit": "years",
+            "start-deposit": "Initial deposit",
+            "start-amount": "Starting amount (account balance)",
+            "interest-rate": "Interest rate",
+            "edit": "Edit {{label}}",
+            "move-money": "Move money here",
+            "info": "The calculation is based on the account's current balance and interest rate."
         },
         "savings-goal": {
             "no-goal-title": "Set a savings goal and track your progress",
@@ -217,6 +239,9 @@
 
         "account-type-required": "Account type is required",
         "select-account-type": "Select account type",
+        "create-forecast-info": "The example uses the account type's current rate.",
+        "compare-accounts": "Compare accounts with a savings forecast",
+        "back-to-create": "Back",
 
         "initial-deposit": "Initial deposit",
         "interest-rate": "Interest rate",
