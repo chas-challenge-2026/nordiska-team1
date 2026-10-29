@@ -6,6 +6,8 @@ import SavingsGoalsCard from "../components/overview/SavingsGoalsCard";
 import PlannedTransfersCard from "../components/overview/PlannedTransfersCard";
 import RecentTransactionsCard from "../components/overview/RecentTransactionsCard";
 import ReorderableCard from "../components/overview/ReorderableCard";
+import InboxCard from "../components/overview/InboxCard";
+import InterestCard from "../components/overview/InterestCard";
 import { useCardOrder, type CardId } from "../components/overview/useCardOrder";
 import { useUserStore } from "../store/userStore";
 import { useUpdateOverviewLayout } from "../hooks/useUpdateOverviewLayout";
@@ -15,6 +17,8 @@ const CARD_COMPONENTS: Record<CardId, ComponentType> = {
     savings: SavingsGoalsCard,
     planned: PlannedTransfersCard,
     transactions: RecentTransactionsCard,
+    inbox: InboxCard,
+    interest: InterestCard
 };
 
 export default function OverviewPage() {
@@ -63,7 +67,7 @@ export default function OverviewPage() {
     }
 
     return (
-        <div className="flex flex-col items-center flex-1 w-full bg-nordiska-bg px-3 py-5 sm:px-6 sm:py-8">
+        <div className="flex flex-col items-center flex-1 w-full bg-nordiska-bg px-3 py-5 sm:px-6 sm:py-8 xl:max-w-7xl mx-auto">
             <div className="flex items-center gap-3 justify-bewteen mx-auto w-full sm:px-6 sm:max-w-lg lg:max-w-4xl xl:max-w-5xl mb-2">
                 <p id="overview-edit-instructions" className="min-w-0 flex-1 text-xs text-secondary md:text-sm">{isEditing ? t("overview-route.edit-instructions") : t("overview-route.viewing-instruction")}</p>
                 <div className={`flex shrink-0 items-center gap-2 ${isEditing ? "mb-5" : ""}`}>
@@ -95,13 +99,13 @@ export default function OverviewPage() {
                 </div>
             </div>
 
-            <div className="mx-auto w-full sm:px-6 sm:max-w-lg lg:max-w-4xl xl:max-w-5xl">
+            <div className="mx-auto ">
                 <p aria-live="polite" className="sr-only"> {announcement} </p>
 
                 <Reorder.Group
                     values={order}
                     onReorder={isEditing ? setOrder : () => {}}
-                    className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 md:max-w-lg lg:max-w-5xl md:mx-auto lg:gap-6"
+                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6"
                 >
                     {order.map((id) => {
                         const Card = CARD_COMPONENTS[id];

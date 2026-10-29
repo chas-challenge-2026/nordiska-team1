@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUserStore } from "../../store/userStore";
 
-export const CARD_IDS = ["accounts", "savings", "planned", "transactions"] as const;
+export const CARD_IDS = ["accounts", "savings", "planned", "transactions", "inbox", "interest"] as const;
 export type CardId = (typeof CARD_IDS)[number];
 
 function isCardId(value: unknown): value is CardId {

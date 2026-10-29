@@ -7,6 +7,8 @@ import type { SavingGoal } from "../../services/accountsService";
 import { useTranslation } from "react-i18next";
 import { LoadingState, ErrorState } from "../StatusMessage";
 
+const MAX_TITLE = 30;
+
 type HandleSavingsGoalModalProps = {
     accountNumber: string;
     accountName?: string;
@@ -91,7 +93,7 @@ export default function HandleSavingsGoalModal({
         }
 
         if (formData.title.trim().length === 0) {newErrors.titleError = t("accounts-route.handle-saving-goal.required-title");}
-        else if (formData.title.length > 30) {newErrors.titleError = t("accounts-route.handle-saving-goal.title-too-long");} 
+        else if (formData.title.length > MAX_TITLE) {newErrors.titleError = t("accounts-route.handle-saving-goal.title-too-long");} 
         else if (!/^[\p{L}\p{N}\p{M}\s\p{P}\p{S}]+$/u.test(formData.title)) {newErrors.titleError = t("accounts-route.handle-saving-goal.invalid-title");}
 
         setErrors(newErrors);
@@ -215,12 +217,14 @@ export default function HandleSavingsGoalModal({
                         name="title"
                         type="text"
                         label={t("accounts-route.handle-saving-goal.title-label")}
+                        maxLength={MAX_TITLE}
                         placeholder={t("accounts-route.handle-saving-goal.title-placeholder")}
                         value={formData.title}
                         onChange={(value) => updateFormField("title", value)}
                         error={errors.titleError}
                         required
                     />
+                <span className="text-xs text-right -mt-3">{formData.title.length}/{MAX_TITLE}</span>
 
                     <InputField
                         name="amount"
