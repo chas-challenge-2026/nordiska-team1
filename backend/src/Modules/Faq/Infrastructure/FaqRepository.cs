@@ -186,10 +186,14 @@ public sealed class FaqRepository(FaqDbContext db) : IFaqRepository
         var entries = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(e => new {
+                Entry = e,
+                Views = db.FaqViewLogs.Count(v => v.FaqEntryId == e.Id && v.ViewedAt >= thirtyDaysAgo)
+            })
             .ToListAsync(cancellationToken);
 
-        var mapped = entries.Select(e => e.ToResponse()).ToList();
-        return PagedResult<FaqEntryResponse>.Create(mapped, totalCount, page, pageSize);
+        var mapped = entries.Select(x => x.Entry.ToResponse(x.Views)).ToList();
+        return PagedResult<FaqEntryResponse>.Create(mapped, totalCount, page, pageSize);     
     }
 
     public async Task<IReadOnlyList<string>> GetCategoriesAsync(
