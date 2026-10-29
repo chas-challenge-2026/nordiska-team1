@@ -12,15 +12,18 @@ public sealed class FaqViewLogBackgroundWorker : BackgroundService
 
     private readonly FaqViewLogQueue _queue;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly FaqCacheInvalidator _cacheInvalidator;
     private readonly ILogger<FaqViewLogBackgroundWorker> _logger;
 
     public FaqViewLogBackgroundWorker(
         FaqViewLogQueue queue,
         IServiceScopeFactory scopeFactory,
+        FaqCacheInvalidator cacheInvalidator,
         ILogger<FaqViewLogBackgroundWorker> logger)
     {
         _queue = queue;
         _scopeFactory = scopeFactory;
+        _cacheInvalidator = cacheInvalidator;
         _logger = logger;
     }
 
@@ -54,6 +57,7 @@ public sealed class FaqViewLogBackgroundWorker : BackgroundService
             using var scope = _scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IFaqViewLogRepository>();
             await repository.AddRangeAsync(batch, cancellationToken);
+            _cacheInvalidator.Invalidate(); 
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

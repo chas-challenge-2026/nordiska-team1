@@ -47,7 +47,7 @@ public static class FaqMappers
         target.ReviseEntry(newQuestion, newAnswer, newCategory, newKeywords, newLang);
     }
 
-    public static FaqEntryResponse ToResponse(this FaqEntry e)
+    public static FaqEntryResponse ToResponse(this FaqEntry e, int viewCount = 0)
     {
         var keywordsList = string.IsNullOrWhiteSpace(e.Keywords)
             ? Array.Empty<string>()
@@ -63,7 +63,8 @@ public static class FaqMappers
             e.RelationId,
             e.Language,
             e.CreatedAt,
-            e.UpdatedAt);
+            e.UpdatedAt,
+            viewCount);
     }
 }
 

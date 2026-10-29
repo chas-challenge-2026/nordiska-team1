@@ -1078,6 +1078,7 @@ public class DbInitializer
 
         if (seedPairs == null || seedPairs.Count == 0)
         {
+            await SeedFaqViewLogsAsync(faqDb);
             return;
         }
 
@@ -1130,6 +1131,7 @@ public class DbInitializer
         }
 
         await faqDb.SaveChangesAsync();
+        await SeedFaqViewLogsAsync(faqDb);
     }
 
     private sealed class FaqSeedPair
@@ -1146,6 +1148,72 @@ public class DbInitializer
         public string Category { get; set; } = string.Empty;
         public string Keywords { get; set; } = string.Empty;
         public int HelpfulCount { get; set; }
+    }
+
+    private static async Task SeedFaqViewLogsAsync(FaqDbContext faqDb)
+    {
+        if (await faqDb.FaqViewLogs.AnyAsync())
+        {
+            return;
+        }
+
+        var entries = await faqDb.FaqEntries.AsNoTracking().ToListAsync();
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var viewLogs = new List<FaqViewLog>();
+        var random = new Random(42);
+
+        foreach (var entry in entries)
+        {
+            // Give higher view counts to articles with higher helpful counts or common questions
+            int viewCount;
+            if (entry.HelpfulCount >= 5)
+            {
+                viewCount = random.Next(35, 75);
+            }
+            else if (entry.HelpfulCount > 0)
+            {
+                viewCount = random.Next(15, 35);
+            }
+            else if (entry.Id % 7 == 0)
+            {
+                viewCount = random.Next(20, 45);
+            }
+            else if (entry.Id % 3 == 0)
+            {
+                viewCount = random.Next(5, 15);
+            }
+            else if (entry.Id % 2 == 0)
+            {
+                viewCount = random.Next(1, 6);
+            }
+            else
+            {
+                viewCount = 0;
+            }
+
+            for (var v = 0; v < viewCount; v++)
+            {
+                // Realistic spread over the last 28 days
+                var daysAgo = random.NextDouble() * 28;
+                var minutesOffset = random.Next(0, 1440);
+                var viewedAt = DateTime.SpecifyKind(now.AddDays(-daysAgo).AddMinutes(-minutesOffset), DateTimeKind.Utc);
+                var sessionHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes($"seed-session-{entry.Id}-{v}"))).ToLowerInvariant()[..32];
+
+                viewLogs.Add(FaqViewLog.Create(entry.Id, sessionHash, viewedAt));
+            }
+        }
+
+        if (viewLogs.Count > 0)
+        {
+            await faqDb.FaqViewLogs.AddRangeAsync(viewLogs);
+            await faqDb.SaveChangesAsync();
+        }
     }
 
     private static async Task SeedOperationalMessagesAsync(BankingDbContext db)
