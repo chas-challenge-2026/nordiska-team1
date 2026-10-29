@@ -165,7 +165,8 @@
         },
         "forecast-section": {
             "heading": "Sparprognos",
-            "of-which-interest": "varav {{amount}} i ränta",
+            "earned-interest": "Intjänad ränta",
+            "total": "Totalt <amount>{{amount}}</amount>",
             "monthly-saving": "Månadssparande",
             "saving-period": "Spartid",
             "years": "{{count}} år",

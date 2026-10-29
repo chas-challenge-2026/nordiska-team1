@@ -167,7 +167,8 @@
         },
         "forecast-section": {
             "heading": "Savings forecast",
-            "of-which-interest": "of which {{amount}} interest",
+            "earned-interest": "Earned interest",
+            "total": "Total <amount>{{amount}}</amount>",
             "monthly-saving": "Monthly saving",
             "saving-period": "Saving period",
             "years": "{{count}} years",

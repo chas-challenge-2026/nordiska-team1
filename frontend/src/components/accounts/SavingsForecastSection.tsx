@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { formatCurrency } from "../../utils/currency";
 import { buildSavingsForecast } from "../../utils/savingsForecast";
 import SliderField from "./SliderField";
@@ -27,9 +27,14 @@ export default function SavingsForecastSection({balance, interestRate, onDeposit
             <div className="border border-nordiska-blue/50 bg-light-gray/30">
                 {/* RESULTAT */}
                 <div aria-live="polite" className="border-b border-nordiska-blue/20 px-3 py-4 text-center sm:py-5">
-                    <p className="text-2xl font-bold tracking-tight text-dark-navy sm:text-3xl">{formatCurrency(forecast.endBalance)}</p>
+                    <p className="text-xs text-secondary sm:text-sm">{t("accounts-route.forecast-section.earned-interest")}</p>
+                    <p className="text-2xl font-bold tracking-tight text-green-700 sm:text-3xl">{formatCurrency(forecast.totalInterest)}</p>
                     <p className="mt-1 text-sm text-secondary sm:text-base">
-                        {t("accounts-route.forecast-section.of-which-interest", { amount: formatCurrency(forecast.totalInterest) })}
+                        <Trans
+                            i18nKey="accounts-route.forecast-section.total"
+                            values={{ amount: formatCurrency(forecast.endBalance) }}
+                            components={{ amount: <span className="font-bold" /> }}
+                        />
                     </p>
                 </div>
 
