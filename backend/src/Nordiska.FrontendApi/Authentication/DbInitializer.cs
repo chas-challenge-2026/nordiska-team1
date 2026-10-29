@@ -997,6 +997,28 @@ public class DbInitializer
         // 3. Batch synchronization with database
         var existingEntries = await faqDb.FaqEntries.ToListAsync();
 
+        // Remove decommissioned categories if present from earlier runs
+        var decommissioned = existingEntries
+            .Where(e => e.Category == "Nordiska app" || e.Category == "Nordiska App" || e.Category == "Lån" || e.Category == "Loans")
+            .ToList();
+        if (decommissioned.Count > 0)
+        {
+            try
+            {
+                faqDb.FaqEntries.RemoveRange(decommissioned);
+                await faqDb.SaveChangesAsync();
+                foreach (var d in decommissioned)
+                {
+                    existingEntries.Remove(d);
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = serviceProvider.GetService<Microsoft.Extensions.Logging.ILogger<DbInitializer>>();
+                logger?.LogWarning(ex, "Could not remove decommissioned FAQ entries: {Message}", ex.Message);
+            }
+        }
+
         foreach (var pair in seedPairs)
         {
             // Swedish
