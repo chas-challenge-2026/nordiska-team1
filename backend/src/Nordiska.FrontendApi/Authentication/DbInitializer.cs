@@ -599,370 +599,18 @@ public class DbInitializer
             await db.SaveChangesAsync();
         }
 
-        // 3. Seed / Update Dennis Svensson's Accounts
+        // 3. Seed / Update Dennis Svensson's Accounts (All 5 account types)
         var dennis = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198908092383");
         if (dennis != null)
         {
-            var dennisAccounts = await db.SavingsAccounts
-                .Where(a => a.CustomerId == dennis.Id)
-                .ToListAsync();
-
-            var dennisSalaryAcc = dennisAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-300001");
-            var dennisSavingsAcc = dennisAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-300002");
-
-            if (dennisSalaryAcc == null)
-            {
-                dennisSalaryAcc = new SavingsAccount
-                {
-                    CustomerId = dennis.Id,
-                    AccountNumber = "NOR-300001",
-                    AccountName = "Lönekonto",
-                    AccountType = "standard",
-                    Balance = 34850.00m,
-                    InterestRate = 0.0250m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-                db.SavingsAccounts.Add(dennisSalaryAcc);
-                await db.SaveChangesAsync();
-            }
-            else
-            {
-                dennisSalaryAcc.AccountName = "Lönekonto";
-                dennisSalaryAcc.AccountType = "standard";
-                dennisSalaryAcc.InterestRate = 0.0250m;
-                dennisSalaryAcc.Status = "active";
-            }
-
-            if (!await db.LedgerEntries.AnyAsync(l => l.AccountId == dennisSalaryAcc.Id && !l.IsPlanned))
-            {
-                var dennisSalaryTransactions = new List<LedgerEntry>
-                {
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "deposit", Amount = 15685.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "deposit", Amount = 31500.00m, Label = "Lön", CreatedAt = new DateTime(2026, 8, 25, 8, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -9800.00m, Label = "Hyra", CreatedAt = new DateTime(2026, 8, 27, 0, 1, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -1420.50m, Label = "ICA Maxi", CreatedAt = new DateTime(2026, 8, 28, 16, 30, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -1020.00m, Label = "SL Månadsbiljett", CreatedAt = new DateTime(2026, 8, 29, 7, 15, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -95.00m, Label = "Espresso House", CreatedAt = new DateTime(2026, 8, 30, 11, 45, 0, DateTimeKind.Utc) }
-                };
-                db.LedgerEntries.AddRange(dennisSalaryTransactions);
-                await db.SaveChangesAsync();
-            }
-
-            if (dennisSavingsAcc == null)
-            {
-                dennisSavingsAcc = new SavingsAccount
-                {
-                    CustomerId = dennis.Id,
-                    AccountNumber = "NOR-300002",
-                    AccountName = "Sparkonto",
-                    AccountType = "saving",
-                    Balance = 75000.00m,
-                    InterestRate = 0.0350m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-                db.SavingsAccounts.Add(dennisSavingsAcc);
-                await db.SaveChangesAsync();
-            }
-            else
-            {
-                dennisSavingsAcc.AccountName = "Sparkonto";
-                dennisSavingsAcc.AccountType = "saving";
-                dennisSavingsAcc.InterestRate = 0.0350m;
-                dennisSavingsAcc.Status = "active";
-            }
-
-            if (!await db.LedgerEntries.AnyAsync(l => l.AccountId == dennisSavingsAcc.Id && !l.IsPlanned))
-            {
-                var dennisSavingsTransactions = new List<LedgerEntry>
-                {
-                    new() { AccountId = dennisSavingsAcc.Id, Type = "deposit", Amount = 73000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSavingsAcc.Id, Type = "deposit", Amount = 2000.00m, Label = "Månadssparande", CreatedAt = new DateTime(2026, 8, 25, 9, 0, 0, DateTimeKind.Utc) }
-                };
-                db.LedgerEntries.AddRange(dennisSavingsTransactions);
-                await db.SaveChangesAsync();
-            }
-
-            // Planned transaction for Dennis
-            var dennisPlanned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == dennisSalaryAcc!.Id && l.IsPlanned);
-            if (dennisPlanned == null && dennisSalaryAcc != null && dennisSavingsAcc != null)
-            {
-                db.LedgerEntries.Add(new LedgerEntry
-                {
-                    AccountId = dennisSalaryAcc.Id,
-                    Type = "transfer",
-                    Amount = 2000.00m,
-                    Label = "Månadssparande",
-                    TargetAccountId = dennisSavingsAcc.Id,
-                    IsPlanned = true,
-                    Repeating = "month",
-                    PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (dennisPlanned != null && dennisPlanned.Repeating == "monthly")
-            {
-                dennisPlanned.Repeating = "month";
-                await db.SaveChangesAsync();
-            }
-
-            // Savings goal for Dennis
-            var dennisGoal = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == dennis.Id && g.AccountId == dennisSavingsAcc!.Id);
-            if (dennisGoal == null && dennisSavingsAcc != null)
-            {
-                db.SavingsGoals.Add(new SavingsGoal
-                {
-                    CustomerId = dennis.Id,
-                    AccountId = dennisSavingsAcc.Id,
-                    Title = "Sommarsemester 2027",
-                    TargetAmount = 90000.00m,
-                    CurrentAmount = 75000.00m,
-                    TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
-                    Status = "active",
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (dennisGoal != null)
-            {
-                dennisGoal.TargetAmount = 90000.00m;
-                dennisGoal.CurrentAmount = 75000.00m;
-                await db.SaveChangesAsync();
-            }
-
-            // 2025 Transactions & Tax Report data for Dennis
-            var dennisReportAccounts = await db.SavingsAccounts
-                .Where(a => a.CustomerId == dennis.Id)
-                .ToListAsync();
-
-            var dennis2025Transactions = new[]
-            {
-                // NOR-300001 (Lönekonto)
-                new { AccountNumber = "NOR-300001", Type = "deposit", Amount = 28000.00m, Label = "Lön november 2025", CreatedAt = new DateTime(2025, 11, 25, 8, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-300001", Type = "withdrawal", Amount = -8500.00m, Label = "Hyra november 2025", CreatedAt = new DateTime(2025, 11, 27, 0, 1, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-300001", Type = "interest", Amount = 871.25m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-300001", Type = "tax", Amount = -261.38m, Label = "Preliminärskatt på ränta 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
-
-                // NOR-300002 (Sparkonto)
-                new { AccountNumber = "NOR-300002", Type = "deposit", Amount = 50000.00m, Label = "Insättning sparkonto 2025", CreatedAt = new DateTime(2025, 1, 15, 10, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-300002", Type = "deposit", Amount = 20000.00m, Label = "Extra sparande 2025", CreatedAt = new DateTime(2025, 6, 20, 14, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-300002", Type = "interest", Amount = 2450.00m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-300002", Type = "tax", Amount = -735.00m, Label = "Preliminärskatt på ränta 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) }
-            };
-
-            foreach (var transaction in dennis2025Transactions)
-            {
-                var account = dennisReportAccounts.FirstOrDefault(a => a.AccountNumber == transaction.AccountNumber);
-                if (account != null)
-                {
-                    var alreadyExists = await db.LedgerEntries.AnyAsync(entry =>
-                        entry.AccountId == account.Id &&
-                        entry.Type == transaction.Type &&
-                        entry.Label == transaction.Label);
-
-                    if (!alreadyExists)
-                    {
-                        db.LedgerEntries.Add(new LedgerEntry
-                        {
-                            AccountId = account.Id,
-                            Type = transaction.Type,
-                            Amount = transaction.Amount,
-                            Label = transaction.Label,
-                            CreatedAt = transaction.CreatedAt
-                        });
-                    }
-                }
-            }
-            await db.SaveChangesAsync();
+            await SeedCustomerAccountsDemoDataAsync(db, dennis, "NOR-30000", "Swedbank", "Handelsbanken");
         }
 
-        // 4. Seed / Update Peter Hansson's Accounts
+        // 4. Seed / Update Peter Hansson's Accounts (All 5 account types)
         var peter = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198404142385");
         if (peter != null)
         {
-            var peterAccounts = await db.SavingsAccounts
-                .Where(a => a.CustomerId == peter.Id)
-                .ToListAsync();
-
-            var peterSalaryAcc = peterAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-400001");
-            var peterSavingsAcc = peterAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-400002");
-
-            if (peterSalaryAcc != null)
-            {
-                peterSalaryAcc.AccountName = "Lönekonto";
-                peterSalaryAcc.AccountType = "standard";
-                peterSalaryAcc.InterestRate = 0.0250m;
-                peterSalaryAcc.Status = "active";
-            }
-
-            if (peterSalaryAcc == null)
-            {
-                peterSalaryAcc = new SavingsAccount
-                {
-                    CustomerId = peter.Id,
-                    AccountNumber = "NOR-400001",
-                    AccountName = "Lönekonto",
-                    AccountType = "standard",
-                    Balance = 34850.00m,
-                    InterestRate = 0.0250m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-                db.SavingsAccounts.Add(peterSalaryAcc);
-                await db.SaveChangesAsync();
-            }
-            else
-            {
-                peterSalaryAcc.AccountName = "Lönekonto";
-                peterSalaryAcc.AccountType = "standard";
-                peterSalaryAcc.InterestRate = 0.0250m;
-                peterSalaryAcc.Status = "active";
-            }
-
-            if (!await db.LedgerEntries.AnyAsync(l => l.AccountId == peterSalaryAcc.Id && !l.IsPlanned))
-            {
-                var peterSalaryTransactions = new List<LedgerEntry>
-                {
-                    new() { AccountId = peterSalaryAcc.Id, Type = "deposit", Amount = 15685.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "deposit", Amount = 31500.00m, Label = "Lön", CreatedAt = new DateTime(2026, 8, 25, 8, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -9800.00m, Label = "Hyra", CreatedAt = new DateTime(2026, 8, 27, 0, 1, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -1420.50m, Label = "ICA Maxi", CreatedAt = new DateTime(2026, 8, 28, 16, 30, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -1020.00m, Label = "SL Månadsbiljett", CreatedAt = new DateTime(2026, 8, 29, 7, 15, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -95.00m, Label = "Espresso House", CreatedAt = new DateTime(2026, 8, 30, 11, 45, 0, DateTimeKind.Utc) }
-                };
-                db.LedgerEntries.AddRange(peterSalaryTransactions);
-                await db.SaveChangesAsync();
-            }
-
-            if (peterSavingsAcc == null)
-            {
-                peterSavingsAcc = new SavingsAccount
-                {
-                    CustomerId = peter.Id,
-                    AccountNumber = "NOR-400002",
-                    AccountName = "Sparkonto",
-                    AccountType = "saving",
-                    Balance = 75000.00m,
-                    InterestRate = 0.0350m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-                db.SavingsAccounts.Add(peterSavingsAcc);
-                await db.SaveChangesAsync();
-            }
-            else
-            {
-                peterSavingsAcc.AccountName = "Sparkonto";
-                peterSavingsAcc.AccountType = "saving";
-                peterSavingsAcc.InterestRate = 0.0350m;
-                peterSavingsAcc.Status = "active";
-            }
-
-            if (!await db.LedgerEntries.AnyAsync(l => l.AccountId == peterSavingsAcc.Id && !l.IsPlanned))
-            {
-                var peterSavingsTransactions = new List<LedgerEntry>
-                {
-                    new() { AccountId = peterSavingsAcc.Id, Type = "deposit", Amount = 73000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSavingsAcc.Id, Type = "deposit", Amount = 2000.00m, Label = "Månadssparande", CreatedAt = new DateTime(2026, 8, 25, 9, 0, 0, DateTimeKind.Utc) }
-                };
-                db.LedgerEntries.AddRange(peterSavingsTransactions);
-                await db.SaveChangesAsync();
-            }
-
-            // Planned transaction for Peter
-            var peterPlanned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == peterSalaryAcc!.Id && l.IsPlanned);
-            if (peterPlanned == null && peterSalaryAcc != null && peterSavingsAcc != null)
-            {
-                db.LedgerEntries.Add(new LedgerEntry
-                {
-                    AccountId = peterSalaryAcc.Id,
-                    Type = "transfer",
-                    Amount = 2000.00m,
-                    Label = "Månadssparande",
-                    TargetAccountId = peterSavingsAcc.Id,
-                    IsPlanned = true,
-                    Repeating = "month",
-                    PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (peterPlanned != null && peterPlanned.Repeating == "monthly")
-            {
-                peterPlanned.Repeating = "month";
-                await db.SaveChangesAsync();
-            }
-
-            // Savings goal for Peter
-            var peterGoal = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == peter.Id && g.AccountId == peterSavingsAcc!.Id);
-            if (peterGoal == null && peterSavingsAcc != null)
-            {
-                db.SavingsGoals.Add(new SavingsGoal
-                {
-                    CustomerId = peter.Id,
-                    AccountId = peterSavingsAcc.Id,
-                    Title = "Sommarsemester 2027",
-                    TargetAmount = 90000.00m,
-                    CurrentAmount = 75000.00m,
-                    TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
-                    Status = "active",
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (peterGoal != null)
-            {
-                peterGoal.TargetAmount = 90000.00m;
-                peterGoal.CurrentAmount = 75000.00m;
-                await db.SaveChangesAsync();
-            }
-
-            // 2025 Transactions & Tax Report data for Peter
-            var peterReportAccounts = await db.SavingsAccounts
-                .Where(a => a.CustomerId == peter.Id)
-                .ToListAsync();
-
-            var peter2025Transactions = new[]
-            {
-                // NOR-400001 (Lönekonto)
-                new { AccountNumber = "NOR-400001", Type = "deposit", Amount = 31000.00m, Label = "Lön november 2025", CreatedAt = new DateTime(2025, 11, 25, 8, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-400001", Type = "withdrawal", Amount = -9800.00m, Label = "Hyra november 2025", CreatedAt = new DateTime(2025, 11, 27, 0, 1, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-400001", Type = "interest", Amount = 871.25m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-400001", Type = "tax", Amount = -261.38m, Label = "Preliminärskatt på ränta 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
-
-                // NOR-400002 (Sparkonto)
-                new { AccountNumber = "NOR-400002", Type = "deposit", Amount = 50000.00m, Label = "Insättning sparkonto 2025", CreatedAt = new DateTime(2025, 1, 15, 10, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-400002", Type = "deposit", Amount = 20000.00m, Label = "Extra sparande 2025", CreatedAt = new DateTime(2025, 6, 20, 14, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-400002", Type = "interest", Amount = 2625.00m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-400002", Type = "tax", Amount = -787.50m, Label = "Preliminärskatt på ränta 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) }
-            };
-
-            foreach (var transaction in peter2025Transactions)
-            {
-                var account = peterReportAccounts.FirstOrDefault(a => a.AccountNumber == transaction.AccountNumber);
-                if (account != null)
-                {
-                    var alreadyExists = await db.LedgerEntries.AnyAsync(entry =>
-                        entry.AccountId == account.Id &&
-                        entry.Type == transaction.Type &&
-                        entry.Label == transaction.Label);
-
-                    if (!alreadyExists)
-                    {
-                        db.LedgerEntries.Add(new LedgerEntry
-                        {
-                            AccountId = account.Id,
-                            Type = transaction.Type,
-                            Amount = transaction.Amount,
-                            Label = transaction.Label,
-                            CreatedAt = transaction.CreatedAt
-                        });
-                    }
-                }
-            }
-            await db.SaveChangesAsync();
+            await SeedCustomerAccountsDemoDataAsync(db, peter, "NOR-40000", "SEB", "Handelsbanken");
         }
 
         // 5. Ensure all accounts with positive balance have matching initial ledger entries (ADR 0001 Ledger Pattern sync)
@@ -982,6 +630,271 @@ public class DbInitializer
                 });
             }
         }
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedCustomerAccountsDemoDataAsync(
+        BankingDbContext db,
+        Customer customer,
+        string accPrefix,
+        string mainBankName,
+        string altBankName)
+    {
+        var existingAccounts = await db.SavingsAccounts
+            .Where(a => a.CustomerId == customer.Id)
+            .ToListAsync();
+
+        var acc1 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}1", "Flexkonto", "flex", 0.0350m, isFavorite: true);
+        var acc2 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}2", "Fasträntekonto", "fix", 0.0410m, isFavorite: false);
+        var acc3 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}3", "Standardkonto", "standard", 0.0250m, isFavorite: false);
+        var acc4 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}4", "Sparkonto", "saving", 0.0350m, isFavorite: false);
+        var acc5 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}5", "Premiumkonto", "premium", 0.0400m, isFavorite: false);
+
+        // Internal demo transfer between customer's own accounts (acc2 Fasträntekonto -> acc4 Sparkonto)
+        var internalTransferTime = new DateTime(2026, 10, 28, 14, 12, 0, DateTimeKind.Utc);
+        var internalTransferCorrelationId = Guid.Parse(customer.PersonalNum == "198404142385"
+            ? "b1b2c3d4-4444-4444-4444-ef1234567890"
+            : "b1b2c3d4-3333-3333-3333-ef1234567890");
+
+        // 1. Transactions for NOR-x00001 (Flexkonto, 3.50%)
+        var acc1Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc1.Id, Type = "deposit", Amount = 45000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "deposit", Amount = 20000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 5, 10, 12, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -15000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2025, 9, 12, 13, 45, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "interest", Amount = 2470.33m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "tax", Amount = -741.10m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "deposit", Amount = 15000.00m, Label = "Extra sparande", CreatedAt = new DateTime(2026, 3, 14, 11, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -10000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2026, 6, 20, 15, 30, 0, DateTimeKind.Utc) }
+        };
+        acc1Entries.AddRange(GenerateMonthlySavings(acc1.Id, 2025, 1, 2025, 12, 3000.00m, "Månadssparande via Autogiro"));
+        acc1Entries.AddRange(GenerateMonthlySavings(acc1.Id, 2026, 1, 2026, 10, 3000.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc1, acc1Entries);
+
+        // 2. Transactions for NOR-x00002 (Fasträntekonto, 4.10% - untouched fixed term savings + internal transfer)
+        var acc2Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc2.Id, Type = "deposit", Amount = 100000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "deposit", Amount = 40000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "deposit", Amount = 30000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 7, 15, 11, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "withdrawal", Amount = -20000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2025, 10, 8, 14, 30, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "interest", Amount = 5771.45m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "tax", Amount = -1731.44m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "transfer", Amount = -2000.00m, Label = "Överföring", TargetAccountId = acc4.Id, CorrelationId = internalTransferCorrelationId, CreatedAt = internalTransferTime }
+        };
+        await SyncAccountLedgerAndBalanceAsync(db, acc2, acc2Entries);
+
+        // 3. Transactions for NOR-x00003 (Standardkonto, 2.50%)
+        var acc3Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc3.Id, Type = "deposit", Amount = 25000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "deposit", Amount = 10000.00m, Label = $"Överföring från {altBankName}", CreatedAt = new DateTime(2025, 4, 18, 10, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -8000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *3321", CreatedAt = new DateTime(2025, 10, 5, 15, 20, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "interest", Amount = 968.63m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "tax", Amount = -290.59m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -6000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *3321", CreatedAt = new DateTime(2026, 7, 4, 12, 0, 0, DateTimeKind.Utc) }
+        };
+        acc3Entries.AddRange(GenerateMonthlySavings(acc3.Id, 2025, 1, 2025, 12, 1500.00m, "Månadssparande via Autogiro"));
+        acc3Entries.AddRange(GenerateMonthlySavings(acc3.Id, 2026, 1, 2026, 10, 1500.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc3, acc3Entries);
+
+        // 4. Transactions for NOR-x00004 (Sparkonto, 3.50%)
+        var acc4Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc4.Id, Type = "deposit", Amount = 50000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "deposit", Amount = 15000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 6, 15, 11, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "withdrawal", Amount = -10000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2025, 8, 10, 14, 30, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "interest", Amount = 2401.58m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "tax", Amount = -720.47m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "deposit", Amount = 10000.00m, Label = "Extra sparande", CreatedAt = new DateTime(2026, 5, 18, 10, 15, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "withdrawal", Amount = -5000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2026, 7, 12, 16, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "transfer", Amount = 2000.00m, Label = "Överföring", TargetAccountId = acc2.Id, CorrelationId = internalTransferCorrelationId, CreatedAt = internalTransferTime }
+        };
+        acc4Entries.AddRange(GenerateMonthlySavings(acc4.Id, 2025, 1, 2025, 12, 2500.00m, "Månadssparande via Autogiro"));
+        acc4Entries.AddRange(GenerateMonthlySavings(acc4.Id, 2026, 1, 2026, 10, 2500.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc4, acc4Entries);
+
+        // 5. Transactions for NOR-x00005 (Premiumkonto, 4.00%)
+        var acc5Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc5.Id, Type = "deposit", Amount = 120000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "deposit", Amount = 20000.00m, Label = $"Överföring från {altBankName}", CreatedAt = new DateTime(2025, 3, 18, 10, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "withdrawal", Amount = -25000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *8821", CreatedAt = new DateTime(2025, 7, 2, 10, 15, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "interest", Amount = 6079.45m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "tax", Amount = -1823.83m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "deposit", Amount = 20000.00m, Label = $"Överföring från {altBankName}", CreatedAt = new DateTime(2026, 4, 10, 14, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "withdrawal", Amount = -15000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *8821", CreatedAt = new DateTime(2026, 8, 15, 11, 30, 0, DateTimeKind.Utc) }
+        };
+        acc5Entries.AddRange(GenerateMonthlySavings(acc5.Id, 2025, 1, 2025, 12, 5000.00m, "Månadssparande via Autogiro"));
+        acc5Entries.AddRange(GenerateMonthlySavings(acc5.Id, 2026, 1, 2026, 10, 5000.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc5, acc5Entries);
+
+        // Planned transfer (Internal regular monthly transfer between Flexkonto and Standardkonto)
+        var planned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == acc1.Id && l.IsPlanned);
+        if (planned == null)
+        {
+            db.LedgerEntries.Add(new LedgerEntry
+            {
+                AccountId = acc1.Id,
+                Type = "transfer",
+                Amount = 3000.00m,
+                Label = "Månadsöverföring",
+                TargetAccountId = acc3.Id,
+                IsPlanned = true,
+                Repeating = "month",
+                PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            planned.Label = "Månadsöverföring";
+            planned.Amount = 3000.00m;
+            planned.TargetAccountId = acc3.Id;
+            planned.Repeating = "month";
+            planned.PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc);
+            await db.SaveChangesAsync();
+        }
+
+        // Savings goals
+        // Goal 1: Sommarsemester 2027 (Klar / completed on Sparkonto acc4)
+        var goal1 = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == customer.Id && g.Title == "Sommarsemester 2027");
+        if (goal1 == null)
+        {
+            db.SavingsGoals.Add(new SavingsGoal
+            {
+                CustomerId = customer.Id,
+                AccountId = acc4.Id,
+                Title = "Sommarsemester 2027",
+                TargetAmount = 100000.00m,
+                CurrentAmount = 100000.00m,
+                TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
+                Status = "completed",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            goal1.AccountId = acc4.Id;
+            goal1.TargetAmount = 100000.00m;
+            goal1.CurrentAmount = 100000.00m;
+            goal1.Status = "completed";
+            await db.SaveChangesAsync();
+        }
+
+        // Goal 2: Buffertsparande (Active on Flexkonto acc1, target 150 000 SEK, below target so user can transfer and complete in demo)
+        var goal2 = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == customer.Id && g.Title == "Buffertsparande");
+        if (goal2 == null)
+        {
+            db.SavingsGoals.Add(new SavingsGoal
+            {
+                CustomerId = customer.Id,
+                AccountId = acc1.Id,
+                Title = "Buffertsparande",
+                TargetAmount = 150000.00m,
+                CurrentAmount = acc1.Balance,
+                TargetDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+                Status = "active",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            goal2.AccountId = acc1.Id;
+            goal2.TargetAmount = 150000.00m;
+            goal2.CurrentAmount = acc1.Balance;
+            goal2.Status = "active";
+            goal2.TargetDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private static async Task<SavingsAccount> EnsureAccountAsync(
+        BankingDbContext db,
+        List<SavingsAccount> existingAccounts,
+        long customerId,
+        string accountNumber,
+        string accountName,
+        string accountType,
+        decimal interestRate,
+        bool isFavorite)
+    {
+        var acc = existingAccounts.FirstOrDefault(a => a.AccountNumber == accountNumber);
+        if (acc == null)
+        {
+            acc = new SavingsAccount
+            {
+                CustomerId = customerId,
+                AccountNumber = accountNumber,
+                AccountName = accountName,
+                AccountType = accountType,
+                InterestRate = interestRate,
+                IsFavorite = isFavorite,
+                Status = "active",
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            };
+            db.SavingsAccounts.Add(acc);
+            await db.SaveChangesAsync();
+            existingAccounts.Add(acc);
+        }
+        else
+        {
+            acc.AccountName = accountName;
+            acc.AccountType = accountType;
+            acc.InterestRate = interestRate;
+            acc.IsFavorite = isFavorite;
+            acc.Status = "active";
+            await db.SaveChangesAsync();
+        }
+        return acc;
+    }
+
+    private static List<LedgerEntry> GenerateMonthlySavings(long accountId, int startYear, int startMonth, int endYear, int endMonth, decimal amount, string label)
+    {
+        var list = new List<LedgerEntry>();
+        var current = new DateTime(startYear, startMonth, 25, 8, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(endYear, endMonth, 25, 8, 0, 0, DateTimeKind.Utc);
+        while (current <= end)
+        {
+            list.Add(new LedgerEntry
+            {
+                AccountId = accountId,
+                Type = "deposit",
+                Amount = amount,
+                Label = label,
+                CreatedAt = current
+            });
+            current = current.AddMonths(1);
+        }
+        return list;
+    }
+
+
+    private static async Task SyncAccountLedgerAndBalanceAsync(BankingDbContext db, SavingsAccount account, List<LedgerEntry> desiredEntries)
+    {
+        foreach (var entry in desiredEntries)
+        {
+            var exists = await db.LedgerEntries.AnyAsync(l =>
+                l.AccountId == entry.AccountId &&
+                l.Type == entry.Type &&
+                l.Label == entry.Label &&
+                l.CreatedAt == entry.CreatedAt);
+
+            if (!exists)
+            {
+                db.LedgerEntries.Add(entry);
+            }
+        }
+        await db.SaveChangesAsync();
+
+        var totalBalance = await db.LedgerEntries
+            .Where(l => l.AccountId == account.Id && !l.IsPlanned)
+            .SumAsync(l => l.Amount);
+
+        account.Balance = totalBalance;
         await db.SaveChangesAsync();
     }
 
@@ -1083,6 +996,28 @@ public class DbInitializer
 
         // 3. Batch synchronization with database
         var existingEntries = await faqDb.FaqEntries.ToListAsync();
+
+        // Remove decommissioned categories if present from earlier runs
+        var decommissioned = existingEntries
+            .Where(e => e.Category == "Nordiska app" || e.Category == "Nordiska App" || e.Category == "Lån" || e.Category == "Loans")
+            .ToList();
+        if (decommissioned.Count > 0)
+        {
+            try
+            {
+                faqDb.FaqEntries.RemoveRange(decommissioned);
+                await faqDb.SaveChangesAsync();
+                foreach (var d in decommissioned)
+                {
+                    existingEntries.Remove(d);
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = serviceProvider.GetService<Microsoft.Extensions.Logging.ILogger<DbInitializer>>();
+                logger?.LogWarning(ex, "Could not remove decommissioned FAQ entries: {Message}", ex.Message);
+            }
+        }
 
         foreach (var pair in seedPairs)
         {
