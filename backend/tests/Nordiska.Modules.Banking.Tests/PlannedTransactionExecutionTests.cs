@@ -130,6 +130,41 @@ public class PlannedTransactionExecutionTests
     }
 
     [Fact]
+    public async Task ProcessPlannedTransactionAsync_FutureOccurrence_DoesNotPostAgain()
+    {
+        var nextOccurrence = DateTime.UtcNow.AddDays(1);
+        var accounts = new InMemorySavingsRepo(new[]
+        {
+            new SavingsAccount { Id = 1, CustomerId = 10, Balance = 100m },
+            new SavingsAccount { Id = 2, CustomerId = 10, Balance = 0m }
+        });
+        var transactions = new InMemoryTxRepo(new[]
+        {
+            new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100m },
+            new LedgerEntry
+            {
+                Id = 2,
+                AccountId = 1,
+                TargetAccountId = 2,
+                Type = "transfer",
+                Amount = 25m,
+                IsPlanned = true,
+                PlannedDate = nextOccurrence,
+                Repeating = "week"
+            }
+        });
+        var service = new TransactionService(transactions, accounts, new TestLogger<TransactionService>());
+
+        var result = await service.ProcessPlannedTransactionAsync(2);
+
+        Assert.Null(result);
+        Assert.Equal(100m, await service.GetBalanceAsync(1));
+        Assert.Equal(0m, await service.GetBalanceAsync(2));
+        Assert.Equal(2, transactions.Store.Count);
+        Assert.Equal(nextOccurrence, (await transactions.GetByIdAsync(2))!.PlannedDate);
+    }
+
+    [Fact]
     public async Task ProcessPlannedTransactionAsync_SingleTransfer_ExecutesAndDeletesPlan()
     {
         // Arrange

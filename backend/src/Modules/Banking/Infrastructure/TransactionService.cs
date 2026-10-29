@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Nordiska.BuildingBlocks.Database;
@@ -12,6 +14,7 @@ using Nordiska.Modules.Banking.Contracts.Requests;
 using Nordiska.Modules.Banking.Contracts.Responses;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
+using Npgsql;
 
 namespace Nordiska.Modules.Banking.Infrastructure;
 
@@ -75,11 +78,15 @@ public class TransactionService : ITransactionService
         return entries.Sum(e => e.Amount);
     }
 
-    public async Task<TransactionResponse> ExecuteAsync(TransactionRequest request, CancellationToken cancellationToken = default)
+    public Task<TransactionResponse> ExecuteAsync(TransactionRequest request, CancellationToken cancellationToken = default)
+        => InSerializableTransactionAsync(() => ExecuteCoreAsync(request, cancellationToken), cancellationToken);
+
+    private async Task<TransactionResponse> ExecuteCoreAsync(TransactionRequest request, CancellationToken cancellationToken)
     {
         if (request.Amount <= 0)
             throw new ArgumentException("Transaction amount must be greater than zero.", nameof(request.Amount));
 
+        await LockAccountsAsync(request.AccountId, null, cancellationToken);
         var account = await _accRepo.GetByIdAsync(request.AccountId, cancellationToken)
             ?? throw new NotFoundException($"Account {request.AccountId} not found.");
 
@@ -127,7 +134,10 @@ public class TransactionService : ITransactionService
         return ToResponse(entry);
     }
 
-    public async Task<TransactionResponse> TransferAsync(TransferRequest request, CancellationToken cancellationToken = default)
+    public Task<TransactionResponse> TransferAsync(TransferRequest request, CancellationToken cancellationToken = default)
+        => InSerializableTransactionAsync(() => TransferCoreAsync(request, cancellationToken), cancellationToken);
+
+    private async Task<TransactionResponse> TransferCoreAsync(TransferRequest request, CancellationToken cancellationToken)
     {
         if (request.Amount <= 0)
             throw new ArgumentException("Transfer amount must be greater than zero.", nameof(request.Amount));
@@ -135,6 +145,7 @@ public class TransactionService : ITransactionService
         if (request.SourceAccountId == request.TargetAccountId)
             throw new ArgumentException("Source and target accounts cannot be the same.", nameof(request.TargetAccountId));
 
+        await LockAccountsAsync(request.SourceAccountId, request.TargetAccountId, cancellationToken);
         var sourceAccount = await _accRepo.GetByIdAsync(request.SourceAccountId, cancellationToken)
             ?? throw new NotFoundException($"Source account {request.SourceAccountId} was not found.");
 
@@ -236,19 +247,40 @@ public class TransactionService : ITransactionService
         return await _txRepo.DeleteAsync(id, cancellationToken);
     }
 
-    public async Task<TransactionResponse?> ProcessPlannedTransactionAsync(long ledgerEntryId, CancellationToken cancellationToken = default)
+    public Task<TransactionResponse?> ProcessPlannedTransactionAsync(long ledgerEntryId, CancellationToken cancellationToken = default)
+        => InSerializableTransactionAsync(
+            () => ProcessPlannedTransactionCoreAsync(ledgerEntryId, cancellationToken),
+            cancellationToken,
+            retryOnSerializationFailure: false);
+
+    private async Task<TransactionResponse?> ProcessPlannedTransactionCoreAsync(long ledgerEntryId, CancellationToken cancellationToken)
     {
-        var entry = await _txRepo.GetByIdAsync(ledgerEntryId, cancellationToken);
-        if (entry is null || !entry.IsPlanned)
+        var entry = _dbContext is null
+            ? await _txRepo.GetByIdAsync(ledgerEntryId, cancellationToken)
+            : (await _dbContext.LedgerEntries
+                .FromSqlInterpolated($"SELECT * FROM banking.ledger_entries WHERE \"Id\" = {ledgerEntryId} FOR UPDATE")
+                .ToListAsync(cancellationToken)).SingleOrDefault();
+        if (entry is not null && _dbContext is not null)
+            await _dbContext.Entry(entry).ReloadAsync(cancellationToken);
+
+        if (entry is null || !entry.IsPlanned ||
+            (entry.PlannedDate.HasValue && entry.PlannedDate.Value > DateTime.UtcNow))
         {
-            _logger.LogWarning("Planned transaction {TxId} not found or is not marked as planned.", ledgerEntryId);
+            _logger.LogWarning("Planned transaction {TxId} was not found or is not due.", ledgerEntryId);
             return null;
         }
 
         SavingsGoal? savingsGoal = null;
         if (entry.SavingsGoalId.HasValue && _goalRepo is not null)
         {
-            savingsGoal = await _goalRepo.GetByIdAsync(entry.SavingsGoalId.Value, cancellationToken);
+            savingsGoal = _dbContext is null
+                ? await _goalRepo.GetByIdAsync(entry.SavingsGoalId.Value, cancellationToken)
+                : (await _dbContext.SavingsGoals
+                    .FromSqlInterpolated($"SELECT * FROM banking.savings_goals WHERE \"Id\" = {entry.SavingsGoalId.Value} FOR UPDATE")
+                    .ToListAsync(cancellationToken)).SingleOrDefault();
+            if (savingsGoal is not null && _dbContext is not null)
+                await _dbContext.Entry(savingsGoal).ReloadAsync(cancellationToken);
+
             if (savingsGoal is not null && string.Equals(savingsGoal.Status, "paused", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation("Savings goal {GoalId} is paused. Skipping planned transfer for transaction {TxId}.", savingsGoal.Id, entry.Id);
@@ -287,12 +319,6 @@ public class TransactionService : ITransactionService
             return null;
         }
 
-        IDbContextTransaction? transaction = null;
-        if (_dbContext is not null && _dbContext.Database.CurrentTransaction is null)
-        {
-            transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        }
-
         try
         {
             TransactionResponse result;
@@ -303,7 +329,6 @@ public class TransactionService : ITransactionService
                     if (!entry.TargetAccountId.HasValue)
                     {
                         _logger.LogError("Planned transfer {TxId} has no TargetAccountId specified.", entry.Id);
-                        if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
                         return null;
                     }
 
@@ -321,13 +346,11 @@ public class TransactionService : ITransactionService
             catch (ConflictException ex)
             {
                 _logger.LogWarning(ex, "Failed to execute planned transaction {TxId} on account {AccountId} due to business rule violation (e.g. insufficient funds): {Message}", entry.Id, entry.AccountId, ex.Message);
-                if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
                 return null;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error executing planned transaction {TxId} on account {AccountId}: {Message}", entry.Id, entry.AccountId, ex.Message);
-                if (transaction is not null) await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
 
@@ -362,10 +385,6 @@ public class TransactionService : ITransactionService
                     await _txRepo.UpdateAsync(entry, cancellationToken);
                     _logger.LogInformation("Advanced recurring planned transaction {TxId} to next date {NextDate} (repeating: {Repeating})", entry.Id, nextDate.Value, entry.Repeating);
 
-                    if (transaction is not null)
-                    {
-                        await transaction.CommitAsync(cancellationToken);
-                    }
                     return result;
                 }
             }
@@ -374,28 +393,12 @@ public class TransactionService : ITransactionService
             await _txRepo.DeleteAsync(entry.Id, cancellationToken);
             _logger.LogInformation("Consumed and removed single planned transaction {TxId} for account {AccountId}", entry.Id, entry.AccountId);
 
-            if (transaction is not null)
-            {
-                await transaction.CommitAsync(cancellationToken);
-            }
-
             return result;
         }
         catch (Exception ex)
         {
-            if (transaction is not null)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-            }
-            _logger.LogError(ex, "Failed to complete planned transaction {TxId}. Entire operation rolled back.", entry.Id);
+            _logger.LogError(ex, "Failed to complete planned transaction {TxId}.", entry.Id);
             throw;
-        }
-        finally
-        {
-            if (transaction is not null)
-            {
-                await transaction.DisposeAsync();
-            }
         }
     }
 
@@ -403,6 +406,90 @@ public class TransactionService : ITransactionService
     {
         var entries = await _txRepo.GetByCorrelationIdAsync(correlationId, cancellationToken);
         return entries.Select(ToResponse);
+    }
+
+    private async Task LockAccountsAsync(long accountId, long? otherAccountId, CancellationToken cancellationToken)
+    {
+        if (_dbContext is null)
+            return;
+
+        if (otherAccountId is null)
+        {
+            var lockedAccount = (await _dbContext.SavingsAccounts
+                .FromSqlInterpolated($"SELECT * FROM banking.savings_accounts WHERE \"Id\" = {accountId} FOR UPDATE")
+                .ToListAsync(cancellationToken)).SingleOrDefault();
+            if (lockedAccount is not null)
+                await _dbContext.Entry(lockedAccount).ReloadAsync(cancellationToken);
+            return;
+        }
+
+        var firstId = Math.Min(accountId, otherAccountId.Value);
+        var secondId = Math.Max(accountId, otherAccountId.Value);
+        var lockedAccounts = await _dbContext.SavingsAccounts
+            .FromSqlInterpolated($"SELECT * FROM banking.savings_accounts WHERE \"Id\" IN ({firstId}, {secondId}) ORDER BY \"Id\" FOR UPDATE")
+            .ToListAsync(cancellationToken);
+        foreach (var account in lockedAccounts)
+            await _dbContext.Entry(account).ReloadAsync(cancellationToken);
+    }
+
+    private async Task<T> InSerializableTransactionAsync<T>(
+        Func<Task<T>> operation,
+        CancellationToken cancellationToken,
+        bool retryOnSerializationFailure = true)
+    {
+        if (_dbContext is null)
+            return await operation();
+
+        if (_dbContext.Database.CurrentTransaction is { } currentTransaction)
+        {
+            if (currentTransaction.GetDbTransaction().IsolationLevel != IsolationLevel.Serializable)
+                throw new InvalidOperationException("Ledger operations require a serializable transaction.");
+
+            return await operation();
+        }
+
+        for (var attempt = 1; ; attempt++)
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(
+                IsolationLevel.Serializable, cancellationToken);
+
+            try
+            {
+                var result = await operation();
+                await transaction.CommitAsync(cancellationToken);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                }
+                catch
+                {
+                    // Preserve the original failure; disposing the transaction releases the connection.
+                }
+
+                _dbContext.ChangeTracker.Clear();
+
+                if (retryOnSerializationFailure && attempt < 3 && IsSerializationFailure(ex))
+                    continue;
+
+                throw;
+            }
+        }
+    }
+
+    private static bool IsSerializationFailure(Exception exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is PostgresException postgresException &&
+                postgresException.SqlState == PostgresErrorCodes.SerializationFailure)
+                return true;
+        }
+
+        return false;
     }
 
     private static TransactionResponse ToResponse(LedgerEntry l)

@@ -105,6 +105,7 @@ public sealed class TransactionRepository(BankingDbContext db) : ITransactionRep
     public async Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
     {
         return await db.LedgerEntries
+            .AsNoTracking()
             .Where(l => l.IsPlanned && l.PlannedDate.HasValue && l.PlannedDate.Value <= asOfUtc)
             .OrderBy(l => l.PlannedDate)
             .ThenBy(l => l.Id)
