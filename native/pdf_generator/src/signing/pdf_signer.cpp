@@ -1,16 +1,18 @@
 #include "nordiska/signing/pdf_signer.hpp"
 
+#include <algorithm>
 #include <arpa/inet.h>
 #include <cerrno>
+#include <charconv>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <poll.h>
 #include <span>
 #include <string>
 #include <string_view>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <utility>
@@ -95,64 +97,168 @@ class ScopedFd {
     int fd_{-1};
 };
 
-bool read_exact(int fd, uint8_t* buffer, size_t len) {
-    size_t total_read = 0;
-    while (total_read < len) {
-        const ssize_t n = ::recv(fd, buffer + total_read, len - total_read, MSG_NOSIGNAL);
-        if (n < 0) {
-            if (errno == EINTR) {
+using Clock = std::chrono::steady_clock;
+enum class SocketFailure { Io, Timeout };
+
+class SigningDeadline {
+  public:
+    explicit SigningDeadline(Clock::time_point expires) : expires_(expires) {}
+    [[nodiscard]] int remaining_ms() const noexcept {
+        const auto now = Clock::now();
+        if (now >= expires_) {
+            return 0;
+        }
+        return static_cast<int>(std::chrono::ceil<std::chrono::milliseconds>(expires_ - now).count());
+    }
+    [[nodiscard]] std::expected<void, SocketFailure> wait(int fd, short events) const {
+        for (;;) {
+            const int remaining = remaining_ms();
+            if (remaining == 0) {
+                return std::unexpected(SocketFailure::Timeout);
+            }
+            pollfd descriptor{fd, events, 0};
+            const int result = ::poll(&descriptor, 1, remaining);
+            if (result < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                return std::unexpected(SocketFailure::Io);
+            }
+            if (result == 0) {
                 continue;
             }
-            return false;
+            if (descriptor.revents & POLLNVAL) {
+                return std::unexpected(SocketFailure::Io);
+            }
+            // Let recv/send/getsockopt classify hangup/error, including buffered data.
+            return {};
         }
-        if (n == 0) {
-            return false;
-        }
-        total_read += static_cast<size_t>(n);
     }
-    return true;
+
+  private:
+    Clock::time_point expires_;
+};
+
+struct CallTiming {
+    double* seconds;
+    Clock::time_point start;
+    ~CallTiming() noexcept {
+        if (seconds) {
+            *seconds += std::chrono::duration<double>(Clock::now() - start).count();
+        }
+    }
+};
+
+std::expected<void, SocketFailure> connect_socket(int fd, const sockaddr_un& address, const SigningDeadline& deadline) {
+    for (;;) {
+        if (deadline.remaining_ms() == 0) {
+            return std::unexpected(SocketFailure::Timeout);
+        }
+        if (::connect(fd, reinterpret_cast<const sockaddr*>(&address), sizeof(address)) == 0 || errno == EISCONN) {
+            return {};
+        }
+        if (errno == EINTR) {
+            continue;
+        }
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // AF_UNIX reports a full listen backlog as EAGAIN, without starting
+            // an asynchronous connection. Retry within the same deadline.
+            const int delay = std::min(5, deadline.remaining_ms());
+            if (delay == 0) {
+                return std::unexpected(SocketFailure::Timeout);
+            }
+            if (::poll(nullptr, 0, delay) < 0 && errno != EINTR) {
+                return std::unexpected(SocketFailure::Io);
+            }
+            continue;
+        }
+        if (errno != EINPROGRESS && errno != EALREADY) {
+            return std::unexpected(SocketFailure::Io);
+        }
+        if (auto ready = deadline.wait(fd, POLLOUT); !ready) {
+            return ready;
+        }
+        int error{};
+        socklen_t length = sizeof(error);
+        if (::getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &length) != 0 || error != 0) {
+            return std::unexpected(SocketFailure::Io);
+        }
+        return {};
+    }
 }
 
-bool write_exact(int fd, const uint8_t* buffer, size_t len) {
-    size_t total_written = 0;
-    while (total_written < len) {
-        // A disconnected signer must return an I/O error without terminating the host process.
-        const ssize_t n = ::send(fd, buffer + total_written, len - total_written, MSG_NOSIGNAL);
-        if (n < 0) {
+std::expected<void, SocketFailure> read_exact(int fd, std::span<uint8_t> buffer, const SigningDeadline& deadline) {
+    while (!buffer.empty()) {
+        if (deadline.remaining_ms() == 0) {
+            return std::unexpected(SocketFailure::Timeout);
+        }
+        const ssize_t count = ::recv(fd, buffer.data(), buffer.size(), 0);
+        if (count < 0) {
             if (errno == EINTR) {
                 continue;
             }
-            return false;
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (auto ready = deadline.wait(fd, POLLIN); !ready) {
+                    return ready;
+                }
+                continue;
+            }
+            return std::unexpected(SocketFailure::Io);
         }
-        if (n == 0) {
-            return false;
+        if (count == 0) {
+            return std::unexpected(SocketFailure::Io);
         }
-        total_written += static_cast<size_t>(n);
+        buffer = buffer.subspan(static_cast<size_t>(count));
     }
-    return true;
+    return {};
+}
+
+std::expected<void, SocketFailure> write_exact(int fd, std::span<const uint8_t> buffer,
+                                               const SigningDeadline& deadline) {
+    while (!buffer.empty()) {
+        if (deadline.remaining_ms() == 0) {
+            return std::unexpected(SocketFailure::Timeout);
+        }
+        const ssize_t count = ::send(fd, buffer.data(), buffer.size(), MSG_NOSIGNAL);
+        if (count < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (auto ready = deadline.wait(fd, POLLOUT); !ready) {
+                    return ready;
+                }
+                continue;
+            }
+            return std::unexpected(SocketFailure::Io);
+        }
+        if (count == 0) {
+            return std::unexpected(SocketFailure::Io);
+        }
+        buffer = buffer.subspan(static_cast<size_t>(count));
+    }
+    return {};
+}
+
+SigningError socket_error(SocketFailure failure, DiagnosticCode io_code) noexcept {
+    return failure == SocketFailure::Timeout ? SigningError{SigningErrorKind::Timeout, DiagnosticCode::SigningTimedOut}
+                                             : SigningError{SigningErrorKind::InternalError, io_code};
 }
 
 class SocketPdfSigner final : public PdfSigner {
   public:
-    explicit SocketPdfSigner(std::string socket_path, SignerMode sign_mode)
-        : socket_path_(std::move(socket_path)), sign_mode_(sign_mode) {}
+    explicit SocketPdfSigner(std::string socket_path, SignerMode sign_mode, std::chrono::milliseconds timeout)
+        : socket_path_(std::move(socket_path)), sign_mode_(sign_mode), timeout_(timeout) {}
 
     std::expected<std::string, SigningError> sign_digest(std::span<const uint8_t, 32> digest,
                                                          double* call_seconds) override {
-        using Clock = std::chrono::steady_clock;
-        const auto start = call_seconds ? Clock::now() : Clock::time_point{};
-
-        ScopedFd fd(::socket(AF_UNIX, SOCK_STREAM, 0));
+        const auto start = Clock::now();
+        const CallTiming timing{call_seconds, start};
+        const SigningDeadline deadline(start + timeout_);
+        ScopedFd fd(::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
         if (!fd.is_valid()) {
             return std::unexpected(SigningError{SigningErrorKind::InternalError, DiagnosticCode::SocketCreateFailed});
         }
-
-        // Set reasonable 10-second connect/read/write timeouts
-        struct timeval tv {};
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        ::setsockopt(fd.get(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-        ::setsockopt(fd.get(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
         struct sockaddr_un addr {};
         addr.sun_family = AF_UNIX;
@@ -162,8 +268,8 @@ class SocketPdfSigner final : public PdfSigner {
         std::memcpy(addr.sun_path, socket_path_.data(), socket_path_.size());
         addr.sun_path[socket_path_.size()] = '\0';
 
-        if (::connect(fd.get(), reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) != 0) {
-            return std::unexpected(SigningError{SigningErrorKind::InternalError, DiagnosticCode::SocketConnectFailed});
+        if (auto connected = connect_socket(fd.get(), addr, deadline); !connected) {
+            return std::unexpected(socket_error(connected.error(), DiagnosticCode::SocketConnectFailed));
         }
 
         // Build 48-byte protocol v2 request
@@ -179,16 +285,15 @@ class SocketPdfSigner final : public PdfSigner {
         std::memcpy(request.data() + 12, &mode_net, 4);
         std::memcpy(request.data() + kSignerRequestHeaderSize, digest.data(), digest.size());
 
-        if (!write_exact(fd.get(), request.data(), request.size())) {
-            return std::unexpected(SigningError{SigningErrorKind::InternalError,
-                                                DiagnosticCode::FailedToSendSigningRequestToPDFSignerSocket});
+        if (auto sent = write_exact(fd.get(), request, deadline); !sent) {
+            return std::unexpected(
+                socket_error(sent.error(), DiagnosticCode::FailedToSendSigningRequestToPDFSignerSocket));
         }
 
-        // Read 8-byte response header
         std::array<uint8_t, kSignerResponseHeaderSize> response_header{};
-        if (!read_exact(fd.get(), response_header.data(), response_header.size())) {
-            return std::unexpected(SigningError{SigningErrorKind::InternalError,
-                                                DiagnosticCode::FailedToReadResponseHeaderFromPDFSignerSocket});
+        if (auto received = read_exact(fd.get(), response_header, deadline); !received) {
+            return std::unexpected(
+                socket_error(received.error(), DiagnosticCode::FailedToReadResponseHeaderFromPDFSignerSocket));
         }
 
         uint32_t status_net = 0;
@@ -215,13 +320,13 @@ class SocketPdfSigner final : public PdfSigner {
 
         std::string hex_output;
         hex_output.resize(hex_len);
-        if (!read_exact(fd.get(), reinterpret_cast<uint8_t*>(hex_output.data()), hex_len)) {
-            return std::unexpected(SigningError{SigningErrorKind::InternalError,
-                                                DiagnosticCode::FailedToReadSignatureHexPayloadFromPDFSignerSocket});
+        if (auto received = read_exact(fd.get(), {reinterpret_cast<uint8_t*>(hex_output.data()), hex_len}, deadline);
+            !received) {
+            return std::unexpected(
+                socket_error(received.error(), DiagnosticCode::FailedToReadSignatureHexPayloadFromPDFSignerSocket));
         }
-
-        if (call_seconds) {
-            *call_seconds += std::chrono::duration<double>(Clock::now() - start).count();
+        if (deadline.remaining_ms() == 0) {
+            return std::unexpected(socket_error(SocketFailure::Timeout, DiagnosticCode::UnexpectedFailure));
         }
 
         return hex_output;
@@ -230,11 +335,22 @@ class SocketPdfSigner final : public PdfSigner {
   private:
     std::string socket_path_;
     SignerMode sign_mode_{SignerModePlain};
+    std::chrono::milliseconds timeout_;
 };
 
 } // namespace
 
 std::expected<std::unique_ptr<PdfSigner>, SigningError> create_native_pdf_signer() {
+    int timeout_ms = 10000;
+    if (const char* value = std::getenv("NORDISKA_PDF_SIGNER_TIMEOUT_MS"); value && *value) {
+        const std::string_view text(value);
+        const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), timeout_ms);
+        if (error != std::errc{} || end != text.data() + text.size() || timeout_ms <= 0) {
+            return std::unexpected(SigningError{SigningErrorKind::InvalidArgument,
+                                                DiagnosticCode::InvalidArgument,
+                                                {.field = DiagnosticField::SignerTimeout}});
+        }
+    }
     std::string socket_path = kDefaultSocketPath;
     if (const char* env_path = std::getenv("PDF_SIGNER_SOCKET_PATH"); env_path != nullptr && env_path[0] != '\0') {
         socket_path = env_path;
@@ -247,7 +363,7 @@ std::expected<std::unique_ptr<PdfSigner>, SigningError> create_native_pdf_signer
         }
     }
 
-    return std::make_unique<SocketPdfSigner>(std::move(socket_path), mode);
+    return std::make_unique<SocketPdfSigner>(std::move(socket_path), mode, std::chrono::milliseconds(timeout_ms));
 }
 
 } // namespace nordiska

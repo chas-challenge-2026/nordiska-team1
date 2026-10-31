@@ -9,6 +9,8 @@ std::string_view reason(DiagnosticCode code) noexcept {
     switch (code) {
     case DiagnosticCode::UnexpectedFailure:
         return "unexpected failure";
+    case DiagnosticCode::SigningTimedOut:
+        return "signing request timed out";
     case DiagnosticCode::OutOfMemory:
         return "out of memory";
     case DiagnosticCode::Required:
@@ -241,6 +243,8 @@ std::string_view diagnostic_field_name(DiagnosticField field) noexcept {
         return "signature_capacity";
     case DiagnosticField::Ingestor:
         return "ingestor";
+    case DiagnosticField::SignerTimeout:
+        return "NORDISKA_PDF_SIGNER_TIMEOUT_MS";
     case DiagnosticField::Profile:
         return "profile";
     case DiagnosticField::Unknown:

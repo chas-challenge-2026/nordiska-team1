@@ -90,6 +90,7 @@ enum class DiagnosticCode {
     SignerRejectedRequestUnsupportedDigestAlgorithm,
     SignerRejectedRequestUnsupportedProtocolVersion,
     SignerReturnedEmptyCMSHexOutput,
+    SigningTimedOut,
     SignerServiceReportedInternalError,
 };
 enum class DiagnosticStage { Boundary, Ingestion, Layout, Rendering, Signing, Delivery, Cli };
@@ -118,6 +119,7 @@ enum class DiagnosticField {
     SignatureCapacity,
     Ingestor,
     Profile,
+    SignerTimeout,
     Unknown
 };
 enum class DiagnosticScope { Root, Envelope, Document, Transaction };

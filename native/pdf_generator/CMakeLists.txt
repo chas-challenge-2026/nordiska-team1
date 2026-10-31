@@ -169,6 +169,10 @@ if(BUILD_TESTING)
     target_link_libraries(nordiska_allocation_failure_tests PRIVATE nordiska_document_core)
     target_link_options(nordiska_allocation_failure_tests PRIVATE "-Wl,--wrap=_Znwm" "-Wl,--wrap=_Znam")
     add_test(NAME nordiska_allocation_failure_tests COMMAND nordiska_allocation_failure_tests)
+    add_executable(nordiska_signing_deadline_tests tests/signing_deadline_tests.cpp)
+    target_link_libraries(nordiska_signing_deadline_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core)
+    add_test(NAME nordiska_signing_deadline_tests COMMAND nordiska_signing_deadline_tests)
+    set_tests_properties(nordiska_signing_deadline_tests PROPERTIES TIMEOUT 30)
     add_executable(nordiska_account_metadata_tests tests/account_metadata_tests.cpp)
     target_link_libraries(nordiska_account_metadata_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core)
     add_test(NAME nordiska_account_metadata_tests COMMAND nordiska_account_metadata_tests)
@@ -211,6 +215,7 @@ if(BUILD_TESTING)
     add_test(NAME nordiska_adversarial_signing_tests COMMAND nordiska_adversarial_signing_tests)
 
     set_tests_properties(
+        nordiska_signing_deadline_tests
         nordiska_account_metadata_tests
         nordiska_allocation_failure_tests
         nordiska_diagnostics_tests

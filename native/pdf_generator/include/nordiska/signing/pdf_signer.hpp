@@ -24,6 +24,7 @@ enum class SigningErrorKind {
     DigestFailed,
     ResourceLimitExceeded,
     InternalError,
+    Timeout,
 };
 
 struct SigningError {
@@ -36,7 +37,7 @@ class PdfSigner {
   public:
     virtual ~PdfSigner() = default;
 
-    // When requested, accumulate only the external call duration in call_seconds.
+    // Accumulate external call duration on success and failure when requested.
     // No customer or document identity crosses this interface.
     // Return CMS hex only. The generator owns PDF structure, hashing and insertion.
     [[nodiscard]] virtual std::expected<std::string, SigningError> sign_digest(std::span<const uint8_t, 32> digest,
