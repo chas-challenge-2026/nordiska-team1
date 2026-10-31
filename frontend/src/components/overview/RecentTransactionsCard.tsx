@@ -9,6 +9,23 @@ import { useNavigate } from "react-router";
 import { type Transaction } from "../../services/transactionsService";
 import OverviewCardHeader from "./OverviewCardHeader";
 import { OverviewCardRow } from "./OverviewCardRow";
+import type { OverviewCardProps } from "../../pages/OverviewPage";
+
+function NoTransactions() {
+    const {t} = useTranslation();
+    const navigate = useNavigate();
+
+    return (
+        <div className="flex h-screen flex-col items-center justify-center -mt-5">
+            <div className="flex w-28 items-center justify-center">
+                <span aria-hidden="true" className="block h-10 w-10 bg-light-blue-accent mask-[url('/icons/transactions.svg')] mask-contain mask-center mask-no-repeat"/>
+            </div>
+            <p className="font-semibold mt-1 text-dark-navy/80">{t("overview-route.transactions-card.no-transactions")}</p>
+            <p className="px-4 text-center text-[0.8em] mt-1 text-dark-navy/80">{t("overview-route.transactions-card.no-transactions-description")}</p>
+            <p className="mt-4 text-center text-sm font-semibold text-dark-navy/80 md:mt-6">{t("no-planned-state.action")} <span onClick={() => navigate("/transfer")} className="text-primary-blue cursor-pointer hover:text-primary-hover">{t("page-navigation.transfers")}</span></p>
+        </div>
+    );
+}
 
 const MAX_ROWS = 10;
 
@@ -25,7 +42,7 @@ type TransferGroup = {
 
 type RecentTransaction = Transaction | TransferGroup;
 
-export default function RecentTransactionsCard() {
+export default function RecentTransactionsCard({ showOnlyFavs }: OverviewCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 20, AccountIds: [] });
@@ -36,6 +53,10 @@ export default function RecentTransactionsCard() {
 
     const recent = (transactions?.items ?? [])
         .filter((tx) => !tx.isPlanned)
+        .filter((tx) => {
+            if (!showOnlyFavs) return true;
+            return accounts?.some( (account) =>  account.id === tx.accountId &&  account.isFavorite);
+        })
         .sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt))
 
     // PARA IHOP TRANSAKTIONER OCH SKAPA NY LISTA
@@ -98,6 +119,7 @@ export default function RecentTransactionsCard() {
             <OverviewCardHeader title={t("overview-route.transactions-card.title")} description={t("overview-route.transactions-card.description")} />
 
             {/* USER FEEDBACK */}
+            {result.length === 0 && showOnlyFavs && (<NoTransactions />)}
             {isPending && ( <LoadingState title={t("overview-route.transactions-card.pending")} />)}
             {isError && ( <ErrorState title={t("overview-route.transactions-card.error")} />)}
 
@@ -112,7 +134,7 @@ export default function RecentTransactionsCard() {
                                 const displayName = tx.label ? tx.label : t(`overview-route.transactions-card.transfer-type-${tx.type}`);
                                 const colorAmount = tx.type === "transfer-group" ? "neutral" : tx.amount < 0 ? "minus" : "plus";
                                 const displayDate = <>{formatTime(tx.createdAt)} <span className="ml-1">{formatDate(tx.createdAt)}</span></>;
-                                const displayType = tx.type === "transfer-group" ? `${getAccountNumber(tx.from)} → ${getAccountNumber(tx.to)}` : t(`overview-route.transactions-card.transfer-type-${tx.type}`)
+                                const displayType = tx.type === "transfer-group" ? `${getAccountNumber(tx.from)} → ${getAccountNumber(tx.to)}` : getAccountNumber(tx.accountId);
                                             
                                 return (
                                     <OverviewCardRow 
