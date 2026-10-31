@@ -38,7 +38,7 @@ export default function RecurrenceFields({
                     onChange={(e) =>
                         onRepeatIntervalChange(e.target.value as RepeatInterval)
                     }
-                    className="mt-1 w-full rounded-md border border-nordiska-blue bg-white px-3 py-2"
+                    className="mt-1 w-full rounded-md border border-primary-hover bg-white px-3 py-2"
                 >
                     {REPEAT_INTERVALS.map((interval) => (
                         <option key={interval} value={interval}>

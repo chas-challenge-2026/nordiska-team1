@@ -39,7 +39,7 @@ export default function InactivityWarning({remainingSeconds, onStayLoggedIn, onL
                     <button
                         type="button"
                         onClick={onLogout}
-                        className="flex-1 rounded-md border-2 border-primary-blue bg-white px-3 py-2 text-sm font-semibold text-primary-blue transition-colors cursor-pointer hover:bg-nordiska-blue hover:text-white hover:border-nordiska-blue"
+                        className="flex-1 rounded-md border-2 border-primary-blue bg-white px-3 py-2 text-sm font-semibold text-primary-blue transition-colors cursor-pointer hover:bg-primary-hover hover:text-white hover:border-primary-hover"
                     >
                         {t("generic.log-out")}
                     </button>
@@ -47,7 +47,7 @@ export default function InactivityWarning({remainingSeconds, onStayLoggedIn, onL
                     <button
                         type="button"
                         onClick={onStayLoggedIn}
-                        className="flex-1 rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors cursor-pointer hover:bg-nordiska-blue"
+                        className="flex-1 rounded-md bg-primary-blue px-3 py-2 text-sm font-semibold text-white transition-colors cursor-pointer hover:bg-primary-hover"
                     >
                         {t("generic.stay")}
                     </button>

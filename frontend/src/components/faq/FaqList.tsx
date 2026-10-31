@@ -48,7 +48,7 @@ const FaqList = ({
                             <button
                                 type="button"
                                 onClick={() => onSearchSuggestion(suggestion)}
-                                className="font-semibold underline text-primary-blue hover:text-nordiska-blue cursor-pointer">{suggestion}</button>
+                                className="font-semibold underline text-primary-blue hover:text-primary-hover cursor-pointer">{suggestion}</button>
                                 <span>?</span>
                         </p>
                     )

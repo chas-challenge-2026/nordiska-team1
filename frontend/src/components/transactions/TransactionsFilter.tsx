@@ -19,7 +19,7 @@ interface TransactionFilterProps {
 }
 
 const INPUT_CLASS = "w-full border border-primary-blue/40 bg-white px-2 py-1.5 text-sm text-dark-navy focus:border-primary-blue";
-const LABEL_CLASS = "mb-1 block text-xs uppercase tracking-wide text-nordiska-blue";
+const LABEL_CLASS = "mb-1 block text-xs uppercase tracking-wide text-primary-hover";
 
 export default function TransactionFilter({ filters, onChange, onReset, variant = 'panel' }: TransactionFilterProps) {
     const { t } = useTranslation();
@@ -37,7 +37,7 @@ export default function TransactionFilter({ filters, onChange, onReset, variant 
     };
 
     return (
-        <search className={isSheet ? "relative bg-white p-4 text-dark-navy" : "relative overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm"}>
+        <search className={isSheet ? "relative bg-white p-4 text-dark-navy" : "relative overflow-hidden border border-gray-300 bg-white text-dark-navy shadow-md/30"}>
             {!isSheet && <PanelHeader subtitle={t("transactions-route.filter-subtitle")} title={t("generic.filter")} />}
 
             <div className={isSheet ? "" : "p-4"}>
@@ -105,7 +105,7 @@ export default function TransactionFilter({ filters, onChange, onReset, variant 
                     <button
                         type="button"
                         onClick={onReset}
-                        className="mt-5 w-full cursor-pointer rounded-lg bg-primary-blue py-2 text-sm font-semibold text-white transition hover:bg-nordiska-blue"
+                        className="mt-5 w-full cursor-pointer rounded-lg bg-primary-blue py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
                     >
                         {t("generic.reset")}
                     </button>

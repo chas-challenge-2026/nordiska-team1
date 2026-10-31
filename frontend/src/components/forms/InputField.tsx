@@ -61,7 +61,7 @@ export default function InputField({
                         aria-invalid={!!error}
                         aria-describedby={error ? `${name}-error` : undefined}
                         className={`w-full rounded-md border bg-white ${
-                            error ? "border-[#C4291C]" : "border-nordiska-blue"
+                            error ? "border-[#C4291C]" : "border-primary-hover"
                         } px-3 py-2 placeholder:text-gray-400 resize-y`}
                     />
                 ) : (
@@ -78,7 +78,7 @@ export default function InputField({
                         aria-invalid={!!error}
                         aria-describedby={error ? `${name}-error` : undefined}
                         className={`w-full rounded-md border bg-white ${
-                            error ? "border-[#C4291C]" : "border-nordiska-blue"
+                            error ? "border-[#C4291C]" : "border-primary-hover"
                         } px-3 py-2 ${
                             suffix ? "pr-12" : ""
                         } placeholder:text-gray-400`}

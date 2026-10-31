@@ -51,7 +51,7 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
 
 
     return (
-        <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-200 md:shadow-sm">
+        <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-300 md:shadow-md/30">
             {/* CARD HEADER */}
             <div className="flex min-h-22 flex-col justify-center bg-dark-navy px-4 py-3 text-white sm:px-6">
                 <h2 id={`${listId}-heading`} className="truncate text-base font-bold uppercase tracking-wide sm:text-lg">{t("transactions-route.list-title")}</h2>
@@ -82,7 +82,7 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
                     )}
                     {groups.map(group => (
                         <div key={group.dateKey} className="mb-4 last:mb-0">
-                            <h3 className="mb-1 border-b-2 border-nordiska-orange px-3 pb-1 text-xs font-medium text-secondary sm:px-5">
+                            <h3 className="mb-1 border-b-2 border-light-blue-accent px-3 pb-1 text-xs font-medium text-secondary sm:px-5">
                                 {formatDate(group.date)}
                             </h3>
                             <ul>
@@ -128,7 +128,7 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
                 </div>
             )}
 
-            <div className="border-t-2 border-nordiska-orange px-2 py-3 sm:mx-4">
+            <div className="border-t-2 border-light-blue-accent px-2 py-3 sm:mx-4">
                 <PagePagination
                     page={page}
                     totalPages={totalPages}

@@ -50,10 +50,10 @@ export default function InboxPage() {
 
     return (
         <main className="mx-auto w-full max-w-6xl px-4 py-6 font-montserrat text-sm text-dark-navy">
-            <div className="flex flex-wrap items-baseline justify-between gap-3 border-b-2 border-nordiska-orange pb-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-3 border-b-2 border-light-blue-accent pb-3">
                 <h1 className="text-2xl font-bold">{t("inbox.messages")}</h1>
                 <div className="flex items-center gap-4">
-                    <span className="text-xs uppercase text-primary-blue">
+                    <span className="text-xs uppercase text-dark-navy">
                         {t("inbox.unread")} <strong className="ml-1 text-base text-dark-navy">{unreadCount}</strong>
                     </span>
                     <InboxButton variant="outline" disabled={unreadCount === 0 || markAll.isPending} onClick={() => markAll.mutate()}>
@@ -71,7 +71,7 @@ export default function InboxPage() {
                             key={item.key}
                             to={`/inbox?folder=${item.key}`}
                             aria-current={item.key === tab ? "page" : undefined}
-                            className={`flex items-center gap-1 pb-1 font-semibold ${item.key === tab ? "border-b-[3px] border-nordiska-orange" : ""}`}
+                            className={`flex items-center gap-1 pb-1 font-semibold ${item.key === tab ? "border-b-[3px] border-light-blue-accent" : ""}`}
                         >
                             {t(item.labelKey)}
                             {count > 0 && (
