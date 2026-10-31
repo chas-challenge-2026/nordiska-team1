@@ -217,6 +217,10 @@ std::string_view diagnostic_field_name(DiagnosticField field) noexcept {
         return "amount_minor";
     case DiagnosticField::AccountNumber:
         return "account_number";
+    case DiagnosticField::AccountType:
+        return "account_type";
+    case DiagnosticField::InterestRateDisplay:
+        return "interest_rate_display";
     case DiagnosticField::TaxYear:
         return "tax_year";
     case DiagnosticField::JsonUtf8:

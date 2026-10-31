@@ -165,6 +165,9 @@ Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/rele
 
 ## Integration Contracts
 
+See [Account product and rate metadata](docs/account-metadata.md) for the optional
+`account_type` and `interest_rate_display` fields supported by both report types.
+
 ### C ABI Public Interface (`pdf_generator_c_api.h`)
 
 Exported C functions for host interop:

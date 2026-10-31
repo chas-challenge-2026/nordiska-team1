@@ -50,6 +50,16 @@ std::expected<std::string, IngestError> get_required_string(const json& obj, Dia
     return val.get<std::string>();
 }
 
+// Additive metadata is optional, but a supplied value must be a string.
+// Reuse the typed field boundary; no supplied value enters a diagnostic.
+std::expected<std::string, IngestError> get_checked_optional_string(const json& obj, DiagnosticField field,
+                                                                    DiagnosticLocation location) {
+    if (!obj.contains(diagnostic_field_name(field))) {
+        return std::string{};
+    }
+    return get_required_string(obj, field, location);
+}
+
 std::string get_optional_string(const json& obj, std::string_view key, std::string_view fallback = "") {
     if (!obj.contains(key)) {
         return std::string(fallback);
@@ -118,6 +128,17 @@ std::expected<AccountStatement, IngestError> parse_account_statement(const json&
     statement.account_number = std::move(*acct_num_res);
 
     statement.account_name = get_optional_string(doc_obj, "account_name");
+    auto account_type = get_checked_optional_string(doc_obj, DiagnosticField::AccountType, breadcrumb);
+    if (!account_type) {
+        return std::unexpected(account_type.error());
+    }
+    statement.account_type = std::move(*account_type);
+    auto interest_rate = get_checked_optional_string(doc_obj, DiagnosticField::InterestRateDisplay, breadcrumb);
+    if (!interest_rate) {
+        return std::unexpected(interest_rate.error());
+    }
+    statement.interest_rate_display = std::move(*interest_rate);
+
     statement.currency = get_optional_string(doc_obj, "currency", "SEK");
     statement.period = get_optional_string(doc_obj, "period");
     statement.opening_balance = get_optional_string(doc_obj, "opening_balance");
@@ -173,6 +194,17 @@ std::expected<AnnualTaxReport, IngestError> parse_annual_tax_report(const json& 
     report.account_number = std::move(*acct_num_res);
 
     report.account_name = get_optional_string(doc_obj, "account_name");
+    auto account_type = get_checked_optional_string(doc_obj, DiagnosticField::AccountType, breadcrumb);
+    if (!account_type) {
+        return std::unexpected(account_type.error());
+    }
+    report.account_type = std::move(*account_type);
+    auto interest_rate = get_checked_optional_string(doc_obj, DiagnosticField::InterestRateDisplay, breadcrumb);
+    if (!interest_rate) {
+        return std::unexpected(interest_rate.error());
+    }
+    report.interest_rate_display = std::move(*interest_rate);
+
     report.total_interest_earned = get_optional_string(doc_obj, "total_interest_earned");
     report.preliminary_tax_deducted = get_optional_string(doc_obj, "preliminary_tax_deducted");
     report.reported_to_authority = get_optional_string(doc_obj, "reported_to_authority");
@@ -513,6 +545,16 @@ std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjs
             has_acct_num = true;
         } else if (key == "account_name") {
             simd_assign_optional_string(val, statement.account_name);
+        } else if (key == "account_type") {
+            if (auto error = simd_assign_required_string(val, statement.account_type, DiagnosticField::AccountType,
+                                                         breadcrumb)) {
+                return std::unexpected(*error);
+            }
+        } else if (key == "interest_rate_display") {
+            if (auto error = simd_assign_required_string(val, statement.interest_rate_display,
+                                                         DiagnosticField::InterestRateDisplay, breadcrumb)) {
+                return std::unexpected(*error);
+            }
         } else if (key == "currency") {
             simd_assign_optional_string(val, statement.currency);
         } else if (key == "period") {
@@ -595,6 +637,16 @@ std::expected<AnnualTaxReport, IngestError> simd_parse_annual_tax_report(simdjso
             has_acct = true;
         } else if (key == "account_name") {
             simd_assign_optional_string(val, report.account_name);
+        } else if (key == "account_type") {
+            if (auto error =
+                    simd_assign_required_string(val, report.account_type, DiagnosticField::AccountType, breadcrumb)) {
+                return std::unexpected(*error);
+            }
+        } else if (key == "interest_rate_display") {
+            if (auto error = simd_assign_required_string(val, report.interest_rate_display,
+                                                         DiagnosticField::InterestRateDisplay, breadcrumb)) {
+                return std::unexpected(*error);
+            }
         } else if (key == "total_interest_earned") {
             simd_assign_optional_string(val, report.total_interest_earned);
         } else if (key == "preliminary_tax_deducted") {

@@ -29,9 +29,17 @@ std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_statement(const 
         page.section_heading(stmt.title);
         page.gap(5);
     }
-    page.section_heading(stmt.account_name.empty() ? "Sparkonto" : stmt.account_name);
+    page.section_heading(!stmt.account_type.empty()  ? stmt.account_type
+                         : stmt.account_name.empty() ? "Sparkonto"
+                                                     : stmt.account_name);
+    if (!stmt.account_type.empty() && !stmt.account_name.empty() && stmt.account_name != stmt.account_type) {
+        page.field("Kontonamn: ", stmt.account_name);
+    }
     page.field("Kontonummer: ", stmt.account_number);
     page.field("Valuta: ", stmt.currency);
+    if (!stmt.interest_rate_display.empty()) {
+        page.field("Räntesats: ", stmt.interest_rate_display);
+    }
 
     constexpr std::array columns = {
         report::Column{"Uppgift", 40},
@@ -65,6 +73,12 @@ std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_tax_report(const
     report::Composer page("Kontrolluppgift", "Inkomstår: " + tax.tax_year, context.customer_name, style);
     page.section_heading(tax.title.empty() ? "Kontrolluppgift för ränteinkomst" : tax.title);
     page.field("Kontonummer: ", tax.account_number);
+    if (!tax.account_type.empty()) {
+        page.field("Kontotyp: ", tax.account_type);
+    }
+    if (!tax.interest_rate_display.empty()) {
+        page.field("Räntesats: ", tax.interest_rate_display);
+    }
     if (!tax.account_name.empty()) {
         page.field("Kontonamn: ", tax.account_name);
     }

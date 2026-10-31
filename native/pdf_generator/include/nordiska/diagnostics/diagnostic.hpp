@@ -105,6 +105,8 @@ enum class DiagnosticField {
     Date,
     AmountMinor,
     AccountNumber,
+    AccountType,
+    InterestRateDisplay,
     TaxYear,
     JsonUtf8,
     JsonLength,
