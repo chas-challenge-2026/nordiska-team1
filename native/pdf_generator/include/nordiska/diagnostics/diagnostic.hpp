@@ -115,6 +115,7 @@ enum class DiagnosticField {
     Compression,
     SignatureCapacity,
     Ingestor,
+    Profile,
     Unknown
 };
 enum class DiagnosticScope { Root, Envelope, Document, Transaction };

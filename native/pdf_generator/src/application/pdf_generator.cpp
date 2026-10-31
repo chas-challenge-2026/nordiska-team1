@@ -52,7 +52,8 @@ std::string GeneratorError::message() const {
 
 PdfGenerator::PdfGenerator(GeneratorConfig config)
     : ingestor_(config.ingestor), engine_(config.engine, config.compression), signer_(std::move(config.custom_signer)),
-      enable_signing_(config.enable_signing), signature_contents_capacity_(config.signature_contents_capacity) {
+      enable_signing_(config.enable_signing), signature_contents_capacity_(config.signature_contents_capacity),
+      report_profile_(config.report_profile) {
     if (enable_signing_ && !signer_) {
         auto signer = create_native_pdf_signer();
         if (signer) {
@@ -161,7 +162,8 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         const Document& doc = job.documents[index];
         // Stage 2: Layout document geometry and pagination
         const auto t_layout_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto layout_res = LayoutBuilder::build(doc, {.customer_name = job.customer_name});
+        auto layout_res =
+            LayoutBuilder::build(doc, {.customer_name = job.customer_name, .report_profile = report_profile_});
         if (!layout_res) {
             return std::unexpected(GeneratorError{std::move(layout_res).error(), index});
         }

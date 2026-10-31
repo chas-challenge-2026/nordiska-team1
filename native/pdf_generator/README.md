@@ -264,6 +264,7 @@ when it returns. No environment variable is needed to choose instrumentation.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
 - `--signing`: Call the PDF signer service via Unix domain socket and embed its CMS hex in generated documents (default: `false`).
 - `--signature-capacity <n>`: Reserved CMS hex characters (default: `8192`).
+- `--profile <amber|light-blue|navy>`: Apply a complete report palette (default: `light-blue`; `--logo` is an alias).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.

@@ -86,8 +86,9 @@ with tempfile.TemporaryDirectory() as temporary:
             invalid['documents'].append(invalid['documents'][0])
             run(['-', '-o', str(output), '-e', ingestor], json.dumps(invalid), False)
     # Usage, I/O and filesystem exceptions must not echo paths or values.
-    for option in ('--renderer', '--ingestor', '--compression', '--signature-capacity'):
+    for option in ('--renderer', '--ingestor', '--compression', '--signature-capacity', '--logo', '--profile'):
         run([option, marker], success=False)
+    run(['--profile', 'white'], success=False)
     run(['--' + marker], success=False)
     run(['-i', str(output / marker)], success=False)
     blocked = Path(temporary) / f'{marker}.file'

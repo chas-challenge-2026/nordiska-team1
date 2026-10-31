@@ -23,7 +23,8 @@ std::expected<DocumentLayout, LayoutError> LayoutBuilder::build(const Document& 
 
 std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_statement(const AccountStatement& stmt,
                                                                           LayoutContext context) {
-    report::Composer page("Kontoutdrag", "Period: " + stmt.period, context.customer_name);
+    const auto style = report_style(context.report_profile);
+    report::Composer page("Kontoutdrag", "Period: " + stmt.period, context.customer_name, style);
     if (!stmt.title.empty() && stmt.title != "Kontoutdrag") {
         page.section_heading(stmt.title);
         page.gap(5);
@@ -60,7 +61,8 @@ std::expected<DocumentLayout, LayoutError> LayoutBuilder::build_tax_report(const
                                                                            LayoutContext context) {
     // No annual reference is available: reuse the statement's page furniture
     // and table styling, with a content-specific summary and authority note.
-    report::Composer page("Kontrolluppgift", "Inkomstår: " + tax.tax_year, context.customer_name);
+    const auto style = report_style(context.report_profile);
+    report::Composer page("Kontrolluppgift", "Inkomstår: " + tax.tax_year, context.customer_name, style);
     page.section_heading(tax.title.empty() ? "Kontrolluppgift för ränteinkomst" : tax.title);
     page.field("Kontonummer: ", tax.account_number);
     if (!tax.account_name.empty()) {

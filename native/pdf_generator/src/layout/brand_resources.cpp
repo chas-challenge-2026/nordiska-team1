@@ -1,6 +1,8 @@
 #include "nordiska/layout/report_style.hpp"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <stdexcept>
 #include <vector>
 #include <zlib.h>
@@ -148,20 +150,71 @@ constexpr std::array<uint8_t, 3119> kLogoPixels = {
 
 struct PreparedLogo {
     std::vector<uint8_t> pixels;
+    std::vector<uint8_t> compressed;
     RasterImage image;
 
-    PreparedLogo() : pixels(54432) {
+    explicit PreparedLogo(ReportProfile variant) : pixels(54432) {
         uLongf size = pixels.size();
         if (uncompress(pixels.data(), &size, kLogoPixels.data(), kLogoPixels.size()) != Z_OK || size != pixels.size()) {
             throw std::runtime_error("Unable to prepare the Nordiska wordmark");
         }
-        image = RasterImage{324, 56, pixels, kLogoPixels};
+        if (variant == ReportProfile::Amber) {
+            image = RasterImage{324, 56, pixels, kLogoPixels};
+            return;
+        }
+        // Recover the source coverage against white. Amber pixels belong to
+        // the dot; blue pixels belong to the letters. Both use the selected
+        // report palette, shared with text, bands, tables and footers.
+        const auto style = report_style(variant);
+        for (size_t offset = 0; offset < pixels.size(); offset += 3) {
+            const bool dot = pixels[offset] > pixels[offset + 2];
+            const float coverage =
+                dot ? (255.0F - pixels[offset + 2]) / (255 - 26) : (255.0F - pixels[offset]) / (255 - 19);
+            const auto color = dot ? style.accent : style.ink;
+            const std::array<float, 3> foreground{color.red, color.green, color.blue};
+            for (size_t channel = 0; channel < 3; ++channel) {
+                pixels[offset + channel] = static_cast<uint8_t>(
+                    std::clamp(std::lround(255 * (1 - coverage + coverage * foreground[channel])), 0L, 255L));
+            }
+        }
+        compressed.resize(compressBound(pixels.size()));
+        uLongf compressed_size = compressed.size();
+        if (compress2(compressed.data(), &compressed_size, pixels.data(), pixels.size(), Z_BEST_COMPRESSION) != Z_OK) {
+            throw std::runtime_error("Unable to prepare the Nordiska wordmark");
+        }
+        compressed.resize(compressed_size);
+        image = RasterImage{324, 56, pixels, compressed};
     }
 };
 } // namespace
 
-const RasterImage& nordiska_logo() {
-    static const PreparedLogo logo;
+std::optional<ReportProfile> parse_report_profile(std::string_view value) noexcept {
+    if (value == "amber") {
+        return ReportProfile::Amber;
+    }
+    if (value == "light-blue") {
+        return ReportProfile::LightBlue;
+    }
+    if (value == "navy") {
+        return ReportProfile::Navy;
+    }
+    return std::nullopt;
+}
+
+const RasterImage& nordiska_logo(ReportProfile variant) {
+    switch (variant) {
+    case ReportProfile::Amber: {
+        static const PreparedLogo logo(ReportProfile::Amber);
+        return logo.image;
+    }
+    case ReportProfile::Navy: {
+        static const PreparedLogo logo(ReportProfile::Navy);
+        return logo.image;
+    }
+    case ReportProfile::LightBlue:
+        break;
+    }
+    static const PreparedLogo logo(ReportProfile::LightBlue);
     return logo.image;
 }
 } // namespace nordiska

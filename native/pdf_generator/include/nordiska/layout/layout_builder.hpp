@@ -4,6 +4,7 @@
 #include "nordiska/domain/document_types.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/layout/document_layout.hpp"
+#include "nordiska/layout/report_style.hpp"
 
 #include <expected>
 #include <string>
@@ -25,6 +26,7 @@ struct LayoutError {
 
 struct LayoutContext {
     std::string_view customer_name;
+    ReportProfile report_profile{ReportProfile::LightBlue};
 };
 
 class LayoutBuilder {

@@ -67,6 +67,7 @@ void write_usage() {
                  "  -i, --input <path>\n  -o, --output <path>\n"
                  "  -r, --renderer <haru|native|cairo>\n  -e, --ingestor <simdjson|nlohmann>\n"
                  "  --compression <true|false>\n  --no-compression\n"
+                 "  --profile <amber|light-blue|navy> (default: light-blue)\n"
                  "  --signing\n  --no-signing\n  --signature-capacity <even hex character count>\n"
                  "  -q, --quiet\n  -v, --verbose\n  --json-summary\n  -h, --help\n  -V, --version\n"
                  "Exit codes: 0 success, 1 usage, 2 I/O, 3 input, 4 internal, 5 signing.\n";

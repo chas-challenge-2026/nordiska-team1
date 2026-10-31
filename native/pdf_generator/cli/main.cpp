@@ -94,6 +94,8 @@ std::expected<Options, Diagnostic> parse_cli(int argc, char* argv[]) {
             field = DiagnosticField::Ingestor;
         } else if (argument == "--compression") {
             field = DiagnosticField::Compression;
+        } else if (argument == "--profile" || argument == "--logo") {
+            field = DiagnosticField::Profile;
         } else if (argument == "--signature-capacity") {
             field = DiagnosticField::SignatureCapacity;
         }
@@ -136,6 +138,14 @@ std::expected<Options, Diagnostic> parse_cli(int argc, char* argv[]) {
                     return std::unexpected(cli_error(DiagnosticCode::InvalidBoolean, field));
                 }
                 break;
+            case DiagnosticField::Profile: {
+                const auto variant = parse_report_profile(text);
+                if (!variant) {
+                    return std::unexpected(cli_error(DiagnosticCode::InvalidArgument, field));
+                }
+                options.generator.report_profile = *variant;
+                break;
+            }
             case DiagnosticField::SignatureCapacity: {
                 auto& capacity = options.generator.signature_contents_capacity;
                 const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), capacity);

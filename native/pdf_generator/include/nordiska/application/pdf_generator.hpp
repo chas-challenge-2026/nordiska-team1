@@ -27,6 +27,7 @@ struct GeneratorConfig {
     std::shared_ptr<PdfSigner> custom_signer{nullptr};
     // Hex characters, excluding delimiters. Passed per render/preparation call.
     size_t signature_contents_capacity{kDefaultSignatureSlotSize};
+    ReportProfile report_profile{ReportProfile::LightBlue};
 };
 
 // For "--instrumented" arg  in CLI/benchmark
@@ -98,6 +99,7 @@ class PdfGenerator {
     std::shared_ptr<PdfSigner> signer_;
     bool enable_signing_{false};
     size_t signature_contents_capacity_;
+    ReportProfile report_profile_;
     std::optional<SigningError> signer_initialization_error_;
 };
 

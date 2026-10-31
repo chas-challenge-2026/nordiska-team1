@@ -237,6 +237,8 @@ std::string_view diagnostic_field_name(DiagnosticField field) noexcept {
         return "signature_capacity";
     case DiagnosticField::Ingestor:
         return "ingestor";
+    case DiagnosticField::Profile:
+        return "profile";
     case DiagnosticField::Unknown:
         return "unknown";
     }
