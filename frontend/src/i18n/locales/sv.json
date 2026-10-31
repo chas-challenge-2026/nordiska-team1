@@ -15,7 +15,10 @@
         "yes": "Ja",
         "no": "Nej",
         "account": "Konto",
+        "handle-account": "Hantera konto",
+        "account-number": "Kontonummer",
         "savings-account": "Sparkonto",
+        "savings-goal": "Sparmål",
         "interest": "Ränta",
         "filter": "Filtrera",
         "showing": "Visar",
@@ -274,6 +277,19 @@
     },
 
     "overview-route": {
+        "view-favorites": "Visa bara favoritmarkerade konton",
+        "view-extended": "Visa utökad översikt",
+        "view-default": "Visa kontoöversikt",
+        "show-all": "Visa alla",
+        "show-favs": "Visa favoriter",
+        "loading": "Laddar översikt",
+        "error": "Kunde inte hämta översikt",
+        "inbox": "Gå till inkorgen",
+        "unread": "Du har olästa aviseringar",
+        "no-accounts": "Du har inga konton att visa ännu",
+        "no-accounts-description": "Börja spara hos Nordiska och låt dina pengar växa med konkurrenskraftig sparränta, utan kontoavgifter och med statlig insättningsgaranti.",
+        "no-favs": "Du har inga favoritmarkerade konton",
+        "no-favs-description": "Du kan markera upp till 4 favoritkonton i kontovyn som du hittar under fliken \"Bankkonton\".",
         "edit-moved": "{{card}} flyttades till plats {{position}} av {{total}}.",
         "card-accounts": "Mina konton",
         "card-savings": "Sparmål",
@@ -306,13 +322,15 @@
 
         "inbox-card": {
             "title": "Aviseringar",
-            "description": "Dina senaste avieringar till inboxen",
-            "pending": "Laddar din inbox",
-            "error": "Det gick inte att hämta inboxen",
+            "description": "Dina senaste avieringar till inkorgen",
+            "pending": "Laddar din inkorg",
+            "error": "Det gick inte att hämta inkorgen",
             "aria-label": "Senaste aviseringar"
         },
 
         "transactions-card": {
+            "no-transactions": "Här var det tomt",
+            "no-transactions-description": "Det finns inga transaktioner att visa. Du kan enkelt föra över pengar under fliken \"Överföringar\".",
             "closed-account": "stängt konto",
             "title": "Transaktioner",
             "hover-title": "Visa transaktioner för",
