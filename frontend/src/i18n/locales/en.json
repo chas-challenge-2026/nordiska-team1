@@ -15,7 +15,10 @@
         "yes": "Yes",
         "no": "No",
         "account": "Account",
+        "handle-account": "Manage account",
+        "account-number": "Account number",
         "savings-account": "Savings account",
+        "savings-goal": "Savings goal",
         "interest": "Interest",
         "filter": "Filter",
         "showing": "Showing",
@@ -166,7 +169,7 @@
         "interest-section": {
             "accured-interest": "Accrued interest",
             "accured-interest-info": "Accrued interest is calculated from January 1 each year.",
-            "yearly-interest": "Projected annual interest",
+            "yearly-interest": "Projected interest",
             "yearly-interest-info": "Annual interest is calculated based on the current balance."
         },
         "savings-goal": {
@@ -275,6 +278,19 @@
         "percentage": "{{percentage}}%"
     },
 "overview-route": {
+    "view-favorites": "Show favorite accounts only",
+    "view-extended": "Extended overview",
+    "view-default": "Account overview",
+    "show-all": "Show all",
+    "show-favs": "Show favorites",
+    "loading": "Loading overview",
+    "error": "Could not load overview",
+    "inbox": "Go to inbox",
+    "unread": "You have unread notifications",
+    "no-accounts": "You don't have any accounts to display yet",
+    "no-accounts-description": "Start saving with Nordiska and let your money grow with competitive savings interest rates, no account fees and a Swedish government deposit guarantee.",
+    "no-favs": "You have no favoritemarked accounts",
+    "no-favs-description": "Mark up to 4 accounts as favorites in the account view, which you find under the \"Bank Accounts\" tab.",
     "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
     "card-accounts": "My accounts",
     "card-savings": "Savings goals",
@@ -314,6 +330,8 @@
     },
 
     "transactions-card": {
+        "no-transactions": "Nothing here yet",
+        "no-transactions-description": "There are no transactions to display. You can easily transfer money under the \"Transfers\" tab.",
         "closed-account": "closed account",
         "title": "Transactions",
         "hover-title": "View transactions for",

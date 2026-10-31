@@ -9,24 +9,10 @@ import { formatDate } from "../../utils/date";
 import { useGetAccounts } from "../../hooks/useAccounts";
 import OverviewCardHeader from "./OverviewCardHeader";
 import { OverviewCardRow } from "./OverviewCardRow";
+import type { OverviewCardProps } from "../../pages/OverviewPage";
+import { NoPlannedState } from "../StatusMessage";
 
-export function NoPlannedState() {
-    const {t} = useTranslation();
-    const navigate = useNavigate();
-
-    return (
-        <div className="flex h-screen flex-col items-center justify-center -mt-5">
-            <div className="flex w-28 items-center justify-center">
-                <span aria-hidden="true" className="block h-10 w-10 bg-nordiska-orange mask-[url('/icons/transfers.svg')] mask-contain mask-center mask-no-repeat"/>
-            </div>
-            <p className="font-semibold mt-1 text-dark-navy/80"> {t("no-planned-state.title")} </p>
-            <p className="px-4 text-center text-[0.8em] mt-1 text-dark-navy/80"> {t("no-planned-state.description")}</p>
-            <p className="mt-4 text-center text-sm font-semibold text-dark-navy/80 md:mt-6">{t("no-planned-state.action")} <span onClick={() => navigate("/transfer")} className="text-primary-blue cursor-pointer hover:text-primary-hover">{t("page-navigation.transfers")}</span></p>
-        </div>
-    );
-}
-
-export default function PlannedTransfersCard() {
+export default function PlannedTransfersCard({ showOnlyFavs }: OverviewCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 50, AccountIds: [], IsPlanned: true });
@@ -36,6 +22,10 @@ export default function PlannedTransfersCard() {
 
     const upcoming = (transactions?.items ?? [])
         .filter((tx) => toTimestamp(tx.plannedDate) >= startOfToday)
+        .filter((tx) => {
+            if (!showOnlyFavs) return true;
+            return accounts?.some((account) => (account.id === tx.accountId || account.id === tx.targetAccountId) && account.isFavorite);
+        })
         .sort((a, b) => toTimestamp(a.plannedDate) - toTimestamp(b.plannedDate))
 
     const getAccountNumber = (accountId: number | string | undefined ) => {

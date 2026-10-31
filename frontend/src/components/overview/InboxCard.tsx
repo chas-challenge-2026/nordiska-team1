@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import OverviewCard from "./OverviewCard";
 import { useInboxOverview } from "../../hooks/inbox/useInboxSummary";
 import type { FeedItem } from "../../types/inbox";
-import { formatWhen } from "../../utils/date";
+import { formatDate} from "../../utils/date";
 import { LoadingState, ErrorState, EmptyInboxState } from "../StatusMessage";
 
 import OverviewCardHeader from "./OverviewCardHeader";
@@ -48,40 +48,24 @@ export default function InboxCard() {
 
 
                 {/* CONTENT */}
-                <section className="flex flex-1 flex-col overflow-hidden">
-                    <div className="flex flex-1 flex-col overflow-y-auto">
-
-                        {items.length > 0 && (
-                            <ul aria-label={t("overview-route.inbox-card.aria-label")}>
-                                {items.map((item) => (
-                                    <li key={`${item.type}-${item.id}`} className="border-b border-light-blue-accent/50 last:border-b-0">
-
-                                        <Link to={hrefFor(item)} className={`block rounded px-3 py-3 xl:py-4 -mt-[1px] transition-colors hover:bg-light-blue-accent/20 ${item.isRead? "bg-light-gray/60" : ""}`}>
-
-                                            <div className="flex items-start justify-between gap-3">
-                                                <span className="min-w-0 break-words text-sm xl:text-base">
-                                                    {!item.isRead && ( <span className="sr-only"> {t("inbox.unread-prefix")} </span>)}
-                                                    <span className={item.isRead ? "" : "font-semibold"}>{item.title ?? t("inbox.untitled")}</span>
-                                                </span>
-                                                <time className="shrink-0 text-xs text-secondary">{formatWhen(item.occuredAt)}</time>
-                                            </div>
-
-                                            {item.preview && (<p className="line-clamp-2 break-words text-xs text-secondary">{item.preview}</p>)}
-
-                                            {item.actionRequired && (
-                                                <span className="mt-2 inline-block rounded bg-nordiska-orange px-1.5 py-0.5 text-xs font-semibold text-dark-navy">
-                                                    {t("inbox.action-required")}
-                                                </span>
-                                            )}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
+                <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                        {items.map((item) => (
+                            <Link
+                                key={`${item.type}-${item.sourceId}`}
+                                to={hrefFor(item)}
+                                className={`flex w-full shrink-0 flex-col justify-center py-3 px-3 ${item.isRead ? "bg-white" : "bg-light-gray/60"} hover:bg-primary-blue/10 cursor-pointer border-b border-light-blue-accent/50 h-1/4 last:mb-15`}
+                            >
+                                <p className={`${item.isRead ? "" : "font-semibold"}`}>{item.title}</p>
+                                <p className="text-xs xl:text-sm">
+                                    {item.actionRequired ? <span className="font-semibold bg-nordiska-orange px-1 rounded">{t("inbox.action-required")}</span> : <span className="text-dark-navy/60">{formatDate(item.createdAt)}</span>}
+                                </p>
+                            </Link>
+                        ))}
                     </div>
 
                     {/* LINK TO INBOX */}
-                    <div className=" shrink-0 border-t border-nordiska-blue/50 p-3 bg-primary-blue/10 ">
+                    <div className="absolute bottom-0 w-full shrink-0 border-t border-primary-hover/50 p-3 bg-[#D0E5FF] ">
                         <Link to="/inbox" className="block rounded border border-primary-blue px-4 py-1 bg-white text-primary-blue text-base text-center font-medium  transition-colors hover:bg-primary-blue hover:text-white">
                             {t("inbox.open-inbox")}
                         </Link>

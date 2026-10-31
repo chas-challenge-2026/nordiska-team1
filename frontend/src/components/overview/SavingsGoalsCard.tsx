@@ -7,6 +7,7 @@ import type { SavingGoal } from "../../services/accountsService";
 import { LoadingState, ErrorState } from "../StatusMessage";
 import OverviewCardHeader from "./OverviewCardHeader";
 import { OverviewCardRow } from "./OverviewCardRow";
+import type { OverviewCardProps } from "../../pages/OverviewPage";
 
 type SavingsGoalWithBalance = SavingGoal & {
     currentAmount: number;
@@ -29,14 +30,18 @@ function NoSavingGoalState() {
     );
 }
 
-export default function SavingsGoalsCard() {
+export default function SavingsGoalsCard({ showOnlyFavs }: OverviewCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { data: savingsGoals, isLoading: goalsLoading, isError: goalsError } = useGetAllSavingsGoals();
     const { data: accounts, isLoading: accountsLoading, isError: accountsError } = useGetAccounts("active");
 
     const activeGoals: SavingsGoalWithBalance[] = (savingsGoals?.goals ?? [])
-        .filter((goal) => goal.status === "active")
+        .filter((goal) => {
+            if (goal.status !== "active") return false;
+            if (!showOnlyFavs) return true;
+            return accounts?.some((account) => account.id === goal.accountId && account.isFavorite);  
+        })
         .map((goal) => ({
             ...goal,
             currentAmount: accounts?.find((account) => account.id === goal.accountId)?.balance ?? 0,
@@ -85,7 +90,7 @@ export default function SavingsGoalsCard() {
                                                 onClick={() => navigate(`/accounts?account=${goal.accountId}`)}
                                                 cols={"3"}
                                                 titleHoverText={goal.title}
-                                                titleRow={[goal.title, <>{ displayedPercentage }<span className="font-light text-sm">%</span></>, <>{formatCurrencySmallSek(remaining)} <span className="text-xs">{t("overview-route.savings-card.remaining")} </span></>]}
+                                                titleRow={[goal.title, <>{ rawPercentage > 100 ? "100" : displayedPercentage }<span className="font-light text-sm">%</span></>, <>{formatCurrencySmallSek(remaining)} <span className="text-xs">{t("overview-route.savings-card.remaining")} </span></>]}
                                                 descriptionRow={[]}
                                                 progressBar={[true, rawPercentage]}
                                             />
