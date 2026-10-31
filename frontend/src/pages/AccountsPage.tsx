@@ -195,13 +195,13 @@ export default function AccountsPage() {
                                     <div className="flex items-center justify-between">
                                         {/* ACCOUNT TYPE */}
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs">{t("accounts-route.account-type")}</p>
-                                            <p className="mt-0.5 truncate text-base font-bold tracking-wide sm:mt-1 sm:text-lg">{t(`accounts-route.account-type-${expandedAccount.accountType}`)}</p>
+                                            <p className="text-[10px] uppercase tracking-wider text-white/70 sm:text-xs">{t("generic.account-number")}</p>
+                                            <p className="mt-0.5 truncate text-base font-bold tracking-wide sm:mt-1 sm:text-lg">{expandedAccount.accountNumber}</p>
                                         </div>
 
                                         {/* INTEREST RATE */}
                                         <div className="ml-4 shrink-0 text-right">
-                                            <p className="text-[10px] font-medium uppercase tracking-wider text-white/90 sm:text-xs">{t("generic.interest")}</p>
+                                            <p className="text-[10px] uppercase tracking-wider text-white/70 sm:text-xs">{t("generic.interest")}</p>
                                             <p className="mt-0.5 text-base font-bold tracking-wide sm:mt-1 sm:text-lg">
                                                 {(expandedAccount.interestRate * 100).toLocaleString("sv-SE")}<span className="font-normal"> %</span>
                                             </p>
