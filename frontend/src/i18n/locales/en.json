@@ -169,6 +169,21 @@
             "yearly-interest": "Projected annual interest",
             "yearly-interest-info": "Annual interest is calculated based on the current balance."
         },
+        "forecast-section": {
+            "heading": "Savings forecast",
+            "earned-interest": "Earned interest",
+            "total": "Total <amount>{{amount}}</amount>",
+            "monthly-saving": "Monthly saving",
+            "saving-period": "Saving period",
+            "years": "{{count}} years",
+            "years_one": "{{count}} year",
+            "years-unit": "years",
+            "start-amount": "Starting amount (account balance)",
+            "interest-rate": "Interest rate",
+            "edit": "Edit {{label}}",
+            "move-money": "Move money here",
+            "info": "The calculation is based on the account's current balance and interest rate."
+        },
         "savings-goal": {
             "no-goal-title": "Set a savings goal and track your progress",
             "no-goal-info": "Decide how much you want to save in your account and watch your savings grow.",

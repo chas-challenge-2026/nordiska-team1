@@ -167,6 +167,20 @@
             "yearly-interest":"Prognos årsränta",
             "yearly-interest-info": "Årsräntan beräknas på nuvarande saldo"
         },
+        "forecast-section": {
+            "heading": "Sparprognos",
+            "earned-interest": "Intjänad ränta",
+            "total": "Totalt <amount>{{amount}}</amount>",
+            "monthly-saving": "Månadssparande",
+            "saving-period": "Spartid",
+            "years": "{{count}} år",
+            "years-unit": "år",
+            "start-amount": "Startbelopp (kontots saldo)",
+            "interest-rate": "Ränta",
+            "edit": "Ändra {{label}}",
+            "move-money": "Flytta pengar hit",
+            "info": "Beräkningen utgår från kontots nuvarande saldo och ränta."
+        },
         "savings-goal": {
             "no-goal-title": "Sätt ett sparmål och följ ditt sparande",
             "no-goal-info": "Bestäm hur mycket du vill spara på kontot och följ hur ditt sparande växer.",
