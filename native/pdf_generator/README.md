@@ -66,6 +66,9 @@ Raw JSON Buffer (UTF-8)
 GeneratedPdfs / C ABI Delivery Callback
 ```
 
+See [Diagnostic privacy boundary](docs/diagnostics.md) for typed errors, output
+restrictions, tests, and host/dependency limits.
+
 See [Branded report layout](docs/report-design.md) for style/resource ownership,
 IR commands, pagination, font substitution, and local synthetic previews.
 

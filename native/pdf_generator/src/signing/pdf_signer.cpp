@@ -46,17 +46,18 @@ enum SignerMode : uint32_t {
 SigningError map_protocol_status(uint32_t status) {
     switch (status) {
     case SignerStatusInvalidRequest:
-        return {SigningErrorKind::InvalidArgument, "Signer rejected request: invalid request format"};
+        return {SigningErrorKind::InvalidArgument, DiagnosticCode::SignerRejectedRequestInvalidRequestFormat};
     case SignerStatusUnsupportedVersion:
-        return {SigningErrorKind::InternalError, "Signer rejected request: unsupported protocol version"};
+        return {SigningErrorKind::InternalError, DiagnosticCode::SignerRejectedRequestUnsupportedProtocolVersion};
     case SignerStatusUnsupportedAlgorithm:
-        return {SigningErrorKind::InvalidArgument, "Signer rejected request: unsupported digest algorithm"};
+        return {SigningErrorKind::InvalidArgument, DiagnosticCode::SignerRejectedRequestUnsupportedDigestAlgorithm};
     case SignerStatusSigningError:
-        return {SigningErrorKind::SignatureGenerationFailed, "Signer failed to generate signature (crypto/key error)"};
+        return {SigningErrorKind::SignatureGenerationFailed,
+                DiagnosticCode::SignerFailedToGenerateSignatureCryptoKeyError};
     case SignerStatusInternalError:
-        return {SigningErrorKind::InternalError, "Signer service reported internal error"};
+        return {SigningErrorKind::InternalError, DiagnosticCode::SignerServiceReportedInternalError};
     default:
-        return {SigningErrorKind::InternalError, "Signer returned unknown protocol status: " + std::to_string(status)};
+        return {SigningErrorKind::InternalError, DiagnosticCode::UnknownSignerStatus};
     }
 }
 
@@ -136,16 +137,14 @@ class SocketPdfSigner final : public PdfSigner {
     explicit SocketPdfSigner(std::string socket_path, SignerMode sign_mode)
         : socket_path_(std::move(socket_path)), sign_mode_(sign_mode) {}
 
-    std::expected<std::string, SigningError> sign_digest(std::span<const uint8_t, 32> digest, const SigningContext&,
+    std::expected<std::string, SigningError> sign_digest(std::span<const uint8_t, 32> digest,
                                                          double* call_seconds) override {
         using Clock = std::chrono::steady_clock;
         const auto start = call_seconds ? Clock::now() : Clock::time_point{};
 
         ScopedFd fd(::socket(AF_UNIX, SOCK_STREAM, 0));
         if (!fd.is_valid()) {
-            return std::unexpected(
-                SigningError{SigningErrorKind::InternalError,
-                             "Failed to create UNIX domain socket: " + std::string(strerror(errno))});
+            return std::unexpected(SigningError{SigningErrorKind::InternalError, DiagnosticCode::SocketCreateFailed});
         }
 
         // Set reasonable 10-second connect/read/write timeouts
@@ -158,16 +157,13 @@ class SocketPdfSigner final : public PdfSigner {
         struct sockaddr_un addr {};
         addr.sun_family = AF_UNIX;
         if (socket_path_.size() >= sizeof(addr.sun_path)) {
-            return std::unexpected(
-                SigningError{SigningErrorKind::InvalidArgument, "Signer socket path is too long: " + socket_path_});
+            return std::unexpected(SigningError{SigningErrorKind::InvalidArgument, DiagnosticCode::SocketPathTooLong});
         }
         std::memcpy(addr.sun_path, socket_path_.data(), socket_path_.size());
         addr.sun_path[socket_path_.size()] = '\0';
 
         if (::connect(fd.get(), reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) != 0) {
-            return std::unexpected(
-                SigningError{SigningErrorKind::InternalError, "Failed to connect to PDF signer socket at '" +
-                                                                  socket_path_ + "': " + std::string(strerror(errno))});
+            return std::unexpected(SigningError{SigningErrorKind::InternalError, DiagnosticCode::SocketConnectFailed});
         }
 
         // Build 48-byte protocol v2 request
@@ -184,15 +180,15 @@ class SocketPdfSigner final : public PdfSigner {
         std::memcpy(request.data() + kSignerRequestHeaderSize, digest.data(), digest.size());
 
         if (!write_exact(fd.get(), request.data(), request.size())) {
-            return std::unexpected(
-                SigningError{SigningErrorKind::InternalError, "Failed to send signing request to PDF signer socket"});
+            return std::unexpected(SigningError{SigningErrorKind::InternalError,
+                                                DiagnosticCode::FailedToSendSigningRequestToPDFSignerSocket});
         }
 
         // Read 8-byte response header
         std::array<uint8_t, kSignerResponseHeaderSize> response_header{};
         if (!read_exact(fd.get(), response_header.data(), response_header.size())) {
-            return std::unexpected(
-                SigningError{SigningErrorKind::InternalError, "Failed to read response header from PDF signer socket"});
+            return std::unexpected(SigningError{SigningErrorKind::InternalError,
+                                                DiagnosticCode::FailedToReadResponseHeaderFromPDFSignerSocket});
         }
 
         uint32_t status_net = 0;
@@ -208,22 +204,20 @@ class SocketPdfSigner final : public PdfSigner {
         }
 
         if (hex_len == 0) {
-            return std::unexpected(
-                SigningError{SigningErrorKind::InvalidSignatureOutput, "Signer returned empty CMS hex output"});
+            return std::unexpected(SigningError{SigningErrorKind::InvalidSignatureOutput,
+                                                DiagnosticCode::SignerReturnedEmptyCMSHexOutput});
         }
 
         if (hex_len > kSignerResponseMaxSize) {
             return std::unexpected(
-                SigningError{SigningErrorKind::SignatureTooLarge, "Signer response size (" + std::to_string(hex_len) +
-                                                                      ") exceeds maximum limit of " +
-                                                                      std::to_string(kSignerResponseMaxSize)});
+                SigningError{SigningErrorKind::SignatureTooLarge, DiagnosticCode::SignatureTooLarge});
         }
 
         std::string hex_output;
         hex_output.resize(hex_len);
         if (!read_exact(fd.get(), reinterpret_cast<uint8_t*>(hex_output.data()), hex_len)) {
             return std::unexpected(SigningError{SigningErrorKind::InternalError,
-                                                "Failed to read signature hex payload from PDF signer socket"});
+                                                DiagnosticCode::FailedToReadSignatureHexPayloadFromPDFSignerSocket});
         }
 
         if (call_seconds) {

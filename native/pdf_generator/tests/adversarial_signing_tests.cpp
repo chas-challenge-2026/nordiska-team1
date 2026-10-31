@@ -38,8 +38,7 @@ void test_signature_slot_on_malformed_pdfs() {
         std::vector<uint8_t> garbage = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd'};
         auto res = nordiska::append_signature_slot(garbage, capacity);
         require(!res.has_value(), "Garbage text must be rejected as missing PDF header");
-        require(res.error().message.find("Missing PDF header") != std::string::npos,
-                "Error should mention missing header");
+        require(res.error().code == nordiska::DiagnosticCode::MissingPDFHeader, "Error should mention missing header");
     }
 
     // 3. Header present, but missing startxref
@@ -48,7 +47,7 @@ void test_signature_slot_on_malformed_pdfs() {
         std::vector<uint8_t> bytes(no_startxref.begin(), no_startxref.end());
         auto res = nordiska::append_signature_slot(bytes, capacity);
         require(!res.has_value(), "Missing startxref must fail");
-        require(res.error().message.find("startxref") != std::string::npos, "Error should mention startxref");
+        require(res.error().code == nordiska::DiagnosticCode::MissingStartxref, "Error should mention startxref");
     }
 
     // 4. Invalid startxref offset (pointing past EOF)
@@ -66,7 +65,7 @@ void test_signature_slot_on_malformed_pdfs() {
         std::vector<uint8_t> bytes(trailing.begin(), trailing.end());
         auto res = nordiska::append_signature_slot(bytes, capacity);
         require(!res.has_value(), "Trailing bytes after EOF must fail");
-        require(res.error().message.find("Unexpected bytes after PDF EOF") != std::string::npos,
+        require(res.error().code == nordiska::DiagnosticCode::UnexpectedBytesAfterPDFEOF,
                 "Error should mention unexpected bytes");
     }
 

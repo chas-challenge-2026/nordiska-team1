@@ -296,7 +296,7 @@ void test_renderers() {
             auto slot = nordiska::append_signature_slot(pdf, capacity, &preparation);
             require(untimed_slot.has_value() && untimed_pdf == pdf,
                     "instrumentation must not change signature preparation output");
-            require(slot.has_value(), slot ? "" : slot.error().message.c_str());
+            require(slot.has_value(), "signature slot preparation failed");
             require(pdf.data() == address, "signature append must not reallocate renderer output");
             require(std::equal(original.begin(), original.end(), pdf.begin()),
                     "incremental update modified original bytes");

@@ -93,6 +93,9 @@ if(NOT unofficial-libharu_FOUND)
     endif()
 endif()
 
+add_library(nordiska_document_diagnostics STATIC src/diagnostics/diagnostic.cpp)
+target_include_directories(nordiska_document_diagnostics PUBLIC include)
+
 # JSON Ingestion Library
 add_library(nordiska_document_input_json STATIC
     src/ingestion/json_ingestor.cpp
@@ -101,6 +104,7 @@ set_target_properties(nordiska_document_input_json PROPERTIES POSITION_INDEPENDE
 target_include_directories(nordiska_document_input_json PUBLIC include)
 target_compile_features(nordiska_document_input_json PUBLIC cxx_std_23)
 target_link_libraries(nordiska_document_input_json PUBLIC
+    nordiska_document_diagnostics
     nlohmann_json::nlohmann_json
     simdjson::simdjson
 )
@@ -158,6 +162,18 @@ endif()
 install(TARGETS nordiska_pdf_generator_c_api LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
 if(BUILD_TESTING)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    # Compile the unchanged ABI source here so GNU ld can wrap allocation sites
+    # throughout the native call, without adding hooks to production targets.
+    add_executable(nordiska_allocation_failure_tests tests/allocation_failure_tests.cpp src/c_api/pdf_generator_c_api.cpp)
+    target_link_libraries(nordiska_allocation_failure_tests PRIVATE nordiska_document_core)
+    target_link_options(nordiska_allocation_failure_tests PRIVATE "-Wl,--wrap=_Znwm" "-Wl,--wrap=_Znam")
+    add_test(NAME nordiska_allocation_failure_tests COMMAND nordiska_allocation_failure_tests)
+    add_executable(nordiska_diagnostics_tests tests/diagnostics_tests.cpp)
+    target_link_libraries(nordiska_diagnostics_tests PRIVATE nordiska_pdf_generator_c_api nordiska_document_core)
+    add_test(NAME nordiska_diagnostics_tests COMMAND nordiska_diagnostics_tests)
+    add_test(NAME nordiska_diagnostic_boundary_check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_diagnostic_boundary.py $<TARGET_FILE:pdf_generator>)
     add_executable(nordiska_report_layout_tests tests/report_layout_tests.cpp)
     target_link_libraries(nordiska_report_layout_tests PRIVATE nordiska_document_core)
     target_include_directories(nordiska_report_layout_tests PRIVATE src/layout)
@@ -192,6 +208,9 @@ if(BUILD_TESTING)
     add_test(NAME nordiska_adversarial_signing_tests COMMAND nordiska_adversarial_signing_tests)
 
     set_tests_properties(
+        nordiska_allocation_failure_tests
+        nordiska_diagnostics_tests
+        nordiska_diagnostic_boundary_check
         nordiska_report_layout_tests
         nordiska_pdf_signing_tests
         nordiska_json_ingestor_tests

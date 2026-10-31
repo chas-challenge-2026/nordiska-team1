@@ -1,5 +1,6 @@
 #pragma once
 
+#include "nordiska/diagnostics/diagnostic.hpp"
 #include "nordiska/layout/document_layout.hpp"
 
 #include <cstddef>
@@ -25,7 +26,8 @@ enum class RenderErrorKind {
 
 struct RenderError {
     RenderErrorKind kind{RenderErrorKind::EngineError};
-    std::string message;
+    DiagnosticCode code{DiagnosticCode::UnexpectedFailure};
+    DiagnosticLocation location{};
 };
 
 class PdfEngine {

@@ -1,5 +1,5 @@
 #include "nordiska/application/pdf_generator.hpp"
-#include "nordiska/domain/generated_pdfs.hpp"
+#include "output.hpp"
 
 #include <charconv>
 #include <chrono>
@@ -7,97 +7,57 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
+#include <iterator>
+#include <new>
 #include <string>
-#include <string_view>
 #include <strings.h>
 #include <unistd.h>
-#include <vector>
 
 namespace {
-
-constexpr std::string_view kVersion = "0.2.0";
-
-namespace ExitCode {
-constexpr int Success = 0;
-constexpr int CliUsage = 1;
-constexpr int IoError = 2;
-constexpr int IngestError = 3;
-constexpr int RenderError = 4;
-constexpr int SigningError = 5;
-} // namespace ExitCode
-
-struct CliOptions {
-    std::filesystem::path input_path;
-    std::filesystem::path output_path = ".";
-    std::string renderer = "haru";
-    std::string ingestor = "simdjson";
-    bool compression = true;
-    bool enable_signing = false;
-    size_t signature_capacity = nordiska::kDefaultSignatureSlotSize;
-    bool quiet = false;
-    bool verbose = false;
-    bool json_summary = false;
-    bool print_version = false;
-    bool print_help = false;
+using namespace nordiska;
+struct Options {
+    std::filesystem::path input;
+    std::filesystem::path output{"."};
+    GeneratorConfig generator;
+    bool quiet{};
+    bool verbose{};
+    bool json_summary{};
+    bool help{};
+    bool version{};
 };
-
-void print_usage(std::string_view program_name) {
-    std::cout << "Nordiska PDF Generator CLI — Standalone Native Batch Worker (v" << kVersion << ")\n\n"
-              << "Usage:\n"
-              << "  " << program_name << " [OPTIONS] [INPUT_JSON]\n\n"
-              << "Arguments:\n"
-              << "  [INPUT_JSON]               Path to input JSON file, or '-' for stdin.\n"
-              << "                             If omitted and stdin is piped, reads from stdin.\n\n"
-              << "Options:\n"
-              << "  -i, --input <path>         Path to input JSON file (or '-' for stdin)\n"
-              << "  -o, --output <path>        Output directory or target file (default: current directory)\n"
-              << "  -r, --renderer <engine>    Rendering engine: 'haru' (default), 'cairo', or 'native'\n"
-              << "  -e, --ingestor <engine>    JSON ingestor: 'simdjson' (default) or 'nlohmann'\n"
-              << "      --no-compression       Disable Flate compression in generated PDF streams (faster, larger)\n"
-              << "      --compression <bool>   Enable or disable PDF stream compression (default: true)\n"
-              << "      --signing              Call C signer and embed CMS hex (default: false)\n"
-              << "      --signature-capacity <n> Reserved CMS hex characters (default: 8192)\n"
-              << "  -q, --quiet                Quiet mode (suppress progress messages, only report errors)\n"
-              << "  -v, --verbose              Verbose mode (print detailed breakdown and elapsed timing)\n"
-              << "      --json-summary         Output machine-readable JSON execution summary to stdout\n"
-              << "  -V, --version              Print version information and exit\n"
-              << "  -h, --help                 Print this help message and exit\n\n"
-              << "Exit Codes:\n"
-              << "  0  Success\n"
-              << "  1  Invalid command line options or syntax\n"
-              << "  2  I/O error (file read or write failure)\n"
-              << "  3  JSON ingestion or validation error\n"
-              << "  4  Document rendering or internal error\n"
-              << "  5  Document signing error\n";
+Diagnostic cli_error(DiagnosticCode code, DiagnosticField field = DiagnosticField::None) {
+    return {code, DiagnosticStage::Cli, {.field = field}};
 }
-
-void print_version_info() {
-    std::cout << "nordiska-pdf " << kVersion << " (Linux x86_64, C++23)\n"
-              << "Engines: libharu, cairo, native | Ingestors: nlohmann-json, simdjson\n";
+std::expected<PdfEngineKind, Diagnostic> parse_engine(const char* value) {
+    if (strcasecmp(value, "native") == 0 || strcasecmp(value, "fast") == 0) {
+        return PdfEngineKind::Native;
+    }
+    if (strcasecmp(value, "haru") == 0 || strcasecmp(value, "libharu") == 0) {
+        return PdfEngineKind::Libharu;
+    }
+    if (strcasecmp(value, "cairo") == 0) {
+        return PdfEngineKind::Cairo;
+    }
+    return std::unexpected(cli_error(DiagnosticCode::InvalidEngine, DiagnosticField::Engine));
 }
-
-CliOptions parse_cli(int argc, char* argv[]) {
-    CliOptions options;
-
-    if (const char* env_engine = std::getenv("NORDISKA_PDF_ENGINE"); env_engine && *env_engine) {
-        options.renderer = env_engine;
+std::expected<Options, Diagnostic> parse_cli(int argc, char* argv[]) {
+    Options options;
+    if (const char* value = std::getenv("NORDISKA_PDF_ENGINE"); value && *value) {
+        auto engine = parse_engine(value);
+        if (!engine) {
+            return std::unexpected(engine.error());
+        }
+        options.generator.engine = *engine;
     }
-    if (const char* env_signing = std::getenv("NORDISKA_PDF_ENABLE_SIGNING"); env_signing && *env_signing) {
-        std::string_view val(env_signing);
-        options.enable_signing = (val == "1" || val == "true" || val == "TRUE" || val == "yes");
-    }
-
     for (int index = 1; index < argc; ++index) {
         const std::string_view argument = argv[index];
-
         if (argument == "-h" || argument == "--help") {
-            options.print_help = true;
-            return options;
+            options.help = true;
+            continue;
         }
         if (argument == "-V" || argument == "--version") {
-            options.print_version = true;
-            return options;
+            options.version = true;
+            continue;
         }
         if (argument == "-q" || argument == "--quiet") {
             options.quiet = true;
@@ -111,350 +71,189 @@ CliOptions parse_cli(int argc, char* argv[]) {
             options.json_summary = true;
             continue;
         }
-        if (argument == "-i" || argument == "--input") {
-            if (++index >= argc) {
-                std::cerr << "Error: " << argument << " requires a file path\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            options.input_path = argv[index];
-            continue;
-        }
-        if (argument == "-o" || argument == "--output") {
-            if (++index >= argc) {
-                std::cerr << "Error: " << argument << " requires a path value\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            options.output_path = argv[index];
-            continue;
-        }
-        if (argument == "-r" || argument == "--renderer") {
-            if (++index >= argc) {
-                std::cerr << "Error: " << argument << " requires a renderer name\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            options.renderer = argv[index];
-            continue;
-        }
-        if (argument == "-e" || argument == "--ingestor") {
-            if (++index >= argc) {
-                std::cerr << "Error: " << argument << " requires an ingestor name\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            options.ingestor = argv[index];
-            continue;
-        }
-        if (argument == "--no-compression") {
-            options.compression = false;
-            continue;
-        }
-        if (argument == "--compression") {
-            if (++index >= argc) {
-                std::cerr << "Error: " << argument << " requires a boolean value (true/false)\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            const std::string_view val = argv[index];
-            if (val == "false" || val == "0" || val == "no") {
-                options.compression = false;
-            } else if (val == "true" || val == "1" || val == "yes") {
-                options.compression = true;
-            } else {
-                std::cerr << "Error: invalid value '" << val << "' for --compression (expected true or false)\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            continue;
-        }
-        if (argument == "--signature-capacity") {
-            if (++index >= argc) {
-                std::cerr << "Error: --signature-capacity requires an even hex-character count\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            const std::string_view value = argv[index];
-            const auto [end, error] =
-                std::from_chars(value.data(), value.data() + value.size(), options.signature_capacity);
-            if (error != std::errc{} || end != value.data() + value.size() || options.signature_capacity == 0 ||
-                options.signature_capacity % 2 != 0) {
-                std::cerr << "Error: --signature-capacity requires a positive even hex-character count\n";
-                std::exit(ExitCode::CliUsage);
-            }
-            continue;
-        }
         if (argument == "--signing") {
-            options.enable_signing = true;
+            options.generator.enable_signing = true;
             continue;
         }
         if (argument == "--no-signing") {
-            options.enable_signing = false;
+            options.generator.enable_signing = false;
             continue;
         }
-        if (argument.starts_with("-") && argument != "-") {
-            std::cerr << "Error: unknown option '" << argument << "'\n\n";
-            print_usage(argv[0]);
-            std::exit(ExitCode::CliUsage);
+        if (argument == "--no-compression") {
+            options.generator.compression = false;
+            continue;
         }
-
-        // Positional argument for input file
-        if (!options.input_path.empty()) {
-            std::cerr << "Error: unexpected extra argument '" << argument << "'\n\n";
-            print_usage(argv[0]);
-            std::exit(ExitCode::CliUsage);
+        DiagnosticField field = DiagnosticField::None;
+        if (argument == "-i" || argument == "--input") {
+            field = DiagnosticField::Input;
+        } else if (argument == "-o" || argument == "--output") {
+            field = DiagnosticField::Output;
+        } else if (argument == "-r" || argument == "--renderer") {
+            field = DiagnosticField::Engine;
+        } else if (argument == "-e" || argument == "--ingestor") {
+            field = DiagnosticField::Ingestor;
+        } else if (argument == "--compression") {
+            field = DiagnosticField::Compression;
+        } else if (argument == "--signature-capacity") {
+            field = DiagnosticField::SignatureCapacity;
         }
-        options.input_path = argv[index];
+        if (field != DiagnosticField::None) {
+            if (++index >= argc) {
+                return std::unexpected(cli_error(DiagnosticCode::MissingOptionValue, field));
+            }
+            const char* value = argv[index];
+            const std::string_view text = value;
+            switch (field) {
+            case DiagnosticField::Input:
+                options.input = value;
+                break;
+            case DiagnosticField::Output:
+                options.output = value;
+                break;
+            case DiagnosticField::Engine: {
+                auto engine = parse_engine(value);
+                if (!engine) {
+                    return std::unexpected(engine.error());
+                }
+                options.generator.engine = *engine;
+                break;
+            }
+            case DiagnosticField::Ingestor:
+                if (strcasecmp(value, "simdjson") == 0 || strcasecmp(value, "simd") == 0) {
+                    options.generator.ingestor = JsonIngestorKind::Simdjson;
+                } else if (strcasecmp(value, "nlohmann") == 0) {
+                    options.generator.ingestor = JsonIngestorKind::Nlohmann;
+                } else {
+                    return std::unexpected(cli_error(DiagnosticCode::InvalidIngestor, field));
+                }
+                break;
+            case DiagnosticField::Compression:
+                if (text == "true" || text == "1" || text == "yes") {
+                    options.generator.compression = true;
+                } else if (text == "false" || text == "0" || text == "no") {
+                    options.generator.compression = false;
+                } else {
+                    return std::unexpected(cli_error(DiagnosticCode::InvalidBoolean, field));
+                }
+                break;
+            case DiagnosticField::SignatureCapacity: {
+                auto& capacity = options.generator.signature_contents_capacity;
+                const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), capacity);
+                if (error != std::errc{} || end != text.data() + text.size() || capacity == 0 || capacity % 2 != 0) {
+                    return std::unexpected(cli_error(DiagnosticCode::InvalidSignatureCapacity, field));
+                }
+                break;
+            }
+            default:
+                break;
+            }
+            continue;
+        }
+        if ((argument.starts_with('-') && argument != "-") || !options.input.empty()) {
+            return std::unexpected(cli_error(DiagnosticCode::InvalidOption));
+        }
+        options.input = argument;
     }
-
-    // Check if input should be read from piped stdin
-    if (options.input_path.empty()) {
-        if (!isatty(fileno(stdin))) {
-            options.input_path = "-";
-        } else {
-            std::cerr << "Error: input JSON file is required\n\n";
-            print_usage(argv[0]);
-            std::exit(ExitCode::CliUsage);
-        }
+    if (options.input.empty() && !isatty(STDIN_FILENO)) {
+        options.input = "-";
     }
-
+    if (options.input.empty() && !options.help && !options.version) {
+        return std::unexpected(cli_error(DiagnosticCode::InputRequired, DiagnosticField::Input));
+    }
     return options;
 }
-
-std::expected<std::vector<uint8_t>, std::string> read_input_payload(const std::filesystem::path& input_path) {
-    std::vector<uint8_t> payload;
-
-    if (input_path == "-") {
-        char buffer[8192];
-        while (std::cin.read(buffer, sizeof(buffer)) || std::cin.gcount() > 0) {
-            const auto count = std::cin.gcount();
-            payload.insert(payload.end(), buffer, buffer + count);
-        }
-        if (payload.empty()) {
-            return std::unexpected("standard input was empty");
-        }
-        return payload;
-    }
-
-    if (!std::filesystem::exists(input_path)) {
-        return std::unexpected("input file does not exist: " + input_path.string());
-    }
-
-    std::ifstream file(input_path, std::ios::binary);
-    if (!file) {
-        return std::unexpected("failed to open input file: " + input_path.string());
-    }
-
-    file.seekg(0, std::ios::end);
-    const auto file_size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    if (file_size > 0) {
-        payload.resize(static_cast<std::size_t>(file_size));
-        if (!file.read(reinterpret_cast<char*>(payload.data()), file_size)) {
-            return std::unexpected("failed to read input file: " + input_path.string());
+std::expected<std::vector<uint8_t>, Diagnostic> read_input(const std::filesystem::path& path) {
+    std::ifstream file;
+    if (path != "-") {
+        file.open(path, std::ios::binary);
+        if (!file) {
+            return std::unexpected(cli_error(DiagnosticCode::InputUnavailable, DiagnosticField::Input));
         }
     }
-
-    return payload;
+    std::istream& input = path == "-" ? std::cin : file;
+    std::vector<uint8_t> bytes{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+    if (input.bad()) {
+        return std::unexpected(cli_error(DiagnosticCode::InputUnavailable, DiagnosticField::Input));
+    }
+    return bytes;
 }
-
+int run(int argc, char* argv[]) {
+    const auto parsed = parse_cli(argc, argv);
+    if (!parsed) {
+        cli::write_error(parsed.error());
+        return 1;
+    }
+    const auto& options = *parsed;
+    if (options.help) {
+        cli::write_usage();
+        return 0;
+    }
+    if (options.version) {
+        cli::write_version();
+        return 0;
+    }
+    using Clock = std::chrono::steady_clock;
+    const auto start = Clock::now();
+    const auto payload = read_input(options.input);
+    if (!payload) {
+        cli::write_error(payload.error(), options.json_summary);
+        return 2;
+    }
+    const PdfGenerator generator(options.generator);
+    const auto generation_start = Clock::now();
+    const auto generated = generator.generate(*payload);
+    const auto generation_end = Clock::now();
+    if (!generated) {
+        const auto diagnostic = generated.error().diagnostic();
+        cli::write_error(diagnostic, options.json_summary);
+        if (diagnostic.stage == DiagnosticStage::Ingestion) {
+            return 3;
+        }
+        if (diagnostic.stage == DiagnosticStage::Signing) {
+            return 5;
+        }
+        return 4;
+    }
+    cli::Statistics statistics{.engine = options.generator.engine, .ingestor = options.generator.ingestor};
+    const bool single_file = generated->documents.size() == 1 && options.output.extension() == ".pdf";
+    const auto directory = single_file ? options.output.parent_path() : options.output;
+    if (!directory.empty()) {
+        std::filesystem::create_directories(directory);
+    }
+    for (size_t index = 0; index < generated->documents.size(); ++index) {
+        const auto& document = generated->documents[index];
+        const auto path = single_file ? options.output : options.output / (document.document_id + ".pdf");
+        std::ofstream output(path, std::ios::binary);
+        output.write(reinterpret_cast<const char*>(document.pdf_bytes.data()),
+                     static_cast<std::streamsize>(document.pdf_bytes.size()));
+        output.close();
+        if (!output) {
+            cli::write_error({DiagnosticCode::OutputUnavailable,
+                              DiagnosticStage::Cli,
+                              {.field = DiagnosticField::Output, .document_index = index}},
+                             options.json_summary);
+            return 2;
+        }
+        statistics.documents.push_back({index, document.pdf_bytes.size()});
+        if (!options.quiet && !options.json_summary) {
+            cli::write_document(statistics.documents.back());
+        }
+    }
+    statistics.generation_ms = std::chrono::duration<double, std::milli>(generation_end - generation_start).count();
+    statistics.total_ms = std::chrono::duration<double, std::milli>(Clock::now() - start).count();
+    if (options.json_summary || !options.quiet) {
+        cli::write_statistics(statistics, options.json_summary, options.verbose);
+    }
+    return 0;
+}
 } // namespace
-
 int main(int argc, char* argv[]) {
     try {
-        const CliOptions options = parse_cli(argc, argv);
-
-        if (options.print_help) {
-            print_usage(argv[0]);
-            return ExitCode::Success;
-        }
-        if (options.print_version) {
-            print_version_info();
-            return ExitCode::Success;
-        }
-
-        const auto start_time = std::chrono::steady_clock::now();
-
-        // 1. Read input payload
-        const auto payload_result = read_input_payload(options.input_path);
-        if (!payload_result) {
-            std::cerr << "Error: " << payload_result.error() << "\n";
-            return ExitCode::IoError;
-        }
-        const auto& payload = *payload_result;
-
-        // 2. Configure generator
-        nordiska::GeneratorConfig config;
-        if (strcasecmp(options.renderer.c_str(), "haru") == 0 || strcasecmp(options.renderer.c_str(), "libharu") == 0) {
-            config.engine = nordiska::PdfEngineKind::Libharu;
-        } else if (strcasecmp(options.renderer.c_str(), "cairo") == 0) {
-            config.engine = nordiska::PdfEngineKind::Cairo;
-        } else if (strcasecmp(options.renderer.c_str(), "native") == 0 ||
-                   strcasecmp(options.renderer.c_str(), "fast") == 0) {
-            config.engine = nordiska::PdfEngineKind::Native;
-        } else {
-            std::cerr << "Error: unsupported renderer engine '" << options.renderer
-                      << "'. Supported: 'haru' ('libharu'), 'cairo', 'native'\n";
-            return ExitCode::CliUsage;
-        }
-
-        if (strcasecmp(options.ingestor.c_str(), "nlohmann") == 0) {
-            config.ingestor = nordiska::JsonIngestorKind::Nlohmann;
-        } else if (strcasecmp(options.ingestor.c_str(), "simdjson") == 0 ||
-                   strcasecmp(options.ingestor.c_str(), "simd") == 0) {
-            config.ingestor = nordiska::JsonIngestorKind::Simdjson;
-        } else {
-            std::cerr << "Error: unsupported JSON ingestor '" << options.ingestor
-                      << "'. Supported: 'nlohmann', 'simdjson'\n";
-            return ExitCode::CliUsage;
-        }
-
-        config.compression = options.compression;
-        config.enable_signing = options.enable_signing;
-        config.signature_contents_capacity = options.signature_capacity;
-
-        // 3. Execute batch generation
-        const nordiska::PdfGenerator generator(config);
-        const auto generate_start = std::chrono::steady_clock::now();
-        const auto result = generator.generate(payload);
-        const auto generate_end = std::chrono::steady_clock::now();
-
-        if (!result) {
-            const std::string err_msg = result.error().message();
-            if (options.json_summary) {
-                nlohmann::json summary = {
-                    {"status", "error"},
-                    {"error_message", err_msg},
-                };
-                std::cout << summary.dump(2) << "\n";
-            }
-            std::cerr << "Generation failed: " << err_msg << "\n";
-
-            return std::visit(
-                [](const auto& payload) -> int {
-                    using T = std::decay_t<decltype(payload)>;
-                    if constexpr (std::is_same_v<T, nordiska::InvalidArgumentError>) {
-                        return ExitCode::CliUsage;
-                    } else if constexpr (std::is_same_v<T, nordiska::ResourceLimitError>) {
-                        return ExitCode::RenderError;
-                    } else if constexpr (std::is_same_v<T, nordiska::IngestError>) {
-                        return ExitCode::IngestError;
-                    } else if constexpr (std::is_same_v<T, nordiska::LayoutError>) {
-                        return (payload.kind == nordiska::LayoutErrorKind::InternalError) ? ExitCode::RenderError
-                                                                                          : ExitCode::IngestError;
-                    } else if constexpr (std::is_same_v<T, nordiska::RenderError>) {
-                        return ExitCode::RenderError;
-                    } else if constexpr (std::is_same_v<T, nordiska::SigningError>) {
-                        return ExitCode::SigningError;
-                    }
-                },
-                result.error().details);
-        }
-
-        const auto& generated = *result;
-
-        // 4. Determine output targets and write files
-        std::filesystem::path output_directory = ".";
-        bool single_file_mode = false;
-        std::filesystem::path single_output_file;
-
-        if (!options.output_path.empty()) {
-            if (generated.documents.size() == 1 && options.output_path.extension() == ".pdf") {
-                single_file_mode = true;
-                single_output_file = options.output_path;
-                if (single_output_file.has_parent_path()) {
-                    std::filesystem::create_directories(single_output_file.parent_path());
-                }
-            } else {
-                output_directory = options.output_path;
-                std::filesystem::create_directories(output_directory);
-            }
-        }
-
-        struct WrittenDocInfo {
-            std::string document_id;
-            std::filesystem::path file_path;
-            std::size_t bytes{0};
-        };
-        std::vector<WrittenDocInfo> written_docs;
-        written_docs.reserve(generated.documents.size());
-
-        for (std::size_t index = 0; index < generated.documents.size(); ++index) {
-            const auto& doc = generated.documents[index];
-            std::filesystem::path target_path;
-            if (single_file_mode) {
-                target_path = single_output_file;
-            } else {
-                const std::string filename = doc.document_id.empty() ? ("document-" + std::to_string(index) + ".pdf")
-                                                                     : (doc.document_id + ".pdf");
-                target_path = output_directory / filename;
-            }
-
-            std::ofstream out(target_path, std::ios::binary);
-            if (!out) {
-                std::cerr << "Error: failed to open output file for writing: " << target_path << "\n";
-                return ExitCode::IoError;
-            }
-            out.write(reinterpret_cast<const char*>(doc.pdf_bytes.data()),
-                      static_cast<std::streamsize>(doc.pdf_bytes.size()));
-            if (!out) {
-                std::cerr << "Error: failed while writing PDF bytes to: " << target_path << "\n";
-                return ExitCode::IoError;
-            }
-
-            written_docs.push_back({
-                .document_id = doc.document_id,
-                .file_path = target_path,
-                .bytes = doc.pdf_bytes.size(),
-            });
-
-            if (!options.quiet && !options.json_summary) {
-                std::cout << "Wrote " << target_path.string() << " (" << doc.pdf_bytes.size() << " bytes)\n";
-            }
-        }
-
-        const auto end_time = std::chrono::steady_clock::now();
-        const auto total_ms =
-            std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end_time - start_time).count();
-        const auto gen_ms =
-            std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(generate_end - generate_start)
-                .count();
-
-        // 5. Output summary
-        if (options.json_summary) {
-            nlohmann::json doc_array = nlohmann::json::array();
-            for (const auto& item : written_docs) {
-                doc_array.push_back({
-                    {"document_id", item.document_id},
-                    {"file_path", item.file_path.string()},
-                    {"bytes", item.bytes},
-                });
-            }
-
-            nlohmann::json summary = {
-                {"status", "success"},
-                {"customer_id", generated.customer_id},
-                {"document_count", generated.documents.size()},
-                {"renderer", options.renderer},
-                {"ingestor", options.ingestor},
-                {"generation_ms", gen_ms},
-                {"total_ms", total_ms},
-                {"documents", doc_array},
-            };
-            std::cout << summary.dump(2) << "\n";
-        } else if (!options.quiet) {
-            if (options.verbose) {
-                std::cout << "\nBatch generation summary:\n"
-                          << "  Customer ID:     " << generated.customer_id << "\n"
-                          << "  Documents:       " << generated.documents.size() << "\n"
-                          << "  Renderer engine: " << options.renderer << "\n"
-                          << "  JSON ingestor:   " << options.ingestor << "\n"
-                          << "  Generation time: " << gen_ms << " ms\n"
-                          << "  Total wall time: " << total_ms << " ms\n";
-            } else {
-                std::cout << "Successfully generated " << generated.documents.size() << " document(s) in " << total_ms
-                          << " ms\n";
-            }
-        }
-
-        return ExitCode::Success;
-    } catch (const std::exception& error) {
-        std::cerr << "Fatal error: " << error.what() << "\n";
-        return ExitCode::RenderError;
+        return run(argc, argv);
+    } catch (const std::bad_alloc&) {
+        nordiska::cli::write_error({nordiska::DiagnosticCode::OutOfMemory});
+    } catch (...) {
+        nordiska::cli::write_error({nordiska::DiagnosticCode::UnexpectedFailure});
     }
+    return 4;
 }
