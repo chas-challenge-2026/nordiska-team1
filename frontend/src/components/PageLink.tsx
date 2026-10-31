@@ -13,18 +13,18 @@ export default function PageLink({ title, route, mobile, hamburger = false}: Pag
             to={route}
             className={({ isActive }) => ` relative flex h-full whitespace-nowrap no-underline font-montserrat cursor-pointer transition-all duration-200 ease-in-out
                 ${isActive && !mobile 
-                    ? "font-semibold text-white" 
-                    : mobile && !isActive ? "font-normal text-white/70" : "font-normal text-white"}
+                    ? "font-bold text-white" 
+                    : mobile && !isActive ? "font-semibold text-white/80" : "font-semibold text-white"}
                 ${mobile 
                     ? "text-[9px] truncate items-center" 
                     : hamburger 
-                        ? "text-base"  
-                        : "text-sm tracking-wider uppercase items-end"}`}
+                        ? "text-base uppercase"  
+                        : "text-base tracking-wider items-end"}`}
         >
             {({ isActive }) => (
                 <span className={` 
                     ${hamburger ? "after:mt-1" : "after:mt-0"}
-                    ${hamburger ? "after:h-[2px]" : "after:h-[1px]"}
+                    ${hamburger ? "after:h-[2px]" : "after:h-[2px]"}
                     ${!mobile || hamburger 
                         ? `relative inline-block after:content-[''] after:absolute after:top-full  after:left-1/2 after:-translate-x-1/2  after:bg-light-blue-accent after:origin-center after:transition-all after:duration-200 after:ease-in-out
                             ${isActive
@@ -35,7 +35,7 @@ export default function PageLink({ title, route, mobile, hamburger = false}: Pag
 
                     {mobile ? (
                     <>
-                    <span aria-hidden="true" className={`mx-auto block h-5 w-5 sm:h-7 sm:w-7 ${isActive ? "bg-white" : "bg-white/70" } ${mobile} mask-contain mask-center mask-no-repeat `}/>
+                    <span aria-hidden="true" className={`mx-auto block h-5 w-5 sm:h-7 sm:w-7 ${isActive ? "bg-light-blue-accent" : "bg-light-blue-accent/60" } ${mobile} mask-contain mask-center mask-no-repeat `}/>
                         {title}
                     </>
                     ):(

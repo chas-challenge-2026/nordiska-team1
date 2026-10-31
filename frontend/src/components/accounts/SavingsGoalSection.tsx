@@ -21,7 +21,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
     if (!savingGoal) {
         return (
             <section aria-labelledby="savings-goal-heading">
-                <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pl-1">{t("accounts-route.savings-goal-title")}</h2>
+                <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white sm:text-lg pl-1">{t("accounts-route.savings-goal-title")}</h2>
 
                 <div className="border border-nordiska-blue/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
                     <div className="mt-5 flex w-28 items-center justify-center">
@@ -117,10 +117,14 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
                                     <p className="mt-1 break-words text-xs leading-5 sm:text-base font-medium">{getProgressMessage()}</p>
                                 </div>
 
-                                <button type="button" onClick={onDeposit} className="group inline-flex min-w-0 max-w-[60%] flex-1 cursor-pointer items-center justify-center rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-primary-blue transition hover:bg-primary-blue hover:text-white sm:w-auto sm:flex-none sm:text-sm max-sm:w-full max-sm:max-w-full max-sm:flex-none">
-                                    <span aria-hidden="true" className="mr-1.5 block h-4 w-4 shrink-0 bg-primary-blue mask-[url('/icons/deposit.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-white sm:mr-2 sm:h-5 sm:w-5" />
-                                    {t("accounts-route.savings-goal.deposit")}
-                                </button>
+                                <div className="shrink-0">
+                                    <ActionButton 
+                                        onClick={onDeposit}
+                                        prefixIcon="/icons/deposit.svg"
+                                        title={t("accounts-route.savings-goal.deposit")}
+                                        ariaLabel={t("accounts-route.savings-goal.deposit")}
+                                    />
+                                </div>
                             </>
                         ) : (
                             <div className="w-full min-w-0">
@@ -141,7 +145,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
             {!isCompleted ? (
                 <div className="mt-6 flex justify-end gap-3 sm:gap-5 max-sm:flex-col max-sm:items-stretch">
                     <ActionButton
-                        style="regular"
+                        style="light"
                         onClick={() => onEdit(false)}
                         ariaLabel={t("accounts-route.savings-goal.edit")}
                         prefixIcon="/icons/target.svg"
