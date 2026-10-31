@@ -10,22 +10,7 @@ import { type Transaction } from "../../services/transactionsService";
 import OverviewCardHeader from "./OverviewCardHeader";
 import { OverviewCardRow } from "./OverviewCardRow";
 import type { OverviewCardProps } from "../../pages/OverviewPage";
-
-function NoTransactions() {
-    const {t} = useTranslation();
-    const navigate = useNavigate();
-
-    return (
-        <div className="flex h-screen flex-col items-center justify-center -mt-5">
-            <div className="flex w-28 items-center justify-center">
-                <span aria-hidden="true" className="block h-10 w-10 bg-light-blue-accent mask-[url('/icons/transactions.svg')] mask-contain mask-center mask-no-repeat"/>
-            </div>
-            <p className="font-semibold mt-1 text-dark-navy/80">{t("overview-route.transactions-card.no-transactions")}</p>
-            <p className="px-4 text-center text-[0.8em] mt-1 text-dark-navy/80">{t("overview-route.transactions-card.no-transactions-description")}</p>
-            <p className="mt-4 text-center text-sm font-semibold text-dark-navy/80 md:mt-6">{t("no-planned-state.action")} <span onClick={() => navigate("/transfer")} className="text-primary-blue cursor-pointer hover:text-primary-hover">{t("page-navigation.transfers")}</span></p>
-        </div>
-    );
-}
+import { NoTransactions } from "../StatusMessage";
 
 const MAX_ROWS = 10;
 
