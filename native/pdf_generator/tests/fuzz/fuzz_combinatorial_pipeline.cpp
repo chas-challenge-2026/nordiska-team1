@@ -36,8 +36,8 @@ class FuzzMockSigner final : public nordiska::PdfSigner {
     explicit FuzzMockSigner(Mode mode = Mode::Valid, size_t valid_hex_len = 8192)
         : mode_(mode), valid_hex_len_(valid_hex_len) {}
 
-    std::expected<std::string, nordiska::SigningError>
-    sign_digest(std::span<const uint8_t, 32> digest, const nordiska::SigningContext&, double* call_seconds) override {
+    std::expected<std::string, nordiska::SigningError> sign_digest(std::span<const uint8_t, 32> digest,
+                                                                   double* call_seconds) override {
         if (call_seconds) {
             *call_seconds += 0.0001;
         }
@@ -64,7 +64,7 @@ class FuzzMockSigner final : public nordiska::PdfSigner {
         case Mode::Error:
             return std::unexpected(nordiska::SigningError{
                 .kind = nordiska::SigningErrorKind::SignatureGenerationFailed,
-                .message = "FuzzMockSigner simulated crypto error",
+                .code = nordiska::DiagnosticCode::UnexpectedFailure,
             });
         }
         return std::string(valid_hex_len_, '0');

@@ -104,7 +104,7 @@ class NativeEngineImpl final : public PdfEngine::Impl {
         if (num_pages == 0) {
             return std::unexpected(RenderError{
                 .kind = RenderErrorKind::EngineError,
-                .message = "native_engine: document has no pages",
+                .code = DiagnosticCode::NativeEngineDocumentHasNoPages,
             });
         }
 
@@ -249,7 +249,7 @@ class NativeEngineImpl final : public PdfEngine::Impl {
                 compressed.resize(size);
                 if (compress(compressed.data(), &size, image.rgb.data(), image.rgb.size()) != Z_OK) {
                     return std::unexpected(
-                        RenderError{RenderErrorKind::EngineError, "native: image compression failed"});
+                        RenderError{RenderErrorKind::EngineError, DiagnosticCode::NativeImageCompressionFailed});
                 }
                 compressed.resize(size);
                 data = compressed;

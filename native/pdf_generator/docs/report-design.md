@@ -126,3 +126,27 @@ PDF; Cairo also does document-local image/font serialization. Only Native embeds
 the precompressed image stream directly. Shared decoding avoids repeated asset
 preparation but does not eliminate backend serialization costs. The Haru default
 is retained; any default-engine change needs its own compatibility decision.
+
+## Selectable report profiles
+
+`ReportProfile` selects `Amber`, `LightBlue` (the default), or `Navy`.
+`report_style(profile)` is the single palette source for the logo, sender and
+recipient text, headings, title bands, title punctuation, table text and rules,
+footer and page numbers. Statements, annual tax reports and continuation pages
+all use that same selection. Paper stays white; no inverse logo or backing panel
+is offered. Typography, geometry and the original letterforms remain shared.
+
+- Amber preserves the original compressed logo byte-for-byte in `kLogoPixels`,
+  with legacy teal ink (`#134763`) and matching amber punctuation (`#EDA91A`).
+- Light blue uses navy ink (`#00102B`) throughout, with a light-blue dot and
+  matching title punctuation (`#88BCFF`). Logo lettering uses the same navy.
+- Monochrome navy uses navy ink throughout, including the logo dot. Title-band
+  punctuation is white for contrast. Table rules use a pale tint of profile ink.
+
+Each logo is prepared once on first use and cached as immutable pixels plus
+compressed RGB. `GeneratorConfig` and `LayoutContext` pass the selected profile
+explicitly. Renderer selection and the C ABI remain unchanged.
+
+Choose `--profile amber`, `--profile light-blue`, or `--profile navy` in the CLI.
+The earlier `--logo` option remains an alias selecting the full profile. The
+removed `white` value is rejected through the controlled diagnostic boundary.

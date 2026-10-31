@@ -1,5 +1,7 @@
 #pragma once
 
+#include "nordiska/diagnostics/diagnostic.hpp"
+
 #include <array>
 #include <cstdint>
 #include <expected>
@@ -22,26 +24,24 @@ enum class SigningErrorKind {
     DigestFailed,
     ResourceLimitExceeded,
     InternalError,
+    Timeout,
 };
 
 struct SigningError {
     SigningErrorKind kind{SigningErrorKind::InternalError};
-    std::string message;
-};
-
-struct SigningContext {
-    std::string_view document_id;
-    uint64_t customer_id{0};
+    DiagnosticCode code{DiagnosticCode::UnexpectedFailure};
+    DiagnosticLocation location{};
 };
 
 class PdfSigner {
   public:
     virtual ~PdfSigner() = default;
 
-    // When requested, accumulate only the external call duration in call_seconds.
+    // Accumulate external call duration on success and failure when requested.
+    // No customer or document identity crosses this interface.
     // Return CMS hex only. The generator owns PDF structure, hashing and insertion.
-    [[nodiscard]] virtual std::expected<std::string, SigningError>
-    sign_digest(std::span<const uint8_t, 32> digest, const SigningContext& context, double* call_seconds = nullptr) = 0;
+    [[nodiscard]] virtual std::expected<std::string, SigningError> sign_digest(std::span<const uint8_t, 32> digest,
+                                                                               double* call_seconds = nullptr) = 0;
 };
 
 // Creates an owning Unix-domain-socket signer adapter for reuse across documents.

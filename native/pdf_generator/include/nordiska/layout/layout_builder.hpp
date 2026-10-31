@@ -1,8 +1,10 @@
 #pragma once
 
+#include "nordiska/diagnostics/diagnostic.hpp"
 #include "nordiska/domain/document_types.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/layout/document_layout.hpp"
+#include "nordiska/layout/report_style.hpp"
 
 #include <expected>
 #include <string>
@@ -18,11 +20,13 @@ enum class LayoutErrorKind {
 
 struct LayoutError {
     LayoutErrorKind kind{LayoutErrorKind::InternalError};
-    std::string message;
+    DiagnosticCode code{DiagnosticCode::UnexpectedFailure};
+    DiagnosticLocation location{};
 };
 
 struct LayoutContext {
     std::string_view customer_name;
+    ReportProfile report_profile{ReportProfile::LightBlue};
 };
 
 class LayoutBuilder {

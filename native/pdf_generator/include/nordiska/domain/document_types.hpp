@@ -20,6 +20,8 @@ struct AccountStatement {
     std::string title;
     std::string account_number;
     std::string account_name;
+    std::string account_type;
+    std::string interest_rate_display;
     std::string currency;
     std::string period;
     std::string opening_balance;
@@ -32,6 +34,8 @@ struct AnnualTaxReport {
     std::string tax_year;
     std::string account_number;
     std::string account_name;
+    std::string account_type;
+    std::string interest_rate_display;
     std::string total_interest_earned;
     std::string preliminary_tax_deducted;
     std::string reported_to_authority;

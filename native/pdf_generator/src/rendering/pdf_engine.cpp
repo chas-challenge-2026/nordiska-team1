@@ -40,7 +40,8 @@ std::expected<std::vector<uint8_t>, RenderError> PdfEngine::render(const Documen
                     static_cast<uint64_t>(image->width) * image->height * 3 != image->rgb.size() ||
                     !std::isfinite(placed->width) || !std::isfinite(placed->height) || placed->width <= 0 ||
                     placed->height <= 0) {
-                    return std::unexpected(RenderError{RenderErrorKind::EngineError, "Invalid RGB image resource"});
+                    return std::unexpected(
+                        RenderError{RenderErrorKind::EngineError, DiagnosticCode::InvalidRGBImageResource});
                 }
             }
         }

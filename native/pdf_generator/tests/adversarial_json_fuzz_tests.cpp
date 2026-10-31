@@ -113,8 +113,11 @@ void test_ingestor_with_invalid_payloads(nordiska::JsonIngestorKind kind, const 
         std::span<const uint8_t> span{reinterpret_cast<const uint8_t*>(json_str.data()), json_str.size()};
         auto res = ingestor.ingest(span);
         require(!res.has_value(), ("Payload must fail: " + name).c_str());
-        require(!res.error().message.empty() || !res.error().path.empty(),
-                ("Error diagnostic must not be empty for: " + name).c_str());
+        require(
+            !nordiska::format_diagnostic({res.error().code, nordiska::DiagnosticStage::Ingestion, res.error().location})
+                 .view()
+                 .empty(),
+            ("Error diagnostic must not be empty for: " + name).c_str());
     }
 }
 

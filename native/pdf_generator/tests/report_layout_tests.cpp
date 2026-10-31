@@ -344,10 +344,81 @@ void test_renderers_and_resource_reuse() {
         require(!engine.render(invalid), "Null image resources must return an error");
     }
 }
+void test_report_profiles() {
+    const auto& original = nordiska_logo(ReportProfile::Amber);
+    const auto& blue = nordiska_logo(ReportProfile::LightBlue);
+    const auto& navy = nordiska_logo(ReportProfile::Navy);
+    require(&nordiska_logo() == &blue, "Default profile must use a light-blue dot");
+    bool amber_dot{}, blue_dot{}, navy_ink{};
+    for (size_t i = 0; i < original.rgb.size(); i += 3) {
+        amber_dot |= original.rgb[i] == 237 && original.rgb[i + 1] == 169 && original.rgb[i + 2] == 26;
+        blue_dot |= blue.rgb[i] == 136 && blue.rgb[i + 1] == 188 && blue.rgb[i + 2] == 255;
+        navy_ink |= navy.rgb[i] == 0 && navy.rgb[i + 1] == 16 && navy.rgb[i + 2] == 43;
+    }
+    require(amber_dot && blue_dot && navy_ink, "Logo profile palette is incorrect");
+    const Color modern_ink{0, 16.0F / 255, 43.0F / 255};
+    require(report_style(ReportProfile::LightBlue).ink == modern_ink, "Blue profile retained legacy text ink");
+    require(report_style(ReportProfile::Navy).ink == modern_ink, "Navy profile retained legacy text ink");
+    require(report_style(ReportProfile::LightBlue).title_accent == Color{136.0F / 255, 188.0F / 255, 1},
+            "Blue title punctuation retained the legacy amber");
+    require(report_style(ReportProfile::Navy).title_accent == Color{1, 1, 1},
+            "Monochrome title punctuation must contrast with its navy band");
+    AccountStatement statement{.account_number = "SYNTHETIC-1", .account_name = "Sparkonto"};
+    statement.transactions.resize(90, StatementTransaction{.date = "2026-01-01",
+                                                           .description = "Synthetic transaction",
+                                                           .amount_display = "10,00 SEK"});
+    AnnualTaxReport tax{.tax_year = "2026", .account_number = "SYNTHETIC-1", .account_name = "Sparkonto"};
+    for (auto profile : {ReportProfile::Amber, ReportProfile::LightBlue, ReportProfile::Navy}) {
+        const auto style = report_style(profile);
+        const auto& image = nordiska_logo(profile);
+        require(&image == &nordiska_logo(profile), "Profile resources must be cached");
+        require(image.rgb[0] == 255 && image.rgb[1] == 255 && image.rgb[2] == 255, "Every logo must use white paper");
+        const auto statement_layout = LayoutBuilder::build_statement(statement, {.report_profile = profile});
+        const auto tax_layout = LayoutBuilder::build_tax_report(tax, {.report_profile = profile});
+        require(statement_layout && tax_layout, "Report profile layout failed");
+        require(statement_layout->pages.size() > 1, "Profile test must include continuation pages");
+        for (const auto* layout : {&*statement_layout, &*tax_layout}) {
+            for (const auto& page : layout->pages) {
+                bool saw_image{}, saw_title_dot{}, saw_footer{};
+                for (const auto& command : page.commands) {
+                    if (const auto* placed = std::get_if<PositionedImage>(&command)) {
+                        saw_image = true;
+                        require(placed->image == &image, "Page selected the wrong profile logo");
+                    } else if (const auto* text = std::get_if<PositionedText>(&command)) {
+                        require(text->color == style.ink || text->color == style.paper ||
+                                    text->color == style.title_accent,
+                                "Page text uses a color outside its profile");
+                        if (text->text == ".") {
+                            saw_title_dot = true;
+                            require(text->color == style.title_accent, "Title dot does not match the profile");
+                        }
+                        if (text->text == "Nordiska Bankaktiebolaget |") {
+                            saw_footer = true;
+                            require(text->color == style.ink, "Footer does not match the profile");
+                        }
+                    } else if (const auto* line = std::get_if<PositionedLine>(&command)) {
+                        require(line->color == style.ink || line->color == style.rule,
+                                "Table rule does not match the profile");
+                    } else if (const auto* rectangle = std::get_if<FilledRectangle>(&command)) {
+                        require(rectangle->color == style.ink, "Title band does not match the profile");
+                    }
+                }
+                require(saw_image && saw_title_dot && saw_footer, "Page is missing profile furniture");
+            }
+            for (auto engine : {PdfEngineKind::Native, PdfEngineKind::Libharu, PdfEngineKind::Cairo}) {
+                require(PdfEngine(engine).render(*layout).has_value(), "Renderer rejected a report profile");
+            }
+        }
+    }
+    require(!parse_report_profile("white"), "White-on-navy profile must be removed");
+    require(!parse_report_profile("PRIVATE_CUSTOMER_VALUE"), "Unknown profile must be rejected");
+}
+
 } // namespace
 
 int main() {
     using namespace std::string_view_literals;
+    test_report_profiles();
     test_wrapping();
     test_branding_and_continuations();
     test_reference_typography_and_dummy_address();

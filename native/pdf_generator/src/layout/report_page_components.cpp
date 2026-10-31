@@ -12,7 +12,8 @@ void text(PageLayout& page, float x, float y, std::string_view value, TextStyle 
 } // namespace
 
 void append_header(PageLayout& page, const ReportStyle& style, bool first_page) {
-    page.commands.emplace_back(PositionedImage{style.left, 35.4F, 114.8F, 19.84F, &nordiska_logo()});
+    page.commands.emplace_back(
+        PositionedImage{style.left, 35.4F, 114.8F, 19.84F, &nordiska_logo(style.report_profile)});
     if (first_page) {
         constexpr std::array<std::string_view, 3> sender = {"Nordiska Bankaktiebolaget (publ)", "Box 173",
                                                             "101 23 Stockholm"};
@@ -45,7 +46,7 @@ bool append_title_band(PageLayout& page, const ReportStyle& style, float top, st
     const float title_y = top + 34.65F;
     text(page, style.left + 5, title_y, heading, style.title, style.paper);
     const float dot_x = style.left + 5 + text_width(heading, style.title.size, style.title.weight) + 2;
-    text(page, dot_x, title_y, ".", style.title, style.accent);
+    text(page, dot_x, title_y, ".", style.title, style.title_accent);
     if (subtitle.find('\n') != std::string_view::npos ||
         text_width(subtitle, style.subtitle.size, style.subtitle.weight) > style.content_width() - 10) {
         return false;

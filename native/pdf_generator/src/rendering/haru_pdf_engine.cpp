@@ -13,6 +13,7 @@
 #define HPDF_FAILED_TO_ALLOC_MEM HPDF_FAILD_TO_ALLOC_MEM
 #endif
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -73,7 +74,7 @@ struct Chunk {
     size_t offset{0};
 
     Chunk() = default;
-    explicit Chunk(size_t cap) : data(new uint8_t[cap]), capacity(cap), offset(0) {}
+    explicit Chunk(size_t cap) : data(std::make_unique_for_overwrite<uint8_t[]>(cap)), capacity(cap), offset(0) {}
 };
 
 struct HaruBumpArena {
@@ -107,10 +108,9 @@ struct HaruBumpArena {
         max_arena_bytes = parse_env_size("NORDISKA_PDF_HARU_MAX_ARENA_BYTES", kDefaultHaruMaxArenaBytes);
         const size_t effective_base = std::min(configured_base, max_arena_bytes);
 
-        // Deallocate all overflow chunks immediately back to the OS
+        // Release chunk payloads, retaining vector capacity. Reallocating this
+        // bookkeeping in a noexcept reset would terminate on memory exhaustion.
         overflow_chunks.clear();
-        overflow_chunks.shrink_to_fit();
-        overflow_chunks.reserve(8);
 
         if (base_chunk.capacity != effective_base) {
             try {
@@ -195,14 +195,24 @@ struct HaruBumpArena {
     }
 };
 
-thread_local HaruBumpArena t_haru_arena;
+// A throwing thread_local initializer terminates the process. Keep TLS
+// initialization allocation-free and construct the arena inside render, where
+// allocation exceptions can reach the generator's controlled boundary.
+thread_local std::optional<HaruBumpArena> t_haru_arena;
+
+HaruBumpArena& current_haru_arena() {
+    if (!t_haru_arena) {
+        t_haru_arena.emplace();
+    }
+    return *t_haru_arena;
+}
 
 void* HPDF_STDCALL haru_arena_alloc(HPDF_UINT size) {
-    return t_haru_arena.allocate(size);
+    return t_haru_arena->allocate(size);
 }
 
 void HPDF_STDCALL haru_arena_free(void* /*aptr*/) {
-    // No-op: bump arena memory reclaimed in O(1) via t_haru_arena.reset()
+    // No-op: bump arena memory reclaimed in O(1) via t_haru_arena->reset()
 }
 
 class HaruEngineImpl final : public PdfEngine::Impl {
@@ -212,25 +222,25 @@ class HaruEngineImpl final : public PdfEngine::Impl {
     [[nodiscard]] std::expected<std::vector<uint8_t>, RenderError> render(const DocumentLayout& layout,
                                                                           size_t tail_capacity) const override {
         HaruErrorData error;
-        t_haru_arena.reset();
+        current_haru_arena().reset();
         UniqueHaruDoc pdf(HPDF_NewEx(haru_error_handler, haru_arena_alloc, haru_arena_free, 0, &error));
 
-        const auto make_render_error = [&](std::string default_msg) -> RenderError {
+        const auto make_render_error = [&](DiagnosticCode code) -> RenderError {
             if (error.code == HPDF_FAILED_TO_ALLOC_MEM || error.code == HPDF_FAILD_TO_ALLOC_MEM ||
-                t_haru_arena.budget_exceeded) {
+                t_haru_arena->budget_exceeded) {
                 return RenderError{
                     .kind = RenderErrorKind::OutOfMemory,
-                    .message = "libharu: memory arena budget exceeded",
+                    .code = DiagnosticCode::LibharuMemoryArenaBudgetExceeded,
                 };
             }
             return RenderError{
                 .kind = RenderErrorKind::EngineError,
-                .message = std::move(default_msg),
+                .code = code,
             };
         };
 
         if (!pdf) {
-            return std::unexpected(make_render_error("libharu: failed to create document handle"));
+            return std::unexpected(make_render_error(DiagnosticCode::LibharuFailedToCreateDocumentHandle));
         }
 
         HPDF_SetCompressionMode(pdf.get(), compression_ ? HPDF_COMP_ALL : HPDF_COMP_NONE);
@@ -248,14 +258,14 @@ class HaruEngineImpl final : public PdfEngine::Impl {
         }
 
         if (font_normal == nullptr || font_bold == nullptr) {
-            return std::unexpected(make_render_error("libharu: failed to load required Helvetica fonts"));
+            return std::unexpected(make_render_error(DiagnosticCode::LibharuFailedToLoadRequiredHelveticaFonts));
         }
 
         std::unordered_map<const RasterImage*, HPDF_Image> images;
         for (const PageLayout& page_layout : layout.pages) {
             HPDF_Page page = HPDF_AddPage(pdf.get());
             if (page == nullptr) {
-                return std::unexpected(make_render_error("libharu: failed to add page"));
+                return std::unexpected(make_render_error(DiagnosticCode::LibharuFailedToAddPage));
             }
 
             HPDF_Page_SetWidth(page, page_layout.width);
@@ -299,19 +309,19 @@ class HaruEngineImpl final : public PdfEngine::Impl {
                         }
                     },
                     command);
-                if (error.code != HPDF_OK || t_haru_arena.budget_exceeded) {
-                    return std::unexpected(make_render_error("libharu: drawing command failed"));
+                if (error.code != HPDF_OK || t_haru_arena->budget_exceeded) {
+                    return std::unexpected(make_render_error(DiagnosticCode::LibharuDrawingCommandFailed));
                 }
             }
         }
 
         if (HPDF_SaveToStream(pdf.get()) != HPDF_OK) {
-            return std::unexpected(make_render_error("libharu: failed to serialize PDF to stream"));
+            return std::unexpected(make_render_error(DiagnosticCode::LibharuFailedToSerializePDFToStream));
         }
 
         if (error.code == HPDF_FAILED_TO_ALLOC_MEM || error.code == HPDF_FAILD_TO_ALLOC_MEM ||
-            t_haru_arena.budget_exceeded) {
-            return std::unexpected(make_render_error("libharu: memory arena budget exceeded"));
+            t_haru_arena->budget_exceeded) {
+            return std::unexpected(make_render_error(DiagnosticCode::LibharuMemoryArenaBudgetExceeded));
         }
 
         const HPDF_UINT32 stream_size = HPDF_GetStreamSize(pdf.get());
@@ -338,20 +348,21 @@ std::unique_ptr<PdfEngine::Impl> create_haru_pdf_engine(bool compression) {
 namespace test {
 
 HaruArenaStats get_haru_arena_stats() {
+    const auto& arena = current_haru_arena();
     return HaruArenaStats{
-        .total_capacity = t_haru_arena.total_capacity,
-        .overflow_chunk_count = t_haru_arena.overflow_chunks.size(),
-        .base_chunk_capacity = t_haru_arena.base_chunk.capacity,
-        .budget_exceeded = t_haru_arena.budget_exceeded,
+        .total_capacity = arena.total_capacity,
+        .overflow_chunk_count = arena.overflow_chunks.size(),
+        .base_chunk_capacity = arena.base_chunk.capacity,
+        .budget_exceeded = arena.budget_exceeded,
     };
 }
 
 void reset_haru_arena() {
-    t_haru_arena.reset();
+    current_haru_arena().reset();
 }
 
 void* haru_arena_allocate_for_test(size_t bytes) {
-    return t_haru_arena.allocate(bytes);
+    return current_haru_arena().allocate(bytes);
 }
 
 } // namespace test
