@@ -38,10 +38,15 @@ export default function TransferPage() {
     const { data: accountsData } = useGetAccounts("active");
     const transferFundsMutation = useTransferFunds();
 
-    const ownAccounts: OwnAccount[] = useMemo(
-        () => (accountsData ?? []).map(toOwnAccount),
-        [accountsData],
-    );
+const ownAccounts: OwnAccount[] = useMemo(
+    () =>
+        (accountsData ?? []).map((a) =>
+            toOwnAccount(a, t(`accounts-route.account-type-${a.accountType}`)),
+        ),
+    [accountsData, t],
+);
+
+    console.log(ownAccounts)
 
     const { addLocalPlanned, createPlanned, panelProps } =
         usePlannedTransfers(ownAccounts);
@@ -218,6 +223,8 @@ export default function TransferPage() {
         setStep("form");
         setTransferPhase("processing");
     };
+
+    console.log(fromAccount)
 
     return (
         <main className="w-full text-dark-navy">
