@@ -40,7 +40,7 @@ export default function FaqPage() {
     }, [searchInput]);
 
     // FAQ data
-    const {data, isLoading, isError,} = useFaqs(i18n.language, page, PAGE_SIZE , search, category);
+    const {data, isLoading, isError,} = useFaqs(i18n.language, page, PAGE_SIZE, search, category, undefined, "views", "desc");
 
     // Categories
     const {data: categories = [], isError: categoriesError,} = useFaqCategories(i18n.language);
