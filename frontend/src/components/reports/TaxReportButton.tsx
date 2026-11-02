@@ -75,7 +75,6 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
             <button
                 type="button"
                 onClick={() => setIsOpen(true)}
-                disabled={accountId == null}
                 aria-label={t("accounts-route.aria-label.generate-full-report")}
                 className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-primary-hover sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-blue"
             >

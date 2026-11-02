@@ -9,6 +9,7 @@ import { useUserStore } from "../../store/userStore";
 import { buildSavingsForecast } from "../../utils/savingsForecast";
 import ForecastResult from "./ForecastResult";
 import SliderField from "./SliderField";
+import ActionButton from "./ActionButton";
 
 type CreateAccountModalProps = {
     onClose: () => void;
@@ -33,7 +34,7 @@ const DEFAULT_MONTHLY_AMOUNT = 500;
 const DEFAULT_YEARS = 5;
 
 const formatRate = (rate: number) => `${(rate * 100).toLocaleString("sv-SE", { maximumFractionDigits: 2 })} %`;
-const formatKr = (value: number) => `${value.toLocaleString("sv-SE", { maximumFractionDigits: 2 })} kr`;
+const formatKr = (value: number) => `${value.toLocaleString("sv-SE", { maximumFractionDigits: 2 })} sek`;
 
 export default function CreateAccountModal({ onClose, isModalOpen = false, onAccountCreated }: CreateAccountModalProps) {
     const { t } = useTranslation();
@@ -220,13 +221,12 @@ export default function CreateAccountModal({ onClose, isModalOpen = false, onAcc
                     </fieldset>
 
                     {accountTypeOptions.length > 0 && (
-                        <button
-                            type="button"
+                        <ActionButton
                             onClick={openForecast}
-                            className="-mt-2 self-start cursor-pointer text-sm font-semibold text-primary-blue underline-offset-2 hover:underline"
-                        >
-                            {t("accounts-route.compare-accounts")}
-                        </button>
+                            prefixIcon="/icons/compare.svg"
+                            ariaLabel={t("accounts-route.compare-accounts")}
+                            title={t("accounts-route.compare-accounts")}
+                        />
                     )}
 
                     {/* <InputField

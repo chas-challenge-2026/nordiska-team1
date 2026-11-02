@@ -19,10 +19,10 @@ import AccountStatementBtn from "../components/reports/AccountStatementButton";
 import { Reorder } from "motion/react";
 import DraggableSection from "../components/accounts/DraggableSection";
 import TotalBalanceAndBtns from "../components/accounts/TotalBalanceAndBtns";
-import CallToDeposit from "../components/accounts/CallToDeposit";
 import SavingsForecastSection from "../components/accounts/SavingsForecastSection";
+import Modal from "../components/modals/Modal";
 
-export type SectionId = "transactions" | "savings" | "interest" | "forecast";
+export type SectionId = "transactions" | "savings" | "interest";
 
 export default function AccountsPage() {
     const { t } = useTranslation();
@@ -42,6 +42,7 @@ export default function AccountsPage() {
     const [newGoal, setNewGoal] = useState(false);
     const [favoriteError, setFavoriteError] = useState("");
     const favoriteErrorTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [isPrognosOpen, setIsPrognosOpen] = useState(false);
 
     useEffect(() => {
         return () => {
@@ -68,7 +69,7 @@ export default function AccountsPage() {
     const canClose = expandedAccount?.balance === 0;
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
 
-    const DEFAULT_ORDER: SectionId[] = ["interest","forecast","savings","transactions",];
+    const DEFAULT_ORDER: SectionId[] = ["interest","savings","transactions",];
 
     const sections = {
         transactions: (
@@ -79,15 +80,6 @@ export default function AccountsPage() {
         interest: (
             <>{expandedAccount &&
                 <InterestSection accruedInterestYtd={expandedAccount?.accruedInterestYtd} estimatedYearEndInterest={expandedAccount?.estimatedYearEndInterest} />
-            }</>
-        ),
-        forecast: (
-            <>{expandedAccount &&
-                <SavingsForecastSection
-                    balance={expandedAccount.balance}
-                    interestRate={expandedAccount.interestRate}
-                    onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
-                />
             }</>
         ),
         savings: (
@@ -258,9 +250,30 @@ export default function AccountsPage() {
                                             ))}
                                         </Reorder.Group>
                                     ) : (
-                                        // Gör en insättning, Sätt ett sparmål
                                         <>
-                                            <CallToDeposit accountId={expandedAccount.id}/>
+                                            {/* DIVIDER  */}
+                                            <div aria-hidden="true" className="mx-auto my-4 w-[99%] border-b-2 border-light-blue-accent sm:my-8" />
+                                            
+                                            <section aria-labelledby="forecast-heading" className="bg-white -mt-1">
+                                                <h2 id="forecast-heading" className="bg-dark-navy text-base font-medium text-white sm:text-lg pl-2 pt-1">{t("accounts-route.forecast-section.heading")}</h2>
+                                                <div className="border border-nordiska-blue/50 bg-light-gray/30">
+                                                    <SavingsForecastSection
+                                                        balance={expandedAccount.balance}
+                                                        interestRate={expandedAccount.interestRate}
+                                                        onDeposit={(monthlyAmount) => {
+                                                            const params = new URLSearchParams({
+                                                                account: String(expandedAccount.id),
+                                                                amount: String(monthlyAmount),
+                                                                monthly: "true",
+                                                            });
+
+                                                            navigate(`/transfer?${params.toString()}`);
+                                                        }}
+                                                        zeroAccount
+                                                    />
+                                                </div>
+                                            </section>
+
                                             {/* DIVIDER  */}
                                             <div aria-hidden="true" className="mx-auto my-4 w-[99%] border-b-2 border-light-blue-accent sm:my-8" />
                                             <SavingsGoalSection
@@ -290,7 +303,7 @@ export default function AccountsPage() {
                                             ) : (
                                                 <>
                                                     {/* ACCOUNT STATEMENT */}
-                                                    <AccountStatementBtn key={expandedAccount.id} accountId={expandedAccount.id} />
+                                                    <AccountStatementBtn key={expandedAccount.id} accountId={expandedAccount.id} hideIcon />
 
                                                     {/* FAVORITE */}
                                                     <ActionButton
@@ -299,7 +312,18 @@ export default function AccountsPage() {
                                                         ariaLabel={isFavorite ? t("accounts-route.no-favorite") : t("accounts-route.favorite")}
                                                         prefixIcon={isFavorite ? "/icons/star-solid.svg" : "/icons/star.svg"}
                                                         title={isFavorite ? t("accounts-route.no-favorite") : t("accounts-route.favorite")}
+                                                        hideIcon
                                                     />
+
+                                                   {!canClose && 
+                                                        <ActionButton
+                                                            onClick={() => setIsPrognosOpen(true)}
+                                                            ariaLabel={t("accounts-route.forecast-section.heading")}
+                                                            prefixIcon="/icons/compare.svg"
+                                                            title={t("accounts-route.forecast-section.heading")}
+                                                            hideIcon={true}
+                                                        />
+                                                    }
 
                                                     {/* CLOSE ACCOUNT */}
                                                     {canClose && (
@@ -309,6 +333,7 @@ export default function AccountsPage() {
                                                             ariaLabel={t("accounts-route.close-account")}
                                                             prefixIcon="/icons/warning.svg"
                                                             title={t("accounts-route.close-account")}
+                                                            hideIcon
                                                         />
                                                     )}
                                                 </>
@@ -377,6 +402,29 @@ export default function AccountsPage() {
                         setIsCreateAccountOpen(false);
                     }}
                 />
+
+                {/* SPARPROGNOS MODAL */}
+                {isPrognosOpen && expandedAccount && 
+                    <Modal
+                        isOpen={isPrognosOpen}
+                        onClose={() => setIsPrognosOpen(false)}
+                        title={t("accounts-route.forecast-section.heading")}
+                    >
+                        <SavingsForecastSection 
+                            balance={expandedAccount.balance}
+                            interestRate={expandedAccount.interestRate}
+                            onDeposit={(monthlyAmount) => {
+                                const params = new URLSearchParams({
+                                    account: String(expandedAccount.id),
+                                    amount: String(monthlyAmount),
+                                    monthly: "true",
+                                });
+
+                                navigate(`/transfer?${params.toString()}`);
+                            }}
+                        />
+                    </Modal>
+                }
 
                 {/* HELP BUBBLE */}
                 <div className="min-[1200px]:hidden">

@@ -72,7 +72,6 @@ export default function Admin(){
             <>
                 <div className="mt-10">
                     <AdminPageTitle className="mb-10">ADMIN</AdminPageTitle>
-
                     { notAuthorized &&
                         <div className="w-[500px] mx-auto mb-10">
                             <div className="border-8 border-red-500 bg-yellow-500 p-2">

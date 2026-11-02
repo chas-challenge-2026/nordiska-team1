@@ -40,7 +40,7 @@ export default function AccountCard({account}:AccountCardProps) {
                         </div>
                 </div>
 
-                <section className={`flex min-h-0 flex-1 flex-col ${savingGoal ? "justify-between" : "gap-3"} p-3 sm:overflow-y-auto`}>
+                <section className={`flex min-h-0 flex-1 flex-col gap-10 md:gap-5 lg:gap-3 p-3 sm:overflow-y-auto`}>
 
                     {/* KONTONAMN */}
                     <div>
@@ -57,9 +57,10 @@ export default function AccountCard({account}:AccountCardProps) {
                     </div>
 
                     {/* SALDON  */}
-                    <div className="border border-dark-navy/50 bg-light-gray/40  pt-2 px-2">
+                    <div className="border border-light-blue-accent bg-light-gray/40  pt-2 px-2">
                         <div className="mb-2">
-                            <p>{t("overview-route.account-card.total-balance")}</p>
+                            <span className="text-xs text-primary-hover">{t("generic.balance")}</span>
+                            {/* <p>{t("generic.balance")}</p> */}
                             <p className="text-2xl font-bold -mt-1">
                                 {formatCurrencySmallSek(account.balance, true)}
                             </p>
@@ -67,8 +68,8 @@ export default function AccountCard({account}:AccountCardProps) {
 
                         <div className="mb-2">
                             <div className="grid grid-cols-2 text-sm">
-                                <span>{t("accounts-route.interest-section.accured-interest")}</span>
-                                <span>{t("accounts-route.interest-section.yearly-interest")}</span>
+                                <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.accured-interest")}</span>
+                                <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.yearly-interest")}</span>
                             </div>
                             <div className="grid grid-cols-2 text-xl font-bold -mt-0.5">
                                 <p className={` ${account.accruedInterestYtd > 0 ? "text-green-700" : ""}`}>

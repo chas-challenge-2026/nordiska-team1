@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import TransferForm from "../components/transfer/TransferForm";
 import PlannedTransfersPanel from "../components/transfer/PlannedTransfersPanel";
@@ -38,10 +38,15 @@ export default function TransferPage() {
     const { data: accountsData } = useGetAccounts("active");
     const transferFundsMutation = useTransferFunds();
 
-    const ownAccounts: OwnAccount[] = useMemo(
-        () => (accountsData ?? []).map(toOwnAccount),
-        [accountsData],
-    );
+const ownAccounts: OwnAccount[] = useMemo(
+    () =>
+        (accountsData ?? []).map((a) =>
+            toOwnAccount(a, t(`accounts-route.account-type-${a.accountType}`)),
+        ),
+    [accountsData, t],
+);
+
+    console.log(ownAccounts)
 
     const { addLocalPlanned, createPlanned, panelProps } =
         usePlannedTransfers(ownAccounts);
@@ -51,12 +56,14 @@ export default function TransferPage() {
     const [name, setName] = useState("");
     const [searchParams] = useSearchParams();
     const accountIdParam = searchParams.get("account");
+    const amountParam = searchParams.get("amount");
+    const monthlyParam = searchParams.get("monthly");
     const [fromId, setFromId] = useState<string | null>(null);
     const [toId, setToId] = useState<string | null>(accountIdParam);
-    const [amount, setAmount] = useState("");
+    const [amount, setAmount] = useState(amountParam ?? "");
     const [date, setDate] = useState(todayIso());
     const recurrence = useRecurrence();
-    const { recurring, repeating } = recurrence;
+    const { recurring, repeating, setRecurring } = recurrence;
     const [step, setStep] = useState<Step>("form");
     const [transferPhase, setTransferPhase] =
         useState<TransferPhase>("processing");
@@ -71,6 +78,12 @@ export default function TransferPage() {
     const over = !!fromAccount && amountValue > fromAccount.balance;
     const isExternal = !!toAccount && !toAccount.own;
     const dateInPast = date < toDateKey(new Date().toISOString());
+
+    useEffect(() => {
+        if (monthlyParam === "true") {
+            setRecurring(true);
+        }
+    }, [monthlyParam, setRecurring]);
 
     const canSubmit =
         !!fromAccount &&
@@ -210,6 +223,8 @@ export default function TransferPage() {
         setStep("form");
         setTransferPhase("processing");
     };
+
+    console.log(fromAccount)
 
     return (
         <main className="w-full text-dark-navy">
