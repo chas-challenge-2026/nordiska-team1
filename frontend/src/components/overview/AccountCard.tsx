@@ -68,8 +68,8 @@ export default function AccountCard({account}:AccountCardProps) {
 
                         <div className="mb-2">
                             <div className="grid grid-cols-2 text-sm">
-                                <span className="text-xs text-primary-hover">{t("accounts-route.interest-section.accured-interest")}</span>
-                                <span className="text-xs text-primary-hover">{t("accounts-route.interest-section.yearly-interest")}</span>
+                                <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.accured-interest")}</span>
+                                <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.yearly-interest")}</span>
                             </div>
                             <div className="grid grid-cols-2 text-xl font-bold -mt-0.5">
                                 <p className={` ${account.accruedInterestYtd > 0 ? "text-green-700" : ""}`}>
