@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <new>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -116,6 +117,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
         struct Output {
             std::vector<uint8_t>& bytes;
             size_t tail_capacity;
+            bool out_of_memory{};
         } output{buffer, tail_capacity};
         auto write_callback = [](void* closure, const unsigned char* data, unsigned int length) -> cairo_status_t {
             auto& out = *static_cast<Output*>(closure);
@@ -126,10 +128,17 @@ class CairoEngineImpl final : public PdfEngine::Impl {
                 }
                 out.bytes.insert(out.bytes.end(), data, data + length);
                 return CAIRO_STATUS_SUCCESS;
+            } catch (const std::bad_alloc&) {
+                out.out_of_memory = true;
+                return CAIRO_STATUS_WRITE_ERROR;
             } catch (...) {
                 // Never unwind a C++ exception through Cairo's C callback frames.
                 return CAIRO_STATUS_WRITE_ERROR;
             }
+        };
+        const auto stream_failure = [&](DiagnosticCode code) {
+            return output.out_of_memory ? RenderError{RenderErrorKind::OutOfMemory, DiagnosticCode::OutOfMemory}
+                                        : RenderError{RenderErrorKind::EngineError, code};
         };
 
         const float default_w = layout.pages.empty() ? 612.0F : layout.pages.front().width;
@@ -137,10 +146,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
 
         UniqueCairoSurface surface(cairo_pdf_surface_create_for_stream(write_callback, &output, default_w, default_h));
         if (!surface || cairo_surface_status(surface.get()) != CAIRO_STATUS_SUCCESS) {
-            return std::unexpected(RenderError{
-                .kind = RenderErrorKind::EngineError,
-                .message = "cairo: failed to create PDF surface",
-            });
+            return std::unexpected(stream_failure(DiagnosticCode::CairoFailedToCreatePDFSurface));
         }
 
         // Keep the fresh renderer output on classic xref tables, shared with Haru
@@ -149,10 +155,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
 
         UniqueCairo cr(cairo_create(surface.get()));
         if (!cr || cairo_status(cr.get()) != CAIRO_STATUS_SUCCESS) {
-            return std::unexpected(RenderError{
-                .kind = RenderErrorKind::EngineError,
-                .message = "cairo: failed to create drawing context",
-            });
+            return std::unexpected(stream_failure(DiagnosticCode::CairoFailedToCreateDrawingContext));
         }
 
         cairo_set_source_rgb(cr.get(), 0.0, 0.0, 0.0);
@@ -161,7 +164,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
         if (!fonts.is_valid()) {
             return std::unexpected(RenderError{
                 .kind = RenderErrorKind::EngineError,
-                .message = "cairo: failed to resolve a valid font face (tried 'Helvetica', 'Arial', 'sans-serif')",
+                .code = DiagnosticCode::CairoFailedToResolveAValidFontFaceTriedHelveticaArialSansSerif,
             });
         }
 
@@ -232,10 +235,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
         const cairo_status_t cr_status = cairo_status(cr.get());
         cr.reset();
         if (cr_status != CAIRO_STATUS_SUCCESS) {
-            return std::unexpected(RenderError{
-                .kind = RenderErrorKind::EngineError,
-                .message = std::string("cairo: drawing context failed: ") + cairo_status_to_string(cr_status),
-            });
+            return std::unexpected(stream_failure(DiagnosticCode::CairoDrawingFailed));
         }
 
         cairo_surface_finish(surface.get());
@@ -243,10 +243,7 @@ class CairoEngineImpl final : public PdfEngine::Impl {
         surface.reset();
 
         if (status != CAIRO_STATUS_SUCCESS) {
-            return std::unexpected(RenderError{
-                .kind = RenderErrorKind::EngineError,
-                .message = std::string("cairo: rendering failed: ") + cairo_status_to_string(status),
-            });
+            return std::unexpected(stream_failure(DiagnosticCode::CairoRenderingFailed));
         }
 
         return buffer;

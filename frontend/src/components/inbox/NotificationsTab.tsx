@@ -30,7 +30,7 @@ export default function NotificationsTab({ page, onPageChange }: NotificationsTa
         <div className="bg-white shadow-card">
             <div className="flex items-center justify-between gap-3 bg-dark-navy px-4 py-3 text-white">
                 <div>
-                    <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.title")}</span>
+                    <span className="block text-xs uppercase text-white/80">{t("inbox.title")}</span>
                     <h2 className="font-bold">{t("inbox.notifications")}</h2>
                 </div>
                 <InboxButton variant="outline-light" disabled={!hasUnread || markAll.isPending} onClick={() => markAll.mutate()}>

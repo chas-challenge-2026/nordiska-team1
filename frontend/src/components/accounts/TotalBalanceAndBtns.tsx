@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import TaxReportBtn from "../reports/TaxReportButton";
 
 type TotalBalanceAndBtnsProps = {
@@ -12,11 +12,12 @@ export default function TotalBalanceAndBtns({totalBalance, selectedAccountId, on
     const {t} = useTranslation();
     
     return (
-    <div className="overflow-hidden border border-gray-200 bg-white pb-4 max-[991px]:bg-nordiska-bg max-[991px]:border-0 max-[991px]:pb-0 max-[991px]:-mb-4">
+    <div className="overflow-hidden border-0 min-[1199px]:border min-[1199px]:border-gray-300 min-[1199px]:shadow-md/30 min-[1199px]:bg-white pb-4 max-[991px]:bg-nordiska-bg max-[991px]:border-0 max-[991px]:pb-0 max-[991px]:-mb-4 ">
+
         <div className="flex flex-col max-[1199px]:flex-row max-[1199px]:items-center max-[1199px]:justify-between">
 
             {/* --------------- VISAS BARA I 3 GRID --------------- */}
-            <div className="max-[1200px]:hidden">
+            <div className="max-[1200px]:hidden ">
                 <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-dark-navy px-4 py-3">
                     <div className="min-w-0 text-white">
                         <p className="truncate text-xs uppercase text-white/70">
@@ -33,7 +34,7 @@ export default function TotalBalanceAndBtns({totalBalance, selectedAccountId, on
             <div className="flex w-full justify-between items-end mb-7 min-[500px]:hidden">
                 <div>
                     <p className="truncate text-sm text-dark-navy">{t("accounts-route.accounts-header.total-balance")}</p>
-                    <p className="truncate text-md font-semibold">{formatCurrency(totalBalance)}</p>
+                    <p className="truncate text-md font-bold">{formatCurrencySmallSek(totalBalance)}</p>
                 </div>
                 <div className="flex gap-1 mb-1">
                     <button
@@ -52,7 +53,7 @@ export default function TotalBalanceAndBtns({totalBalance, selectedAccountId, on
             <div className="flex min-h-22 w-full items-center justify-between border-b border-primary-blue/40 px-3 py-3 text-left max-[1200px]:w-fit max-[1200px]:border-0 max-[499px]:hidden">
                 <div className="min-w-0 max-[1200px]:flex max-[1200px]:items-end">
                     <p className="truncate text-sm text-dark-navy">{t("accounts-route.accounts-header.total-balance")}</p>
-                    <p className="mt-1 truncate text-md font-semibold text-dark-navy max-[1200px]:ml-2">{formatCurrency(totalBalance)}</p>
+                    <p className="mt-1 truncate text-lg font-bold text-dark-navy max-[1200px]:ml-2">{formatCurrencySmallSek(totalBalance)}</p>
                 </div>
             </div>
 

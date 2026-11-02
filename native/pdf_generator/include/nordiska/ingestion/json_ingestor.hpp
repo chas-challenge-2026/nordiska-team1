@@ -1,5 +1,6 @@
 #pragma once
 
+#include "nordiska/diagnostics/diagnostic.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
 
 #include <cstdint>
@@ -16,18 +17,8 @@ enum class IngestErrorKind { InvalidInput, SyntaxError, InternalError };
 
 struct IngestError {
     IngestErrorKind kind{IngestErrorKind::InvalidInput};
-    std::string path;
-    std::string message;
-
-    [[nodiscard]] std::string formatted_message() const {
-        if (path.empty()) {
-            return message;
-        }
-        if (message.empty()) {
-            return path;
-        }
-        return path + ": " + message;
-    }
+    DiagnosticCode code{DiagnosticCode::UnexpectedFailure};
+    DiagnosticLocation location{};
 };
 
 class JsonIngestor {

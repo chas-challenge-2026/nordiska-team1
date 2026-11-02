@@ -57,61 +57,52 @@ size_t get_max_json_payload_bytes() noexcept {
     return parse_env_size("NORDISKA_PDF_MAX_PAYLOAD_BYTES", kDefaultMaxJsonPayloadBytes);
 }
 
-// Thread-local diagnostic storage for error reporting
-thread_local std::string g_last_error;
-thread_local const char* g_fallback_static_error = nullptr;
+// Only structured diagnostics can enter thread-local error storage.
+thread_local nordiska::DiagnosticText g_last_error;
 thread_local nordiska::PipelineTiming g_last_timing{};
 
 void clear_last_error() noexcept {
-    g_fallback_static_error = nullptr;
-    g_last_error.clear();
+    g_last_error = {};
 }
-
-void set_last_error(std::string_view message) noexcept {
-    g_fallback_static_error = nullptr;
-    try {
-        g_last_error.assign(message.data(), message.size());
-    } catch (...) {
-        // Non-allocating fallback if recording diagnostic fails under memory pressure
-        g_fallback_static_error = "Out of memory while recording error diagnostic";
-    }
-}
-
-void set_last_error_static(const char* message) noexcept {
-    g_fallback_static_error = message;
-    g_last_error.clear();
+void set_last_error(nordiska::Diagnostic diagnostic) noexcept {
+    g_last_error = nordiska::format_diagnostic(diagnostic);
 }
 
 std::expected<void, int> validate_boundary_arguments(const uint8_t* json_utf8, size_t json_length,
                                                      bool has_callback) noexcept {
     if (json_utf8 == nullptr) {
-        set_last_error("json_utf8 must not be null");
+        set_last_error({nordiska::DiagnosticCode::Required,
+                        nordiska::DiagnosticStage::Boundary,
+                        {.field = nordiska::DiagnosticField::JsonUtf8}});
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
     if (json_length == 0) {
-        set_last_error("json_length must be greater than zero");
+        set_last_error({nordiska::DiagnosticCode::MustBePositive,
+                        nordiska::DiagnosticStage::Boundary,
+                        {.field = nordiska::DiagnosticField::JsonLength}});
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
     if (!has_callback) {
-        set_last_error("callback must not be null");
+        set_last_error({nordiska::DiagnosticCode::Required,
+                        nordiska::DiagnosticStage::Boundary,
+                        {.field = nordiska::DiagnosticField::Callback}});
         return std::unexpected(NORDISKA_PDF_INVALID_ARGUMENT);
     }
     if (json_length > get_max_json_payload_bytes()) {
-        set_last_error("Payload size exceeds maximum allowed limit");
+        set_last_error({nordiska::DiagnosticCode::PayloadTooLarge});
         return std::unexpected(NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED);
     }
     return {};
 }
 
 int map_generator_error(const nordiska::GeneratorError& err) noexcept {
-    try {
-        set_last_error(err.message());
-    } catch (...) {
-        set_last_error_static("Unknown error occurred");
-    }
+    set_last_error(err.diagnostic());
     return std::visit(
         [](const auto& payload) noexcept -> int {
             using T = std::decay_t<decltype(payload)>;
+            if (payload.code == nordiska::DiagnosticCode::OutOfMemory) {
+                return NORDISKA_PDF_OUT_OF_MEMORY;
+            }
             if constexpr (std::is_same_v<T, nordiska::InvalidArgumentError>) {
                 return NORDISKA_PDF_INVALID_ARGUMENT;
             } else if constexpr (std::is_same_v<T, nordiska::ResourceLimitError>) {
@@ -129,6 +120,8 @@ int map_generator_error(const nordiska::GeneratorError& err) noexcept {
                 return NORDISKA_PDF_INTERNAL_ERROR;
             } else if constexpr (std::is_same_v<T, nordiska::SigningError>) {
                 return NORDISKA_PDF_SIGNING_FAILED;
+            } else {
+                return NORDISKA_PDF_INTERNAL_ERROR;
             }
         },
         err.details);
@@ -173,9 +166,12 @@ int deliver_batch(const nordiska::GeneratedPdfs& completed_batch, Callback callb
     };
     const int cb_status = callback(&batch_view, user_data);
     if (cb_status != 0) {
-        set_last_error("customer batch callback rejected batch with status code: " + std::to_string(cb_status));
+        set_last_error({nordiska::DiagnosticCode::CallbackRejected, nordiska::DiagnosticStage::Delivery});
         return NORDISKA_PDF_CALLBACK_FAILED;
     }
+    // A reentrant callback may have completed a failing native call on this
+    // thread. The successfully completed outer call owns the final snapshot.
+    clear_last_error();
     return NORDISKA_PDF_OK;
 }
 
@@ -213,7 +209,9 @@ int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callba
             } else if (strcasecmp(engine_env, "cairo") == 0) {
                 engine = nordiska::PdfEngineKind::Cairo;
             } else if (strcasecmp(engine_env, "libharu") != 0 && strcasecmp(engine_env, "haru") != 0) {
-                set_last_error("NORDISKA_PDF_ENGINE must be native, libharu, haru, or cairo");
+                set_last_error({nordiska::DiagnosticCode::InvalidEngine,
+                                nordiska::DiagnosticStage::Boundary,
+                                {.field = nordiska::DiagnosticField::Engine}});
                 return NORDISKA_PDF_INVALID_ARGUMENT;
             }
         }
@@ -235,13 +233,13 @@ int generate_customer_batch(const uint8_t* json_utf8, size_t json_length, Callba
         return deliver_batch(*batch_result, callback, user_data);
 
     } catch (const std::bad_alloc&) {
-        set_last_error_static("Out of memory during document generation");
+        set_last_error({nordiska::DiagnosticCode::OutOfMemory});
         return NORDISKA_PDF_OUT_OF_MEMORY;
-    } catch (const std::exception& err) {
-        set_last_error(err.what());
+    } catch (const std::exception&) {
+        set_last_error({nordiska::DiagnosticCode::UnexpectedFailure});
         return NORDISKA_PDF_INTERNAL_ERROR;
     } catch (...) {
-        set_last_error_static("Unknown native document batch generation error");
+        set_last_error({nordiska::DiagnosticCode::UnexpectedFailure});
         return NORDISKA_PDF_INTERNAL_ERROR;
     }
 }
@@ -286,9 +284,6 @@ extern "C" size_t nordiska_pdf_v1_max_json_bytes(void) {
 }
 
 extern "C" const char* nordiska_pdf_v1_get_last_error(void) {
-    if (g_fallback_static_error != nullptr) {
-        return g_fallback_static_error;
-    }
     return g_last_error.c_str();
 }
 

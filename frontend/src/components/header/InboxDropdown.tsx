@@ -108,7 +108,7 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                     >
                         <div className="max-h-[calc(100dvh-60px)] overflow-y-auto md:max-h-[calc(100dvh-75px)]">
                             <div className="bg-dark-navy px-4 py-3 text-white">
-                                <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.title")}</span>
+                                <span className="block text-xs uppercase text-white/80">{t("inbox.title")}</span>
                                 <strong>{t("inbox.unread-count", { count: unreadCount })}</strong>
                             </div>
 
@@ -159,7 +159,7 @@ export default function InboxDropdown({ open, onOpenChange }: InboxDropdownProps
                                 <Link
                                     to="/inbox"
                                     onClick={close}
-                                    className="block rounded bg-primary-blue px-4 py-2 text-center font-semibold text-white"
+                                    className="block rounded bg-primary-blue px-4 py-2 text-center font-semibold text-white hover:bg-primary-hover"
                                 >
                                     {t("inbox.open-inbox")}
                                 </Link>

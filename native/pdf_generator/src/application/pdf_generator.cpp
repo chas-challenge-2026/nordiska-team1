@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <new>
 #include <span>
 #include <string>
 #include <type_traits>
@@ -19,37 +20,40 @@
 
 namespace nordiska {
 
-std::string GeneratorError::message() const {
-    return std::visit(
-        [this](const auto& err) -> std::string {
-            using T = std::decay_t<decltype(err)>;
+Diagnostic GeneratorError::diagnostic() const noexcept {
+    auto result = std::visit(
+        [](const auto& error) {
+            using T = std::decay_t<decltype(error)>;
+            Diagnostic diagnostic{.code = error.code};
             if constexpr (std::is_same_v<T, IngestError>) {
-                return err.formatted_message();
+                diagnostic.stage = DiagnosticStage::Ingestion;
             } else if constexpr (std::is_same_v<T, LayoutError>) {
-                if (!document_id.empty()) {
-                    return "Failed to layout document '" + document_id + "': " + err.message;
-                }
-                return err.message;
+                diagnostic.stage = DiagnosticStage::Layout;
             } else if constexpr (std::is_same_v<T, RenderError>) {
-                if (!document_id.empty()) {
-                    return "Failed to render document '" + document_id + "': " + err.message;
-                }
-                return err.message;
+                diagnostic.stage = DiagnosticStage::Rendering;
             } else if constexpr (std::is_same_v<T, SigningError>) {
-                if (!document_id.empty()) {
-                    return "Failed to sign document '" + document_id + "': " + err.message;
-                }
-                return err.message;
-            } else {
-                return err.message;
+                diagnostic.stage = DiagnosticStage::Signing;
             }
+            if constexpr (requires { error.location; }) {
+                diagnostic.location = error.location;
+            }
+            return diagnostic;
         },
         details);
+    if (document_index) {
+        result.location.document_index = document_index;
+    }
+    return result;
+}
+
+std::string GeneratorError::message() const {
+    return std::string(format_diagnostic(diagnostic()).view());
 }
 
 PdfGenerator::PdfGenerator(GeneratorConfig config)
     : ingestor_(config.ingestor), engine_(config.engine, config.compression), signer_(std::move(config.custom_signer)),
-      enable_signing_(config.enable_signing), signature_contents_capacity_(config.signature_contents_capacity) {
+      enable_signing_(config.enable_signing), signature_contents_capacity_(config.signature_contents_capacity),
+      report_profile_(config.report_profile) {
     if (enable_signing_ && !signer_) {
         auto signer = create_native_pdf_signer();
         if (signer) {
@@ -70,9 +74,9 @@ struct SignedDocumentArtifacts {
     Sha256Digest digest{};
 };
 
-std::expected<SignedDocumentArtifacts, SigningError>
-sign_rendered_document(std::vector<uint8_t>& pdf_bytes, size_t signature_capacity, PdfSigner& signer,
-                       const SigningContext& signing_context, PipelineTiming* timing) {
+std::expected<SignedDocumentArtifacts, SigningError> sign_rendered_document(std::vector<uint8_t>& pdf_bytes,
+                                                                            size_t signature_capacity,
+                                                                            PdfSigner& signer, PipelineTiming* timing) {
     using Clock = std::chrono::steady_clock;
 
     // 1. Append incremental PDF 1.7 signature slot and /ByteRange
@@ -100,8 +104,7 @@ sign_rendered_document(std::vector<uint8_t>& pdf_bytes, size_t signature_capacit
 
     // 3. Request detached CMS signature from external signer
     const auto signer_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-    auto signature =
-        signer.sign_digest(*digest_result, signing_context, timing ? &timing->signer_call_seconds : nullptr);
+    auto signature = signer.sign_digest(*digest_result, timing ? &timing->signer_call_seconds : nullptr);
     if (timing != nullptr) {
         timing->signer_wrapper_seconds += std::chrono::duration<double>(Clock::now() - signer_start).count();
     }
@@ -128,12 +131,11 @@ sign_rendered_document(std::vector<uint8_t>& pdf_bytes, size_t signature_capacit
 } // namespace
 
 std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<const uint8_t> json_utf8,
-                                                                    PipelineTiming* timing) const {
+                                                                    PipelineTiming* timing) const try {
     // Classic PDF xref entries have 10 decimal digits for byte offsets.
     if (signature_contents_capacity_ == 0 || signature_contents_capacity_ % 2 != 0 ||
         signature_contents_capacity_ > 9'999'999'999ULL - kSignatureUpdateOverhead) {
-        return std::unexpected(GeneratorError{
-            InvalidArgumentError{"Signature capacity must be a positive even hex length within PDF offset limits"}});
+        return std::unexpected(GeneratorError{InvalidArgumentError{DiagnosticCode::InvalidSignatureCapacity}});
     }
     if (signer_initialization_error_) {
         return std::unexpected(GeneratorError{*signer_initialization_error_});
@@ -156,12 +158,14 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
     generated.documents.reserve(job.documents.size());
 
     // Build each PDF sequentially
-    for (const Document& doc : job.documents) {
+    for (size_t index = 0; index < job.documents.size(); ++index) {
+        const Document& doc = job.documents[index];
         // Stage 2: Layout document geometry and pagination
         const auto t_layout_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
-        auto layout_res = LayoutBuilder::build(doc, {.customer_name = job.customer_name});
+        auto layout_res =
+            LayoutBuilder::build(doc, {.customer_name = job.customer_name, .report_profile = report_profile_});
         if (!layout_res) {
-            return std::unexpected(GeneratorError{std::move(layout_res).error(), doc.document_id});
+            return std::unexpected(GeneratorError{std::move(layout_res).error(), index});
         }
         if (timing != nullptr) {
             timing->layout_seconds += std::chrono::duration<double>(Clock::now() - t_layout_start).count();
@@ -177,7 +181,7 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         }
         if (!render_res) {
             // All-or-nothing guarantee: stop on first failure and discard accumulated results
-            return std::unexpected(GeneratorError{std::move(render_res).error(), doc.document_id});
+            return std::unexpected(GeneratorError{std::move(render_res).error(), index});
         }
         std::vector<uint8_t> final_bytes = std::move(*render_res);
 
@@ -185,11 +189,9 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
         const auto t_sign_start = (timing != nullptr) ? Clock::now() : Clock::time_point{};
         SignedDocumentArtifacts signed_artifacts{};
         if (enable_signing_) {
-            const SigningContext signing_context{.document_id = doc.document_id, .customer_id = job.customer_id};
-            auto sign_res =
-                sign_rendered_document(final_bytes, signature_contents_capacity_, *signer_, signing_context, timing);
+            auto sign_res = sign_rendered_document(final_bytes, signature_contents_capacity_, *signer_, timing);
             if (!sign_res) {
-                return std::unexpected(GeneratorError{std::move(sign_res).error(), doc.document_id});
+                return std::unexpected(GeneratorError{std::move(sign_res).error(), index});
             }
             signed_artifacts = *sign_res;
         }
@@ -202,7 +204,7 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
             timing->hash_seconds += seconds;
         }
         if (!artifact_hash) {
-            return std::unexpected(GeneratorError{std::move(artifact_hash).error(), doc.document_id});
+            return std::unexpected(GeneratorError{std::move(artifact_hash).error(), index});
         }
         if (timing != nullptr) {
             timing->sign_seconds += std::chrono::duration<double>(Clock::now() - t_sign_start).count();
@@ -218,6 +220,10 @@ std::expected<GeneratedPdfs, GeneratorError> PdfGenerator::generate(std::span<co
     }
 
     return generated;
+} catch (const std::bad_alloc&) {
+    return std::unexpected(GeneratorError{InternalError{DiagnosticCode::OutOfMemory}});
+} catch (...) {
+    return std::unexpected(GeneratorError{InternalError{}});
 }
 
 } // namespace nordiska

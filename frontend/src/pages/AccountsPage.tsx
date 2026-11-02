@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import { useGetAccounts, useCloseAccount, useGetAllSavingsGoals, useUpdateFavoriteAccount } from "../hooks/useAccounts";
-import { formatCurrency } from "../utils/currency";
+import { formatCurrencySmallSek } from "../utils/currency";
 import CreateAccountModal from "../components/accounts/CreateAccountModal";
 import ActionButton from "../components/accounts/ActionButton";
 import HandleSavingsGoalModal from "../components/accounts/HandleSavingGoalModal";
@@ -20,8 +20,9 @@ import { Reorder } from "motion/react";
 import DraggableSection from "../components/accounts/DraggableSection";
 import TotalBalanceAndBtns from "../components/accounts/TotalBalanceAndBtns";
 import CallToDeposit from "../components/accounts/CallToDeposit";
+import SavingsForecastSection from "../components/accounts/SavingsForecastSection";
 
-export type SectionId = "transactions" | "savings" | "interest";
+export type SectionId = "transactions" | "savings" | "interest" | "forecast";
 
 export default function AccountsPage() {
     const { t } = useTranslation();
@@ -67,7 +68,7 @@ export default function AccountsPage() {
     const canClose = expandedAccount?.balance === 0;
     const existingSavingGoal = goals?.goals.find((goal) => goal.accountId === selectedAccountId && goal.status === "active");
 
-    const DEFAULT_ORDER: SectionId[] = ["interest","savings","transactions",];
+    const DEFAULT_ORDER: SectionId[] = ["interest","forecast","savings","transactions",];
 
     const sections = {
         transactions: (
@@ -78,6 +79,15 @@ export default function AccountsPage() {
         interest: (
             <>{expandedAccount &&
                 <InterestSection accruedInterestYtd={expandedAccount?.accruedInterestYtd} estimatedYearEndInterest={expandedAccount?.estimatedYearEndInterest} />
+            }</>
+        ),
+        forecast: (
+            <>{expandedAccount &&
+                <SavingsForecastSection
+                    balance={expandedAccount.balance}
+                    interestRate={expandedAccount.interestRate}
+                    onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
+                />
             }</>
         ),
         savings: (
@@ -104,7 +114,11 @@ export default function AccountsPage() {
     });
 
     const accountId = expandedAccount?.id;
-    const sectionOrder = accountId ? sectionOrders[accountId] ?? DEFAULT_ORDER : DEFAULT_ORDER;
+    const savedOrder = accountId ? sectionOrders[accountId] : undefined;
+    // Sparade ordningar från innan en sektion fanns saknar den, lägg till nya sektioner sist
+    const sectionOrder = savedOrder
+        ? [...savedOrder.filter((id) => DEFAULT_ORDER.includes(id)), ...DEFAULT_ORDER.filter((id) => !savedOrder.includes(id))]
+        : DEFAULT_ORDER;
 
     function handleReorder(newOrder: SectionId[]) {
         if (!accountId) return;
@@ -187,7 +201,7 @@ export default function AccountsPage() {
                     {/* --------- COL MITTEN --------- */}
                     {/* ------------------------------ */}
                     {/* ACCOUNT INFORMATION */}
-                    <section aria-labelledby="account-details-heading" className="min-w-0 overflow-hidden min-[991px]:bg-white min-[991px]:border min-[991px]:border-gray-200 min-[991px]:shadow-sm">
+                    <section aria-labelledby="account-details-heading" className="min-w-0 overflow-hidden bg-white min-[991px]:border min-[991px]:border-gray-300 min-[991px]:shadow-md/30">
                         {expandedAccount && (
                             <article>
                                 {/* CARD HEADER */}
@@ -211,9 +225,9 @@ export default function AccountsPage() {
 
                                 <div className="sm:p-4">
                                     {/* ACCOUNT NAME AND BALANCE */}
-                                    <div className="flex flex-col gap-3 border border-nordiska-blue/50 bg-primary-blue/10 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:p-5">
+                                    <div className="flex flex-col gap-3 border border-dark-navy/50 bg-light-blue-accent/40 p-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:p-5">
                                         <div className="min-w-0">
-                                            <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{expandedAccount.accountNumber}</p>
+                                            <p className="text-xs uppercase text-dark-navy sm:text-sm">{expandedAccount.accountNumber}</p>
                                             <p 
                                                 title={displayName}
                                                 className="mt-0.5 truncate text-xl font-bold text-dark-navy sm:mt-1 sm:text-3xl">
@@ -222,8 +236,8 @@ export default function AccountsPage() {
                                         </div>
 
                                         <div className="sm:text-right">
-                                            <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("generic.balance")}</p>
-                                            <p className="mt-0.5 text-xl font-bold tracking-tight text-dark-navy sm:mt-1 sm:text-3xl">{formatCurrency(expandedAccount.balance)}</p>
+                                            <p className="text-xs uppercase text-dark-navy sm:text-sm">{t("generic.balance")}</p>
+                                            <p className="mt-0.5 text-xl font-bold tracking-tight text-dark-navy sm:mt-1 sm:text-3xl">{formatCurrencySmallSek(expandedAccount.balance, true)}</p>
                                         </div>
                                     </div>
 
@@ -265,9 +279,9 @@ export default function AccountsPage() {
                                     <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-light-blue-accent sm:mt-8" />
 
                                     {/* OTHER ACTIONS */}
-                                    <h2 id="savings-goal-heading" className="mt-4 bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pl-1 sm:mt-6 ">{t("accounts-route.actions")}</h2>
+                                    <h2 id="savings-goal-heading" className="mt-4 bg-dark-navy text-base font-medium text-white sm:text-lg pl-2 sm:mt-6 ">{t("accounts-route.actions")}</h2>
 
-                                    <section aria-labelledby="account-actions-heading" className="py-4 px-2 border border-nordiska-blue/50 bg-light-gray/30 ">
+                                    <section aria-labelledby="account-actions-heading" className="py-4 px-2 border border-primary-hover/50 bg-light-gray/30 ">
                                         <div className="grid gap-2 p-1 grid-cols-2 sm:gap-3 md:grid-cols-3">
                                             {favoriteError ? (
                                                 <div className="col-span-full rounded-lg border border-red-200 bg-red-50 py-2 px-2 text-center" role="alert">
@@ -314,12 +328,10 @@ export default function AccountsPage() {
                         <TotalBalanceAndBtns selectedAccountId={selectedAccountId} totalBalance={totalBalance} onCreateAccount={() => setIsCreateAccountOpen(true)} />
 
                         {/* HELP / RELATED ARTICLES */}
-                        <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-200 bg-white md:shadow-sm md:block">
-                            <div className="flex min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3">
-                                <div className="min-w-0 text-white">
-                                    <p className="truncate text-xs uppercase text-dark-navy">{t("generic.help-center")}</p>
-                                    <p className="mt-1 truncate text-md font-semibold text-dark-navy">{t("generic.related-articles")}</p>
-                                </div>
+                        <aside aria-label={t("generic.help")} className="hidden min-w-0 self-start border border-gray-300 shadow-md/30 bg-white md:block">
+                            <div className='min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3 text-dark-navy'>
+                                <p className='mt-2 truncate text-right text-sm uppercase'>{t("generic.help-center")}</p>
+                                <p className='mt-1 truncate text-right text-md font-semibold'>{t("generic.related-articles")}</p>
                             </div>
 
                             <div className="p-4">

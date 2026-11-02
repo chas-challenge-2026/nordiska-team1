@@ -107,8 +107,8 @@ export default function HelpCard({ heading, removeHeading = false, items, search
                 <>
                     {/* HEADING */}
                     { !removeHeading && 
-                        <div className="border-b border-nordiska-orange pb-1 mb-3">
-                            <h2 className="font-semibold text-lg text-nordiska-blue">
+                        <div className="border-b border-light-blue-accent pb-1 mb-3">
+                            <h2 className="font-semibold text-lg text-primary-hover">
                                 {heading ? heading : searchTerms ? t("help-card.related") :  t("help-card.information")}
                             </h2>
                         </div>
@@ -117,8 +117,8 @@ export default function HelpCard({ heading, removeHeading = false, items, search
                     {selectedItem && displayItems[selectedItem] ? (
                         <>
                             {/* TITEL OCH STÄNG */}
-                            <div className="flex items-center justify-between pb-2 border-b border-nordiska-blue shrink-0 mb-0">
-                                <h3 className="w-full text-left text-sm text-nordiska-blue font-medium">{displayItems[selectedItem].title}</h3>
+                            <div className="flex items-center justify-between pb-2 border-b border-primary-hover shrink-0 mb-0">
+                                <h3 className="w-full text-left text-sm text-primary-hover font-medium">{displayItems[selectedItem].title}</h3>
 
                                 <button
                                     type="button"
@@ -128,7 +128,7 @@ export default function HelpCard({ heading, removeHeading = false, items, search
                                 >
                                     <span
                                         aria-hidden="true"
-                                        className="text-3xl leading-none text-primary-blue hover:text-nordiska-blue"
+                                        className="text-3xl leading-none text-primary-blue hover:text-primary-hover"
                                     >
                                         ×
                                     </span>
@@ -148,7 +148,7 @@ export default function HelpCard({ heading, removeHeading = false, items, search
                         <ul className="flex flex-col gap-1.5 ">
                             {Object.entries(displayItems).map(
                                 ([key, item]) => (
-                                    <li key={key} className="flex items-center py-1 hover:bg-gray-100 hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 transition-colors">
+                                    <li key={key} className="flex items-center py-1 hover:bg-gray-100 hover:text-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 transition-colors">
                                         <button
                                             type="button"
                                             onClick={() => setSelectedItem(key)}

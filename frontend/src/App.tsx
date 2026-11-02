@@ -26,7 +26,7 @@ export default function App() {
 
     if (isCheckingSession) return <div><LoadingState title={t("generic.loading")}/></div>
 
-    let background = "bg-nordiska-bg"
+    let background = "bg-lightblue"
     switch (location.pathname) {
         case "/login":
         case "/register":

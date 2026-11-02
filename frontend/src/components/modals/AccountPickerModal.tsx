@@ -86,14 +86,14 @@ export default function AccountPickerModal({
                                 <span
                                     className={`mt-0.5 flex h-4.5 w-4.5 flex-none items-center justify-center rounded-full border-2 ${
                                         item.selected
-                                            ? "border-nordiska-blue"
+                                            ? "border-primary-hover"
                                             : "border-[#7E8996]"
                                     }`}
                                 >
                                     <span
                                         className={`h-2 w-2 rounded-full ${
                                             item.selected
-                                                ? "bg-nordiska-blue"
+                                                ? "bg-primary-hover"
                                                 : "bg-transparent"
                                         }`}
                                     />
@@ -134,7 +134,7 @@ export default function AccountPickerModal({
                 <button
                     type="button"
                     onClick={onAddNew}
-                    className="absolute right-4 bottom-4 cursor-pointer rounded-full border-0 bg-nordiska-blue px-[22px] py-[13px] text-sm font-bold text-white shadow-floating hover:bg-login-bg sm:right-6 sm:bottom-[22px]"
+                    className="absolute right-4 bottom-4 cursor-pointer rounded-full border-0 bg-primary-hover px-[22px] py-[13px] text-sm font-bold text-white shadow-floating hover:bg-login-bg sm:right-6 sm:bottom-[22px]"
                 >
                     {t("page-transfer.modal.add-new")}
                 </button>

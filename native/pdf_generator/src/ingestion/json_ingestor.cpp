@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <new>
 #include <nlohmann/json.hpp>
 #include <simdjson.h>
 #include <span>
@@ -28,24 +29,35 @@ namespace {
 
 using json = nlohmann::json;
 
-std::expected<std::string, IngestError> get_required_string(const json& obj, std::string_view key,
-                                                            std::string_view breadcrumb) {
+std::expected<std::string, IngestError> get_required_string(const json& obj, DiagnosticField field,
+                                                            DiagnosticLocation breadcrumb) {
+    const auto key = diagnostic_field_name(field);
     if (!obj.contains(key)) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "missing required field '" + std::string(key) + "'",
+            .code = DiagnosticCode::Required,
+            .location = breadcrumb.with_field(field),
         });
     }
     const auto& val = obj.at(std::string(key));
     if (!val.is_string()) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb) + "." + std::string(key),
-            .message = "field '" + std::string(key) + "' must be a string",
+            .code = DiagnosticCode::ExpectedString,
+            .location = breadcrumb.with_field(field),
         });
     }
     return val.get<std::string>();
+}
+
+// Additive metadata is optional, but a supplied value must be a string.
+// Reuse the typed field boundary; no supplied value enters a diagnostic.
+std::expected<std::string, IngestError> get_checked_optional_string(const json& obj, DiagnosticField field,
+                                                                    DiagnosticLocation location) {
+    if (!obj.contains(diagnostic_field_name(field))) {
+        return std::string{};
+    }
+    return get_required_string(obj, field, location);
 }
 
 std::string get_optional_string(const json& obj, std::string_view key, std::string_view fallback = "") {
@@ -59,17 +71,17 @@ std::string get_optional_string(const json& obj, std::string_view key, std::stri
     return std::string(fallback);
 }
 
-std::expected<StatementTransaction, IngestError> parse_transaction(const json& tx_obj, std::string_view breadcrumb) {
+std::expected<StatementTransaction, IngestError> parse_transaction(const json& tx_obj, DiagnosticLocation breadcrumb) {
     if (!tx_obj.is_object()) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "transaction must be a JSON object",
+            .code = DiagnosticCode::ExpectedObject,
+            .location = breadcrumb,
         });
     }
 
     StatementTransaction tx;
-    auto date_res = get_required_string(tx_obj, "date", breadcrumb);
+    auto date_res = get_required_string(tx_obj, DiagnosticField::Date, breadcrumb);
     if (!date_res) {
         return std::unexpected(date_res.error());
     }
@@ -83,8 +95,8 @@ std::expected<StatementTransaction, IngestError> parse_transaction(const json& t
         if (!tx_obj.at("amount_minor").is_number_integer()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = std::string(breadcrumb) + ".amount_minor",
-                .message = "amount_minor must be an integer",
+                .code = DiagnosticCode::ExpectedInteger,
+                .location = breadcrumb.with_field(DiagnosticField::AmountMinor),
             });
         }
         tx.amount_minor = tx_obj.at("amount_minor").get<std::int64_t>();
@@ -96,25 +108,37 @@ std::expected<StatementTransaction, IngestError> parse_transaction(const json& t
     return tx;
 }
 
-std::expected<AccountStatement, IngestError> parse_account_statement(const json& doc_obj, std::string_view breadcrumb) {
+std::expected<AccountStatement, IngestError> parse_account_statement(const json& doc_obj,
+                                                                     DiagnosticLocation breadcrumb) {
     if (!doc_obj.is_object()) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "document must be a JSON object",
+            .code = DiagnosticCode::ExpectedObject,
+            .location = breadcrumb,
         });
     }
 
     AccountStatement statement;
     statement.title = get_optional_string(doc_obj, "title", "Kontoutdrag");
 
-    auto acct_num_res = get_required_string(doc_obj, "account_number", breadcrumb);
+    auto acct_num_res = get_required_string(doc_obj, DiagnosticField::AccountNumber, breadcrumb);
     if (!acct_num_res) {
         return std::unexpected(acct_num_res.error());
     }
     statement.account_number = std::move(*acct_num_res);
 
     statement.account_name = get_optional_string(doc_obj, "account_name");
+    auto account_type = get_checked_optional_string(doc_obj, DiagnosticField::AccountType, breadcrumb);
+    if (!account_type) {
+        return std::unexpected(account_type.error());
+    }
+    statement.account_type = std::move(*account_type);
+    auto interest_rate = get_checked_optional_string(doc_obj, DiagnosticField::InterestRateDisplay, breadcrumb);
+    if (!interest_rate) {
+        return std::unexpected(interest_rate.error());
+    }
+    statement.interest_rate_display = std::move(*interest_rate);
+
     statement.currency = get_optional_string(doc_obj, "currency", "SEK");
     statement.period = get_optional_string(doc_obj, "period");
     statement.opening_balance = get_optional_string(doc_obj, "opening_balance");
@@ -125,14 +149,14 @@ std::expected<AccountStatement, IngestError> parse_account_statement(const json&
         if (!tx_list.is_array()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = std::string(breadcrumb) + ".transactions",
-                .message = "transactions must be an array",
+                .code = DiagnosticCode::ExpectedArray,
+                .location = breadcrumb.with_field(DiagnosticField::Transactions),
             });
         }
 
         statement.transactions.reserve(tx_list.size());
         for (size_t i = 0; i < tx_list.size(); ++i) {
-            const std::string tx_breadcrumb = std::string(breadcrumb) + ".transactions[" + std::to_string(i) + "]";
+            const auto tx_breadcrumb = breadcrumb.in_transaction(i);
             auto parsed_tx = parse_transaction(tx_list.at(i), tx_breadcrumb);
             if (!parsed_tx) {
                 return std::unexpected(parsed_tx.error());
@@ -144,31 +168,43 @@ std::expected<AccountStatement, IngestError> parse_account_statement(const json&
     return statement;
 }
 
-std::expected<AnnualTaxReport, IngestError> parse_annual_tax_report(const json& doc_obj, std::string_view breadcrumb) {
+std::expected<AnnualTaxReport, IngestError> parse_annual_tax_report(const json& doc_obj,
+                                                                    DiagnosticLocation breadcrumb) {
     if (!doc_obj.is_object()) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "document must be a JSON object",
+            .code = DiagnosticCode::ExpectedObject,
+            .location = breadcrumb,
         });
     }
 
     AnnualTaxReport report;
     report.title = get_optional_string(doc_obj, "title", "Kontrolluppgift för ränteinkomst");
 
-    auto tax_year_res = get_required_string(doc_obj, "tax_year", breadcrumb);
+    auto tax_year_res = get_required_string(doc_obj, DiagnosticField::TaxYear, breadcrumb);
     if (!tax_year_res) {
         return std::unexpected(tax_year_res.error());
     }
     report.tax_year = std::move(*tax_year_res);
 
-    auto acct_num_res = get_required_string(doc_obj, "account_number", breadcrumb);
+    auto acct_num_res = get_required_string(doc_obj, DiagnosticField::AccountNumber, breadcrumb);
     if (!acct_num_res) {
         return std::unexpected(acct_num_res.error());
     }
     report.account_number = std::move(*acct_num_res);
 
     report.account_name = get_optional_string(doc_obj, "account_name");
+    auto account_type = get_checked_optional_string(doc_obj, DiagnosticField::AccountType, breadcrumb);
+    if (!account_type) {
+        return std::unexpected(account_type.error());
+    }
+    report.account_type = std::move(*account_type);
+    auto interest_rate = get_checked_optional_string(doc_obj, DiagnosticField::InterestRateDisplay, breadcrumb);
+    if (!interest_rate) {
+        return std::unexpected(interest_rate.error());
+    }
+    report.interest_rate_display = std::move(*interest_rate);
+
     report.total_interest_earned = get_optional_string(doc_obj, "total_interest_earned");
     report.preliminary_tax_deducted = get_optional_string(doc_obj, "preliminary_tax_deducted");
     report.reported_to_authority = get_optional_string(doc_obj, "reported_to_authority");
@@ -183,19 +219,19 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
         json root;
         try {
             root = json::parse(json_utf8.begin(), json_utf8.end());
-        } catch (const json::parse_error& err) {
+        } catch (const json::parse_error&) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "root",
-                .message = "Malformed JSON payload: " + std::string(err.what()),
+                .code = DiagnosticCode::MalformedJson,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Root),
             });
         }
 
         if (!root.is_object()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "root",
-                .message = "Root element must be a JSON object",
+                .code = DiagnosticCode::ExpectedObject,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Root),
             });
         }
 
@@ -205,8 +241,8 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
         if (!root.contains("customer_id")) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "customer_id",
-                .message = "missing required field 'customer_id'",
+                .code = DiagnosticCode::Required,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
             });
         }
         const auto& cust_id_val = root.at("customer_id");
@@ -215,8 +251,8 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             if (u == 0) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = "customer_id",
-                    .message = "customer_id must be greater than zero",
+                    .code = DiagnosticCode::MustBePositive,
+                    .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
                 });
             }
             job.customer_id = u;
@@ -225,16 +261,16 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             if (i <= 0) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = "customer_id",
-                    .message = "customer_id must be greater than zero",
+                    .code = DiagnosticCode::MustBePositive,
+                    .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
                 });
             }
             job.customer_id = static_cast<std::uint64_t>(i);
         } else {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "customer_id",
-                .message = "customer_id must be an unsigned integer",
+                .code = DiagnosticCode::ExpectedUnsignedInteger,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
             });
         }
 
@@ -246,23 +282,23 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
         if (!root.contains("documents")) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "documents",
-                .message = "missing required field 'documents'",
+                .code = DiagnosticCode::Required,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Documents),
             });
         }
         const auto& docs_json = root.at("documents");
         if (!docs_json.is_array()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "documents",
-                .message = "field 'documents' must be an array",
+                .code = DiagnosticCode::ExpectedArray,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Documents),
             });
         }
         if (docs_json.empty()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "documents",
-                .message = "documents array must not be empty",
+                .code = DiagnosticCode::MustNotBeEmpty,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Documents),
             });
         }
 
@@ -270,18 +306,18 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
         job.documents.reserve(docs_json.size());
 
         for (size_t i = 0; i < docs_json.size(); ++i) {
-            const std::string doc_breadcrumb = "documents[" + std::to_string(i) + "]";
+            const DiagnosticLocation doc_breadcrumb{.scope = DiagnosticScope::Envelope, .document_index = i};
             const auto& doc_entry = docs_json.at(i);
             if (!doc_entry.is_object()) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb,
-                    .message = "document entry must be a JSON object",
+                    .code = DiagnosticCode::ExpectedObject,
+                    .location = doc_breadcrumb,
                 });
             }
 
             // document_id
-            auto id_res = get_required_string(doc_entry, "document_id", doc_breadcrumb);
+            auto id_res = get_required_string(doc_entry, DiagnosticField::DocumentId, doc_breadcrumb);
             if (!id_res) {
                 return std::unexpected(id_res.error());
             }
@@ -289,21 +325,21 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             if (doc_id.empty()) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb + ".document_id",
-                    .message = "document_id must not be empty",
+                    .code = DiagnosticCode::MustNotBeEmpty,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::DocumentId),
                 });
             }
             if (seen_document_ids.contains(doc_id)) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb + ".document_id",
-                    .message = "Duplicate document_id: " + doc_id,
+                    .code = DiagnosticCode::DuplicateDocumentId,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::DocumentId),
                 });
             }
             seen_document_ids.insert(doc_id);
 
             // kind
-            auto kind_res = get_required_string(doc_entry, "kind", doc_breadcrumb);
+            auto kind_res = get_required_string(doc_entry, DiagnosticField::Kind, doc_breadcrumb);
             if (!kind_res) {
                 return std::unexpected(kind_res.error());
             }
@@ -313,8 +349,8 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             if (!doc_entry.contains("document")) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb,
-                    .message = "missing required field 'document'",
+                    .code = DiagnosticCode::Required,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::Document),
                 });
             }
             const auto& doc_payload = doc_entry.at("document");
@@ -325,14 +361,14 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
 
             if (kind_str == "account_statement") {
                 doc.kind = DocumentKind::AccountStatement;
-                auto parsed_statement = parse_account_statement(doc_payload, doc_breadcrumb + ".document");
+                auto parsed_statement = parse_account_statement(doc_payload, doc_breadcrumb.in_document());
                 if (!parsed_statement) {
                     return std::unexpected(parsed_statement.error());
                 }
                 doc.content = std::move(*parsed_statement);
             } else if (kind_str == "annual_tax_report") {
                 doc.kind = DocumentKind::AnnualTaxReport;
-                auto parsed_tax = parse_annual_tax_report(doc_payload, doc_breadcrumb + ".document");
+                auto parsed_tax = parse_annual_tax_report(doc_payload, doc_breadcrumb.in_document());
                 if (!parsed_tax) {
                     return std::unexpected(parsed_tax.error());
                 }
@@ -340,8 +376,8 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
             } else {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb + ".kind",
-                    .message = "unsupported document kind: " + kind_str,
+                    .code = DiagnosticCode::UnsupportedDocumentKind,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::Kind),
                 });
             }
 
@@ -354,29 +390,30 @@ class NlohmannIngestorImpl final : public JsonIngestor::Impl {
 
 // --- simdjson Ingestor Implementation ---
 
-std::expected<std::string, IngestError> simd_get_required_string(simdjson::dom::object obj, std::string_view key,
-                                                                 std::string_view breadcrumb) {
+std::expected<std::string, IngestError> simd_get_required_string(simdjson::dom::object obj, DiagnosticField field,
+                                                                 DiagnosticLocation breadcrumb) {
+    const auto key = diagnostic_field_name(field);
     auto res = obj[key];
     if (res.error() == simdjson::NO_SUCH_FIELD) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "missing required field '" + std::string(key) + "'",
+            .code = DiagnosticCode::Required,
+            .location = breadcrumb.with_field(field),
         });
     }
     if (res.error()) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb) + "." + std::string(key),
-            .message = "failed to read field '" + std::string(key) + "': " + simdjson::error_message(res.error()),
+            .code = DiagnosticCode::UnreadableField,
+            .location = breadcrumb.with_field(field),
         });
     }
     std::string_view sv;
     if (res.get(sv) != simdjson::SUCCESS) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb) + "." + std::string(key),
-            .message = "field '" + std::string(key) + "' must be a string",
+            .code = DiagnosticCode::ExpectedString,
+            .location = breadcrumb.with_field(field),
         });
     }
     return std::string(sv);
@@ -402,26 +439,27 @@ void simd_assign_optional_string(simdjson::dom::element val, std::string& target
 }
 
 std::optional<IngestError> simd_assign_required_string(simdjson::dom::element val, std::string& target,
-                                                       std::string_view key, std::string_view breadcrumb) {
+                                                       DiagnosticField field, DiagnosticLocation breadcrumb) {
     std::string_view sv;
     if (val.get(sv) != simdjson::SUCCESS) {
         return IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb) + "." + std::string(key),
-            .message = "field '" + std::string(key) + "' must be a string",
+            .code = DiagnosticCode::ExpectedString,
+            .location = breadcrumb.with_field(field),
         };
     }
     target.assign(sv);
     return std::nullopt;
 }
 
-std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson::dom::element tx_elem) {
+std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson::dom::element tx_elem,
+                                                                        DiagnosticLocation breadcrumb) {
     simdjson::dom::object tx_obj;
     if (tx_elem.get(tx_obj) != simdjson::SUCCESS) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = "",
-            .message = "transaction must be a JSON object",
+            .code = DiagnosticCode::ExpectedObject,
+            .location = DiagnosticLocation{},
         });
     }
 
@@ -435,7 +473,7 @@ std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson
         const auto val = field.value;
 
         if (key == "date") {
-            if (auto err = simd_assign_required_string(val, tx.date, "date", "")) {
+            if (auto err = simd_assign_required_string(val, tx.date, DiagnosticField::Date, breadcrumb)) {
                 return std::unexpected(*err);
             }
             has_date = true;
@@ -450,8 +488,8 @@ std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson
             if (val.get(v) != simdjson::SUCCESS) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = ".amount_minor",
-                    .message = "amount_minor must be an integer",
+                    .code = DiagnosticCode::ExpectedInteger,
+                    .location = DiagnosticLocation{}.with_field(DiagnosticField::AmountMinor),
                 });
             }
             tx.amount_minor = v;
@@ -468,8 +506,8 @@ std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson
     if (!has_date) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = "",
-            .message = "missing required field 'date'",
+            .code = DiagnosticCode::Required,
+            .location = DiagnosticLocation{}.with_field(DiagnosticField::Date),
         });
     }
 
@@ -477,13 +515,13 @@ std::expected<StatementTransaction, IngestError> simd_parse_transaction(simdjson
 }
 
 std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjson::dom::element doc_elem,
-                                                                          std::string_view breadcrumb) {
+                                                                          DiagnosticLocation breadcrumb) {
     simdjson::dom::object doc_obj;
     if (doc_elem.get(doc_obj) != simdjson::SUCCESS) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "document must be a JSON object",
+            .code = DiagnosticCode::ExpectedObject,
+            .location = breadcrumb,
         });
     }
 
@@ -500,12 +538,23 @@ std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjs
         const auto val = field.value;
 
         if (key == "account_number") {
-            if (auto err = simd_assign_required_string(val, statement.account_number, "account_number", breadcrumb)) {
+            if (auto err = simd_assign_required_string(val, statement.account_number, DiagnosticField::AccountNumber,
+                                                       breadcrumb)) {
                 return std::unexpected(*err);
             }
             has_acct_num = true;
         } else if (key == "account_name") {
             simd_assign_optional_string(val, statement.account_name);
+        } else if (key == "account_type") {
+            if (auto error = simd_assign_required_string(val, statement.account_type, DiagnosticField::AccountType,
+                                                         breadcrumb)) {
+                return std::unexpected(*error);
+            }
+        } else if (key == "interest_rate_display") {
+            if (auto error = simd_assign_required_string(val, statement.interest_rate_display,
+                                                         DiagnosticField::InterestRateDisplay, breadcrumb)) {
+                return std::unexpected(*error);
+            }
         } else if (key == "currency") {
             simd_assign_optional_string(val, statement.currency);
         } else if (key == "period") {
@@ -525,8 +574,8 @@ std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjs
     if (!has_acct_num) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "missing required field 'account_number'",
+            .code = DiagnosticCode::Required,
+            .location = breadcrumb.with_field(DiagnosticField::AccountNumber),
         });
     }
 
@@ -535,22 +584,17 @@ std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjs
         if (tx_elem_holder.get(tx_list) != simdjson::SUCCESS) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = std::string(breadcrumb) + ".transactions",
-                .message = "transactions must be an array",
+                .code = DiagnosticCode::ExpectedArray,
+                .location = breadcrumb.with_field(DiagnosticField::Transactions),
             });
         }
 
         statement.transactions.reserve(tx_list.size());
         size_t i = 0;
         for (simdjson::dom::element tx_elem : tx_list) {
-            auto parsed_tx = simd_parse_transaction(tx_elem);
+            auto parsed_tx = simd_parse_transaction(tx_elem, breadcrumb.in_transaction(i));
             if (!parsed_tx) {
-                return std::unexpected(IngestError{
-                    .kind = parsed_tx.error().kind,
-                    .path =
-                        std::string(breadcrumb) + ".transactions[" + std::to_string(i) + "]" + parsed_tx.error().path,
-                    .message = parsed_tx.error().message,
-                });
+                return std::unexpected(parsed_tx.error());
             }
             statement.transactions.emplace_back(std::move(*parsed_tx));
             ++i;
@@ -561,13 +605,13 @@ std::expected<AccountStatement, IngestError> simd_parse_account_statement(simdjs
 }
 
 std::expected<AnnualTaxReport, IngestError> simd_parse_annual_tax_report(simdjson::dom::element doc_elem,
-                                                                         std::string_view breadcrumb) {
+                                                                         DiagnosticLocation breadcrumb) {
     simdjson::dom::object doc_obj;
     if (doc_elem.get(doc_obj) != simdjson::SUCCESS) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "document must be a JSON object",
+            .code = DiagnosticCode::ExpectedObject,
+            .location = breadcrumb,
         });
     }
 
@@ -581,17 +625,28 @@ std::expected<AnnualTaxReport, IngestError> simd_parse_annual_tax_report(simdjso
         const auto val = field.value;
 
         if (key == "tax_year") {
-            if (auto err = simd_assign_required_string(val, report.tax_year, "tax_year", breadcrumb)) {
+            if (auto err = simd_assign_required_string(val, report.tax_year, DiagnosticField::TaxYear, breadcrumb)) {
                 return std::unexpected(*err);
             }
             has_year = true;
         } else if (key == "account_number") {
-            if (auto err = simd_assign_required_string(val, report.account_number, "account_number", breadcrumb)) {
+            if (auto err = simd_assign_required_string(val, report.account_number, DiagnosticField::AccountNumber,
+                                                       breadcrumb)) {
                 return std::unexpected(*err);
             }
             has_acct = true;
         } else if (key == "account_name") {
             simd_assign_optional_string(val, report.account_name);
+        } else if (key == "account_type") {
+            if (auto error =
+                    simd_assign_required_string(val, report.account_type, DiagnosticField::AccountType, breadcrumb)) {
+                return std::unexpected(*error);
+            }
+        } else if (key == "interest_rate_display") {
+            if (auto error = simd_assign_required_string(val, report.interest_rate_display,
+                                                         DiagnosticField::InterestRateDisplay, breadcrumb)) {
+                return std::unexpected(*error);
+            }
         } else if (key == "total_interest_earned") {
             simd_assign_optional_string(val, report.total_interest_earned);
         } else if (key == "preliminary_tax_deducted") {
@@ -606,15 +661,15 @@ std::expected<AnnualTaxReport, IngestError> simd_parse_annual_tax_report(simdjso
     if (!has_year) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "missing required field 'tax_year'",
+            .code = DiagnosticCode::Required,
+            .location = breadcrumb.with_field(DiagnosticField::TaxYear),
         });
     }
     if (!has_acct) {
         return std::unexpected(IngestError{
             .kind = IngestErrorKind::InvalidInput,
-            .path = std::string(breadcrumb),
-            .message = "missing required field 'account_number'",
+            .code = DiagnosticCode::Required,
+            .location = breadcrumb.with_field(DiagnosticField::AccountNumber),
         });
     }
 
@@ -643,8 +698,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
         if (parse_err) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "root",
-                .message = "Malformed JSON payload: " + std::string(simdjson::error_message(parse_err)),
+                .code = DiagnosticCode::MalformedJson,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Root),
             });
         }
 
@@ -652,8 +707,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
         if (root_elem.get(root) != simdjson::SUCCESS) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "root",
-                .message = "Root element must be a JSON object",
+                .code = DiagnosticCode::ExpectedObject,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Root),
             });
         }
 
@@ -663,8 +718,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
         if (cust_id_res.error()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "customer_id",
-                .message = "missing required field 'customer_id'",
+                .code = DiagnosticCode::Required,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
             });
         }
 
@@ -674,8 +729,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
             if (u_val == 0) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = "customer_id",
-                    .message = "customer_id must be greater than zero",
+                    .code = DiagnosticCode::MustBePositive,
+                    .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
                 });
             }
             job.customer_id = u_val;
@@ -683,16 +738,16 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
             if (i_val <= 0) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = "customer_id",
-                    .message = "customer_id must be greater than zero",
+                    .code = DiagnosticCode::MustBePositive,
+                    .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
                 });
             }
             job.customer_id = static_cast<uint64_t>(i_val);
         } else {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "customer_id",
-                .message = "customer_id must be an unsigned integer",
+                .code = DiagnosticCode::ExpectedUnsignedInteger,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::CustomerId),
             });
         }
 
@@ -704,8 +759,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
         if (docs_res.error()) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "documents",
-                .message = "missing required field 'documents'",
+                .code = DiagnosticCode::Required,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Documents),
             });
         }
 
@@ -713,16 +768,16 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
         if (docs_res.get(docs_json) != simdjson::SUCCESS) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "documents",
-                .message = "field 'documents' must be an array",
+                .code = DiagnosticCode::ExpectedArray,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Documents),
             });
         }
 
         if (docs_json.size() == 0) {
             return std::unexpected(IngestError{
                 .kind = IngestErrorKind::InvalidInput,
-                .path = "documents",
-                .message = "documents array must not be empty",
+                .code = DiagnosticCode::MustNotBeEmpty,
+                .location = DiagnosticLocation{}.with_field(DiagnosticField::Documents),
             });
         }
 
@@ -731,17 +786,17 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
 
         size_t i = 0;
         for (simdjson::dom::element doc_entry_elem : docs_json) {
-            const std::string doc_breadcrumb = "documents[" + std::to_string(i++) + "]";
+            const DiagnosticLocation doc_breadcrumb{.scope = DiagnosticScope::Envelope, .document_index = i++};
             simdjson::dom::object doc_entry;
             if (doc_entry_elem.get(doc_entry) != simdjson::SUCCESS) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb,
-                    .message = "document entry must be a JSON object",
+                    .code = DiagnosticCode::ExpectedObject,
+                    .location = doc_breadcrumb,
                 });
             }
 
-            auto id_res = simd_get_required_string(doc_entry, "document_id", doc_breadcrumb);
+            auto id_res = simd_get_required_string(doc_entry, DiagnosticField::DocumentId, doc_breadcrumb);
             if (!id_res) {
                 return std::unexpected(id_res.error());
             }
@@ -749,20 +804,20 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
             if (doc_id.empty()) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb + ".document_id",
-                    .message = "document_id must not be empty",
+                    .code = DiagnosticCode::MustNotBeEmpty,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::DocumentId),
                 });
             }
             if (seen_document_ids.contains(doc_id)) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb + ".document_id",
-                    .message = "Duplicate document_id: " + doc_id,
+                    .code = DiagnosticCode::DuplicateDocumentId,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::DocumentId),
                 });
             }
             seen_document_ids.insert(doc_id);
 
-            auto kind_res = simd_get_required_string(doc_entry, "kind", doc_breadcrumb);
+            auto kind_res = simd_get_required_string(doc_entry, DiagnosticField::Kind, doc_breadcrumb);
             if (!kind_res) {
                 return std::unexpected(kind_res.error());
             }
@@ -772,8 +827,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
             if (doc_payload_res.error()) {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb,
-                    .message = "missing required field 'document'",
+                    .code = DiagnosticCode::Required,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::Document),
                 });
             }
 
@@ -784,14 +839,14 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
             if (kind_str == "account_statement") {
                 doc.kind = DocumentKind::AccountStatement;
                 auto parsed_statement =
-                    simd_parse_account_statement(doc_payload_res.value(), doc_breadcrumb + ".document");
+                    simd_parse_account_statement(doc_payload_res.value(), doc_breadcrumb.in_document());
                 if (!parsed_statement) {
                     return std::unexpected(parsed_statement.error());
                 }
                 doc.content = std::move(*parsed_statement);
             } else if (kind_str == "annual_tax_report") {
                 doc.kind = DocumentKind::AnnualTaxReport;
-                auto parsed_tax = simd_parse_annual_tax_report(doc_payload_res.value(), doc_breadcrumb + ".document");
+                auto parsed_tax = simd_parse_annual_tax_report(doc_payload_res.value(), doc_breadcrumb.in_document());
                 if (!parsed_tax) {
                     return std::unexpected(parsed_tax.error());
                 }
@@ -799,8 +854,8 @@ class SimdjsonIngestorImpl final : public JsonIngestor::Impl {
             } else {
                 return std::unexpected(IngestError{
                     .kind = IngestErrorKind::InvalidInput,
-                    .path = doc_breadcrumb + ".kind",
-                    .message = "unsupported document kind: " + kind_str,
+                    .code = DiagnosticCode::UnsupportedDocumentKind,
+                    .location = doc_breadcrumb.with_field(DiagnosticField::Kind),
                 });
             }
 
@@ -830,7 +885,15 @@ JsonIngestor::JsonIngestor(JsonIngestor&&) noexcept = default;
 JsonIngestor& JsonIngestor::operator=(JsonIngestor&&) noexcept = default;
 
 std::expected<PdfRenderingJob, IngestError> JsonIngestor::ingest(std::span<const uint8_t> json_utf8) const {
-    return impl_->ingest(json_utf8);
+    try {
+        return impl_->ingest(json_utf8);
+    } catch (const std::bad_alloc&) {
+        return std::unexpected(IngestError{IngestErrorKind::InternalError, DiagnosticCode::OutOfMemory});
+    } catch (const nlohmann::json::exception&) {
+        return std::unexpected(IngestError{IngestErrorKind::InvalidInput, DiagnosticCode::MalformedJson});
+    } catch (...) {
+        return std::unexpected(IngestError{IngestErrorKind::InternalError, DiagnosticCode::UnexpectedFailure});
+    }
 }
 
 } // namespace nordiska
