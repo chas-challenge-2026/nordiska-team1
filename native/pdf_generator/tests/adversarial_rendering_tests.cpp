@@ -286,7 +286,8 @@ void test_cairo_font_fallbacks_and_failure() {
         require(!pdf_res.has_value(), "Cairo rendering must fail when fonts cannot be resolved");
         require(pdf_res.error().kind == nordiska::RenderErrorKind::EngineError,
                 "Failed font resolution must return EngineError");
-        require(pdf_res.error().message.find("failed to resolve a valid font face") != std::string::npos,
+        require(pdf_res.error().code ==
+                    nordiska::DiagnosticCode::CairoFailedToResolveAValidFontFaceTriedHelveticaArialSansSerif,
                 "Error message must mention font face resolution failure");
     }
 

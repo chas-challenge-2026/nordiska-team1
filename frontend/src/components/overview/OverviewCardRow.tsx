@@ -101,7 +101,7 @@ export function OverviewCardFixedRow({cols, hoverTitle, titleRow, descriptionRow
     const gridCols = cols === "2" ? "grid-cols-[2fr_1fr]" : "grid-cols-[2fr_1.5fr_1.5fr]";
 
     return (
-        <div  title={hoverTitle} className="flex w-full shrink-0 flex-col justify-center py-3 px-3 xl:py-4 bg-primary-blue/10 border-b border-nordiska-blue/50 -mt-[1px]">
+        <div  title={hoverTitle} className="flex w-full shrink-0 flex-col justify-center py-3 px-3 xl:py-4 bg-light-blue-accent/40 border-b border-primary-hover/50 -mt-[1px]">
             {/* ----- DESCRIPTION ROW ----- */}
             <p className={`grid ${gridCols} text-[9px] uppercase text-dark-navy/60 sm:text-xs`}>
                 {/* vänster */}

@@ -201,7 +201,7 @@ void test_callback_rejections_and_hashes() {
     require(nordiska_pdf_v1_generate_customer_batch(valid_bytes, kValidBatch.size(), v1_reject_cb, nullptr) ==
                 NORDISKA_PDF_CALLBACK_FAILED,
             "V1 must return CALLBACK_FAILED when callback rejects");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("-99") != std::string::npos,
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("delivery callback rejected batch") != std::string::npos,
             "V1 last error must report callback status code");
 
     // 2. V2 valid execution and hash verification

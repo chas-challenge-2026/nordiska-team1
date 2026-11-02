@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useTransactions } from "../../hooks/useTransactions";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import { formatDate, formatTime, toTimestamp } from "../../utils/date";
 import { LoadingState, ErrorState } from "../StatusMessage";
 
@@ -18,9 +18,9 @@ export default function AccountRecentTransactions({accountId}: AccountRecentTran
 
     return (
         <section aria-labelledby="account-recent-transactions-heading" className="bg-white -mt-1">
-            <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white mb-1 sm:text-lg pt-1 pl-1">{t("accounts-route.transactions-section.title")}</h2>
+            <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white sm:text-lg pt-1 pl-2">{t("accounts-route.transactions-section.title")}</h2>
             
-            <div className="border border-nordiska-blue/50 bg-light-gray/30 sm:p-2">
+            <div className="border border-dark-navy/50 bg-light-gray/30 sm:p-2">
                 {/* LOADING & ERROR */}
                 {isPending && ( <LoadingState title={t("overview-route.transactions-card.pending")}/>)}
                 {isError && (<ErrorState title={t("overview-route.transactions-card.error")}/>)}
@@ -32,7 +32,7 @@ export default function AccountRecentTransactions({accountId}: AccountRecentTran
                         ? ( <p className="text-sm text-dark-navy">{t("accounts-route.transactions-section.no-transactions")}</p>) 
                         : (
                             recentTransactions.map((tx) => (
-                                <div key={tx.id} className="w-full flex items-center justify-between border-b border-nordiska-blue/50 py-1.5 last:border-0 odd:bg-white">
+                                <div key={tx.id} className="w-full flex items-center justify-between border-b border-primary-hover/50 py-1.5 last:border-0 odd:bg-white">
                                     <div className="flex flex-1 min-w-0 items-center gap-2 mx-1">
                                         {/* DATE, TID */}
                                         <div className="grid shrink-0 grid-cols-[2fr_1fr] text-xs uppercase text-dark-navy/60 sm:w-32 sm:text-sm">
@@ -45,7 +45,7 @@ export default function AccountRecentTransactions({accountId}: AccountRecentTran
                                         </span>
                                         {/* SUMMA */}
                                         <span className={`ml-2 shrink-0 whitespace-nowrap text-right text-xs font-medium sm:text-sm ${tx.amount < 0 ? "text-red-700" : "text-green-700"}`}>
-                                            {tx.amount > 0 ? "+" : ""}{formatCurrency(tx.amount)}
+                                            {tx.amount > 0 ? "+" : ""}{formatCurrencySmallSek(tx.amount)}
                                         </span>
                                     </div> 
                                 </div>

@@ -81,7 +81,7 @@ export default function InboxCard() {
                     </div>
 
                     {/* LINK TO INBOX */}
-                    <div className=" shrink-0 border-t border-nordiska-blue/50 p-3 bg-primary-blue/10 ">
+                    <div className=" shrink-0 border-t border-primary-hover/50 p-3 bg-light-blue-accent/40 ">
                         <Link to="/inbox" className="block rounded border border-primary-blue px-4 py-1 bg-white text-primary-blue text-base text-center font-medium  transition-colors hover:bg-primary-blue hover:text-white">
                             {t("inbox.open-inbox")}
                         </Link>

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import { useState } from "react";
 import type { Account } from "../../services/accountsService";
 
@@ -30,7 +30,7 @@ export default function AccountsNavigation({
             {/* MOBILE ACCOUNT SELECTOR */}
             {/* ----------------------- */}
             <div className="relative min-[991px]:hidden">
-                <div className="overflow-hidden border border-primary-blue/40 bg-primary-blue/10 md:shadow-sm">
+                <div className="overflow-hidden border border-primary-blue/40 bg-light-blue-accent/40 md:shadow-sm">
 
                     {/* COLLAPSIBLE HEADER */}
                     <button
@@ -38,10 +38,10 @@ export default function AccountsNavigation({
                         onClick={() => setIsAccountNavOpen((prev) => !prev)}
                         aria-expanded={isAccountNavOpen}
                         aria-controls="mobile-account-list"
-                        className="cursor-pointer flex w-full items-center justify-between hover:bg-primary-blue/10 px-3 py-2.5 text-left"
+                        className="cursor-pointer flex w-full items-center justify-between hover:bg-light-blue-accent/40 px-3 py-2.5 text-left"
                     >
                         <div className="min-w-0">
-                            <p className="truncate text-[10px] font-medium uppercase tracking-wider text-nordiska-blue">{t("accounts-route.accounts-nav.pick-account")}</p>
+                            <p className="truncate text-[10px] font-medium uppercase tracking-wider text-primary-hover">{t("accounts-route.accounts-nav.pick-account")}</p>
 
                             {expandedAccount && (
                                 <>
@@ -50,7 +50,7 @@ export default function AccountsNavigation({
                                             ? expandedAccount.accountName
                                             : t(`accounts-route.account-type-${expandedAccount.accountType}`)}
                                     </p>
-                                    <p className="mt-0.5 truncate text-xs text-dark-navy/70">{expandedAccount.accountNumber} • <span className="font-semibold">{formatCurrency(expandedAccount.balance)}</span></p>
+                                    <p className="mt-0.5 truncate text-xs text-dark-navy/70">{expandedAccount.accountNumber} • <span className="font-semibold">{formatCurrencySmallSek(expandedAccount.balance)}</span></p>
                                 </>
                             )}
                         </div>
@@ -78,7 +78,7 @@ export default function AccountsNavigation({
                                         }}
                                         className={`flex min-h-16 w-full cursor-pointer items-center justify-between border-b border-primary-blue/30 px-3 py-2.5 text-left last:border-0 hover:bg-primary-blue-hover ${isSelected ? "bg-primary-blue/10" : "bg-white"}`}>
                                         <div className="min-w-0">
-                                            <p className="truncate text-xs text-dark-navy"> {account.accountNumber} -{" "} {formatCurrency(account.balance)}</p>
+                                            <p className="truncate text-xs text-dark-navy"> {account.accountNumber} -{" "} {formatCurrencySmallSek(account.balance)}</p>
                                             <p className="mt-0.5 truncate text-sm font-semibold text-dark-navy">
                                                 {account.accountName ? account.accountName : t(`accounts-route.account-type-${account.accountType}`)}
                                             </p>
@@ -110,7 +110,7 @@ export default function AccountsNavigation({
             {/* -------------------------- */}
             {/* DESKTOP ACCOUNT NAVIGATION */}
             {/* -------------------------- */}
-            <div className="hidden min-[991px]:block overflow-hidden border border-gray-200 bg-white md:shadow-sm">
+            <div className="hidden min-[991px]:block overflow-hidden border border-gray-300 shadow-md/30 bg-white">
 
                 {/* NAV HEADER */}
                 <div className="flex min-h-22 items-center justify-between border-b border-primary-blue/40 bg-dark-navy px-4 py-3">
@@ -141,11 +141,11 @@ export default function AccountsNavigation({
                             type="button"
                             key={account.id}
                             onClick={() => onSelectAccount(account.id)}
-                            className={`flex min-h-22 w-full cursor-pointer items-center justify-between border-b border-primary-blue/40 px-4 py-3 text-left last:border-0 ${isSelected ? "bg-primary-blue/10" : "bg-white hover:bg-primary-blue/10"}`}
+                            className={`flex min-h-22 w-full cursor-pointer items-center justify-between border-b border-primary-blue/40 px-4 py-3 text-left last:border-0 ${isSelected ? "bg-light-blue-accent/40" : "bg-white hover:bg-light-blue-accent/40"}`}
                         >
                             <div className="min-w-0">
                                 <p className="truncate text-sm text-dark-navy">
-                                    {account.accountNumber}  • <span className="font-semibold">{formatCurrency(account.balance)}</span>
+                                    {account.accountNumber}  • <span className="font-semibold">{formatCurrencySmallSek(account.balance)}</span>
                                 </p>
                                 <p className="mt-1 truncate text-md font-semibold text-dark-navy">
                                     {account.accountName

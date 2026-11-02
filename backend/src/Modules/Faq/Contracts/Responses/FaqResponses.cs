@@ -12,7 +12,8 @@ public record FaqEntryResponse(
     Guid RelationId,
     string Lang = "sv",
     DateTime? CreatedAt = null,
-    DateTime? UpdatedAt = null)
+    DateTime? UpdatedAt = null,
+    int ViewCount = 0)
 {
     public string Title => Question;
 

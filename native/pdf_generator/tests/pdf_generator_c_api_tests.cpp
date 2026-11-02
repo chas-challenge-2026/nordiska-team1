@@ -77,13 +77,13 @@ class ScopedEnvironment {
 };
 
 struct TestSigner : nordiska::PdfSigner {
-    std::string failure_document;
-    explicit TestSigner(std::string failure = "") : failure_document(std::move(failure)) {}
-    std::expected<std::string, nordiska::SigningError>
-    sign_digest(std::span<const uint8_t, 32>, const nordiska::SigningContext& context, double*) override {
-        if (context.document_id == failure_document) {
+    size_t calls{};
+    size_t failure_call{};
+    explicit TestSigner(size_t failure = 0) : failure_call(failure) {}
+    std::expected<std::string, nordiska::SigningError> sign_digest(std::span<const uint8_t, 32>, double*) override {
+        if (++calls == failure_call) {
             return std::unexpected(nordiska::SigningError{nordiska::SigningErrorKind::SignatureGenerationFailed,
-                                                          "Simulated signer failure"});
+                                                          nordiska::DiagnosticCode::UnexpectedFailure});
         }
         return "3000";
     }
@@ -178,20 +178,20 @@ int main() {
     require(nordiska_pdf_v1_generate_customer_batch(nullptr, 10, batch_save_cb, nullptr) ==
                 NORDISKA_PDF_INVALID_ARGUMENT,
             "null json must return invalid argument");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("json_utf8 must not be null") != std::string::npos,
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("json_utf8: required") != std::string::npos,
             "error should mention json_utf8");
 
     require(nordiska_pdf_v1_generate_customer_batch(reinterpret_cast<const uint8_t*>("{}"), 0, batch_save_cb,
                                                     nullptr) == NORDISKA_PDF_INVALID_ARGUMENT,
             "zero length must return invalid argument");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("json_length must be greater than zero") !=
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("json_length: must be greater than zero") !=
                 std::string::npos,
             "error should mention json_length");
 
     require(nordiska_pdf_v1_generate_customer_batch(reinterpret_cast<const uint8_t*>("{}"), 2, nullptr, nullptr) ==
                 NORDISKA_PDF_INVALID_ARGUMENT,
             "null callback must return invalid argument");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("callback must not be null") != std::string::npos,
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("callback: required") != std::string::npos,
             "error should mention callback");
 
     // 3. Happy path: batch with account_statement and annual_tax_report (NOR-141)
@@ -304,7 +304,8 @@ int main() {
         require(nordiska_pdf_v2_generate_customer_batch(data, valid_batch_json.size(), batch_reject_cb_v2, nullptr) ==
                     NORDISKA_PDF_CALLBACK_FAILED,
                 "v2 must report callback rejection");
-        require(std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+        require(std::string(nordiska_pdf_v1_get_last_error()).find("delivery callback rejected batch") !=
+                    std::string::npos,
                 "v2 must share thread-local diagnostics");
         for (const char* selected : {"haru", "native", "cairo"}) {
             engine.set(selected);
@@ -367,7 +368,7 @@ int main() {
                 fail_capture_v2.call_count == 0,
             "v2 must preserve all-or-nothing delivery on invalid second document");
     require(std::strlen(nordiska_pdf_v1_get_last_error()) > 0, "error message must be provided on failure");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("unsupported_unknown_kind") != std::string::npos,
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("unsupported document kind") != std::string::npos,
             "error diagnostic must identify unsupported kind");
 
     // Stateless v1 and v2 calls must isolate customers during concurrent use.
@@ -439,14 +440,14 @@ int main() {
     const int dup_status = nordiska_pdf_v1_generate_customer_batch(
         reinterpret_cast<const uint8_t*>(dup_batch_json.data()), dup_batch_json.size(), batch_save_cb, &fail_capture);
     require(dup_status == NORDISKA_PDF_INVALID_INPUT, "duplicate document_id must fail");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("Duplicate document_id") != std::string::npos,
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("duplicate document_id") != std::string::npos,
             "error should mention duplicate document_id");
 
     // 6. Callback rejection with status code check (NOR-143)
     const int reject_status = nordiska_pdf_v1_generate_customer_batch(
         reinterpret_cast<const uint8_t*>(valid_batch_json.data()), valid_batch_json.size(), batch_reject_cb, nullptr);
     require(reject_status == NORDISKA_PDF_CALLBACK_FAILED, "rejected callback must return callback-failed");
-    require(std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+    require(std::string(nordiska_pdf_v1_get_last_error()).find("delivery callback rejected batch") != std::string::npos,
             "error message should contain callback status code 42");
 
     // 7. Resource limit query functions (NOR-157)
@@ -531,7 +532,8 @@ int main() {
             require(timing_values(latest_timing()) == timing_values(measured),
                     "normal successes and failures must preserve the latest instrumented snapshot");
             require(instrumented(data, valid_batch_json.size(), reject, nullptr) == NORDISKA_PDF_CALLBACK_FAILED &&
-                        std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+                        std::string(nordiska_pdf_v1_get_last_error()).find("delivery callback rejected batch") !=
+                            std::string::npos,
                     "instrumentation must preserve callback rejection diagnostics");
             require(latest_timing().render_seconds > 0.0, "callback rejection must retain recorded phases");
             BatchCapture failed;
@@ -577,7 +579,8 @@ int main() {
         };
         require(nordiska_pdf_v1_generate_customer_batch_instrumented(data, valid_batch_json.size(), nested_callback,
                                                                      nullptr) == NORDISKA_PDF_CALLBACK_FAILED &&
-                    std::string(nordiska_pdf_v1_get_last_error()).find("42") != std::string::npos,
+                    std::string(nordiska_pdf_v1_get_last_error()).find("delivery callback rejected batch") !=
+                        std::string::npos,
                 "outer call must preserve callback rejection after nested instrumentation");
         require(latest_timing().render_seconds > 0.0 && latest_timing().checksum_seconds > 0.0,
                 "latest completed outer call must publish its own measurements after the nested call");
@@ -632,7 +635,7 @@ int main() {
 
     // 11. Step 7: All-or-Nothing Signing Failure Guarantee
     {
-        auto mock_signer = std::make_shared<TestSigner>("account1_tax");
+        auto mock_signer = std::make_shared<TestSigner>(2);
         const nordiska::GeneratorConfig fail_cfg{
             .ingestor = nordiska::JsonIngestorKind::Simdjson,
             .engine = nordiska::PdfEngineKind::Native,
@@ -647,20 +650,20 @@ int main() {
         require(!fail_res.has_value(), "signing failure on doc 2 must fail the entire batch");
         require(std::holds_alternative<nordiska::SigningError>(fail_res.error().details),
                 "error details must be SigningError");
-        require(fail_res.error().message().find("Failed to sign document 'account1_tax'") != std::string::npos,
-                "error message must identify failed document");
+        require(fail_res.error().message() == "signing: documents[1]: unexpected failure",
+                "error message must identify failed document by position");
     }
 
-    // 12. Step 7: SigningContext customer & document ID propagation
+    // 12. Signer extensions receive only the document digest.
     {
         struct ContextCheckingSigner : public nordiska::PdfSigner {
-            std::vector<std::string> seen_docs;
-            std::vector<uint64_t> seen_customers;
+            std::vector<nordiska::Sha256Digest> digests;
 
-            std::expected<std::string, nordiska::SigningError>
-            sign_digest(std::span<const uint8_t, 32>, const nordiska::SigningContext& context, double*) override {
-                seen_docs.emplace_back(context.document_id);
-                seen_customers.push_back(context.customer_id);
+            std::expected<std::string, nordiska::SigningError> sign_digest(std::span<const uint8_t, 32> digest,
+                                                                           double*) override {
+                nordiska::Sha256Digest copy{};
+                std::copy(digest.begin(), digest.end(), copy.begin());
+                digests.push_back(copy);
                 return "3000";
             }
         };
@@ -678,11 +681,8 @@ int main() {
                                                   valid_batch_json.size()};
         auto ctx_res = ctx_gen.generate(valid_span);
         require(ctx_res.has_value(), "context checking generation must succeed");
-        require(ctx_signer->seen_docs.size() == 2, "must see 2 documents");
-        require(ctx_signer->seen_docs[0] == "account1_statement", "doc 0 must be account1_statement");
-        require(ctx_signer->seen_docs[1] == "account1_tax", "doc 1 must be account1_tax");
-        require(ctx_signer->seen_customers[0] == 1 && ctx_signer->seen_customers[1] == 1,
-                "customer_id must be 1 for all documents");
+        require(ctx_signer->digests.size() == 2, "must receive two digests");
+        require(ctx_signer->digests[0] != ctx_signer->digests[1], "different documents must have different digests");
     }
 
     // 13. Step NOR-206: LayoutBuilder std::expected return and error handling
@@ -726,11 +726,11 @@ int main() {
         // 13.3 Error types
         const nordiska::LayoutError err{
             .kind = nordiska::LayoutErrorKind::UnsupportedDocumentType,
-            .message = "Unsupported document content type",
+            .code = nordiska::DiagnosticCode::UnsupportedDocumentType,
         };
         require(err.kind == nordiska::LayoutErrorKind::UnsupportedDocumentType,
                 "LayoutErrorKind should match UnsupportedDocumentType");
-        require(err.message == "Unsupported document content type", "LayoutError message mismatch");
+        require(err.code == nordiska::DiagnosticCode::UnsupportedDocumentType, "LayoutError message mismatch");
     }
 
     // 14. Step NOR-214: UTF-8 to CP1252 conversion, Unicode minus (U+2212), typography and single-? fallback
@@ -873,7 +873,8 @@ int main() {
                 "error details must hold IngestError");
         const auto* ingest_err = std::get_if<nordiska::IngestError>(&ingest_fail.error().details);
         require(ingest_err != nullptr, "get_if must succeed for IngestError");
-        require(ingest_err->path == "customer_id", "IngestError path must be preserved without loss");
+        require(ingest_err->location.field == nordiska::DiagnosticField::CustomerId,
+                "IngestError path must be preserved without loss");
 
         // 17.3 Pattern matching / visitor pattern
         bool visited_ingest = false;

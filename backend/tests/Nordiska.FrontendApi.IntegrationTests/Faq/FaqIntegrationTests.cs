@@ -134,7 +134,9 @@ public class FaqIntegrationTests : IAsyncLifetime
         var secondPage = await client.GetFromJsonAsync<PagedResult<FaqEntryResponse>>(route + "&page=2");
 
         firstPage!.Items.Select(entry => entry.Id).Should().Equal(high.Id, middle.Id);
+        firstPage.Items.Select(entry => entry.ViewCount).Should().Equal(2, 1);
         secondPage!.Items.Select(entry => entry.Id).Should().Equal(low.Id);
+        secondPage.Items.Select(entry => entry.ViewCount).Should().Equal(0);
     }
 
      [PostgresFact]

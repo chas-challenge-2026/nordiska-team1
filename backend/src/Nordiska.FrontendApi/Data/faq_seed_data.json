@@ -5,14 +5,14 @@
     "sv": {
       "question": "Hur gör jag ett uttag?",
       "answer": "Du kan enkelt göra uttag och överföringar under fliken “Överföringar”. Där kan du föra över pengar mellan dina egna konton eller till dina sparade mottagare. Du kan också schemalägga återkommande överföringar veckovis, månadsvis eller årsvis.",
-      "category": "Överföringar",
+      "category": "Insättningar & Uttag",
       "keywords": "uttag, uttagning, ta ut pengar, överföring, föra över pengar, överföra pengar, flytta pengar, ta ut, uttaget, uttagsgräns, stående överföring, återkommande överföring, schemalägga överföring, mottagare, mellan konton",
       "helpfulCount": 8
     },
     "en": {
       "question": "How do I withdraw money?",
       "answer": "You can easily make withdrawals and transfers under the “Transfers” tab. There, you can transfer money between your own accounts or to your saved recipients. You can also schedule recurring transfers on a weekly, monthly, or yearly basis.",
-      "category": "Transfers",
+      "category": "Deposits & Withdrawals",
       "keywords": "withdrawal, withdrawals, withdraw money, take out money, transfer, money transfer, transfer money, move money, withdrawal limit, recurring transfer, scheduled transfer, standing transfer, saved recipient, between accounts",
       "helpfulCount": 4
     }
@@ -30,7 +30,7 @@
     "en": {
       "question": "When is interest paid?",
       "answer": "Interest is calculated daily and paid on December 31st each year.",
-      "category": "Interest",
+      "category": "Interest Rates",
       "keywords": "interest, rate, payment, percentage, yield",
       "helpfulCount": 6
     }
@@ -41,14 +41,14 @@
     "sv": {
       "question": "Hur gör jag en insättning?",
       "answer": "Gå till fliken “Överföringar” och välj alternativet för insättning. Ange beloppet och bekräfta transaktionen. När insättningen har genomförts visas pengarna på ditt konto.",
-      "category": "Överföringar",
+      "category": "Insättningar & Uttag",
       "keywords": "insättning, sätta in pengar, sätt in pengar, insätta pengar, överföra pengar, fylla på konto, insättningsbelopp, insättningsalternativ, transaktion",
       "helpfulCount": 5
     },
     "en": {
       "question": "How do I make a deposit?",
       "answer": "Go to the Transfers tab and select the deposit option. Enter the amount and confirm the transaction. Once the deposit has been completed, the money will appear in your account.",
-      "category": "Transfers",
+      "category": "Deposits & Withdrawals",
       "keywords": "deposit, make a deposit, deposit money, add money, transfer money, top up account, deposit amount, deposit option, transaction",
       "helpfulCount": 2
     }
@@ -59,14 +59,14 @@
     "sv": {
       "question": "Var hittar jag mitt årsbesked?",
       "answer": "Ditt årsbesked ingår i skatteunderlaget. Du kan ladda ner skatteunderlaget under fliken “Bankkonton” genom att klicka på knappen “Skatteunderlag” högst upp på sidan.\nDu hittar även ditt årsbesked i din inbox under fliken “Dokument”.",
-      "category": "Rapporter",
+      "category": "Kontohantering",
       "keywords": "årsbesked, årsbeskedet, skatteunderlag, skatteunderlaget, skatt, deklaration, deklarationen, skattedokument, dokument, ladda ner årsbesked, hitta årsbesked, bankkonton, inkorg, räntebesked",
       "helpfulCount": 7
     },
     "en": {
       "question": "Where can I find my annual statement?",
       "answer": "Your annual statement is included in your tax statement. You can download the tax statement under the \"Bank Accounts\" tab by clicking the \"Tax Report\" button at the top of the page.\nYou can also find your annual statement in your inbox under the \"Documents\" tab.",
-      "category": "Reports",
+      "category": "Account Management",
       "keywords": "annual statement, year-end statement, tax statement, tax documentation, tax return, tax declaration, download annual statement, find annual statement, bank accounts, inbox, documents, interest statement",
       "helpfulCount": -2
     }
@@ -77,14 +77,14 @@
     "sv": {
       "question": "Hur får jag ett kontoutdrag?",
       "answer": "Gå till fliken \"Bankkonton\" och välj det konto du vill ha ett kontoutdrag för i menyn. Längst ner på sidan hittar du knappen \"Kontoutdrag\", där du kan skapa och ladda ner ett kontoutdrag för det valda kontot.",
-      "category": "Rapporter",
+      "category": "Kontohantering",
       "keywords": "kontoutdrag, kontoutdraget, utdrag, bankutdrag, kontoöversikt, transaktioner, transaktionshistorik, kontohistorik, betalningshistorik, skapa kontoutdrag, ladda ner kontoutdrag, bankkonton",
       "helpfulCount": 6
     },
     "en": {
       "question": "How do I get an account statement?",
       "answer": "Go to the \"Bank Accounts\" tab and select the account you want an account statement for from the menu. At the bottom of the page, you will find the \"Account Statement\" button, where you can generate a statement for the selected account.",
-      "category": "Reports",
+      "category": "Account Management",
       "keywords": "account statement, bank statement, statement, transaction history, transactions, account history, payment history, generate account statement, download account statement, bank accounts",
       "helpfulCount": 1
     }
@@ -95,14 +95,14 @@
     "sv": {
       "question": "Var hittar jag villkoren för mitt sparkonto?",
       "answer": "Du hittar villkoren för ditt sparkonto i din inkorg under fliken \"Villkor\". Öppna inkorgen genom att klicka på ikonen längst upp till höger i menyn.",
-      "category": "Villkor",
+      "category": "Kontohantering",
       "keywords": "villkor, villkoren, sparkonto, sparkontovillkor, kontoavtal, avtal, regler, avtalsvillkor, läsa villkor, hitta villkor, inkorg",
       "helpfulCount": -3
     },
     "en": {
       "question": "Where can I find the terms for my savings account?",
       "answer": "You can find the terms and conditions for your savings account in your inbox under the \"Terms and Conditions\" tab. Open your inbox by clicking the icon in the top-right corner of the menu.",
-      "category": "Terms",
+      "category": "Account Management",
       "keywords": "terms and conditions, savings account, account terms, agreement, account agreement, rules, contractual terms, view terms, find terms, inbox",
       "helpfulCount": 3
     }
@@ -113,14 +113,14 @@
     "sv": {
       "question": "Hur öppnar jag ett nytt sparkonto?",
       "answer": "Gå till fliken \"Bankkonton\" och klicka på knappen \"Nytt Konto\". Välj vilken typ av konto du vill öppna. Du kan också välja att namnge kontot om du vill.",
-      "category": "Konton",
+      "category": "Kontohantering",
       "keywords": "öppna konto, öppna sparkonto, nytt konto, nytt sparkonto, skapa konto, skapa sparkonto, lägga till konto, bankkonto, sparkonto, kontotyp, namnge konto, nytt bankkonto",
       "helpfulCount": 10
     },
     "en": {
       "question": "How do I open a new savings account?",
       "answer": "Go to the \"Bank Accounts\" tab and click the \"New Account\" button. Choose the type of account you want to open. You can also give the account a name if you wish.",
-      "category": "Accounts",
+      "category": "Account Management",
       "keywords": "open account, open savings account, new account, new savings account, create account, create savings account, add account, bank account, savings account, account type, name an account, new bank account",
       "helpfulCount": 8
     }
@@ -131,14 +131,14 @@
     "sv": {
       "question": "Hur avslutar jag mitt sparkonto?",
       "answer": "För att avsluta ditt sparkonto behöver du först ta ut hela saldot. Gå till fliken \"Bankkonton\" och välj det konto du vill avsluta i menyn. När saldot är 0,00 kr visas en röd knapp längst ner på sidan med texten \"Avsluta Konto\". Klicka på knappen för att avsluta kontot.",
-      "category": "Konton",
+      "category": "Kontohantering",
       "keywords": "avsluta konto, avsluta sparkonto, stänga konto, stänga sparkonto, säga upp konto, ta bort konto, avsluta kontot, kontosaldo, nollsaldo, saldo, ta ut pengar, Avsluta Konto",
       "helpfulCount": -5
     },
     "en": {
       "question": "How do I close my savings account?",
       "answer": "To close your savings account, you must first withdraw the entire balance. Go to the \"Bank Accounts\" tab and select the account you want to close from the menu. When the balance is 0.00 SEK, a red button labelled \"Close Account\" will appear at the bottom of the page. Click the button to close the account.",
-      "category": "Accounts",
+      "category": "Account Management",
       "keywords": "close account, close savings account, closing an account, terminate account, cancel account, remove account, account balance, zero balance, withdraw money, empty account, Close Account",
       "helpfulCount": -8
     }
@@ -149,14 +149,14 @@
     "sv": {
       "question": "Vilka villkor gäller för mitt sparkonto?",
       "answer": "Du hittar de aktuella villkoren för ditt sparkonto i din inkorg under fliken \"Villkor\". Öppna inkorgen genom att klicka på ikonen längst upp till höger i menyn.",
-      "category": "Villkor",
+      "category": "Kontohantering",
       "keywords": "villkor, sparkonto, sparkontovillkor, kontovillkor, regler, avgifter, ränta, avtalsvillkor, kontoavtal, aktuella villkor, läsa villkor, hitta villkor, dokument, inkorg",
       "helpfulCount": -1
     },
     "en": {
       "question": "What terms and conditions apply to my savings account?",
       "answer": "You can find the current terms and conditions for your savings account in your inbox under the \"Terms and Conditions\" tab. Open your inbox by clicking the icon in the top-right corner of the menu.",
-      "category": "Terms",
+      "category": "Account Management",
       "keywords": "terms and conditions, savings account, account terms, account rules, fees, interest rate, contractual terms, account agreement, current terms, view terms, find terms, documents, inbox",
       "helpfulCount": -4
     }
@@ -167,14 +167,14 @@
     "sv": {
       "question": "Kan jag hantera mitt sparkonto via mobilen?",
       "answer": "Ja, du kan hantera ditt sparkonto direkt i mobilen. Webbplatsen är mobilanpassad och fungerar lika bra på dator, surfplatta och mobiltelefon.",
-      "category": "Hemsidan",
+      "category": "Inloggning & BankID",
       "keywords": "hemsidan, Nordiska, mobil, mobilanpassad, sparkonto, saldo, kontohantering",
       "helpfulCount": 4
     },
     "en": {
       "question": "Can I manage my savings account from my mobile phone?",
       "answer": "Yes, you can manage your savings account directly from your mobile phone. The website is mobile-friendly and works just as well on a computer, tablet, or mobile phone.",
-      "category": "Website",
+      "category": "Login & BankID",
       "keywords": "website, Nordiska, mobile, mobile friendly, savings account, balance, account management",
       "helpfulCount": -1
     }
@@ -185,14 +185,14 @@
     "sv": {
       "question": "Är Nordiskas hemsida säker att använda?",
       "answer": "Ja, Nordiskas hemsida är utformad med säkerhet i fokus. Om du glömmer att logga ut själv loggas du automatiskt ut efter en period av inaktivitet. Det minskar risken för att någon annan kan få tillgång till ditt konto om du lämnar sidan öppen.",
-      "category": "Hemsidan",
+      "category": "Inloggning & BankID",
       "keywords": "hemsidan, säkerhet, säker, automatisk utloggning, logga ut, inaktivitet, konto, trygg",
       "helpfulCount": 3
     },
     "en": {
       "question": "Is Nordiska's website safe to use?",
       "answer": "Yes, Nordiska's website is designed with security in mind. If you forget to log out yourself, you will be automatically logged out after a period of inactivity. This helps reduce the risk of someone else accessing your account if you leave the website open.",
-      "category": "Website",
+      "category": "Login & BankID",
       "keywords": "website, security, safe, automatic logout, log out, inactivity, account, secure",
       "helpfulCount": 5
     }
@@ -203,14 +203,14 @@
     "sv": {
       "question": "Hur skapar jag ett sparmål?",
       "answer": "Gå till fliken \"Bankkonton\" och välj det konto du vill skapa ett sparmål för. Klicka på knappen \"Skapa sparmål\". Ange ett namn på sparmålet och det belopp du vill spara ihop. Du kan även ange ett måldatum om du vill.\nNär sparmålet har skapats kan du följa hur ditt sparande utvecklas och se hur nära du är att nå ditt mål. Du kan när som helst redigera eller ta bort ditt sparmål.",
-      "category": "Konton",
+      "category": "Kontohantering",
       "keywords": "sparmål, skapa sparmål, nytt sparmål, sparande, sparmål för konto, målnamn, sparbelopp, målsumma, måldatum, följa sparande, sparutveckling, redigera sparmål, ändra sparmål, ta bort sparmål, radera sparmål, Skapa sparmål, Bankkonton",
       "helpfulCount": 6
     },
     "en": {
       "question": "How do I create a savings goal?",
       "answer": "Go to the \"Bank Accounts\" tab and select the account you want to create a savings goal for. Click the \"Create Savings Goal\" button. Enter a name for your savings goal and the amount you want to save. You can also set a target date if you wish.\nOnce your savings goal has been created, you can track your savings progress and see how close you are to reaching your goal. You can edit or delete your savings goal at any time.",
-      "category": "Accounts",
+      "category": "Account Management",
       "keywords": "savings goal, create savings goal, new savings goal, savings, account savings goal, goal name, savings amount, target amount, target date, track savings, savings progress, edit savings goal, update savings goal, delete savings goal, remove savings goal, Create Savings Goal, Bank Accounts",
       "helpfulCount": 2
     }
@@ -221,14 +221,14 @@
     "sv": {
       "question": "Var kan jag se mina transaktioner?",
       "answer": "Under fliken \"Transaktioner\" hittar du din samlade transaktionshistorik. Du kan filtrera transaktionerna efter ett specifikt konto, en tidsperiod eller transaktionstyp, till exempel insättningar och uttag.\nDu kan även se transaktionshistoriken för avslutade konton genom att markera \"Visa stängda konton\" i kontofiltret.",
-      "category": "Transaktioner",
+      "category": "Insättningar & Uttag",
       "keywords": "transaktioner, transaktionshistorik, transaktionshistorik konto, kontohistorik, betalningshistorik, insättning, insättningar, uttag, uttagshistorik, filtrera transaktioner, söka transaktioner, transaktionstyp, tidsperiod, avslutade konton, stängda konton, Visa stängda konton",
       "helpfulCount": 4
     },
     "en": {
       "question": "Where can I view my transactions?",
       "answer": "Under the \"Transactions\" tab, you can find your complete transaction history. You can filter transactions by a specific account, a date range, or transaction type, such as deposits and withdrawals.\nYou can also view the transaction history of closed accounts by selecting \"Show closed accounts\" in the account filter.",
-      "category": "Transactions",
+      "category": "Deposits & Withdrawals",
       "keywords": "transactions, transaction history, account history, payment history, deposit, deposits, withdrawal, withdrawals, filter transactions, search transactions, transaction type, date range, closed accounts, view closed accounts, Show closed accounts",
       "helpfulCount": 1
     }
@@ -239,14 +239,14 @@
     "sv": {
       "question": "Var kan jag ändra mina kontaktuppgifter?",
       "answer": "Klicka på hamburgermenyn uppe i högra hörnet och välj \"Inställningar\". Där kan du uppdatera din e-postadress och ditt telefonnummer.",
-      "category": "Inställningar",
+      "category": "Kontohantering",
       "keywords": "kontaktuppgifter, ändra kontaktuppgifter, uppdatera kontaktuppgifter, e-post, e-postadress, ändra e-postadress, uppdatera e-post, telefonnummer, ändra telefonnummer, uppdatera telefonnummer, inställningar, personuppgifter, kontaktinformation, hamburgermeny",
       "helpfulCount": 2
     },
     "en": {
       "question": "Where can I update my contact details?",
       "answer": "Click the hamburger menu in the top-right corner and select \"Settings\". There, you can update your email address and phone number.",
-      "category": "Settings",
+      "category": "Account Management",
       "keywords": "contact details, update contact details, change contact information, email, email address, change email address, update email, phone number, change phone number, update phone number, settings, personal information, contact information, hamburger menu",
       "helpfulCount": 0
     }
@@ -257,14 +257,14 @@
     "sv": {
       "question": "Hur ändrar jag språk på hemsidan?",
       "answer": "Klicka på hamburgermenyn uppe i högra hörnet. Längst ner i menyn hittar du språkinställningarna, där du kan välja vilket språk du vill använda. Nordiska.se stöder för närvarande svenska och engelska.",
-      "category": "Inställningar",
+      "category": "Kontohantering",
       "keywords": "språk, byta språk, ändra språk, språkinställningar, språkval, svenska, engelska, hemsida, webbplats, språk på hemsidan, ändra språk på webbplatsen, inställningar, hamburgermeny",
       "helpfulCount": 1
     },
     "en": {
       "question": "How do I change the language on the website?",
       "answer": "Click the hamburger menu in the top-right corner. At the bottom of the menu, you will find the language settings, where you can choose your preferred language. Nordiska.se currently supports Swedish and English.",
-      "category": "Settings",
+      "category": "Account Management",
       "keywords": "language, change language, switch language, language settings, language selection, Swedish, English, website, change website language, language preferences, settings, hamburger menu",
       "helpfulCount": 3
     }
@@ -275,14 +275,14 @@
     "sv": {
       "question": "Var loggar jag ut?",
       "answer": "Du loggar ut genom att klicka på \"Logga ut\" i hamburgermenyn uppe i högra hörnet.",
-      "category": "Hemsidan",
+      "category": "Inloggning & BankID",
       "keywords": "logga ut, loggar ut, utloggning, avsluta session, lämna kontot, logga ut från kontot, utloggningsknapp, Logga ut, hamburgermeny",
       "helpfulCount": -2
     },
     "en": {
       "question": "Where can I log out?",
       "answer": "You can log out by clicking \"Log Out\" in the hamburger menu in the top-right corner.",
-      "category": "Website",
+      "category": "Login & BankID",
       "keywords": "log out, logout, sign out, log off, end session, leave account, log out of account, sign-out button, Log Out, hamburger menu",
       "helpfulCount": -6
     }
@@ -293,14 +293,14 @@
     "sv": {
       "question": "Var hanterar jag mina planerade överföringar?",
       "answer": "Under fliken \"Överföringar\" hittar du sektionen för dina planerade överföringar. Där kan du ändra datum och intervall för en planerad överföring eller ta bort den om du inte längre behöver den.",
-      "category": "Överföringar",
+      "category": "Insättningar & Uttag",
       "keywords": "planerade överföringar, planerad överföring, schemalagda överföringar, återkommande överföring, stående överföring, hantera överföringar, redigera överföring, ändra överföring, ändra datum, ändra intervall, ta bort överföring, avbryta överföring, överföringsdatum, överföringsintervall",
       "helpfulCount": 5
     },
     "en": {
       "question": "Where can I manage my scheduled transfers?",
       "answer": "Under the \"Transfers\" tab, you will find the section for your scheduled transfers. There, you can change the date and frequency of a scheduled transfer or delete it if you no longer need it.",
-      "category": "Transfers",
+      "category": "Deposits & Withdrawals",
       "keywords": "scheduled transfers, scheduled transfer, recurring transfers, recurring transfer, standing order, manage transfers, edit transfer, update transfer, change date, change frequency, delete transfer, cancel transfer, transfer date, transfer frequency",
       "helpfulCount": -3
     }
@@ -958,14 +958,14 @@
     "sv": {
       "question": "Dödsbo – så går processen till",
       "answer": "##\n**Dödsbo** – en guide för dig som anhörig\n\nHar en närstående med konto hos Nordiska gått bort? Vi förstår att det är en svår tid. Här förklarar vi steg för steg vad du behöver göra för att avsluta kontot och få ut pengarna. Guiden vänder sig till dig som är dödsbodelägare (arvinge), har fullmakt för dödsboet eller är kontaktperson.\n\n## Steg 1 – Meddela oss om dödsfallet\n\nBörja med att kontakta oss och berätta att en kontoinnehavare har gått bort. Ring vår kundtjänst på **+46 (8) 23 28 00** eller mejla till [**info@nordiska.com**](mailto:info@nordiska.com)**.** Vi skickar dig då ett så kallat engagemangsbesked. Det är ett dokument som visar vilka konton och tillgångar den avlidne hade hos oss vid tidpunkten för dödsfallet. Du kommer att behöva detta inför bouppteckningen (se steg 2).\n\n## Steg 2 – Gör en bouppteckning\n\nEn bouppteckning är en sammanställning av allt den avlidne ägde (tillgångar) och var skyldig (skulder) på dödsdagen. Bouppteckningen ska göras inom tre månader efter dödsfallet och sedan registreras hos Skatteverket. Bouppteckningen fungerar som ett \"kvitto\" på vilka som är dödsbodelägare (arvingar) och vilka tillgångar som finns. Den behövs för att vi ska kunna avsluta kontot och betala ut pengarna till rätt person.\n\nNär bouppteckningen är klar och registrerad hos Skatteverket kan ni gå vidare med att avsluta kontot hos oss.\n\nBehöver du hjälp med bouppteckningen? Läs mer på [Skatteverkets webbplats](https://www.skatteverket.se/privat/folkbokforing/narenanhorigdor/bouppteckning.4.18e1b10334ebe8bc80001217.html). Du kan också vända dig till en jurist eller begravningsbyrå.\n\n## Steg 3 – Samla ihop handlingarna vi behöver\n\nInnan vi kan avsluta kontot och betala ut pengarna behöver vi ta emot följande handlingar i original:\n\n* **Registrerad bouppteckning** – en kopia av bouppteckningen med Skatteverkets stämpel",
-      "category": "Dödsbo",
+      "category": "Allmänt",
       "keywords": "dödsbo, går, processen",
       "helpfulCount": 0
     },
     "en": {
       "question": "Deceased estates – how the process works",
       "answer": "##\n**Deceased estates** – a guide for relatives\n\nHas a loved one who held an account with Nordiska passed away? We understand that this is a difficult time. This guide explains, step by step, what you need to do to close the account and have the funds paid out. It is intended for parties to the estate (heirs), anyone who holds a power of attorney for the estate, or the estate’s contact person.\n\n## Step 1 – Notify us of the death\n\nStart by contacting us to let us know that an account holder has passed away. Call our customer service team on **+46 (8) 23 28 00** or email [**info@nordiska.com**](mailto:info@nordiska.com)**.**\n\nWe will then send you an account and asset statement. This document shows the accounts and assets that the deceased person held with us at the time of death. You will need this when preparing the estate inventory (see Step 2).\n\n## Step 2 – Prepare an estate inventory\n\nAn estate inventory is a summary of everything the deceased person owned (assets) and owed (liabilities) on the date of death. It must be prepared within three months of the death and then registered with the Swedish Tax Agency.\n\nThe estate inventory serves as proof of who the parties to the estate (heirs) are and what assets the estate contains. We need it to close the account and pay the funds to the correct person.\n\nOnce the estate inventory has been completed and registered with the Swedish Tax Agency, you can proceed with closing the account with us.\n\nDo you need help preparing the estate inventory? Read more on the [Swedish Tax Agency’s website](https://www.skatteverket.se/privat/folkbokforing/narenanhorigdor/bouppteckning.4.18e1b10334ebe8bc80001217.html). You can also contact a lawyer or funeral director for assistance.\n\n## Step 3 – Collect the documents we need",
-      "category": "Estate",
+      "category": "General",
       "keywords": "deceased, estates, process, works, estate",
       "helpfulCount": 0
     }
@@ -977,14 +977,14 @@
     "sv": {
       "question": "Hur vidimerar jag en ID-kopia?",
       "answer": "Att vidimera en ID-kopia innebär att intyga att kopian stämmer överens med originalet. Gör så här:\n\n* Ta en kopia av en giltig legitimation, till exempel ett pass eller nationellt ID-kort.\n\n* Låt två personer som inte är dödsbodelägare jämföra kopian med originalet.\n\n* Båda personerna ska skriva sin underskrift, sitt namnförtydligande, datum och telefonnummer direkt på kopian.\n\n[Läs hela guiden: Dödsbo – så går processen till](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Dödsbo",
+      "category": "Allmänt",
       "keywords": "vidimerar, jag, kopia, dödsbo",
       "helpfulCount": 0
     },
     "en": {
       "question": "Hur vidimerar jag en ID-kopia?",
       "answer": "Att vidimera en ID-kopia innebär att intyga att kopian stämmer överens med originalet. Gör så här:\n\n* Ta en kopia av en giltig legitimation, till exempel ett pass eller nationellt ID-kort.\n\n* Låt två personer som inte är dödsbodelägare jämföra kopian med originalet.\n\n* Båda personerna ska skriva sin underskrift, sitt namnförtydligande, datum och telefonnummer direkt på kopian.\n\n[Läs hela guiden: Dödsbo – så går processen till](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Estate",
+      "category": "General",
       "keywords": "estate",
       "helpfulCount": 0
     }
@@ -996,14 +996,14 @@
     "sv": {
       "question": "När behöver jag en fullmakt för ett dödsbo?",
       "answer": "En fullmakt behövs om dödsboet har fler än en delägare och en person ska företräda boet i kontakten med Nordiska. Samtliga dödsbodelägare ska underteckna fullmakten.\n\nFullmaktsblanketten finns att ladda ner i vår guide om hantering av dödsbo.\n\n[Läs hela guiden och ladda ner fullmaktsblanketten](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Dödsbo",
+      "category": "Allmänt",
       "keywords": "behöver, jag, fullmakt, dödsbo",
       "helpfulCount": 0
     },
     "en": {
       "question": "När behöver jag en fullmakt för ett dödsbo?",
       "answer": "En fullmakt behövs om dödsboet har fler än en delägare och en person ska företräda boet i kontakten med Nordiska. Samtliga dödsbodelägare ska underteckna fullmakten.\n\nFullmaktsblanketten finns att ladda ner i vår guide om hantering av dödsbo.\n\n[Läs hela guiden och ladda ner fullmaktsblanketten](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Estate",
+      "category": "General",
       "keywords": "estate",
       "helpfulCount": 0
     }
@@ -1015,14 +1015,14 @@
     "sv": {
       "question": "Vad är en bouppteckning?",
       "answer": "En bouppteckning är en sammanställning av den avlidnes tillgångar och skulder på dödsdagen. När den har registrerats hos Skatteverket visar den vilka som är dödsbodelägare. Nordiska behöver bouppteckningen för att kunna avsluta kontot och betala ut pengarna.\n\n[Läs hela guiden: Dödsbo – så går processen till](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Dödsbo",
+      "category": "Allmänt",
       "keywords": "bouppteckning, dödsbo",
       "helpfulCount": 0
     },
     "en": {
       "question": "Vad är en bouppteckning?",
       "answer": "En bouppteckning är en sammanställning av den avlidnes tillgångar och skulder på dödsdagen. När den har registrerats hos Skatteverket visar den vilka som är dödsbodelägare. Nordiska behöver bouppteckningen för att kunna avsluta kontot och betala ut pengarna.\n\n[Läs hela guiden: Dödsbo – så går processen till](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Estate",
+      "category": "General",
       "keywords": "estate",
       "helpfulCount": 0
     }
@@ -1034,14 +1034,14 @@
     "sv": {
       "question": "Vad är ett dödsbo?",
       "answer": "Ett dödsbo består av den avlidnes samlade tillgångar och skulder. Dödsbodelägarna ansvarar gemensamt för att hantera dödsboet.\n\n[Läs hela guiden: Dödsbo – så går processen till](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Dödsbo",
+      "category": "Allmänt",
       "keywords": "dödsbo",
       "helpfulCount": 0
     },
     "en": {
       "question": "What is a deceased person’s estate?",
       "answer": "A deceased person’s estate consists of all the assets and debts left by the deceased. The parties to the estate are jointly responsible for managing it.\n\n[Read the full guide: Deceased estates – how the process works](https://support.nordiska.com/hc/en-us/articles/30460301740177-Deceased-estates-how-the-process-works)",
-      "category": "Estate",
+      "category": "General",
       "keywords": "deceased, person, estate",
       "helpfulCount": 0
     }
@@ -1053,14 +1053,14 @@
     "sv": {
       "question": "Vilka handlingar krävs för att avsluta ett dödsbo?",
       "answer": "För att Nordiska ska kunna avsluta kontot och betala ut pengarna behöver vi följande handlingar:\n\n* **Registrerad bouppteckning** – en kopia av bouppteckningen med Skatteverkets stämpel.\n\n* **Vidimerade ID-kopior** – kopior av giltig legitimation för samtliga dödsbodelägare.\n\n* **Blankett för avslut och utbetalning** – ifylld och undertecknad.\n\n* **Kontobevis** – behövs om pengarna ska betalas ut till ett annat konto än den avlidnes föranmälda uttagskonto.\n\n* **Fullmakt** – behövs om dödsboet har flera delägare och en person ska företräda boet. Fullmakten ska undertecknas av samtliga dödsbodelägare.\n\nBlanketterna och fullständiga instruktioner finns i vår guide om hantering av dödsbo.\n\n[Läs hela guiden och ladda ner blanketterna](https://support.nordiska.com/hc/sv/articles/30460301740177-D%C3%B6dsbo-s%C3%A5-g%C3%A5r-processen-till)",
-      "category": "Dödsbo",
+      "category": "Allmänt",
       "keywords": "handlingar, krävs, avsluta, dödsbo",
       "helpfulCount": 0
     },
     "en": {
       "question": "What documents are required to close a deceased person’s estate?",
       "answer": "Before Nordiska can close the account and pay out the funds, we need the following documents:\n\n* **Registered estate inventory** – a copy of the estate inventory bearing the Swedish Tax Agency’s stamp.\n\n* **Certified copies of identification documents** – copies of valid identification for all parties to the estate.\n\n* **Account closure and payout form** – completed and signed.\n\n* **Proof of bank account** – required if the funds are to be paid into an account other than the deceased person’s pre-registered withdrawal account.\n\n* **Power of attorney** – required if there is more than one party to the estate and one person will represent it. All parties to the estate must sign the power of attorney.\n\nThe forms and full instructions are available in our guide to managing a deceased person’s estate.\n\n[Read the full guide and download the forms](https://support.nordiska.com/hc/en-us/articles/30460301740177-Deceased-estates-how-the-process-works)",
-      "category": "Estate",
+      "category": "General",
       "keywords": "documents, are, required, close, deceased, person, estate",
       "helpfulCount": 0
     }
@@ -1072,14 +1072,14 @@
     "sv": {
       "question": "Hur sätter jag in pengar?",
       "answer": "För att sätta in pengar använder du **Nordiskas Bankgiro 828-5975**.\nDitt OCR-nummer är **samma som ditt kontonummer**, vilket du hittar genom att logga in på Mina sidor på [www.nordiska.se](https://www.nordiska.se).\n\n**Viktigt att känna till:**\n\n* **Det är inte möjligt att sätta in pengar via en banköverföring** med clearingnummer och kontonummer. Endast insättningar via Bankgiro accepteras.\n\n* Insättningar måste göras från ett svenskt bankkonto som står i ditt namn.\n\n* Om du har flera konton hos Nordiska kan du flytta pengar mellan dem via Internetbanken.\n\n---\n\n**Tips:** Du kan enkelt göra en insättning direkt i [**Nordiska-appen**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)[**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)**.\nTryck på **“Sätt in pengar”** på appens startsida och följ instruktionerna. Gör sedan överföringen via din bank med det **OCR-nummer och bankgiro** som visas i appen.\nDu kan även **kopiera snabbt kontonummer och bankgironummer** direkt från appen för att underlätta insättningen.\nLäs mer om hur du laddar ner appen här: [Hur laddar jag ner Nordiskas sparapp](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "sätter, jag, pengar, insättningar, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How Do I Make a Deposit?",
       "answer": "To make a deposit, use **Nordiska’s Bankgiro 828-5975**.\nYour **OCR number** is the same as your **account number**, which you can find by logging in to *My Pages* at [www.nordiska.se](https://www.nordiska.se).\n\n**Important to know:**\n\n* It is **not possible to make a deposit via a regular bank transfer** using clearing and account numbers. Only deposits made via **Bankgiro** are accepted.\n\n* Deposits must be made from a **Swedish bank account** registered in your own name.\n\n* If you have multiple accounts with Nordiska, you can transfer money between them directly in the **Internet Bank**.\n\n---\n\n**Tip:** You can easily make a deposit directly in the [**Nordiska App**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)[**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)**.\nTap **“Deposit money”** on the app’s home screen and follow the instructions. Then make the transfer through your bank using the **OCR number** and **Bankgiro** displayed in the app.\nYou can also **quickly copy your account number and bankgiro number** directly from the app to make the deposit easier.\nLearn more about how to download the app here: [How do I download the Nordiska App](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App).",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, deposit, deposits",
       "helpfulCount": 0
     }
@@ -1091,14 +1091,14 @@
     "sv": {
       "question": "Kan jag göra en insättning från Avanza eller Nordnet?",
       "answer": "Nej, det är inte möjligt att sätta in pengar till Nordiska via en vanlig banköverföring med **clearingnummer och kontonummer**.\nEndast **insättningar via Bankgiro** accepteras.\n\nAvanza och Nordnet **stödjer inte överföringar via Bankgiro med OCR-nummer**, vilket krävs för insättningar till Nordiska.\n\nFör att sätta in pengar använder du **Nordiskas Bankgiro 828-5975**.\nDitt **OCR-nummer är detsamma som ditt kontonummer**, vilket du hittar genom att logga in på *Mina sidor* på [www.nordiska.se](https://www.nordiska.se).\n\nInsättningen måste göras från ett **svenskt bankkonto i ditt namn**, och banken du använder måste **stödja överföringar via Bankgiro med OCR-nummer**.",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, insättning, från, avanza, nordnet, insättningar, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make a deposit from Avanza or Nordnet?",
       "answer": "No, it is not possible to deposit money to Nordiska through a regular bank transfer using **clearing and account numbers**.\nOnly **deposits via Bankgiro** are accepted.\n\nAvanza and Nordnet **do not support Bankgiro transfers with OCR reference numbers**, which are required for deposits to Nordiska.\n\nTo make a deposit, use **Nordiska’s Bankgiro 828-5975**.\nYour **OCR number is the same as your account number**, which you can find by logging in to *Mina sidor* at [www.nordiska.se](https://www.nordiska.se).\n\nThe deposit must be made from a **Swedish bank account in your own name**, and the bank you use must **support Bankgiro transfers with OCR reference numbers**.",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, deposit, avanza, nordnet, deposits",
       "helpfulCount": 0
     }
@@ -1110,14 +1110,14 @@
     "sv": {
       "question": "Kan jag göra en insättning från ett ISK, en kapitalförsäkring eller ett aktie- & fondkonto (AF)?",
       "answer": "Nej, det är inte möjligt att göra **insättningar från ett Investeringssparkonto (ISK)**, en **kapitalförsäkring** eller ett **aktie- & fondkonto (AF)** till Nordiska.\n\nDessa kontotyper är **investeringskonton**, inte vanliga bankkonton, och kan därför **inte skicka betalningar till Nordiska**.\n\nInsättningar till Nordiska görs via **Bankgiro 828-5975**.\nDitt **OCR-nummer är detsamma som ditt kontonummer**, vilket du hittar genom att logga in på *Mina sidor* på [www.nordiska.se](https://www.nordiska.se).\n\nInsättningen måste göras från ett **svenskt bankkonto i ditt namn**, och banken du använder måste stödja **överföringar via Bankgiro med OCR-nummer**.\n\n**Exempel på godkända banker:**\nDanske Bank i Sverige, Handelsbanken, ICA Banken, Länsförsäkringar Bank, Nordea, SEB, Skandiabanken, Sparbanken Syd, Swedbank och Sparbankerna samt Ålandsbanken.",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, insättning, från, isk, kapitalförsäkring, aktie, fondkonto, insättningar, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make a deposit from an ISK, a capital insurance account, or a share and fund account (AF)?",
       "answer": "No, it is not possible to make **deposits from an Investment Savings Account (ISK)**, a **capital insurance account**, or a **share and fund account (AF)** to Nordiska.\n\nThese types of accounts are **investment accounts**, not regular bank accounts, and therefore **cannot send payments to Nordiska**.\n\nDeposits to Nordiska are made via **Bankgiro 828-5975**.\nYour **OCR number is the same as your account number**, which can be found by logging in to *Mina sidor* at [www.nordiska.se](https://www.nordiska.se).\n\nDeposits must be made from a **Swedish bank account in your own name**, and the bank must support **Bankgiro transfers with OCR reference numbers**.\n\n**Examples of accepted banks:**\nDanske Bank in Sweden, Handelsbanken, ICA Banken, Länsförsäkringar Bank, Nordea, SEB, Skandiabanken, Sparbanken Syd, Swedbank and the Savings Banks, and Ålandsbanken.",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, deposit, isk, capital, insurance, account, share, fund, deposits",
       "helpfulCount": 0
     }
@@ -1129,14 +1129,14 @@
     "sv": {
       "question": "Kan jag göra en insättning med IBAN eller från ett utländskt konto?",
       "answer": "Nej, det är inte möjligt att göra insättningar till **ditt sparkonto hos Nordiska** via **IBAN** eller från **utländska bankkonton**.\nInsättningar kan endast göras från ett **svenskt bankkonto i ditt eget namn** via **Bankgiro**.\n\nEndast **Bankgirobetalningar med OCR-nummer** accepteras.\nDitt **OCR-nummer är detsamma som ditt kontonummer**, vilket du hittar genom att logga in på *Mina sidor* på [www.nordiska.se](https://www.nordiska.se).\n\nObservera att vissa betaltjänster och neobanker, till exempel **Revolut**, **Wise** och liknande tjänster inte stödjer överföringar via **Bankgiro med OCR-nummer** och därför **inte kan användas för insättningar** till ditt sparkonto hos **Nordiska**.",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, insättning, iban, från, utländskt, konto, insättningar, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make a deposit using IBAN or from a foreign account?",
       "answer": "No, it is not possible to make deposits to your **savings account with Nordiska** via **IBAN** or from **foreign bank accounts**.\nDeposits can only be made from a **Swedish bank account in your own name** using **Bankgiro**.\n\nOnly **Bankgiro payments with an OCR reference number** are accepted.\nYour **OCR number is the same as your account number**, which you can find by logging in to *Mina sidor* at [www.nordiska.se](https://www.nordiska.se).\n\nPlease note that some payment services and neobanks such as **Revolut**, **Wise**, and similar services do not support **Bankgiro transfers with OCR reference numbers** and therefore **cannot be used for deposits** to your **savings account with Nordiska**.",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, deposit, using, iban, foreign, account, deposits",
       "helpfulCount": 0
     }
@@ -1148,14 +1148,14 @@
     "sv": {
       "question": "Kan jag göra insättningar med betal- eller kreditkort (Visa, Mastercard, American Express)?",
       "answer": "Nej, det är inte möjligt att göra insättningar till **ditt sparkonto hos Nordiska** med betal- eller kreditkort.\n**Kortbetalningar** stöds inte för insättningar till sparkonton, oavsett om kortet är ett **Visa**, **Mastercard** eller **American Express**.\n\nInsättningar kan endast göras från ett **svenskt bankkonto i ditt eget namn** via **Bankgiro**.\nAnvänd **Bankgiro 828-5975**, och ange ditt **OCR-nummer** (samma som ditt kontonummer), vilket du hittar genom att logga in på *Mina sidor* på [www.nordiska.se](https://www.nordiska.se)",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, insättningar, betal, kreditkort, visa, mastercard, american, express, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make deposits with debit or credit cards (Visa, Mastercard, American Express)?",
       "answer": "No, it is not possible to make deposits to your **savings account with Nordiska** using debit or credit cards.\n**Card payments** are not supported for deposits to savings accounts, regardless of whether the card is a **Visa**, **Mastercard**, or **American Express**.\n\nDeposits can only be made from a **Swedish bank account in your own name** via **Bankgiro**.\nUse **Bankgiro 828-5975** and include your **OCR number** (the same as your account number), which you can find by logging in to *Mina sidor* at [www.nordiska.se](https://www.nordiska.se).",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, deposits, debit, credit, cards, visa, mastercard, american, express",
       "helpfulCount": 0
     }
@@ -1167,14 +1167,14 @@
     "sv": {
       "question": "Kan jag göra insättningar till mitt sparkonto via Swish?",
       "answer": "Nej, tyvärr är det inte möjligt att göra insättningar via Swish i dagsläget.",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, insättningar, mitt, sparkonto, via, swish",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I Make Deposits to My Savings Account via Swish?",
       "answer": "Currently, it is not possible to make deposits via Swish.",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, deposits, savings, account, via, swish",
       "helpfulCount": 0
     }
@@ -1186,14 +1186,14 @@
     "sv": {
       "question": "Kan någon annan sätta in pengar på mitt sparkonto hos Nordiska?",
       "answer": "Nej, det är endast kontohavaren som kan göra insättningar på sitt sparkonto. Om någon annan vill sätta in pengar rekommenderar vi att beloppet först överförs till kontohavarens bankkonto, som sedan kan göra insättningen till sparkontot hos oss.",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "någon, annan, sätta, pengar, mitt, sparkonto, hos, nordiska, insättningar",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can Someone Else Deposit Money into My Savings Account at Nordiska?",
       "answer": "No, only the account holder can make deposits into their savings account. If someone else wishes to deposit money, we recommend they first transfer the amount to the account holder's bank account, who can then deposit it into the Nordiska savings account.",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "someone, else, deposit, money, savings, account, nordiska, deposits",
       "helpfulCount": 0
     }
@@ -1205,14 +1205,14 @@
     "sv": {
       "question": "När kommer insättningen in på mitt konto?",
       "answer": "Du kan normalt se insättningen på ditt konto i Nordiska 1-3 bankdagar efter att du gjort insättningen via Bankgiro.",
-      "category": "Insättningar på sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "kommer, insättningen, mitt, konto, insättningar, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "When Will My Deposit Appear in My Account?",
       "answer": "Deposits made via bankgiro typically appear in your Nordiska account within 1–3 banking days after the transfer.",
-      "category": "Deposits",
+      "category": "Deposits & Withdrawals",
       "keywords": "will, deposit, appear, account, deposits",
       "helpfulCount": 0
     }
@@ -1503,469 +1503,13 @@
     }
   },
   {
-    "relationId": "b0000000-0000-0000-0000-1b2cc850a291",
-    "zendeskId": 29879153238673,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Har vi gjort en autogirodragning från ditt konto?",
-      "answer": "Vi gör enbart en autogirodragning om du är kund hos Nordiska och har gjort ett autogiromedgivande.",
-      "category": "Lån",
-      "keywords": "gjort, autogirodragning, från, ditt, konto, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Have we made a direct debit withdrawal from your account?",
-      "answer": "We only make a direct debit withdrawal if you are a customer of Nordiska and have provided a direct debit authorization.",
-      "category": "Loans",
-      "keywords": "have, made, direct, debit, withdrawal, account, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1b2ccb0e3991",
-    "zendeskId": 29879199218065,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Jag vill lära mig mer om konsekvensen av lån.",
-      "answer": "Nordiska vill uppmärksamma låntagare på att låneavtal kan innebära en påfrestning på låntagarens privat­a ekonomi och att låntagare därför noga bör överväga och planera nyttjandet av lånet. För mer information om privat­ekonomi rekommenderar vi[Finans­inspektionens hemsida.](https://fi.se/sv/for-konsumenter/)\n\nOm du inte kan betala tillbaka skulden i tid riskerar du en betalningsanmärkning. Det kan leda till svårigheter att få hyra bostad, teckna abonnemang och få nya lån. För stöd, vänd dig till budget- och skuldrådgivningen i din kommun. Kontaktuppgifter finns på [konsumentverket.se](https://www.konsumentverket.se/).",
-      "category": "Lån",
-      "keywords": "jag, vill, lära, mig, mer, konsekvensen, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "I want to learn more about the consequences of taking a loan",
-      "answer": "Nordiska wants to highlight that loan agreements can place a strain on the borrower's personal finances, and borrowers should therefore carefully consider and plan the use of the loan. For more information on personal finance, we recommend the [Swedish Financial Supervisory Authority's website.](https://fi.se/en/consumer-protection/)\n\nIf you are unable to repay your debt on time, you risk receiving a record of non-payment. This can make it more difficult to rent housing, sign contracts for services, or obtain new loans. For support, you can contact the municipal budget and debt advisory service. Contact details are available at [konsumentverket.se](https://www.konsumentverket.se/).",
-      "category": "Loans",
-      "keywords": "want, learn, more, consequences, taking, loan, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-2422b99eed91",
-    "zendeskId": 39731561688465,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vad behöver jag veta om lån?",
-      "answer": "Att ta ett lån innebär ett ekonomiskt åtagande, och det är viktigt att förstå alla delar av vad ett lån innebär innan du ingår ett avtal. Nedan följer en genomgång av de centrala begreppen, kostnaderna, processerna och rättigheterna som gäller vid lån.\n\n---\n\n**Vad är ett lån?**\n\nEtt lån är en överenskommelse där banken eller en kreditgivare tillhandahåller kapital mot att låntagaren återbetalar beloppet enligt förutbestämda villkor. Ett lån består normalt av tre delar:\n\n* **Amortering** – den del av återbetalningen som minskar skulden.\n\n* **Ränta** – kostnaden för att låna pengar.\n\n* **Avgifter** – till exempel uppläggningsavgifter, aviavgifter eller påminnelseavgifter.\n\n---\n\n**Vad är ränta?**\n\nRänta är kostnaden för att låna pengar. Ju högre ränta, desto dyrare blir lånet.\n\n---\n\n**Ränta och effektiv ränta**\n\n* **Nominell ränta** är den räntesats som framgår i låneavtalet. Räntan beräknas på det återstående skuldbeloppet och betalas vanligtvis månadsvis.\n\n* **Effektiv ränta** är ett standardiserat mått som visar den totala årliga kostnaden för lånet. Den inkluderar nominell ränta samt alla avgifter, vilket gör det möjligt att jämföra lån på ett rättvist sätt.\n\nExempel: Ett lån på 100 000 kr med 8 % nominell ränta och 500 kr i uppläggningsavgift har en effektiv ränta som är högre än 8 %, eftersom avgiften påverkar den totala kostnaden.\n\n---\n\n**Amortering – hur betalar man tillbaka lånet?**\n\nAmortering är den del av återbetalningen som minskar skulden. Det finns två vanliga modeller:\n\n* **Rak amortering** – du betalar samma belopp i amortering varje månad, medan räntekostnaden minskar över tid. Totalkostnaden blir lägre för varje månad.\n\n* **Annuitetslån** – du betalar samma totalbelopp varje månad. Andelen amortering ökar gradvis medan räntekostnaden minskar. Detta ger jämnare månadsutgifter, men innebär ofta en högre total kostnad.\n\n---",
-      "category": "Lån",
-      "keywords": "behöver, jag, veta, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What do I need to know about loans?",
-      "answer": "Taking out a loan is a financial commitment, and it is important to understand all aspects of what a loan entails before entering into an agreement. Below is an overview of the key concepts, costs, processes, and rights that apply to loans.\n\n---\n\n**What is a loan?**\n\nA loan is an agreement where a bank or credit provider supplies capital, and the borrower repays the amount under predetermined conditions. A loan generally consists of three parts:\n\n* **Amortization** – the portion of repayment that reduces the principal debt.\n\n* **Interest** – the cost of borrowing money.\n\n* **Fees** – such as arrangement fees, invoice fees, or reminder fees.\n\n---\n\n**What is interest?**\n\nInterest is the cost of borrowing money. The higher the interest rate, the more expensive the loan becomes.\n\n---\n\n**Interest and Annual Percentage Rate (APR)**\n\n* **Nominal interest** is the interest rate stated in the loan agreement. It is calculated on the outstanding balance and is usually paid monthly.\n\n* **Effective interest (APR)** is a standardized measure showing the total annual cost of the loan. It includes the nominal interest as well as all fees, making it easier to compare loans fairly.\n\n *Example*: A loan of SEK 100,000 with 8% nominal interest and a SEK 500 arrangement fee will have an APR higher than 8%, since the fee increases the total cost.\n\n---\n\n**Amortization – how do you repay the loan?**\n\nAmortization is the part of the repayment that reduces the debt. The two most common models are:\n\n* **Straight-line amortization** – you repay the same amount of principal each month, while the interest cost decreases over time. The total monthly payment becomes lower over the course of the loan.\n\n* **Annuity loan** – you pay the same total amount each month. The portion of amortization increases gradually while the interest portion decreases.",
-      "category": "Loans",
-      "keywords": "need, know, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-2422f0ceb691",
-    "zendeskId": 39732487566993,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vad är en kreditupplysning?",
-      "answer": "En kreditupplysning är en sammanställning av ekonomisk information om en person eller ett företag. Den används av banker, långivare, hyresvärdar och andra företag för att bedöma betalningsförmåga och kreditvärdighet.\n\n**Vad kan en kreditupplysning innehålla?**\n\nEn kreditupplysning kan bland annat visa:\n\n* **Personuppgifter**: namn, adress, folkbokföring, civilstånd\n\n* **Inkomstuppgifter**: deklarerad inkomst, taxerad inkomst\n\n* **Lån och krediter**: aktuella lån, kreditkort och krediter\n\n* **Betalningsanmärkningar**: om du har missat betalningar som lett till anmärkning\n\n* **Skulder hos Kronofogden**\n\n* **Fastighetsinnehav** (om du äger bostad)\n\n* **Historik**: tidigare kreditupplysningar som tagits\n\n**Vanliga kreditupplysningsföretag i Sverige**\n\nI Sverige är **UC (Upplysningscentralen)** det mest kända företaget som gör kreditupplysningar. Andra aktörer är t.ex. Creditsafe, Bisnode/Dun & Bradstreet och Safenode.\n\nNär en bank eller ett företag gör en kreditupplysning på dig får du alltid en **kopia skickad hem eller digitalt**, så att du ser vilken information som lämnats ut och vem som begärt upplysningen.\n\n**Varför tas en kreditupplysning?**\n\nEn kreditupplysning kan tas i flera situationer, till exempel:\n\n* När du ansöker om lån eller kreditkort\n\n* När du handlar på avbetalning eller faktura\n\n* När du tecknar abonnemang (mobil, el, etc.)\n\n* När du söker hyreskontrakt\n\nSyftet är att minska risken för obetalda skulder.\n\n**Påverkar en kreditupplysning mig?**\n\n* Nej, själva upplysningen påverkar inte din ekonomi.\n\n* Ja, många kreditupplysningar på kort tid kan påverka kreditvärdigheten, särskilt via UC, eftersom långivare kan tolka det som hög risk.\n\n* Det finns även ”mikro-” eller ”intern kreditupplysning” som företag kan göra, dessa syns inte för andra långivare.\n\n**Dina rättigheter**\n\n* Du har alltid rätt att få veta när en kreditupplysning tas på dig.",
-      "category": "Lån",
-      "keywords": "kreditupplysning, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What is a credit report?",
-      "answer": "A credit report is a summary of financial information about an individual or a company. It is used by banks, lenders, landlords, and other businesses to assess payment ability and creditworthiness.\n\n**What can a credit report include?**\n\nA credit report may contain information such as:\n\n* **Personal details**: name, address, civil status, registration details\n\n* **Income**: declared/taxable income\n\n* **Loans and credits**: current loans, credit cards, and credit lines\n\n* **Payment defaults**: missed payments that have resulted in records of default\n\n* **Debts with enforcement authorities** (e.g., Swedish Enforcement Authority)\n\n* **Property ownership**\n\n* **History**: previous credit reports requested on you\n\n**Credit reporting agencies in Sweden**\n\nIn Sweden, **UC (Upplysningscentralen)** is the most well-known credit reporting agency. Other agencies include Creditsafe, Bisnode/Dun & Bradstreet, and Safenode.\n\nWhen a bank or company requests a credit report on you, you will always receive a **copy by mail or digitally**, showing the information shared and who requested it.\n\n**Why is a credit report taken?**\n\nA credit report may be required when you:\n\n* Apply for a loan or credit card\n\n* Make purchases on installment or invoice\n\n* Sign a contract for utilities or subscriptions (e.g., mobile phone, electricity)\n\n* Apply for a rental agreement\n\nThe purpose is to reduce the risk of unpaid debts.\n\n**Does a credit report affect me?**\n\n* No, the report itself does not affect your finances.\n\n* Yes, multiple reports in a short period may impact your creditworthiness, especially through UC, since lenders may interpret this as higher risk.\n\n* Some companies use “micro-checks” or “internal credit reports” that are not visible to other lenders.\n\n**Your rights**\n\n* You are always informed when a credit report is taken on you.",
-      "category": "Loans",
-      "keywords": "credit, report, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-20a0d0a8a111",
-    "zendeskId": 35875067568401,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vad är KALP?",
-      "answer": "KALP står för \"Kvar Att Leva På\" och är en beräkning som används för att avgöra hur mycket pengar en person har kvar varje månad efter att fasta kostnader har dragits från inkomsten. Det hjälper långivare att bedöma om det finns tillräckligt ekonomiskt utrymme för att ta ett lån.\n\nBeräkningen tar hänsyn till inkomster, boendekostnader, andra lån och en schablon för levnadskostnader. Om resultatet visar att det inte finns tillräckligt kvar, kan lånet nekas eller beviljas med ett lägre belopp.\n\nEn fullständig KALP-beräkning görs inte alltid vid alla typer av lån – det beror bland annat på kreditens storlek och typ. Vid mindre krediter kan förenklade bedömningar förekomma.",
-      "category": "Lån",
-      "keywords": "kalp, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What is KALP (Swedish affordability assessment)?",
-      "answer": "KALP is a Swedish term that stands for *\"Kvar Att Leva På\"*, meaning \"left to live on.\" It refers to a calculation used to estimate how much money a person has left each month after fixed expenses are deducted from their income. This helps lenders assess whether there is sufficient financial room to take on a loan.\n\nThe calculation typically includes income, housing costs, existing loans, and a standard allowance for living expenses. If the result shows that too little remains, the loan may be declined or approved for a lower amount.\n\nA full affordability calculation (KALP) is not always used for every type of credit. It depends on factors such as the size and type of the loan. For smaller credits, simplified assessments may apply.",
-      "category": "Loans",
-      "keywords": "kalp, swedish, affordability, assessment, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1b2cca15c391",
-    "zendeskId": 29879182934929,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Varför har jag fått en låneavi från Nordiska?",
-      "answer": "Via partners tillhandahåller vi privat­lån. Eftersom vi i dessa fall är kreditgivare ska du betala ränta och amorteringar till oss, även om lånet administreras av en av våra partners. På låneavin framgår via vilken partner lånet kommer via.\n\nFör eventuella frågor ska du i första hand vända dig till den partner som du tagit lånet via. Deras kontaktuppgifter finner du på låneavin och Kreditavtalet.",
-      "category": "Lån",
-      "keywords": "jag, fått, låneavi, från, nordiska, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Why have I received a loan statement from Nordiska?",
-      "answer": "Through our partners, we provide personal loans. In these cases, we are the credit provider, so you should pay interest and installments to us, even if the loan is administered by one of our partners. The loan statement indicates which partner the loan is through.\n\nFor any questions, you should primarily contact the partner through whom you obtained the loan. Their contact details can be found on the loan statement and the credit agreement.",
-      "category": "Loans",
-      "keywords": "have, received, loan, statement, nordiska, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1b2cc8435291",
-    "zendeskId": 29879152366225,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Varför har ni tagit en kreditupplysning på mig?",
-      "answer": "Nordiska har tagit en kreditupplysning eftersom du ansökt om ett lån eller en kredit via någon av våra samarbetspartners. Som bank är vi skyldiga att bedöma din förmåga att återbetala lånet. Syftet med detta är att säkerställa att krediten är hållbar för dig som kund samt att förebygga överskuldsättning.\n\nFör att fullgöra denna skyldighet inhämtar vi nödvändig information från ett kreditupplysningsföretag som vi samarbetar med. Informationen används uteslutande för att utvärdera din ekonomiska situation och din förmåga att uppfylla de betalningsåtaganden som följer av det kreditavtal som du ansökt om.\n\n---\n\n**Hur fungerar processen?**\n\nOm du nyligen har genomfört ett köp, exempelvis en bil med finansiering, ett köp på avbetalning eller faktura, eller ansökt om en kredit eller ett lån, kan detta vara orsaken till att en kreditupplysning har tagits.\n\nNär du ansöker om avbetalning, faktura eller kredit via någon av våra samarbetspartners, vidarebefordras din ansökan till Nordiska, som fungerar som kreditgivare. För att uppfylla våra lagstadgade skyldigheter genomför vi en kreditupplysning via ett av våra avtalade kreditupplysningsföretag. Denna upplysning ger oss en grund för att bedöma om krediten kan beviljas och om den är förenlig med dina ekonomiska förutsättningar.\n\nSom kreditgivare samarbetar Nordiska med partners som erbjuder finansiella tjänster integrerade i sina produkter, exempelvis avbetalningslösningar, fakturaköp eller andra finansieringsalternativ. Det innebär att du som kund ansöker om krediten direkt via vår partner, medan Nordiska står för kreditbedömningen och finansieringen i bakgrunden.\n\n---\n\n**Hur kan du få mer information om kreditupplysningen?**\n\n* **Kontrollera kreditupplysningen:** I själva kreditupplysningen anges vanligtvis vilken samarbetspartner eller betalningslösning ansökan är kopplad till, som ett meddelande.",
-      "category": "Lån",
-      "keywords": "tagit, kreditupplysning, mig, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Why have you performed a credit check on me?",
-      "answer": "Nordiska has performed a credit check because you applied for a loan or credit through one of our partners. As a bank, we are required to assess your ability to repay the loan. The purpose of this is to ensure that the credit is sustainable for you as a customer and to prevent over-indebtedness.\n\nTo fulfill this obligation, we obtain necessary information from a credit reference agency we cooperate with. The information is used solely to evaluate your financial situation and your ability to meet the payment obligations arising from the credit agreement you applied for.\n\n---\n\n**How does the process work?**\n\nIf you have recently made a purchase—for example, a car with financing, a purchase using an installment plan or invoice, or if you applied for credit or a loan—this may be the reason why a credit check was performed.\n\nWhen you apply for installment payments, invoice purchases, or credit via one of our partners, your application is forwarded to Nordiska, which acts as the credit provider. To fulfill our legal obligations, we carry out a credit check through one of our affiliated credit reference agencies. This check provides us with a basis for assessing whether the credit can be granted and whether it aligns with your financial circumstances.\n\nAs a credit provider, Nordiska collaborates with partners who offer financial services integrated into their products, such as installment plans, invoice purchases, or other financing options. This means that you, as the customer, apply for the credit directly with our partner, while Nordiska is responsible for the credit assessment and financing behind the scenes.\n\n---\n\n**How can you get more information about the credit check?**\n\n* **Check the credit report**: The credit report usually indicates which partner or payment solution the application is associated with, often as a message.",
-      "category": "Loans",
-      "keywords": "have, performed, credit, check, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1b2534e3be11",
-    "zendeskId": 29846615080465,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vilka krav ställs för att beviljas ett lån?",
-      "answer": "Kraven varierar beroende på lånetyp, men vi gör alltid en kreditprövning och en bedömning av din betalningsförmåga.",
-      "category": "Lån",
-      "keywords": "krav, ställs, beviljas, lån",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What are the requirements to be granted a loan?",
-      "answer": "The requirements vary depending on the type of loan, but we always conduct a credit assessment and evaluate your repayment ability.",
-      "category": "Loans",
-      "keywords": "are, requirements, granted, loan, loans",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bb420e71b11",
-    "zendeskId": 30460460079889,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vilka typer av lån erbjuder Nordiska för privatpersoner?",
-      "answer": "Nordiska erbjuder olika typer av lån till privatpersoner. Lånen tillhandahålls och administreras i samarbete med våra partners, vilket innebär att du ibland kan ha fått ett lån från oss utan att ha haft direktkontakt med Nordiska.",
-      "category": "Lån",
-      "keywords": "typer, lån, erbjuder, nordiska, privatpersoner",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What types of loans does Nordiska offer to private individuals?",
-      "answer": "Nordiska offers various types of loans to private individuals. These loans are provided and administered in collaboration with our partners, which means you might have received a loan from us without direct contact with Nordiska.",
-      "category": "Loans",
-      "keywords": "types, loans, nordiska, offer, private, individuals",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcf05c0b91",
-    "zendeskId": 30635739319185,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur laddar jag ner Nordiskas sparapp?",
-      "answer": "Du kan ladda ner Nordiskas sparapp från följande platser:\n\n* **iOS (iPhone/iPad):** Besök App Store och sök på **\"Nordiska\"** eller klicka på knappen nedan.\n\n* **Android:** Besök Google Play Store och sök på **\"Nordiska\"** eller klicka på knappen nedan.\n\nFör att göra det ännu enklare kan du klicka på knapparna nedan för att ladda ner appen direkt:",
-      "category": "Nordiska app",
-      "keywords": "laddar, jag, ner, nordiskas, sparapp, nordiska, app",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How do I download the Nordiska App?",
-      "answer": "You can download Nordiska’s savings app from the following platforms:\n\n* **iOS (iPhone/iPad)**: Visit the App Store and search for “Nordiska” or click the button below.\n\n* **Android**: Visit the Google Play Store and search for “Nordiska” or click the button below.\n\nTo make it even easier, simply click the buttons below to download the app directly:",
-      "category": "Nordiska App",
-      "keywords": "download, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdca9e89691",
-    "zendeskId": 30634557347473,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur loggar jag in i appen?",
-      "answer": "Du loggar in genom att använda BankID. På startsidan väljer du \"Logga in\" och följer anvisningarna för att signera med ditt BankID.",
-      "category": "Nordiska app",
-      "keywords": "loggar, jag, appen, nordiska, app",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How do I log in to the app?",
-      "answer": "You log in using BankID. On the start screen, select “Log in” and follow the instructions to sign with your BankID.",
-      "category": "Nordiska App",
-      "keywords": "log, app, nordiska",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1c1884af0691",
-    "zendeskId": 30891630855825,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Måste jag ha Nordiskas app för att hantera mina sparkonton?",
-      "answer": "Nej, du måste inte ha Nordiskas app för att använda dina sparkonton. Du kan logga in på vår Internetbank via [www.nordiska.se](https://www.nordiska.se) för att göra insättningar, uttag och se din kontoinformation.\n\n**Fördelar med appen:**\nÄven om appen inte är ett krav, erbjuder den en smidig lösning för att:\n\n* Enkelt kopiera bankgiro och OCR-nummer för insättningar.\n\n* Få snabb åtkomst till ditt saldo och kontouppgifter.\n\n* Ställa frågor till vår digitala assistent Casey direkt i mobilen.\n\n**Internetbanken som alternativ:**\nInternetbanken ger dig samma grundläggande funktioner, men om du föredrar att använda appen får du en mer användarvänlig och mobilanpassad upplevelse.\n\n>\n\n*Tips:* Ladda ner appen för att få en enklare hantering av dina sparkonton och möjlighet att nå Internetbanken direkt från mobilen.\n\nHar du fler frågor? Kontakta oss gärna via e-post på info@nordiska.se eller ring oss på 08-23 28 00. Vår kundtjänst är tillgänglig vardagar mellan 08:30 och 16:30.",
-      "category": "Nordiska app",
-      "keywords": "måste, jag, nordiskas, app, hantera, mina, sparkonton, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Do I need the Nordiska app to manage my savings accounts?",
-      "answer": "No, you do not need the Nordiska app to use your savings accounts. You can log in to our Internet Bank via [www.nordiska.se](https://www.nordiska.se) to make deposits, withdrawals, and view your account information.\n\n**Benefits of the app:**Even though the app is not required, it offers a convenient way to:\n\n* Easily copy bankgiro and OCR numbers for deposits\n\n* Quickly access your balance and account details\n\n* Ask questions to our digital assistant Casey directly in the app\n\n**Internet Bank as an alternative:**The Internet Bank provides the same basic features, but if you prefer using the app, you’ll enjoy a more user-friendly and mobile-optimized experience.\n\n>\n\n*Tip: Download the app to simplify deposit management and gain easier access to the Internet Bank directly from your mobile device.*\n\nIf you have any questions, feel free to contact us via email at info@nordiska.se or call us at +46 8 23 28 00. Our customer service is available on weekdays between 08:30 and 16:30.",
-      "category": "Nordiska App",
-      "keywords": "need, nordiska, app, manage, savings, accounts",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcc109b691",
-    "zendeskId": 30634945394321,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vad kostar det att använda Nordiskas app?",
-      "answer": "Appen är helt kostnadsfri att använda.",
-      "category": "Nordiska app",
-      "keywords": "kostar, använda, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What does it cost to use the Nordiska app?",
-      "answer": "The app is completely free to use.",
-      "category": "Nordiska App",
-      "keywords": "cost, use, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdddffe9091",
-    "zendeskId": 30639759724689,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Vad är Nordiska App?",
-      "answer": "Nordiska App är din personliga sparassistent som gör det enkelt och roligt att hantera dina besparingar. Med en användarvänlig design får du full kontroll över dina sparkonton och din avkastning – direkt i appen.\n\n---\n\n**Huvudfunktioner i Nordiska App:**\n\n1️⃣ **Se saldon på dina sparkonton**\nFå en tydlig och enkel översikt över alla dina sparkonton på ett ställe. Håll koll på ditt saldo när som helst, oavsett var du är.\n\n2️⃣ **Se upplupen ränta**\nFölj din upplupna ränta i realtid och se hur dina besparingar växer över tid.\n\n3️⃣ **Casey – Din AI-assistent**\nTräffa Casey, en AI-driven sparassistent som finns tillgänglig dygnet runt. Casey kan hjälpa dig med:\n\n* Svar på frågor om dina sparkonton.\n\n* Tips om hur du kan spara mer effektivt.\n\n* Information om ränta, insättningsgaranti och mycket mer.\n\n---\n\n**Hur laddar jag ner Nordiska App?**\nDu kan ladda ner appen här:\n\n* **[App Store (iOS)](https://apps.apple.com/se/app/nordiska/id6738186464)**\n\n* **[Google Play Store (Android)](https://play.google.com/store/apps/details?id=com.nordiska.app&pcampaignid=web_share)**\n\n---\n\n**Varför ska jag använda Nordiska App?**\nMed Nordiska App kan du enkelt:\n\n* Få snabb och tydlig överblick över dina besparingar.\n\n* Se hur din ränta växer dag för dag.\n\n* Få smart hjälp av Casey, din AI-assistent.\n\n---\n\n**Har du frågor?**\nOm du behöver hjälp eller har funderingar kan du kontakta vår kundtjänst:\n📞 **Telefon:** 08-23 28 00 (vardagar 08:30–16:30)\n📧 **E-post:** info@nordiska.se\n\n**Ladda ner Nordiska App idag och få full koll på ditt sparande!**",
-      "category": "Nordiska app",
-      "keywords": "nordiska, app",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "What is the Nordiska App?",
-      "answer": "**The Nordiska App is your personal savings assistant**, making it easy and enjoyable to manage your savings. With a user-friendly design, you gain full control over your savings accounts and returns – directly in the app.\n\n**Main features of the Nordiska App:**\n\n1️⃣ **View balances on your savings accounts**Get a clear and simple overview of all your savings accounts in one place. Keep track of your balance anytime, anywhere.\n\n2️⃣ **See accrued interest**Follow your accrued interest in real-time and watch your savings grow over time.\n\n3️⃣ **Casey – Your AI assistant**Meet Casey, an AI-powered savings assistant available 24/7. Casey can help you with:\n\n* Answers to questions about your savings accounts\n\n* Tips on how to save more efficiently\n\n* Information about interest, the deposit guarantee, and more\n\n---\n\n**How do I download the Nordiska App?**You can download the app here:\n\n* [App Store (iOS)](https://apps.apple.com/se/app/nordiska/id6443918751)\n\n* [Google Play Store (Android)](https://play.google.com/store/apps/details?id=com.nordiska.app&pcampaignid=web_share)\n\n---\n\n**Why should I use the Nordiska App?**With the Nordiska App, you can easily:\n\n* Get a quick and clear overview of your savings\n\n* See your interest grow day by day\n\n* Get smart assistance from Casey, your AI assistant\n\n---\n\n**Have questions?**If you need help or have any concerns, you’re welcome to contact our customer service:\n\n📞 **Phone**: +46 8 23 28 00 (weekdays 08:30–16:30)📧 **Email**: info@nordiska.se\n\n---\n\n**Download the Nordiska App today and take full control of your savings!**",
-      "category": "Nordiska App",
-      "keywords": "nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcbc601491",
-    "zendeskId": 30634867168401,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Är min information säker i Nordiskas app?",
-      "answer": "Ja, vi använder den senaste säkerhetstekniken och all inloggning sker via BankID. Dina uppgifter är krypterade och skyddade.",
-      "category": "Nordiska app",
-      "keywords": "min, information, säker, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Is my information secure in the Nordiska app?",
-      "answer": "Yes, we use the latest security technology, and all logins are done via BankID. Your information is encrypted and protected.",
-      "category": "Nordiska App",
-      "keywords": "information, secure, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdf7fb67e91",
-    "zendeskId": 30646734323345,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur chattar jag med Casey?",
-      "answer": "➡️ Så här chattar du med Casey: Logga in i Nordiskas app med BankID, öppna menyn (tre linjer), välj \"Chat\" och ställ din fråga direkt i meddelandefältet!",
-      "category": "Nordiska app",
-      "keywords": "chattar, jag, casey, nordiska, app",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How do I chat with Casey?",
-      "answer": "➡️ To chat with Casey: Log in to the Nordiska app using BankID, open the menu (three lines), select “Chat,” and type your question directly in the message field!",
-      "category": "Nordiska App",
-      "keywords": "chat, casey, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcdda4f491",
-    "zendeskId": 30635425330321,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur fungerar Casey, er AI-bot, i Nordiskas app?",
-      "answer": "Casey är en AI-driven digital assistent som är här för att hjälpa dig med frågor om Nordiska. Casey kan ge information om våra sparprodukter, kontoinformation och mycket mer. Dessutom kan Casey svara på vissa personliga frågor om ditt sparande, såsom:\n\n* \"Hur mycket ränta fick jag på mitt sparande förra året?\"\n\n* \"Vad är saldot på mitt sparkonto?\"\n\n* \"När förfaller mitt fasta sparkonto?\"\n\nFör att starta en chatt med Casey, följ dessa steg:\n\n* **Logga in i Nordiskas sparapp**: Använd BankID för att logga in i appen.\n\n* **Öppna menyn**: Klicka på hamburgermenyn (tre horisontella linjer) uppe till vänster på startskärmen.\n\n* **Välj \"Chat\"**: I menyn hittar du alternativet \"Chat.\" Klicka på det för att öppna chatten.\n\n* **Starta chatten med Casey**: När chatten öppnas kommer Casey att presentera sig och fråga hur hen kan hjälpa dig. Skriv din fråga eller ditt ärende direkt i meddelandefältet för att få ett snabbt svar.\n\n\n\n**Vad är AI (Artificiell Intelligens)?**\nArtificiell intelligens (AI) är en teknik som efterliknar mänsklig intelligens för att utföra uppgifter. Casey använder AI för att förstå och svara på dina frågor baserat på den information som finns tillgänglig om ditt konto.\n\n\n\n**Viktig information om Casey:**\n\n* **Endast informationssyfte:** De svar Casey ger är endast avsedda för informationsändamål. Svaren ska inte tolkas som juridiskt bindande, professionell rådgivning eller ersättning för kontakt med en fysisk rådgivare.\n\n* **Personlig information:** Casey har tillgång till begränsad information om dina sparkonton, såsom saldo och ränta. Casey har inte full insyn i alla detaljer om ditt kundförhållande. För fullständig information rekommenderas att du kontaktar vår kundsupport.\n\n* **Juridisk ansvarsfrihet:** Nordiska ansvarar inte för beslut som fattas baserat på svar från Casey.",
-      "category": "Nordiska app",
-      "keywords": "fungerar, casey, bot, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How does Casey, the AI bot in Nordiska’s app, work?",
-      "answer": "Casey is an AI-powered digital assistant here to help you with questions about Nordiska. Casey can provide information about our savings products, account details, and more. In addition, Casey can answer certain personal questions about your savings, such as:\n\n* \"How much interest did I earn on my savings last year?\"\n\n* \"What is my savings account balance?\"\n\n* \"When does my fixed-term savings account mature?\"\n\n**To start a chat with Casey, follow these steps:**\n\n* **Log in to the Nordiska savings app**: Use BankID to log in to the app.\n\n* **Open the menu**: Tap the hamburger menu (three horizontal lines) at the top left of the home screen.\n\n* **Select “Chat”**: In the menu, select “Chat” to open the chat function.\n\n* **Start chatting with Casey**: When the chat opens, Casey will introduce herself and ask how she can help. Type your question directly into the message field to get a quick response.\n\n---\n\n**What is AI (Artificial Intelligence)?**\n\nArtificial intelligence (AI) is a technology that mimics human intelligence to perform tasks. Casey uses AI to understand and respond to your questions based on the information available about your account.\n\n---\n\n**Important information about Casey:**\n\n* **Informational purpose only**: The responses provided by Casey are for informational purposes only. They should not be interpreted as legally binding, professional advice, or a replacement for contacting customer support or a financial advisor.\n\n* **Personal information**: Casey has access to limited information about your savings account, such as your balance and interest. Casey does not have full insight into all details of your customer relationship. For complete information, please contact customer support.\n\n* **Legal disclaimer**: Nordiska is not responsible for decisions made based on responses from Casey.",
-      "category": "Nordiska App",
-      "keywords": "casey, bot, nordiska, app, work",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcb99bd791",
-    "zendeskId": 30634820753297,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur ändrar jag språk eller tema i Nordiskas app?",
-      "answer": "Gå till \"Inställningar\" i menyn i appen. Här kan du välja mellan olika språk och teman (ljus, mörk eller automatisk).",
-      "category": "Nordiska app",
-      "keywords": "ändrar, jag, språk, tema, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How do I change the language or theme in the Nordiska app?",
-      "answer": "Go to \"Settings\" in the app menu. There, you can choose between different languages and themes (light, dark, or automatic).",
-      "category": "Nordiska App",
-      "keywords": "change, language, theme, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcb3e3c711",
-    "zendeskId": 30634724804369,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur gör jag en insättning via Nordiskas app?",
-      "answer": "* **Klicka på \"Sätt in pengar\":** Alternativet finns på startsidan i appen.\n\n* **Följ instruktionerna:** Gör en överföring via din bank och använd det OCR-nummer och bankgiro som visas i appen. Observera att OCR-numret är unikt för respektive konto, och du kan enkelt kopiera dessa uppgifter direkt från appen för att underlätta överföringen.\n\n>\n\n*Observera:* I dagsläget görs insättningar manuellt från din bank.",
-      "category": "Nordiska app",
-      "keywords": "gör, jag, insättning, via, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How Do I Make a Deposit via the Nordiska App?",
-      "answer": "* **Click on \"Deposit Money\"**: This option is available on the app's home screen.\n\n* **Follow the Instructions**: Make a transfer via your bank using the bankgiro number and OCR number displayed in the app. Note that the OCR number is unique for each account, and you can easily copy these details directly from the app to facilitate the transfer.\n\n>\n\n*Note*: Currently, deposits are made manually from your bank.",
-      "category": "Nordiska App",
-      "keywords": "make, deposit, via, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1c1765f19691",
-    "zendeskId": 30886820157073,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur gör jag ett uttag från Nordiskas app?",
-      "answer": "För närvarande görs uttag via Internetbanken, som du nu kan öppna direkt från appen.\n\nFölj dessa steg:\n\n* **Öppna Nordiskas app.**\n\n* Klicka på **“Öppna nytt sparkonto i Internetbanken”** – detta öppnar Internetbanken direkt i appen.\n\n* Logga in med **BankID**.\n\n* Gå till menyn **“Insättning och överföring”** och välj **“Överföring”**.\n\n* **Ange beloppet** du vill överföra.\n\n* Under **“Till konto”**, välj det registrerade bankkontot dit pengarna ska överföras.\n\n* **Bekräfta uttaget** och följ instruktionerna på skärmen.\n\n---\n\n**Regler för uttag beroende på kontotyp:**\n\n* **Flex och Flex Plus:** Uttag kan göras när som helst utan avgifter.\n\n* **Likviditetskonto:** Uttag kan göras före löptidens slut, men en avgift på 0,75 % av det uttagna beloppet (minst 250 kronor) tillkommer.\n\n* **Fix-konto:** Uttag kan inte göras före löptidens slut. När löptiden är över, överförs kapitalet automatiskt till ditt Flex-konto.\n\n>\n\n*Observera:* Uttag kan ta upp till två bankdagar att behandlas beroende på din mottagande bank.",
-      "category": "Nordiska app",
-      "keywords": "gör, jag, uttag, från, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How Do I Make a Withdrawal from the Nordiska App?",
-      "answer": "At the moment, withdrawals are made through the Internet Bank, which you can now open directly from the app.\n\nFollow these steps:\n\n* **Open the Nordiska app.**\n\n* Tap **“Open new savings account in Internet Bank”** – this will open the Internet Bank directly within the app.\n\n* Log in with **BankID.**\n\n* In the menu, go to **“Deposits and Transfers”** and select **“Transfer.”**\n\n* **Enter the amount** you want to transfer.\n\n* Under **“To account,”** choose the registered bank account where the funds should be transferred.\n\n* **Confirm the withdrawal** and follow the on-screen instructions.\n\n>\n\n*Note*: Withdrawals can take up to two banking days to process, depending on your receiving bank.\n\n---\n\n**Withdrawal Rules Depending on Account Type:**\n\n* **Flex and Flex Plus**: Withdrawals can be made at any time without fees.\n\n* **Liquidity Account**: Withdrawals can be made before the end of the term, but a fee of 0.75% of the withdrawn amount (minimum 250 SEK) applies.\n\n* **Fix Account**: Withdrawals cannot be made before the end of the term. When the term ends, the capital is automatically transferred to your Flex account.",
-      "category": "Nordiska App",
-      "keywords": "make, withdrawal, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcb2cea891",
-    "zendeskId": 30634706643089,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Hur ser jag saldot och transaktionerna för mitt konto i Nordiskas app?",
-      "answer": "Klicka på ditt konto i översikten i appen. Du kan se en detaljerad historik över insättningar, uttag och överföringar.",
-      "category": "Nordiska app",
-      "keywords": "ser, jag, saldot, transaktionerna, mitt, konto, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "How Can I View My Account Balance and Transactions in the Nordiska App?",
-      "answer": "Click on your account in the app's overview. You can see a detailed history of deposits, withdrawals, and transfers.",
-      "category": "Nordiska App",
-      "keywords": "view, account, balance, transactions, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdcb8b2d511",
-    "zendeskId": 30634805482769,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Kan jag se information om fasta sparkonton i Nordiskas app?",
-      "answer": "Ja, fasta sparkonton visas under \"Sparande med fast ränta\" i översikten i appen. Här kan du se ränta, förfallodatum och saldon.",
-      "category": "Nordiska app",
-      "keywords": "jag, information, fasta, sparkonton, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Can I View Information About Fixed-Term Savings Accounts in the Nordiska App?",
-      "answer": "Yes, fixed-term savings accounts are displayed under \"Savings with Fixed Interest\" in the app's overview. Here, you can see interest rates, maturity dates, and balances.",
-      "category": "Nordiska App",
-      "keywords": "view, information, fixed, term, savings, accounts, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1bdccb15a891",
-    "zendeskId": 30635113949329,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Kan jag öppna ett nytt sparkonto via Nordiskas app?",
-      "answer": "Ja, det går nu att öppna ett nytt sparkonto direkt via appen.\n\nFölj dessa steg:\n\n* **Öppna Nordiskas app.**\n\n* Tryck på **“Öppna nytt sparkonto i Internetbanken.”**→ Internetbanken öppnas direkt i appen.\n\n* **Logga in med BankID.**\n\n* Klicka på **menyikonen (☰)** längst upp till höger för att öppna menyn.\n\n* Välj **“Öppna nytt konto.”**\n\n* Följ anvisningarna på skärmen och **signera med BankID**.\n\nDitt nya konto visas direkt under **“Mina konton”** i Internetbanken – och även i appen.",
-      "category": "Nordiska app",
-      "keywords": "jag, öppna, nytt, sparkonto, via, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Can I Open a New Savings Account via the Nordiska App?",
-      "answer": "Yes, you can now open a new savings account directly through the app.\n\nFollow these steps:\n\n* **Open the Nordiska app.**\n\n* Tap **“Open new savings account in the Internet Bank.”**→ The Internet Bank will open directly within the app.\n\n* **Log in with BankID.**\n\n* Tap the **menu icon (☰)** in the **top right corner** to open the menu.\n\n* Select **“Open new account.”**\n\n* Follow the on-screen instructions and **confirm with BankID**.\n\nYour new account will appear under **“My accounts”** in the Internet Bank – and also in the app.",
-      "category": "Nordiska App",
-      "keywords": "open, new, savings, account, via, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
-    "relationId": "b0000000-0000-0000-0000-1c18335ac791",
-    "zendeskId": 30890266380177,
-    "isCuratedUi": false,
-    "sv": {
-      "question": "Kan jag göra transaktioner mellan konton i Nordiskas app?",
-      "answer": "För närvarande görs överföringar via Internetbanken, som du nu kan öppna direkt från appen.\n\nFölj dessa steg:\n\n* **Öppna Nordiskas app.**\n\n* Klicka på **“Öppna nytt sparkonto i Internetbanken”** – detta öppnar Internetbanken direkt i appen.\n\n* Logga in med **BankID.**\n\n* Gå till menyn **“Insättning och överföring”** och välj **“Överföring.”**\n\n* **Ange beloppet** du vill överföra och välj **från vilket konto till vilket konto** överföringen ska göras.\n\n* **Bekräfta överföringen** och följ instruktionerna på skärmen.\n\n>\n\nObservera att vi arbetar med att på sikt möjliggöra transaktioner helt nativt i appen.",
-      "category": "Nordiska app",
-      "keywords": "jag, göra, transaktioner, mellan, konton, nordiskas, app, nordiska",
-      "helpfulCount": 0
-    },
-    "en": {
-      "question": "Can I make transactions between accounts in the Nordiska app?",
-      "answer": "At the moment, transfers are made through the Internet Bank, which you can now open directly from the app.\n\nFollow these steps:\n\n* **Open the Nordiska app.**\n\n* Tap **“Open new savings account in Internet Bank”** – this will open the Internet Bank directly within the app.\n\n* Log in with **BankID.**\n\n* In the menu, go to **“Deposits and Transfers”** and select **“Transfer.”**\n\n* **Enter the amount** you wish to transfer and choose **from which account to which account** the transfer should be made.\n\n* **Confirm the transfer** and follow the on-screen instructions.\n\n>\n\nPlease note that we are working to make it possible to perform transfers natively within the app in the future.",
-      "category": "Nordiska App",
-      "keywords": "make, transactions, accounts, nordiska, app",
-      "helpfulCount": 0
-    }
-  },
-  {
     "relationId": "b0000000-0000-0000-0000-1b2531937791",
     "zendeskId": 29846559487889,
     "isCuratedUi": false,
     "sv": {
       "question": "Hur beräknas räntan?",
       "answer": "Räntan på ditt saldo beräknas efter faktiskt antal dagar och baseras på ett år med 365 dagar. Intjänad ränta sätts in på ditt konto vid årets slut eller då kontot avslutas.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "beräknas, räntan, ränta, sparkonton",
       "helpfulCount": 0
     },
@@ -1984,7 +1528,7 @@
     "sv": {
       "question": "Hur beskattas räntan?",
       "answer": "Intjänad ränta klassas som en kapitalinkomst och beskattas med 30%. Nordiska drar av och betalar skatten i samband med att räntan kapitaliseras. Avdragen skatt och total intjänad ränta under föregående år står förtryckt i din deklaration under avsnitt 7.2 (ränteinkomster mm).",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "beskattas, räntan, ränta, sparkonton",
       "helpfulCount": 0
     },
@@ -2003,7 +1547,7 @@
     "sv": {
       "question": "Hur informeras jag om ränteändringar på mitt sparkonto?",
       "answer": "Räntehöjning kan ske snabbt. Vid en räntehöjning sker höjningen samma dag. Du meddelas alltid via meddelanden i internetbanken om eventuella ränteändringar. Den nya aktuella räntan finns på vår hemsida samt på [www.compricer.se](http://www.compricer.se/). Om du redan har ett rörligt sparkonto som berörs av höjningen ändras räntan automatiskt på ditt sparkonto samma dag. Vid en räntesänkning på Nordiska Flex eller Nordiska Flex Plus meddelar vi via meddelanden i internetbanken dig som kund 14 dagar innan räntesänkningen träder kraft, kolla där för att se aktuell information.\n\n**Så hittar du meddelanden i Internetbanken**\n\nVia appen\n\n* Öppna **Nordiskas app.**\n\n* Klicka på **“Öppna nytt sparkonto i Internetbanken.”**Internetbanken öppnas direkt i appen.\n\n* Logga in med **BankID.**\n\n* Klicka på **kuvertikonen (📩)** uppe i det högra hörnet bredvid ditt namn för att läsa dina meddelanden.\n\nVia hemsidan\n\n* Gå till [www.nordiska.se](https://www.nordiska.se).\n\n* Klicka på **“Logga in”** och välj **Internetbanken.**\n\n* Logga in med **BankID.**\n\n* Klicka på **kuvertikonen (📩)** uppe i det högra hörnet bredvid ditt namn för att läsa dina meddelanden.\n\n---\n\n**Viktigt att känna till**\n\nMeddelanden som skickas från **Nordiska** (t.ex. ränteändringar och annan kontoinformation) visas i **Internetbanken** – du kan nu nå den både via hemsidan **och direkt i appen via stegen ovan.**\n\n**Vill du kontakta kundtjänst?**Du kan skicka meddelanden till vår kundtjänst direkt i appen:\n\n* Öppna **Nordiskas app.**\n\n* Gå till **Meny → Support → Meddelanden.**\n\n* Här kan du skicka nya meddelanden eller svara på pågående ärenden.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "informeras, jag, ränteändringar, mitt, sparkonto, ränta, sparkonton",
       "helpfulCount": 0
     },
@@ -2022,7 +1566,7 @@
     "sv": {
       "question": "När kan jag förvänta mig en ränteändring på mitt sparkonto?",
       "answer": "Det är svårt att säga exakt när en ränteändring kommer att ske. Men så snart en räntehöjning eller räntesänkning sker, informerar vi våra kunder om detta för att de ska vara uppdaterade.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "jag, förvänta, mig, ränteändring, mitt, sparkonto, ränta, sparkonton",
       "helpfulCount": 0
     },
@@ -2041,7 +1585,7 @@
     "sv": {
       "question": "När och var betalas räntan ut för sparkonton?",
       "answer": "Räntan för Nordiskas sparkonton betalas ut enligt följande:\n\n* **Flex-konton**: Räntan kapitaliseras och betalas ut vid årsskiftet direkt till ditt sparkonto.\n\n* **Fix-konton**: Räntan kapitaliseras och betalas ut i slutet av bindningstiden tillsammans med kapitalet till ditt Flex-konto.\n\n* **Likviditetskonton**: Räntan kapitaliseras och betalas ut när löptiden för kontot är slut, direkt till ditt Flex-konto.\n\nRänta betalas även ut vid avslut av ett konto, om detta sker före nämnda tidpunkter.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "betalas, räntan, sparkonton, ränta",
       "helpfulCount": 0
     },
@@ -2060,7 +1604,7 @@
     "sv": {
       "question": "Ska jag betala skatt på ränteinkomster under 100 kr?",
       "answer": "Om den totala räntan du som kund erhållit på våra konton understiger 100 kr för året är dessa inte skattepliktiga. Har du flera sparanden i olika institut som tillsammans överstiger 500 kr, i erhållna räntor, är dessa däremot skattepliktiga.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "ska, jag, betala, skatt, ränteinkomster, 100, ränta, sparkonton",
       "helpfulCount": 0
     },
@@ -2079,7 +1623,7 @@
     "sv": {
       "question": "Vad innebär kapitaliserad ränta på mitt sparkonto?",
       "answer": "Kapitaliserad ränta är den ränta som har upplupit under sparperioden och betalats ut till kontot. Räntan kapitaliseras vid årsskiftet för Flex-konton och vid bindningstidens slut för Fix-konton. Ränta kapitaliseras också vid avslut av kontot.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "innebär, kapitaliserad, ränta, mitt, sparkonto, sparkonton",
       "helpfulCount": 0
     },
@@ -2098,7 +1642,7 @@
     "sv": {
       "question": "Varför har Nordiskas sparkonton olika räntor?",
       "answer": "Räntorna på Nordiskas sparkonton varierar beroende på flera faktorer som påverkar villkoren för varje konto. Några av de viktigaste faktorerna inkluderar:\n\n* **Kontots flexibilitet:** Sparkonton med fria insättningar och uttag, som Nordiska FLEX, har vanligtvis en rörlig ränta som kan justeras baserat på marknadsförhållanden.\n\n* **Bindningstid:** För konton med bindningstid, som Nordiska FIX, är räntan fast och bestäms vid öppningstillfället. Kortare bindningstider tenderar att ha högre räntor, medan längre bindningstider kan ha lägre räntor eftersom du låser pengarna under en längre period.\n\n* **Hållbarhet och inriktning:** Sparkonton som Nordiska FLEX GRÖN 🍀 är kopplade till hållbara investeringar, vilket kan påverka den erbjudna räntan.\n\nRäntorna justeras utifrån aktuella marknadsvillkor och ekonomiska förhållanden och kan därför variera över tid. För de senaste räntorna och fullständiga villkor, vänligen besök [Nordiskas hemsida.](https://www.nordiska.se/spara/)",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "nordiskas, sparkonton, olika, räntor, ränta",
       "helpfulCount": 0
     },
@@ -2117,7 +1661,7 @@
     "sv": {
       "question": "Varför ändras sparräntor?",
       "answer": "Sparräntor påverkas av flera faktorer och kan justeras över tid beroende på ekonomiska förhållanden och marknadsutveckling. Här är några av de vanligaste orsakerna:\n\n* **Marknadsräntor:** Sparräntor följer ofta det allmänna ränteläget i ekonomin, som styrs av centralbankernas styrräntor. Om styrräntan höjs eller sänks påverkar det bankernas kostnader för att låna och erbjuda sparräntor.\n\n* **Inflation:** När inflationen stiger kan banker behöva justera räntorna för att anpassa sig till den ekonomiska situationen och upprätthålla sparandets värde.\n\n* **Konkurrens på marknaden:** Räntorna påverkas av konkurrens mellan banker och andra aktörer som erbjuder sparprodukter. Detta kan leda till att räntor justeras för att förbli konkurrenskraftiga.\n\n* **Bindningstid och flexibilitet:** Sparkonton med längre bindningstid erbjuder ofta en fast ränta under perioden, medan konton med rörlig ränta anpassas löpande till marknadsvillkoren. Konton som tillåter fria insättningar och uttag har vanligtvis något lägre ränta på grund av den högre flexibiliteten.\n\n* **Bankens kapitalbehov:** Räntenivån kan också påverkas av bankens behov av att stärka sin kapitalbas eller finansiera specifika verksamheter, vilket kan resultera i justeringar av sparräntan.\n\nSparräntor är alltså dynamiska och anpassas för att spegla rådande ekonomiska förhållanden.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "ändras, sparräntor, ränta, sparkonton",
       "helpfulCount": 0
     },
@@ -2136,7 +1680,7 @@
     "sv": {
       "question": "Vilken typ av ränta erbjuder ni på era sparkonton?",
       "answer": "Vi erbjuder sparkonton med både rörlig och fast ränta. Räntan beror på vilket sparkonto du väljer att öppna.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "vilken, typ, ränta, erbjuder, era, sparkonton",
       "helpfulCount": 0
     },
@@ -2155,7 +1699,7 @@
     "sv": {
       "question": "Är räntan på mina sparkonton hos Nordiska skattepliktig?",
       "answer": "Om den totala räntan du erhåller på våra konton är under 100 kr för året är den inte skattepliktig. Om du däremot har flera sparkonton i olika institut, och den totala räntan överstiger 500 kr, är räntan skattepliktig. Nordiska drar av och betalar skatt i samband med att räntan kapitaliseras. Om du inte uppfyller skatteskyldigheten enligt ovan kommer eventuell tidigare dragen skatt att återföras till dig av Skatteverket i din deklaration.",
-      "category": "Ränta på sparkonton",
+      "category": "Ränta",
       "keywords": "räntan, mina, sparkonton, hos, nordiska, skattepliktig, ränta",
       "helpfulCount": 0
     },
@@ -3428,14 +2972,14 @@
     "sv": {
       "question": "Hur rensar jag cookies i min webbläsare?",
       "answer": "Att rensa cookies kan lösa problem med inloggning eller om Nordiskas webbplats inte fungerar som förväntat. Nedan hittar du instruktioner för olika webbläsare – både på dator och mobil.\n\n>\n\nEfter att du har rensat cookies och går tillbaka till [nordiska.se](https://www.nordiska.se/), se till att **acceptera alla kakor** om du ombeds göra det.\n\n---\n\n**På dator**\n\n**Google Chrome (Windows/macOS)**\n\n* Klicka på de tre prickarna uppe till höger\n\n* Välj **Inställningar**\n\n* Gå till **Sekretess och säkerhet**\n\n* Klicka på **Rensa webbinformation**\n\n* Välj tidsintervall, t.ex. \"Alltid\"\n\n* Markera **Cookies och annan webbplatsdata**\n\n* Klicka på **Rensa data**\n*Instruktion från Google:*\n[Google – Rensa data](https://support.google.com/chrome/answer/2392709?hl=sv)\n\n---\n\n**Microsoft Edge**\n\n* Klicka på de tre prickarna uppe till höger\n\n* Gå till **Inställningar > Sekretess, sökning och tjänster**\n\n* Klicka på **Välj vad du vill rensa**\n\n* Markera **Cookies och andra webbplatsdata**\n\n* Klicka på **Rensa nu**\n*Instruktion från Microsoft:*\n[Microsoft – Rensa webbläsardata](https://support.microsoft.com/sv-se/microsoft-edge/rensa-webbl%C3%A4sardata-i-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)\n\n---\n\n**Mozilla Firefox**\n\n* Klicka på de tre strecken uppe till höger\n\n* Gå till **Inställningar > Sekretess & säkerhet**\n\n* Scrolla till **Cookies och webbplatsdata**\n\n* Klicka på **Rensa data…**\n\n* Markera det du vill rensa och klicka på **Rensa**\n*Instruktion från Mozilla:*\n[Mozilla – Rensa kakor](https://support.mozilla.org/sv/kb/rensa-kakor-och-webbplatsdata-firefox)\n\n---\n\n**Safari (Mac)**\n\n* Klicka på **Safari** i menyraden\n\n* Välj **Inställningar** och gå till fliken **Sekretess**\n\n* Klicka på **Hantera webbplatsdata…**",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "rensar, jag, cookies, min, webbläsare, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "How do I clear cookies in my browser?",
       "answer": "Clearing cookies can resolve issues with logging in or if Nordiska’s website isn’t functioning as expected. Below you’ll find instructions for different browsers—both on desktop and mobile.\n\n>\n\nAfter clearing cookies and returning to [nordiska.se](https://www.nordiska.se/en/), make sure to accept all cookies if prompted.\n\n---\n\n**On Desktop**\n\n**Google Chrome (Windows/macOS)**\n\n* Click the three dots in the top right corner\n\n* Select **Settings**\n\n* Go to **Privacy and Security**\n\n* Click **Clear browsing data**\n\n* Choose a time range, e.g., “All time”\n\n* Check **Cookies and other site data**\n\n* Click **Clear data***Instruction from Google:*[Google – Clear data](https://support.google.com/chrome/answer/2392709?hl=en&co=GENIE.Platform%3DDesktop)\n\n---\n\n**Microsoft Edge**\n\n* Click the three dots in the top right corner\n\n* Go to **Settings > Privacy, search, and services**\n\n* Click **Choose what to clear**\n\n* Check **Cookies and other site data**\n\n* Click **Clear now***Instruction from Microsoft:*[Microsoft – Clear browsing data](https://support.microsoft.com/en-us/microsoft-edge/view-and-delete-browser-history-in-microsoft-edge-00cf7943-a9e1-975a-a33d-ac10ce454ca4)\n\n---\n\n**Mozilla Firefox**\n\n* Click the three bars in the top right corner\n\n* Go to **Settings > Privacy & Security**\n\n* Scroll to **Cookies and Site Data**\n\n* Click **Clear Data…**\n\n* Check what you want to delete and click **Clear***Instruction from Mozilla:*[Mozilla – Clear cookies](https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox)\n\n---\n\n**Safari (Mac)**\n\n* Click **Safari** in the menu bar\n\n* Select **Settings**, go to the **Privacy** tab\n\n* Click **Manage Website Data…**\n\n* Choose **Remove All** or select specific sites*Instruction from Apple:*[Apple – Safari on Mac](https://support.apple.com/en-il/guide/safari/sfri11471/mac)\n\n---\n\n**On Mobile**\n\n**Safari (iPhone/iPad)**",
-      "category": "Technical Questions",
+      "category": "Login & BankID",
       "keywords": "clear, cookies, browser, technical, questions",
       "helpfulCount": 0
     }
@@ -3447,14 +2991,14 @@
     "sv": {
       "question": "Hur skyddar Nordiska min information online?",
       "answer": "Vi använder avancerade säkerhetsåtgärder, inklusive kryptering och autentisering, för att skydda din information.",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "skyddar, nordiska, min, information, online, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "How does Nordiska protect my information online?",
       "answer": "We use advanced security measures, including encryption and authentication, to protect your information.",
-      "category": "Technical Questions",
+      "category": "Login & BankID",
       "keywords": "nordiska, protect, information, online, technical, questions",
       "helpfulCount": 0
     }
@@ -3466,14 +3010,14 @@
     "sv": {
       "question": "Jag får felmeddelandet \"The documents are not available\" eller \"Unable to create page\"",
       "answer": "**Tips:** Ladda ner [**Nordiska-appen**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)[**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)** – den öppnar **internetbanken** direkt i appen och minskar risken för fel som *“The documents are not available”* eller *“Unable to create page”*.\nMed **Nordiskas app** kan du logga in med **BankID** och hantera ditt sparande snabbare och säkrare, utan att behöva byta webbläsare.\nLäs mer om hur du laddar ner appen här: [Hur laddar jag ner Nordiskas sparapp](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp).\n\n---\n\nOm du får meddelandet **\"The documents are not available\" **eller **\"Unable to create page\"** när du loggar in eller ska signera med BankID beror det ofta på att du inte använder den förvalda webbläsaren i mobilen.\n\nNär du loggar in på Nordiskas sidor eller ska genomföra signeringar med BankID rekommenderar vi att du använder den förvalda webbläsaren på din mobil:\n\n* Safari på iPhone\n\n* Chrome på Android\n\nOm du har ändrat standardinställningarna kan det ibland orsaka problem.\n\n**iOS (iPhone/iPad)**\n\n* Gå till **Inställningar > Appar**\n\n* Tryck på **Standardappar** högst upp i listan över appar\n\n* Tryck på en funktion, till exempel **webbläsare**\n\n* Välj den app du vill använda som standard (t.ex. Safari eller Chrome)\n\n>\nPå iPhone är Safari normalt förvald från början.\nLäs mer hos Apple: [https://support.apple.com/sv-se/121430](https://support.apple.com/sv-se/121430?utm_source=chatgpt.com)\n\n**Android**\n\n* Öppna **Inställningar**\n\n* Gå till **Appar** eller **Appar och notiser** (namnet kan variera)\n\n* Välj **Standardappar** (*Default apps*)\n\n* Tryck på **Webbläsare**\n\n* Välj den webbläsare du vill sätta som förvald (t.ex. Chrome, Edge, Firefox)",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "jag, får, felmeddelandet, documents, are, not, available, unable, create, page, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "I get the error message \"The documents are not available\" or \"Unable to create page\"",
       "answer": "**Tip:** Download the [**Nordiska App**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)[**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)** – it opens the **Internet Bank** directly in the app and reduces the risk of errors like *“The documents are not available”* or *“Unable to create page.”*\nWith the **Nordiska App**, you can log in using **BankID** and manage your savings faster and more securely, without needing to switch browsers.\nLearn more about how to download the app here: [How do I download the Nordiska App](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App).\n\n---\n\nIf you see the message **\"The documents are not available\" **or **\"Unable to create page\"** when logging in or signing with BankID, it is often because you are not using the default browser on your mobile device.\n\nWhen logging in to Nordiska’s websites or signing with BankID, we recommend using the default browser on your mobile device:\n\n* Safari on iPhone\n\n* Chrome on Android\n\nIf you have changed the default browser settings, this may sometimes cause issues.\n\n**iOS (iPhone/iPad)**\n\n* Go to **Settings > Apps**\n\n* Tap **Default Apps** at the top of the list\n\n* Tap a function, such as **Browser**\n\n* Select the app you want to use as the default (e.g., Safari or Chrome)\n\n>\nOn iPhone, Safari is usually set as the default browser.\nLearn more on Apple’s support page: https://support.apple.com/en-us/121430\n\n**Android**\n\n* Open **Settings**\n\n* Go to **Apps** or **Apps & notifications** (the name may vary)\n\n* Select **Default apps**\n\n* Tap **Browser**\n\n* Choose the browser you want to set as default (e.g. Chrome, Edge, Firefox)\n\n>\nOn most Android phones, Chrome is usually set as the default browser.\n\n**Tip**",
-      "category": "Technical Questions",
+      "category": "Login & BankID",
       "keywords": "get, error, message, documents, are, not, available, unable, create, page, technical, questions",
       "helpfulCount": 0
     }
@@ -3485,14 +3029,14 @@
     "sv": {
       "question": "Jag får tekniskt fel när jag försöker logga in med BankID",
       "answer": "**Tips:** Prova att använda [**Nordiska-appen**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)**** – den öppnar **internetbanken** direkt i appen och gör inloggningen med **BankID** snabbare och smidigare.\nMed **Nordiskas app** kan du också snabbt komma åt dina **sparkonton**, **överföra pengar** och **hantera ditt sparande** var du än är.\nLäs mer om hur du laddar ner appen här: Hur laddar jag ner Nordiskas sparapp.\n\n---\n\nOm du får meddelandet *“Tekniskt fel”* när du loggar in med BankID kan det bero på din webbläsare, nätverksinställningar, säkerhetsprogram eller BankID-appen.\n\nProva att:\n\n* Testa att använda den **förvalda webbläsaren på din mobil** (t.ex. Safari på iPhone eller Chrome på Android) om inloggningen inte fungerar i en annan webbläsare.\n\n* Stänga av Wi-Fi och testa med mobildata, eller vice versa\n\n* Använda en uppdaterad webbläsare (Chrome, Edge, Safari eller Firefox)\n\n* Rensa cookies eller öppna sidan i inkognitoläge. Läs mer om du rensar cookies här: [Hur rensar jag cookies i min webbläsare?](https://support.nordiska.com/hc/sv/articles/35004129368465-Hur-rensar-jag-cookies-i-min-webbl%C3%A4sare)\n\n* Uppdatera virusskydd och webbläsare till den senaste versionen\n\n* Kontrollera att Nordiskas webbplatser tillåts i virusskydd och webbläsare\n\n* Kontrollera att din BankID-app fungerar och är uppdaterad\n\nOm du fortfarande inte kan logga in, är du välkommen att kontakta vår kundsupport på **08-23 28 00** eller via **info@nordiska.se**.",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "jag, får, tekniskt, fel, försöker, logga, bankid, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "I get a technical error when trying to log in with BankID",
       "answer": "**Tip:** Try using the [**Nordiska App**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)**** – it opens the **Internet Bank** directly in the app and makes logging in with **BankID** faster and smoother.\nWith the **Nordiska App**, you can also quickly access your **savings accounts**, **transfer money**, and **manage your finances** wherever you are.\nLearn more about how to download the app here: [How do I download the Nordiska App](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)\n\n---\n\nIf you see the message *“Technical error”* when logging in with BankID, it may be caused by your browser, network settings, security software, or the BankID app.\n\nTry the following:\n\n* Use the **default browser on your mobile device** (e.g. Safari on iPhone or Chrome on Android) if logging in does not work in another browser.\n\n* Turn off Wi-Fi and try using mobile data, or vice versa\n\n* Use an updated browser (Chrome, Edge, Safari, or Firefox)\n\n* Clear cookies or open the page in incognito/private mode\n\n* Update your antivirus software and browser to the latest version\n\n* Make sure Nordiska’s websites are allowed in your antivirus and browser settings\n\n* Check that your BankID app is updated and working properly\n\nIf you still cannot log in, you are welcome to contact our customer support at +46 8 23 28 00 or via info@nordiska.se",
-      "category": "Technical Questions",
+      "category": "Login & BankID",
       "keywords": "get, technical, error, trying, log, bankid, questions",
       "helpfulCount": 0
     }
@@ -3504,14 +3048,14 @@
     "sv": {
       "question": "Jag har problem med att logga in. Vad ska jag göra?",
       "answer": "**Tips:** Ladda ner [**Nordiska-appen**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)[**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)** – den öppnar **internetbanken** direkt i appen och gör inloggningen med **BankID** snabbare och mer stabil.\nMed **Nordiskas app** kan du också enkelt se saldo, överföra pengar och hantera ditt sparande utan att logga in via webbläsaren.\nLäs mer om hur du laddar ner appen här: [Hur laddar jag ner Nordiskas sparapp](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp).\n\n---\n\nOm du upplever problem med att logga in i Nordiskas internetbank, kan det bero på din webbläsare eller lokala inställningar.\n\n* Testa att använda den** förvalda webbläsaren** på din mobil (t.ex. Safari på iPhone eller Chrome på Android) om inloggningen inte fungerar i en annan webbläsare.\n\n* Stäng av wifi och testa med mobildata.\nIbland kan nätverksinställningar eller brandväggar blockera åtkomst.\n\n* Kontrollera att du använder en uppdaterad webbläsare, till exempel **Google Chrome**, **Microsoft Edge**, **Safari** eller **Firefox**.\nAnvänder du **Internet Explorer**? Vi stödjer inte den webbläsaren – byt gärna till en modern variant.\n\n* Testa att öppna sidan i **inkognitoläge ****eller ****privat ****fönster**. Då ignoreras tillfälliga cookies och tillägg som kan störa inloggningen.\n\n* Rensa dina cookies och webbläsardata, vilket ofta löser inloggningsproblem.\n**Läs mer om hur du rensar cookies här:** [Hur rensar jag cookies i min webbläsare?](https://support.nordiska.com/hc/sv/articles/35004129368465-Hur-rensar-jag-cookies-i-min-webbl%C3%A4sare)\n\n* När du besöker Nordiska på nytt efter att ha rensat cookies – **se till att acceptera alla kakor om du ombeds göra det**.",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "jag, problem, logga, ska, göra, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "I’m having trouble logging in. What should I do?",
       "answer": "**Tip:** Download the [**Nordiska App**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)[**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)** – it opens the **Internet Bank** directly in the app and makes logging in with **BankID** faster and more stable.\nWith the **Nordiska App**, you can also easily check your balance, transfer money, and manage your savings without logging in through a browser.\nLearn more about how to download the app here: [How do I download the Nordiska App](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)\n\n---\n\nIf you're experiencing issues logging into Nordiska’s Internet Bank, it may be due to your browser or local settings.\n\n* Use the **default browser** on your mobile device (e.g. Safari on iPhone or Chrome on Android) if login does not work in another browser.\n\n* Turn off Wi-Fi and try with mobile data. Sometimes network settings or firewalls can block access.\n\n* Try opening the page in **incognito mode** or **private browsing**. This ignores temporary cookies and extensions that may interfere with login.\n\n* Clear your cookies and browser data, which often solves login issues.\n**Learn how to clear cookies here**: [How do I clear cookies in my browser?](https://support.nordiska.com/hc/en-us/articles/35004129368465-How-do-I-clear-cookies-in-my-browser)\n\n* When you revisit Nordiska after clearing cookies—**make sure to accept all cookies if prompted**.\n\n* Ensure that your **BankID app is functioning properly**. You can test it on [BankID’s test page.](https://test.bankid.com/)\n\nIf you still can’t log in, you’re welcome to contact our customer support at **+46 8 23 28 00** or via email at info@nordiska.se.",
-      "category": "Technical Questions",
+      "category": "Login & BankID",
       "keywords": "having, trouble, logging, should, technical, questions",
       "helpfulCount": 0
     }
@@ -3523,14 +3067,14 @@
     "sv": {
       "question": "Varför fungerar inte BankID på min mobiltelefon?",
       "answer": "Från och med mars 2026 kommer BankID inte längre fungera på vissa äldre mobiltelefoner som saknar stöd för nya säkerhetsuppdateringar.\n\nOm BankID inte fungerar går det inte att logga in i internetbanken. Vi rekommenderar därför att du säkerställer att din mobiltelefon har stöd för aktuella uppdateringar.\n\nEnligt BankIDs nuvarande information planeras följande systemkrav från mars 2026:\n\n* **iPhone:** iOS 16 eller senare\n\n* **Android:** Android 9 eller senare\n\nHar du frågor är du alltid välkommen att kontakta oss.",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "fungerar, bankid, min, mobiltelefon, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "Why is BankID not working on my mobile phone?",
-      "answer": "From March 2026, BankID will no longer work on some older mobile phones that do not support new security updates.\n\nIf BankID does not work, you will not be able to log in to the online bank. We therefore recommend that you make sure your mobile phone supports current updates.\n\nAccording to BankID’s current information, the following system requirements are planned from March 2026:\n\n* **iPhone:** iOS 16 or later\n\n* **Android:** Android 9 or later\n\nIf you have any questions, you are always welcome to contact us.\n\nJag kan också göra den i ett mer **kort FAQ-format med fråga/svar-rubriker** om du vill lägga in den direkt på webben.",
-      "category": "Technical Questions",
+      "answer": "From March 2026, BankID will no longer work on some older mobile phones that do not support new security updates.\n\nIf BankID does not work, you will not be able to log in to the online bank. We therefore recommend that you make sure your mobile phone supports current updates.\n\nAccording to BankID’s current information, the following system requirements are planned from March 2026:\n\n* **iPhone:** iOS 16 or later\n\n* **Android:** Android 9 or later\n\nIf you have any questions, you are always welcome to contact us.",
+      "category": "Login & BankID",
       "keywords": "bankid, not, working, mobile, phone, technical, questions",
       "helpfulCount": 0
     }
@@ -3542,14 +3086,14 @@
     "sv": {
       "question": "Vilka webbläsare stöds av Nordiskas hemsida?",
       "answer": "Vi rekommenderar att du använder Chrome, Edge, Safari eller Firefox. Vi avråder från att använda Internet Explorer eftersom den inte stöds av vår tjänst.\n\n---\n\n**Tips:** Om du upplever problem med att öppna eller använda **Nordiskas hemsida**, prova att använda [**Nordiska-appen**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)[**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)**.\nAppen öppnar **internetbanken** direkt och fungerar oavsett webbläsare, vilket gör inloggning med **BankID** enklare och mer stabil.\nLäs mer om hur du laddar ner appen här: [Hur laddar jag ner Nordiskas sparapp](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp).",
-      "category": "Tekniska frågor",
+      "category": "Inloggning & BankID",
       "keywords": "webbläsare, stöds, nordiskas, hemsida, tekniska, frågor",
       "helpfulCount": 0
     },
     "en": {
       "question": "Which web browsers are supported by Nordiska’s website?",
       "answer": "We recommend using Chrome, Edge, Safari, or Firefox. We advise against using Internet Explorer, as it is not supported by our service.\n\n---\n\n**Tip:** If you experience issues opening or using **Nordiska’s website**, try using the [**Nordiska App**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)[**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)**.\nThe app opens the **Internet Bank** directly and works regardless of browser, making it easier and more stable to log in with **BankID**.\nLearn more about how to download the app here: [How do I download the Nordiska App](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App).",
-      "category": "Technical Questions",
+      "category": "Login & BankID",
       "keywords": "web, browsers, are, supported, nordiska, website, technical, questions",
       "helpfulCount": 0
     }
@@ -3561,14 +3105,14 @@
     "sv": {
       "question": "Hur anger jag mitt uttagskonto?",
       "answer": "Det gör du i samband med att du blir kund hos oss så att det finns förinlagt när du vill göra ett uttag. De flesta banker använder ett 4-siffrigt clearingnummer följt av kontonummer. Undantag gäller för Swedbankkonton där clearingnummer börjar på siffran 8.\n\nSwedbank\nHar du ett konto i Swedbank där clearingnumret börjar på siffran 8 som har 8 eller 9 kontosiffror behöver du lägga till en eller två nollor i början av kontonumret, så att det blir totalt 15 siffror (inklusive clearingnummer).\n\nExempel: CCCCC 0XXXXXXXXX\n\nC = Clearingnummer, X = Kontosiffra",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "anger, jag, mitt, uttagskonto, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How do I specify my withdrawal account?",
       "answer": "You do this when becoming a customer with us, so that the account is pre-registered when you want to make a withdrawal.Most banks use a 4-digit clearing number followed by the account number. An exception applies to **Swedbank accounts** where the clearing number starts with the digit 8.\n\n**Swedbank**If you have a Swedbank account where the clearing number starts with the digit 8 and the account number has 8 or 9 digits, you need to add one or two zeros at the beginning of the account number so that the total length becomes 15 digits (including the clearing number).\n\n**Example:** CCCCC 0XXXXXXXXX\n\n**C** = Clearing number, **X** = Account digit",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "specify, withdrawal, account, withdrawals",
       "helpfulCount": 0
     }
@@ -3580,14 +3124,14 @@
     "sv": {
       "question": "Hur gör jag ett uttag från mitt sparkonto hos Nordiska?",
       "answer": "För att göra ett uttag loggar du in på Internetbanken på [www.nordiska.se](http://www.nordiska.se). Välj \"Insättning och överföring\" och därefter \"Överföring\". Fyll i det belopp du vill överföra (även om du vill överföra hela saldot) och välj ditt uttagskonto i rullgardinsmenyn under \"Till konto\".\n\nObservera att olika regler gäller beroende på vilken typ av konto du har:\n\n* **Flex och Flex Plus**: Uttag kan göras när som helst utan avgifter.\n\n* **Likviditetskonto**: Uttag kan göras före löptidens slut, men det tillkommer en avgift på 0,75 % av uttaget belopp, minst 250 kronor.\n\n* **Fix-konto**: Uttag kan inte göras före löptidens slut. När löptiden går ut överförs kapitalet automatiskt till ditt Flex-konto.\n\n---\n\n**Tips:** För närvarande görs uttag via **Internetbanken**, som du nu kan öppna direkt från [**Nordiska-appen**](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp)****.\nDet gör det snabbare och enklare att logga in med **BankID** och genomföra överföringar mellan dina konton.\n\n**Följ dessa steg:**\n\n* Öppna **Nordiskas app**.\n\n* Tryck på **“Öppna nytt sparkonto i Internetbanken”** – detta öppnar Internetbanken direkt i appen.\n\n* Logga in med **BankID**.\n\n* Gå till menyn **“Insättning och överföring”** och välj **“Överföring”**.\n\n* Ange beloppet du vill överföra (även om du vill föra över hela saldot).\n\n* Under **“Till konto”**, välj det registrerade bankkontot dit pengarna ska skickas.\n\n* Bekräfta uttaget och följ instruktionerna på skärmen.\n\nLäs mer om hur du laddar ner appen här: [Hur laddar jag ner Nordiskas sparapp](https://support.nordiska.com/hc/sv/articles/30635739319185-Hur-laddar-jag-ner-Nordiskas-sparapp).",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "gör, jag, uttag, från, mitt, sparkonto, hos, nordiska",
       "helpfulCount": 0
     },
     "en": {
       "question": "How do I make a withdrawal from my savings account at Nordiska?",
       "answer": "To make a withdrawal, log in to the Internet Bank at [www.nordiska.se](https://www.nordiska.se/en/). Select \"Deposit and Transfer\" and then \"Transfer.\" Enter the amount you wish to transfer (even if you want to transfer the entire balance) and choose your registered withdrawal account from the dropdown menu under \"To account.\"\n\n**Please note that different rules apply depending on the type of account you have:**\n\n* **Flex and Flex Plus:** Withdrawals can be made at any time without fees.\n\n* **Liquidity Account:** Withdrawals can be made before the end of the term, but a fee of 0.75% of the withdrawn amount (minimum 250 SEK) applies.\n\n* **Fix Account:** Withdrawals cannot be made before the end of the term. When the term ends, the capital is automatically transferred to your Flex account.\n\n---\n\n**Tip:** Withdrawals are currently made via the **Internet Bank**, which you can now open directly from the [**Nordiska App**](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App)****.\nThis makes it faster and easier to log in with **BankID** and transfer money between your accounts.\n\n**Follow these steps:**\n\n* Open the **Nordiska App**.\n\n* Tap **“Open new savings account in the Internet Bank”** – this opens the Internet Bank directly in the app.\n\n* Log in using **BankID**.\n\n* Go to **“Deposit and transfer”** in the menu and select **“Transfer.”**\n\n* Enter the amount you want to transfer (even if you wish to transfer the full balance).\n\n* Under **“To account,”** select the registered bank account you want the funds sent to.\n\n* Confirm the withdrawal and follow the on-screen instructions.\n\nLearn more about how to download the app here: [How do I download the Nordiska App](https://support.nordiska.com/hc/en-us/articles/30635739319185-How-do-I-download-the-Nordiska-App).",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, withdrawal, savings, account, nordiska, withdrawals",
       "helpfulCount": 0
     }
@@ -3599,14 +3143,14 @@
     "sv": {
       "question": "Hur lång tid tar det tills jag ser pengarna på mitt uttagskonto när jag har gjort ett uttag?",
       "answer": "Normalt kommer pengarna fram till ditt uttagskonto nästkommande bankdag.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "lång, tid, tar, tills, jag, ser, pengarna, mitt, uttagskonto, gjort, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How long does it take for the money to appear in my withdrawal account after making a withdrawal?",
       "answer": "Normally, the funds will arrive in your withdrawal account on the next banking day.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "long, take, money, appear, withdrawal, account, making, withdrawals",
       "helpfulCount": 0
     }
@@ -3618,14 +3162,14 @@
     "sv": {
       "question": "Hur många uttag kan jag göra från Nordiska Flex och Nordiska Flex Plus?",
       "answer": "Både Nordiska Flex och Nordiska Flex Plus erbjuder obegränsat antal fria uttag utan några avgifter. Du kan ta ut pengar när som helst utan kostnad.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "många, uttag, jag, göra, från, nordiska, flex, plus, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How many withdrawals can I make from Nordiska Flex and Nordiska Flex Plus?",
       "answer": "Both Nordiska Flex and Nordiska Flex Plus offer an unlimited number of free withdrawals without any fees. You can withdraw money at any time at no cost.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "many, withdrawals, make, nordiska, flex, plus",
       "helpfulCount": 0
     }
@@ -3637,14 +3181,14 @@
     "sv": {
       "question": "Hur ska mitt föranmälda konto anges?",
       "answer": "De flesta banker använder ett 4-siffrigt clearingnummer följt av ett 7-siffrigt kontonummer, det vill säga totalt 11 siffror.\n\nUndantag gäller för:\n\n**Swedbank**\nHar du ett konto i Swedbank med 8 eller 9 kontosiffror behöver du lägga till en eller två nollor i början av kontonumret, så att det blir totalt 15 siffror (inklusive clearingnummer).\n\nExempel: CCCCC 0XXXXXXXXX\n\nC = Clearingnummer, X = Kontosiffra\n\n**Nordea personkonto**\nHar du personkonto i Nordea anges detta med clearingnummer 3300 följt av 10 siffror i kontonummer – ditt personnummer.\n\nExempel: CCCC XXXXXXXXXX\n\nC = Clearingnummer, X = Kontosiffra\n\n**Handelsbanken**\nHandelsbanken har 13 kontosiffror.\n\nExempel: CCCC XXXXXXXXX\n\nC = Clearingnummer, X = Kontosiffra",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "ska, mitt, föranmälda, konto, anges, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How should my registered account be specified?",
       "answer": "Most banks use a 4-digit clearing number followed by a 7-digit account number, totaling 11 digits.\n\nExceptions apply to:\n\n**Swedbank**\nIf you have an account with Swedbank with 8 or 9 account digits, you need to add one or two zeros at the beginning of the account number so that the total becomes 15 digits (including the clearing number).\n**Example**: CCCCC 0XXXXXXXXX\nC = Clearing number, X = Account number\n\n**Nordea personal account**\nIf you have a personal account with Nordea, it is entered with the clearing number 3300 followed by 10 digits in the account number – your personal number.\n**Example**: CCCC XXXXXXXXXX\nC = Clearing number, X = Account number\n\n**Handelsbanken**\nHandelsbanken has 13 account digits.\n**Example**: CCCC XXXXXXXXXX\nC = Clearing number, X = Account number",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "should, registered, account, specified, withdrawals",
       "helpfulCount": 0
     }
@@ -3656,14 +3200,14 @@
     "sv": {
       "question": "Hur vet jag att mitt uttag har genomförts?",
       "answer": "När ditt uttag har genomförts visas det som en **transaktion under ditt sparkonto när du loggar in i Nordiskas Internetbank**. Normalt tar det **1–2 bankdagar** innan pengarna syns på ditt konto, beroende på mottagande bank.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "vet, jag, mitt, uttag, genomförts, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How do I know when my withdrawal has been processed?",
       "answer": "Once your withdrawal has been processed, it will appear as a **transaction under your savings account when you log in to Nordiska’s Internet Bank**. Normally, it takes **1–2 business days** for the funds to appear in your account, depending on your receiving bank.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "know, withdrawal, has, been, processed, withdrawals",
       "helpfulCount": 0
     }
@@ -3675,14 +3219,14 @@
     "sv": {
       "question": "Hur ändrar jag mitt föranmälda uttagskonto?",
       "answer": "Du ändrar ditt uttagskonto i Internetbanken. Klicka på ditt namn uppe i högra hörnet och sedan på **\"Mina uppgifter\"**. Välj därefter **\"Ändra\"** under rubriken **\"Mitt föranmälda konto för uttag\"**.\n\nDitt kontonummer verifieras via Bankgirocentralen och det tar **2 bankdagar** från att du har ändrat uttagskonto tills dess att kontot är godkänt.\n\nTänk på att:\n\n* Uttagskontot måste stå i ditt namn\n\n* Kontot måste vara ett **transaktionskonto.**",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "ändrar, jag, mitt, föranmälda, uttagskonto, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "How do I change my registered withdrawal account?",
       "answer": "You can change your withdrawal account in the Internet Bank. Click your name in the top right corner and then select **“My details.”** Choose **“Change”** under **“My registered withdrawal account.”**\n\nYour account number is verified via Bankgirocentralen, and it takes **2 banking days** from the time you update the account until it is approved.\n\nPlease note:\n\n* The withdrawal account must be in your name\n\n* The account must be a **transaction account.**",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "change, registered, withdrawal, account, withdrawals",
       "helpfulCount": 0
     }
@@ -3694,14 +3238,14 @@
     "sv": {
       "question": "Kan jag ange ett konto hos Avanza eller Nordnet som uttagskonto?",
       "answer": "Nej, det går inte att ange ett konto hos **Avanza** eller **Nordnet** som uttagskonto för ditt **sparkonto hos Nordiska**.\nUttag kan endast göras till ett **föranmält transaktionskonto** hos en svensk bank som står i **ditt eget namn**.\n\nKontot behöver vara ett **vanligt bankkonto**, till exempel hos **SEB, Swedbank, Handelsbanken, Nordea** eller en annan traditionell svensk bank.\n\nInvesteringskonton hos **Avanza** eller **Nordnet** kan **inte användas för utbetalningar**, eftersom de **inte är vanliga transaktionskonton**.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, ange, konto, hos, avanza, nordnet, uttagskonto, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I register an Avanza or Nordnet account for withdrawals?",
       "answer": "No, it is not possible to register an **Avanza** or **Nordnet** account as the withdrawal account for your **savings account with Nordiska**.\nWithdrawals can only be made to a **pre-registered transaction account** with a Swedish bank that is held **in your own name**.\n\nThe account must be a **regular bank account**, for example with **SEB, Swedbank, Handelsbanken, Nordea**, or another traditional Swedish bank.\n\nInvestment accounts with **Avanza** or **Nordnet** cannot be used for withdrawals, as they are **not standard transaction accounts**.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "register, avanza, nordnet, account, withdrawals",
       "helpfulCount": 0
     }
@@ -3713,14 +3257,14 @@
     "sv": {
       "question": "Kan jag göra utlandsbetalningar från mitt sparkonto eller få ett IBAN-nummer?",
       "answer": "Nej, det är inte möjligt att göra utlandsbetalningar från ditt sparkonto. Du kan endast göra uttag till ett bankkonto i en annan svensk bank där du är kontohavare. Sparkontot saknar både IBAN-nummer och BIC/Swift-kod, vilket innebär att internationella betalningar inte är möjliga.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, utlandsbetalningar, från, mitt, sparkonto, iban, nummer, uttag",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make international payments from my savings account or get an IBAN number?",
       "answer": "No, it is not possible to make international payments from your savings account. You can only make withdrawals to a bank account in another Swedish bank where you are the account holder. The savings account lacks both an IBAN number and a BIC/Swift code, which means that international payments are not possible.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, international, payments, savings, account, get, iban, number, withdrawals",
       "helpfulCount": 0
     }
@@ -3732,14 +3276,14 @@
     "sv": {
       "question": "Kan jag göra uttag till ett betal- eller kreditkort (Visa, Mastercard, American Express)?",
       "answer": "Nej, det är inte möjligt att göra **uttag till betal- eller kreditkort** från ditt **sparkonto hos Nordiska**. **Kortöverföringar** stöds inte, oavsett om kortet är ett **Visa**, **Mastercard** eller **American Express**.\n\nUttag kan endast göras till ett **föranmält svenskt transaktionskonto** som står i **ditt eget namn**. Det innebär att pengarna sätts in på ditt **vanliga bankkonto**, till exempel hos **SEB, Swedbank, Handelsbanken, Nordea, Länsförsäkringar Bank, ICA Banken, Skandiabanken, Sparbanken Syd, Danske Bank i Sverige** eller **Ålandsbanken.**",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, uttag, betal, kreditkort, visa, mastercard, american, express, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make withdrawals to a debit or credit card (Visa, Mastercard, American Express)?",
       "answer": "No, it is not possible to make **withdrawals to debit or credit cards** from your **savings account with Nordiska**.\n**Card transfers** are not supported, regardless of whether the card is a **Visa**, **Mastercard**, or **American Express**.\n\nWithdrawals can only be made to a **pre-registered Swedish transaction account** held **in your own name**.\nThis means the money is transferred to your **regular bank account**, for example with **SEB, Swedbank, Handelsbanken, Nordea, Länsförsäkringar Bank, ICA Banken, Skandiabanken, Sparbanken Syd, Danske Bank in Sweden**, or **Ålandsbanken Sverige**.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, withdrawals, debit, credit, card, visa, mastercard, american, express",
       "helpfulCount": 0
     }
@@ -3751,14 +3295,14 @@
     "sv": {
       "question": "Kan jag göra uttag till ett IBAN eller utländskt konto?",
       "answer": "Nej, det är inte möjligt att göra uttag från **Nordiska** till **IBAN** eller **utländska bankkonton**.\nUttag kan endast göras till ett **föranmält svenskt transaktionskonto** som står i **ditt eget namn**.\n\nUttag till internationella konton, digitala betaltjänster eller neobanker, till exempel **Revolut**, **Wise** eller liknande tjänster är **inte möjliga**, eftersom dessa konton **inte hanterar inhemska Bankgiroöverföringar**.\n\nFör snabba och säkra utbetalningar från **Nordiska**, se till att ditt registrerade uttagskonto är ett **svenskt bankkonto**, till exempel hos **SEB, Swedbank, Handelsbanken, Nordea, Länsförsäkringar Bank, ICA Banken, Skandiabanken, Sparbanken Syd, Danske Bank i Sverige** eller **Ålandsbanken Sverige**.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, uttag, iban, utländskt, konto, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make a withdrawal to an IBAN or foreign account?",
       "answer": "No, it is not possible to make withdrawals from Nordiska to **IBAN** or **foreign bank accounts**.\nWithdrawals can only be made to a **pre-registered Swedish transaction account** held **in your own name**.\n\nWithdrawals to international accounts, digital payment services, or neobanks, for example **Revolut, Wise**, or similar services, are **not possible**, as these accounts **do not support domestic Bankgiro transfers**.\n\nFor fast and secure payouts from Nordiska, make sure your registered withdrawal account is a **Swedish bank account**, for example with **SEB, Swedbank, Handelsbanken, Nordea, Länsförsäkringar Bank, ICA Banken, Skandiabanken, Sparbanken Syd, Danske Bank in Sweden**, or **Ålandsbanken Sverige**.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, withdrawal, iban, foreign, account, withdrawals",
       "helpfulCount": 0
     }
@@ -3770,14 +3314,14 @@
     "sv": {
       "question": "Kan jag göra uttag till ett ISK, kapitalförsäkring eller aktie- & fondkonto (AF)?",
       "answer": "Nej, det är inte möjligt att göra uttag till ett **Investeringssparkonto (ISK)**, en **kapitalförsäkring** eller ett **aktie- & fondkonto (AF)**.\nUttag kan endast göras till ett **föranmält transaktionskonto** hos en svensk bank som står i **ditt eget namn**.\n\nISK-, kapitalförsäkrings- och AF-konton är **investeringskonton**, inte vanliga bankkonton, och kan därför **inte ta emot utbetalningar**.\n\n**Exempel på godkända banker:**\nDanske Bank i Sverige, Handelsbanken, ICA Banken, Länsförsäkringar Bank, Nordea, SEB, Skandiabanken, Sparbanken Syd, Swedbank och Sparbankerna samt Ålandsbanken.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, uttag, isk, kapitalförsäkring, aktie, fondkonto, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make withdrawals to an ISK or a capital insurance account?",
       "answer": "No, it is not possible to make withdrawals to an **Investment Savings Account (ISK)**, a **capital insurance account**, or a **share and fund account (AF)**.\nWithdrawals can only be made to a **pre-registered transaction account** with a Swedish bank that is held **in your own name**.\n\nISK, capital insurance, and AF accounts are **investment accounts**, not regular bank accounts, and therefore **cannot receive withdrawals**.\n\n**Examples of accepted banks:**\nDanske Bank in Sweden, Handelsbanken, ICA Banken, Länsförsäkringar Bank, Nordea, SEB, Skandiabanken, Sparbanken Syd, Swedbank and the Savings Banks, and Ålandsbanken Sverige.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, withdrawals, isk, capital, insurance, account",
       "helpfulCount": 0
     }
@@ -3789,14 +3333,14 @@
     "sv": {
       "question": "Kan jag göra uttag till mitt Swish?",
       "answer": "Nej, det är inte möjligt att göra uttag till **Swish** från ditt **sparkonto hos Nordiska**.\n**Swish** är en betaltjänst för snabba överföringar mellan privatpersoner och företag, och kan **inte användas för utbetalningar från sparkonton**.\n\nUttag kan endast göras till ett **föranmält svenskt transaktionskonto** som står i **ditt eget namn**.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, uttag, mitt, swish, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make withdrawals to Swish?",
       "answer": "No, it is not possible to make withdrawals to **Swish** from your **savings account with Nordiska**.\n**Swish** is a payment service for fast transfers between individuals and companies and **cannot be used for withdrawals from savings accounts**.\n\nWithdrawals can only be made to a **pre-registered Swedish transaction account** held **in your own name**.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, withdrawals, swish",
       "helpfulCount": 0
     }
@@ -3808,14 +3352,14 @@
     "sv": {
       "question": "Kan jag göra uttag till någon annans konto?",
       "answer": "Nej, uttag kan endast göras till ett **föranmält svenskt transaktionskonto** som står i **ditt eget namn**.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, göra, uttag, någon, annans, konto, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Can I make withdrawals to someone else’s account?",
       "answer": "No, withdrawals can only be made to a **registered Swedish transaction account** held **in your own name**.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "make, withdrawals, someone, else, account",
       "helpfulCount": 0
     }
@@ -3827,14 +3371,14 @@
     "sv": {
       "question": "Mitt föranmälda konto är inte godkänt, vad ska jag göra?",
       "answer": "Om ditt föranmälda konto inte har blivit godkänt kan det bero på att kontonumret inte stämmer eller att kontot i den andra banken inte står i ditt namn. Kontrollera kontonumret och försök igen. Du kan bara ange ett kontonummer som står i ditt eget namn när du vill göra uttag från ditt konto i Nordiska.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "mitt, föranmälda, konto, godkänt, ska, jag, göra, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "My registered account is not approved, what should I do?",
       "answer": "If your registered account has not been approved, it may be because the account number is incorrect or the account in the other bank is not in your name. Verify the account number and try again. You can only register an account that is in your name when you want to make withdrawals from your account with Nordiska.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "registered, account, not, approved, should, withdrawals",
       "helpfulCount": 0
     }
@@ -3846,14 +3390,14 @@
     "sv": {
       "question": "Varför kan jag inte ange ett uttagskonto hos Lunar?",
       "answer": "**Lunar är en dansk bank** som erbjuder svenska konton med clearing- och kontonummer.\nTrots det hanteras deras betalningsflöden via en **mellanliggande partnerbank** och inte direkt via de svenska betalningssystemen (Bankgirot och RIX).\n\nAv den anledningen kan **konton hos Lunar inte användas som uttagskonto hos Nordiska**.\n\nUttag från ditt sparkonto hos Nordiska kan endast göras till ett **föranmält svenskt transaktionskonto i ditt eget namn**, hos en bank som är direkt ansluten till de svenska betalningssystemen — till exempel:\n**SEB, Swedbank, Handelsbanken, Nordea, Länsförsäkringar Bank, ICA Banken, Skandiabanken, Sparbanken Syd, Danske Bank i Sverige** eller **Ålandsbanken**.",
-      "category": "Uttag från sparkonto",
+      "category": "Insättningar & Uttag",
       "keywords": "jag, ange, uttagskonto, hos, lunar, uttag, från, sparkonto",
       "helpfulCount": 0
     },
     "en": {
       "question": "Why can’t I choose Lunar as my withdrawal account?",
       "answer": "**Lunar is a Danish bank** that offers Swedish accounts with clearing and account numbers.\nHowever, their payment flows are processed through an **intermediary partner bank** rather than directly via the Swedish payment systems (Bankgirot and RIX).\n\nBecause of this, **accounts with Lunar cannot be used as withdrawal accounts with Nordiska**.\n\nWithdrawals from your savings account with Nordiska can only be made to a **registered Swedish transaction account in your own name** at a bank that is directly connected to the Swedish payment systems — for example:\n**SEB, Swedbank, Handelsbanken, Nordea, Länsförsäkringar Bank, ICA Banken, Skandiabanken, Sparbanken Syd, Danske Bank in Sweden**, or **Ålandsbanken**.",
-      "category": "Withdrawals",
+      "category": "Deposits & Withdrawals",
       "keywords": "choose, lunar, withdrawal, account, withdrawals",
       "helpfulCount": 0
     }
