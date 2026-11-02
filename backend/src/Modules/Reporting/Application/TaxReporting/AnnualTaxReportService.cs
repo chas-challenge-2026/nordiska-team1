@@ -48,6 +48,16 @@ public sealed class AnnualTaxReportService
         int taxYear,
         CancellationToken cancellationToken)
     {
+        int currentYear = _timeProvider.GetUtcNow().Year;
+
+        if (taxYear >= currentYear)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(taxYear),
+                taxYear,
+                "Tax reports can only be generated for completed years.");
+        }
+
         TaxReport? existingReport =
             await _repository.GetByCustomerAndYearAsync(
                 customerId,

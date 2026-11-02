@@ -5,6 +5,7 @@ using Moq;
 using Nordiska.FrontendApi.Endpoints.Reporting;
 using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Reporting.Contracts.Requests;
+using Nordiska.Modules.Reporting.Contracts.Responses;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Reporting;
 

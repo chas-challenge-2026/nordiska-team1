@@ -64,6 +64,15 @@ public sealed class TaxReportController : ControllerBase
                 Status = StatusCodes.Status404NotFound
             });
         }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Ogiltigt skatteår",
+                Detail = exception.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
 
     }
 
