@@ -58,7 +58,7 @@ export default function ActionButton({
             disabled={disabled || isPending}
             onClick={onClick}
             aria-label={ariaLabel}
-            className={`inline-flex min-h-11 group items-center justify-center rounded-lg ${bgColor} ${border} px-4 py-2.5 text-sm font-semibold ${textColor} transition ${disabled || isPending ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${hoverBgColor} ${hoverTextColor} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 [direction:ltr]`}>
+            className={`whitespace-nowrap inline-flex min-h-11 group items-center justify-center rounded-lg ${bgColor} ${border} px-4 py-2.5 text-sm font-semibold ${textColor} transition ${disabled || isPending ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${hoverBgColor} ${hoverTextColor} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 [direction:ltr]`}>
 
             { prefixIcon &&
                 <span aria-hidden="true" style={{maskImage: `url("${prefixIcon}")`, WebkitMaskImage: `url("${prefixIcon}")`,}} className={`mr-2 h-6 w-6  mask-contain   mask-center mask-no-repeat ${iconColor} ${hoverIconColor}`}/>
