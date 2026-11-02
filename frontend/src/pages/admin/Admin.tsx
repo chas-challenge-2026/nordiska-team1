@@ -67,7 +67,7 @@ export default function Admin(){
         <main className="font-inter">
             {!isAdmin ? (
             <>
-                <div className="mt-10">
+                <div>
                     <h1 className="text-3xl text-center font-semibold mb-10">ADMIN</h1>
 
                     { notAuthorized &&
