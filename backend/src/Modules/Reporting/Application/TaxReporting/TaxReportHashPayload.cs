@@ -7,7 +7,7 @@ namespace Nordiska.Modules.Reporting.Application;
 
 public sealed record TaxReportHashPayload(
     long CustomerId,
-    long AccountId,
+    long? AccountId,
     int TaxYear,
     long TotalInterestMinor,
     long TaxDeductedMinor,
@@ -78,9 +78,14 @@ public sealed class TaxReportPayloadHasher
                 "customerId",
                 payload.CustomerId);
 
-            writer.WriteNumber(
-                "accountId",
-                payload.AccountId);
+            if (payload.AccountId is long accountId)
+            {
+                writer.WriteNumber("accountId", accountId);
+            }
+            else
+            {
+                writer.WriteNull("accountId");
+            }
 
             writer.WriteNumber(
                 "taxYear",

@@ -2,7 +2,7 @@ namespace Nordiska.Modules.Reporting.Application;
 
 public sealed record AnnualTaxCalculation(
     long CustomerId,
-    long AccountId,
+    long? AccountId,
     int TaxYear,
     long TotalInterestMinor,
     long TaxDeductedMinor,
@@ -16,7 +16,6 @@ public interface IAnnualTaxCalculationQuery
 {
     Task<AnnualTaxCalculation?> GetAsync(
         long customerId,
-        long accountId,
         int taxYear,
         CancellationToken cancellationToken);
 }

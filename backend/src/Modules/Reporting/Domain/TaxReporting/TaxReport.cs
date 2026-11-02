@@ -7,7 +7,7 @@ public sealed class TaxReport
 
     private TaxReport(
         long customerId,
-        long accountId,
+        long? accountId,
         int taxYear,
         long totalInterestMinor,
         long taxDeductedMinor,
@@ -38,7 +38,7 @@ public sealed class TaxReport
 
     public long CustomerId { get; private set; }
 
-    public long AccountId { get; private set; }
+    public long? AccountId { get; private set; }
 
     public int TaxYear { get; private set; }
 
@@ -71,7 +71,7 @@ public sealed class TaxReport
 
     public static TaxReport Create(
         long customerId,
-        long accountId,
+        long? accountId,
         int taxYear,
         long totalInterestMinor,
         long taxDeductedMinor,

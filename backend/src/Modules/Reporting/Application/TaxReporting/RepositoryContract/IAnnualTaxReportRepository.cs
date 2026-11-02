@@ -8,9 +8,8 @@ public interface IAnnualTaxReportRepository
         long taxReportId,
         CancellationToken cancellationToken);
 
-    Task<TaxReport?> GetByAccountAndYearAsync(
+    Task<TaxReport?> GetByCustomerAndYearAsync(
         long customerId,
-        long accountId,
         int taxYear,
         CancellationToken cancellationToken);
 

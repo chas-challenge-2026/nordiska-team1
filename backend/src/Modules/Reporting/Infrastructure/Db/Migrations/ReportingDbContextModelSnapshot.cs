@@ -306,7 +306,7 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<long>("AccountId")
+                    b.Property<long?>("AccountId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("AccountName")
@@ -375,7 +375,12 @@ namespace Nordiska.Modules.Reporting.Infrastructure.Db.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId", "TaxYear")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"AccountId\" IS NOT NULL");
+
+                    b.HasIndex("CustomerId", "TaxYear")
+                        .IsUnique()
+                        .HasFilter("\"AccountId\" IS NULL");
 
                     b.ToTable("tax_reports", "reporting");
                 });

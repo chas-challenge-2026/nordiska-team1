@@ -203,7 +203,7 @@ internal sealed class FakeTaxReports : IAnnualTaxReportRepository
     public Task<TaxReport?> GetByIdAsync(long taxReportId, CancellationToken cancellationToken)
         => Task.FromResult(Report);
 
-    public Task<TaxReport?> GetByAccountAndYearAsync(long customerId, long accountId, int taxYear, CancellationToken cancellationToken)
+    public Task<TaxReport?> GetByCustomerAndYearAsync(long customerId, int taxYear, CancellationToken cancellationToken)
         => throw new NotSupportedException();
 
     public Task<TaxReportJob?> GetLatestJobAsync(long taxReportId, CancellationToken cancellationToken)

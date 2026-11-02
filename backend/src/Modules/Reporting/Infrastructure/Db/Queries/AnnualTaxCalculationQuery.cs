@@ -16,7 +16,6 @@ public sealed class AnnualTaxCalculationQuery
 
     public async Task<AnnualTaxCalculation?> GetAsync(
         long customerId,
-        long accountId,
         int taxYear,
         CancellationToken cancellationToken)
     {
@@ -36,7 +35,7 @@ public sealed class AnnualTaxCalculationQuery
             .SqlQuery<AnnualTaxCalculation>($"""
                 SELECT
                     c."Id" AS "CustomerId",
-                    a."Id" AS "AccountId",
+                    NULL::bigint AS "AccountId",
                     {taxYear} AS "TaxYear",
 
                     COALESCE(
@@ -51,10 +50,10 @@ public sealed class AnnualTaxCalculationQuery
                         0
                     )::bigint AS "TaxDeductedMinor",
 
-                    a."CurrencyCode" AS "Currency",
+                    MIN(a."CurrencyCode") AS "Currency",
                     c."Name" AS "CustomerName",
-                    a."AccountNumber" AS "AccountNumber",
-                    COALESCE(a."AccountName", a."AccountType") AS "AccountName"
+                    'ALL' AS "AccountNumber",
+                    'Skatteunderlag ' || {taxYear} AS "AccountName"
 
                 FROM banking.savings_accounts a
 
@@ -68,17 +67,13 @@ public sealed class AnnualTaxCalculationQuery
                     AND t."CreatedAt" < {nextYearStart}
 
                 WHERE
-                    a."Id" = {accountId}
-                    AND c."Id" = {customerId}
+                    c."Id" = {customerId}
 
                 GROUP BY
                     c."Id",
-                    a."Id",
-                    a."CurrencyCode",
                     c."Name",
-                    a."AccountNumber",
-                    a."AccountName",
-                    a."AccountType"
+                    {taxYear}
+                HAVING COUNT(DISTINCT a."CurrencyCode") = 1
                 """)
             .SingleOrDefaultAsync(cancellationToken);
 

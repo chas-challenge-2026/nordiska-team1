@@ -33,7 +33,7 @@ public sealed class TaxReportController : ControllerBase
     [ProducesResponseType(typeof(AnnualTaxReportAcceptedResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
 
-    public async Task<ActionResult<AnnualTaxReportAcceptedResponse>> Create(TaxReportRequest request,
+    public async Task<ActionResult<AnnualTaxReportAcceptedResponse>> Create(AnnualTaxReportRequest request,
         CancellationToken ct)
     {
         long customerId = User.GetRequiredCustomerId();
@@ -43,7 +43,6 @@ public sealed class TaxReportController : ControllerBase
             RequestAnnualTaxReportResult result =
                 await _service.RequestAsync(
                     customerId,
-                    request.AccountId,
                     request.TaxYear,
                     ct);
 

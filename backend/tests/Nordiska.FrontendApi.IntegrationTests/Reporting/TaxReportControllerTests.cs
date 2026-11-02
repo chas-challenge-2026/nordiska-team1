@@ -4,11 +4,30 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Nordiska.FrontendApi.Endpoints.Reporting;
 using Nordiska.Modules.Reporting.Application;
+using Nordiska.Modules.Reporting.Contracts.Requests;
 
 namespace Nordiska.FrontendApi.IntegrationTests.Reporting;
 
 public sealed class TaxReportControllerTests
 {
+    [Fact]
+    public async Task Create_UsesAuthenticatedCustomerAndTaxYearOnly()
+    {
+        var service = new Mock<IAnnualTaxReportService>();
+        service
+            .Setup(s => s.RequestAsync(42, 2025, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RequestAnnualTaxReportResult(12, 7, "Pending", DateTimeOffset.UtcNow));
+
+        var queries = new Mock<IAnnualTaxReportQueryService>();
+        TaxReportController controller = CreateController(queries.Object, service: service.Object);
+
+        ActionResult<AnnualTaxReportAcceptedResponse> response =
+            await controller.Create(new AnnualTaxReportRequest(2025), CancellationToken.None);
+
+        Assert.IsType<AcceptedResult>(response.Result);
+        service.VerifyAll();
+    }
+
     [Fact]
     public async Task GetStatus_CurrentCustomerOwnsReport_ReturnsStatus()
     {
@@ -98,12 +117,11 @@ public sealed class TaxReportControllerTests
 
     private static TaxReportController CreateController(
         IAnnualTaxReportQueryService queries,
-        IReportInboxSynchronizer? synchronizer = null)
+        IReportInboxSynchronizer? synchronizer = null,
+        IAnnualTaxReportService? service = null)
     {
-        var service = new Mock<IAnnualTaxReportService>();
-
         var controller = new TaxReportController(
-            service.Object,
+            service ?? new Mock<IAnnualTaxReportService>().Object,
             queries,
             synchronizer);
 

@@ -1,7 +1,5 @@
 namespace Nordiska.Modules.Reporting.Contracts.Responses;
 
-
-
 public sealed record AnnualTaxReportAcceptedResponse(
     long TaxReportId,
     long JobId,
@@ -15,7 +13,7 @@ public sealed record AnnualTaxReportAcceptedResponse(
 public sealed record TaxReportResponse(
     long Id,
     long CustomerId,
-    long AccountId,
+    long? AccountId,
     int TaxYear,
     long TotalInterestMinor,
     long TaxDeductedMinor,
@@ -36,4 +34,3 @@ public sealed record TaxReportJobResponseAsync(
     long? DocumentId = null,
     string? Error = null
 );
- 
