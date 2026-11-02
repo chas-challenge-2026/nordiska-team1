@@ -45,7 +45,7 @@ export default function TotalBalanceAndBtns({totalBalance, selectedAccountId, on
                     >
                         {t("accounts-route.accounts-header.new-account")}
                     </button>
-                    <TaxReportBtn key={selectedAccountId} accountId={selectedAccountId} />
+                    <TaxReportBtn key={selectedAccountId}/>
                 </div>
             </div>
             
@@ -67,7 +67,7 @@ export default function TotalBalanceAndBtns({totalBalance, selectedAccountId, on
                     <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/plus.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5" />
                     {t("accounts-route.accounts-header.new-account")}
                 </button>
-                <TaxReportBtn key={selectedAccountId} accountId={selectedAccountId} />
+                <TaxReportBtn key={selectedAccountId} />
             </div>
         </div>
     </div>

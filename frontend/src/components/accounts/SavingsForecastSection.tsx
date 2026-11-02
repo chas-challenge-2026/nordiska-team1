@@ -9,7 +9,7 @@ import ActionButton from "./ActionButton";
 type SavingsForecastSectionProps = {
     balance: number;
     interestRate: number;
-    onDeposit: () => void;
+    onDeposit: (monthlyAmount: number) => void;
     zeroAccount?: boolean;
 };
 
@@ -76,7 +76,7 @@ export default function SavingsForecastSection({balance, interestRate, onDeposit
 
                         <ActionButton
                             style="regular"
-                            onClick={onDeposit}
+                            onClick={() => onDeposit(monthlyAmount)}
                             ariaLabel={t("accounts-route.savings-goal.create-savingsgoal")}
                             prefixIcon="/icons/deposit.svg"
                             title={t("accounts-route.savings-goal.deposit")}

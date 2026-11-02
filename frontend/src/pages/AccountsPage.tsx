@@ -260,7 +260,15 @@ export default function AccountsPage() {
                                                     <SavingsForecastSection
                                                         balance={expandedAccount.balance}
                                                         interestRate={expandedAccount.interestRate}
-                                                        onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
+                                                        onDeposit={(monthlyAmount) => {
+                                                            const params = new URLSearchParams({
+                                                                account: String(expandedAccount.id),
+                                                                amount: String(monthlyAmount),
+                                                                monthly: "true",
+                                                            });
+
+                                                            navigate(`/transfer?${params.toString()}`);
+                                                        }}
                                                         zeroAccount
                                                     />
                                                 </div>
@@ -402,7 +410,15 @@ export default function AccountsPage() {
                         <SavingsForecastSection 
                             balance={expandedAccount.balance}
                             interestRate={expandedAccount.interestRate}
-                            onDeposit={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
+                            onDeposit={(monthlyAmount) => {
+                                const params = new URLSearchParams({
+                                    account: String(expandedAccount.id),
+                                    amount: String(monthlyAmount),
+                                    monthly: "true",
+                                });
+
+                                navigate(`/transfer?${params.toString()}`);
+                            }}
                         />
                     </Modal>
                 }
