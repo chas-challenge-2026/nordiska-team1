@@ -1,6 +1,7 @@
 import Collapsible from "../Collapsible";
 import FaqFeedback from "./FaqFeedback";
 import type { Faq } from "../../types/types";
+import { useViewFaq } from "../../hooks/useFaqs";
 
 type FeedbackAction = "increase" | "decrease";
 
@@ -21,11 +22,18 @@ const FaqItem = ({
     onOpenChange,
     onFeedback,
 }: FaqItemProps) => {
+    const { mutate } = useViewFaq();
+
+    const handleOpenChange = (open: boolean) => {
+        if (open) mutate(faq.id);
+        onOpenChange(open);
+    };
+
     return (
         <Collapsible
             title={faq.question ?? ""}
             isOpen={isOpen}
-            onOpenChange={onOpenChange}
+            onOpenChange={handleOpenChange}
         >
             {() => (
                 <>

@@ -1,5 +1,5 @@
 import axiosInstance from "./axiosInstance";
-import type { FaqResponse} from "../types/types";
+import type { FaqResponse } from "../types/types";
 
 // ------ GET FAQ:s ------
 // -----------------------
@@ -10,6 +10,8 @@ export type GetFaqParams = {
     search?: string;
     category?: string;
     keyword?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
 };
 
 export async function getFaqs(
@@ -24,15 +26,23 @@ export async function getFaqs(
                 ...(params.search && { search: params.search }),
                 ...(params.category && { category: params.category }),
                 ...(params.keyword && { keyword: params.keyword }),
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder
             },
         }
     );
     return res.data;
 }
 
+// ------ REGISTER VIEW ON FAQ
+
+export async function viewFaq(id: number): Promise<void> {
+    await axiosInstance.post(`/faqs/${id}/view`);
+}
+
 // ------ GET MATCHING FAQ PAIR ------
 // -----------------------------------
-export async function getFaqsByRelationId(relationId: string){
+export async function getFaqsByRelationId(relationId: string) {
     const res = await axiosInstance.get(`/faqs/relation/${relationId}`);
     return res.data;
 }
@@ -48,7 +58,7 @@ export async function getRelevantFaqs(language: string, searchTerms: string, num
                 {
                     params: {
                         page: 1,
-                        pageSize: {numOfHits},
+                        pageSize: { numOfHits },
                         search: term,
                     },
                 }
@@ -57,7 +67,7 @@ export async function getRelevantFaqs(language: string, searchTerms: string, num
     );
     const faqs = results.flatMap((res) => res.data.items);
     // Ta bort dubbletter
-    return Array.from( new Map(faqs.map((faq) => [faq.id, faq])).values()).slice(0, numOfHits);
+    return Array.from(new Map(faqs.map((faq) => [faq.id, faq])).values()).slice(0, numOfHits);
 }
 
 // ------ GET CATEGORIES ------
@@ -73,7 +83,7 @@ export async function getFaqCategories(
 // -----------------------------------------
 type HelpAction = "increase" | "decrease";
 
-export async function logHelpCount(id:number, action: HelpAction): Promise<number> {
+export async function logHelpCount(id: number, action: HelpAction): Promise<number> {
     const res = await axiosInstance.patch(`faqs/${id}/${action}`);
     return res.status
 }
@@ -116,5 +126,51 @@ export async function editFaq(
 // ------------------------
 export async function deleteFaq(id: number) {
     const res = await axiosInstance.delete(`/faq/${id}`);
+    return res.data;
+}
+
+export type NoResultFaqQueryItem = {
+    query: string;
+    lang: "sv" | "en";
+    searchCount: number;
+    lastSearchedAt: string;
+}
+
+export async function getNoResultFaqs({ lang, days, limit }: AnalyticsParams): Promise<NoResultFaqQueryItem[]> {
+    const res = await axiosInstance.get("/faqs/analytics/content-gaps", { params: { lang, days, limit } });
+    return res.data;
+}
+
+export type FaqArticle = {
+    id: number;
+    question: string;
+    category: string;
+    lang: string;
+    viewCount: number;
+}
+
+export interface FaqAnalyticsSummary {
+    searches: {
+        totalSearches: number;
+        successfulSearches: number;
+        noResultSearches: number;
+        uniqueQueries: number;
+        successRatePercent: number;
+        topContentGaps: NoResultFaqQueryItem[];
+    };
+    views: {
+        totalViews: number;
+        mostViewedArticles: FaqArticle[]
+    }
+}
+
+export type AnalyticsParams = {
+    lang?: "sv" | "en";
+    days?: number;
+    limit?: number;
+};
+
+export async function getFaqAnalyticsSummary({ lang, days, limit }: AnalyticsParams): Promise<FaqAnalyticsSummary> {
+    const res = await axiosInstance.get("/faqs/analytics/summary", { params: { lang, days, limit } });
     return res.data;
 }
