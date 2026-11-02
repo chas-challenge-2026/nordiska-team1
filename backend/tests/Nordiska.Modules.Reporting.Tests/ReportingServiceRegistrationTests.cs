@@ -24,6 +24,7 @@ public sealed class ReportingServiceRegistrationTests
         services.AddSingleton(Mock.Of<ICustomerService>());
         services.AddSingleton(Mock.Of<ITransactionService>());
         services.AddReportingModuleInfrastructure(configuration);
+        services.AddScoped<ITaxReportService, TaxReportService>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateOnBuild = true,

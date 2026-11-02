@@ -21,7 +21,7 @@ public sealed class WorkerServiceRegistrationTests
         var services = new ServiceCollection();
         services.AddSingleton(configuration);
         services.AddLogging();
-        services.AddReportingWorkerInfrastructure(configuration);
+        services.AddReportingModuleInfrastructure(configuration);
         services.AddScoped<IPdfBatchGenerator, PdfGenerationService>();
         services.AddSingleton<AnnualTaxReportNativeMapper>();
         services.AddScoped<ITaxReportRenderPipeline, TaxReportRenderPipeline>();
