@@ -200,7 +200,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                             ALLVARLIGHETSGRAD
                         </span>
                         <select
-                            className="w-full rounded-md border border-primary-hover bg-white px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                            className="w-full min-h-10 bg-white border-2 border-dark-navy rounded-sm px-3 py-2 focus:outline-none focus:border-dark-navy focus:ring-3 focus:ring-nordiska-orange"
                             value={form.severity}
                             onChange={(e) => updateField("severity", e.target.value)}
                         >
@@ -228,7 +228,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                         </span>
                         <input
                             type="datetime-local"
-                            className="w-full rounded-md border border-primary-hover bg-white px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                            className="w-full min-h-10 bg-white border-2 border-dark-navy rounded-sm px-3 py-2 focus:outline-none focus:border-dark-navy focus:ring-3 focus:ring-nordiska-orange"
                             value={form.startDate}
                             onChange={(e) => updateField("startDate", e.target.value)}
                         />
@@ -240,7 +240,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                         </span>
                         <input
                             type="datetime-local"
-                            className="w-full rounded-md border border-primary-hover bg-white px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                            className="w-full min-h-10 bg-white border-2 border-dark-navy rounded-sm px-3 py-2 focus:outline-none focus:border-dark-navy focus:ring-3 focus:ring-nordiska-orange"
                             value={form.endDate}
                             onChange={(e) => updateField("endDate", e.target.value)}
                         />

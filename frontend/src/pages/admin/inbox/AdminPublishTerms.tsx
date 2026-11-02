@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { usePublishNewTerms } from "../../../hooks/inbox/useStaffInbox";
-import { input, section } from "./adminStyles";
+import { input, section, label, fieldPanel } from "./adminStyles";
 import AdminButton from "../../../components/admin/ui/AdminButton";
 import AdminStatus from "../../../components/admin/ui/AdminStatus";
 import { AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
@@ -43,23 +43,23 @@ export default function AdminPublishTerms() {
             <AdminSectionTitle>Publicera villkor</AdminSectionTitle>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2 max-w-[600px]">
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Kod
                     <input className={input} required value={code} onChange={(e) => setCode(e.target.value)} />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Titel
                     <input className={input} required value={title} onChange={(e) => setTitle(e.target.value)} />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Version
                     <input className={input} type="number" min={1} required value={version} onChange={(e) => setVersion(e.target.value)} />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Dokument-ID
                     <input className={input} type="number" min={1} required value={documentId} onChange={(e) => setDocumentId(e.target.value)} />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Gäller från
                     <input className={input} type="date" required value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
                 </label>

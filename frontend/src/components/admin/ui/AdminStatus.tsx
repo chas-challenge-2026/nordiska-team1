@@ -10,12 +10,14 @@ const defaults = {
     empty: "Inget att visa.",
 };
 
+const base = "bg-white border border-gray-300 border-l-4 rounded-sm px-4 py-3 text-[15px]";
+
 export default function AdminStatus({ kind, children, className = "" }: Props) {
     const text = children ?? defaults[kind];
 
     if (kind === "error") {
         return (
-            <p role="alert" className={`text-sm text-error ${className}`.trim()}>
+            <p role="alert" className={`${base} border-error text-error font-semibold ${className}`.trim()}>
                 {text}
             </p>
         );
@@ -23,11 +25,11 @@ export default function AdminStatus({ kind, children, className = "" }: Props) {
 
     if (kind === "loading") {
         return (
-            <p role="status" className={`text-sm ${className}`.trim()}>
+            <p role="status" className={`${base} border-l-dark-navy text-gray-600 ${className}`.trim()}>
                 {text}
             </p>
         );
     }
 
-    return <p className={`text-sm ${className}`.trim()}>{text}</p>;
+    return <p className={`${base} border-l-gray-400 text-gray-600 ${className}`.trim()}>{text}</p>;
 }

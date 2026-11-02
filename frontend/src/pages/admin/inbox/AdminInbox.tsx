@@ -21,7 +21,7 @@ export default function AdminInbox() {
     const active: SectionKey = SECTIONS.some((s) => s.key === param) ? (param as SectionKey) : "threads";
 
     return (
-        <main className="font-inter p-5 flex flex-col gap-6">
+        <main className="font-inter px-6 py-6 flex flex-col gap-7">
             <header className="flex flex-col gap-3">
                 <AdminPageTitle>Kommunikationscenter</AdminPageTitle>
                 <div>
@@ -33,9 +33,9 @@ export default function AdminInbox() {
                 {SECTIONS.map((s) => (
                     <AdminButton
                         key={s.key}
+                        variant={s.key === active ? "navActive" : "neutral"}
                         aria-current={s.key === active ? "page" : undefined}
                         onClick={() => setSearchParams({ section: s.key })}
-                        className={s.key === active ? "!bg-gray-400" : ""}
                     >
                         {s.label}
                     </AdminButton>

@@ -79,7 +79,7 @@ export default function DeleteFaq() {
         <AdminPageTitle danger>Radera</AdminPageTitle>
 
         <section className="w-full">
-            <AdminSectionTitle className="block w-[60%] mx-auto mt-10">SÖK EFTER FAQ</AdminSectionTitle>
+            <AdminSectionTitle className="mt-10">SÖK EFTER FAQ</AdminSectionTitle>
             {/* Språkval - radio buttons */}
             <div className="flex justify-center gap-10 mt-3">
                 <label>

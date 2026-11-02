@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useCreateBroadcastMessage } from "../../../hooks/inbox/useStaffInbox";
 import type { Categories } from "../../../types/inbox";
-import { input, section } from "./adminStyles";
+import { input, section, label, fieldPanel } from "./adminStyles";
 import AdminButton from "../../../components/admin/ui/AdminButton";
 import AdminStatus from "../../../components/admin/ui/AdminStatus";
 import { AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
@@ -55,7 +55,7 @@ export default function AdminBroadcast() {
                     <input type="checkbox" checked={broadcastToAll} onChange={(e) => setBroadcastToAll(e.target.checked)} />
                     Skicka till alla kunder
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Kund-ID
                     <input
                         className={input}
@@ -67,18 +67,18 @@ export default function AdminBroadcast() {
                         onChange={(e) => setCustomerId(e.target.value)}
                     />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Ämne
                     <input className={input} required value={subject} onChange={(e) => setSubject(e.target.value)} />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Kategori
                     <select className={input} value={category} onChange={(e) => setCategory(e.target.value as Categories | "")}>
                         <option value="">Ingen</option>
                         {CATEGORIES.map((name) => <option key={name} value={name}>{name}</option>)}
                     </select>
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Meddelande
                     <textarea className={input} rows={5} required value={body} onChange={(e) => setBody(e.target.value)} />
                 </label>

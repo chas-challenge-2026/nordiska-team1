@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useCloseThread, useReopenThread } from "../../../hooks/inbox/useThreads";
 import { useStaffSendReply, useStaffThread, useStaffThreads } from "../../../hooks/inbox/useStaffInbox";
 import { formatDate, formatTime } from "../../../utils/date";
-import { input, section, smallBtn } from "./adminStyles";
+import { input, section, smallBtn, label, fieldPanel } from "./adminStyles";
 import AdminButton from "../../../components/admin/ui/AdminButton";
 import AdminStatus from "../../../components/admin/ui/AdminStatus";
 import { AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
@@ -44,7 +44,7 @@ export default function AdminThreads() {
             <AdminSectionTitle>Trådar</AdminSectionTitle>
 
             <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-3">
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Sök
                     <input
                         className={input}
@@ -52,7 +52,7 @@ export default function AdminThreads() {
                         onChange={(e) => setDraft({ ...draft, searchTerm: e.target.value })}
                     />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Status
                     <select
                         className={input}
@@ -64,7 +64,7 @@ export default function AdminThreads() {
                         <option value="Closed">Stängd</option>
                     </select>
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Kund-ID
                     <input
                         className={input}
@@ -188,7 +188,7 @@ function ThreadPanel({ id }: { id: number }) {
 
                     {/* Reply only once staff can see what they answer. */}
                     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-                        <label className="flex flex-col">
+                        <label className={`${label} ${fieldPanel}`}>
                             Svar
                             <textarea
                                 className={input}

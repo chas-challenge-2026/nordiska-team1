@@ -6,5 +6,5 @@ type Props = {
 };
 
 export default function AdminCard({ children, className = "" }: Props) {
-    return <div className={`border rounded-lg p-4 ${className}`.trim()}>{children}</div>;
+    return <div className={`bg-white border-2 border-black rounded-sm p-5 ${className}`.trim()}>{children}</div>;
 }

@@ -371,7 +371,7 @@ export default function FaqStatistics() {
                                     <AdminButton
                                         variant="yellow"
                                         onClick={() => openEdit(faq.relationId)}
-                                        className="self-start !border-2 !px-3 !py-0.5 text-sm"
+                                        className="self-start !min-h-8 !px-3 text-sm"
                                     >
                                         Redigera
                                     </AdminButton>
