@@ -96,7 +96,7 @@ public class SavingsGoalAutomationTests
         }
     }
 
-    private class InMemoryTxRepo : ITransactionRepository
+    private class InMemoryTxRepo : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
     {
         public readonly List<LedgerEntry> Store = new();
         private long _next = 1;
@@ -358,7 +358,9 @@ public class SavingsGoalAutomationTests
             plan
         });
 
-        var txService = new TransactionService(txRepo, accRepo, NullLogger<TransactionService>.Instance, goalRepo);
+        txRepo.Accounts = accRepo;
+        txRepo.Goals = goalRepo;
+        var txService = new TransactionService(txRepo, accRepo, NullLogger<TransactionService>.Instance);
 
         var response = await txService.ProcessPlannedTransactionAsync(99);
 
@@ -419,7 +421,9 @@ public class SavingsGoalAutomationTests
             plan
         });
 
-        var txService = new TransactionService(txRepo, accRepo, NullLogger<TransactionService>.Instance, goalRepo);
+        txRepo.Accounts = accRepo;
+        txRepo.Goals = goalRepo;
+        var txService = new TransactionService(txRepo, accRepo, NullLogger<TransactionService>.Instance);
 
         var response = await txService.ProcessPlannedTransactionAsync(99);
 

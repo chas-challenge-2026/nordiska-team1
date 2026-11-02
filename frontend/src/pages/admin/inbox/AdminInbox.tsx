@@ -2,7 +2,8 @@ import { useNavigate, useSearchParams } from "react-router";
 import AdminThreads from "./AdminThreads";
 import AdminBroadcast from "./AdminBroadcast";
 import AdminPublishTerms from "./AdminPublishTerms";
-import { btn } from "./adminStyles";
+import AdminButton from "../../../components/admin/ui/AdminButton";
+import { AdminPageTitle } from "../../../components/admin/ui/AdminTitle";
 
 const SECTIONS = [
     { key: "threads", label: "Trådar" },
@@ -20,25 +21,24 @@ export default function AdminInbox() {
     const active: SectionKey = SECTIONS.some((s) => s.key === param) ? (param as SectionKey) : "threads";
 
     return (
-        <main className="font-inter p-5 flex flex-col gap-6">
-            <header className="flex justify-between items-center border-b-2 pb-3">
-                <h1 className="text-2xl">Kommunikationscenter</h1>
-                <button type="button" onClick={() => navigate("/admin")} className={btn}>
-                    Tillbaka
-                </button>
+        <main className="font-inter px-6 py-6 flex flex-col gap-7">
+            <header className="flex flex-col gap-3">
+                <AdminPageTitle>Kommunikationscenter</AdminPageTitle>
+                <div>
+                    <AdminButton onClick={() => navigate("/admin")}>Tillbaka</AdminButton>
+                </div>
             </header>
 
             <nav aria-label="Sektioner" className="flex flex-wrap gap-2">
                 {SECTIONS.map((s) => (
-                    <button
+                    <AdminButton
                         key={s.key}
-                        type="button"
+                        variant={s.key === active ? "navActive" : "neutral"}
                         aria-current={s.key === active ? "page" : undefined}
                         onClick={() => setSearchParams({ section: s.key })}
-                        className={`${btn} ${s.key === active ? "bg-light-gray" : ""}`}
                     >
                         {s.label}
-                    </button>
+                    </AdminButton>
                 ))}
             </nav>
 

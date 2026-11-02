@@ -20,7 +20,7 @@ namespace Nordiska.FrontendApi.IntegrationTests.BackgroundWorkers;
 
 public class PlannedTransactionsBackgroundWorkerTests
 {
-    private class FakeTxRepo : ITransactionRepository
+    private class FakeTxRepo : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
     {
         public readonly List<LedgerEntry> Store = new();
 

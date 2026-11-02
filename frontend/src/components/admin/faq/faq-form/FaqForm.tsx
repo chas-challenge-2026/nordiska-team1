@@ -79,7 +79,7 @@ export default function FaqForm({
                     error={errors.answer}
                     onChange={onAnswerChange}
                 />
-                <small className="text-right -mt-3">{data.answer.length}/{ANSWER_MAX}</small>
+                <small className="text-right -mt-3 pt-2">{data.answer.length}/{ANSWER_MAX}</small>
             </div>
 
             {/* Kategori */}

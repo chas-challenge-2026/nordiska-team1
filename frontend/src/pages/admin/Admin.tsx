@@ -3,6 +3,9 @@ import { useLogin } from "../../hooks/useLogin";
 import { useLogout } from "../../hooks/useLogout";
 import { useUserStore } from "../../store/userStore";
 import InputField from "../../components/forms/InputField";
+import AdminButton from "../../components/admin/ui/AdminButton";
+import { AdminPageTitle } from "../../components/admin/ui/AdminTitle";
+import AdminStatus from "../../components/admin/ui/AdminStatus";
 import { useState } from "react";
 import { isAxiosError } from "axios";
 
@@ -67,9 +70,8 @@ export default function Admin(){
         <main className="font-inter">
             {!isAdmin ? (
             <>
-                <div>
-                    <h1 className="text-3xl text-center font-semibold mb-10">ADMIN</h1>
-
+                <div className="mt-10">
+                    <AdminPageTitle className="mb-10">ADMIN</AdminPageTitle>
                     { notAuthorized &&
                         <div className="w-[500px] mx-auto mb-10">
                             <div className="border-8 border-red-500 bg-yellow-500 p-2">
@@ -77,10 +79,9 @@ export default function Admin(){
                                 <p>{notAuthorized}</p>
                             </div>
 
-                            <button onClick={() => navigate("/")}
-                                className="mt-5 block w-[350px] mx-auto bg-primary-blue p-2 mx-auto text-white text-sm hover:bg-nordiska-blue cursor-pointer">
+                            <AdminButton onClick={() => navigate("/")} className="mt-5 block w-[350px] mx-auto text-sm">
                                 Tillbaka till Kundportalen / Back to Customer Portal
-                            </button>
+                            </AdminButton>
                         </div>
                     }
 
@@ -103,47 +104,25 @@ export default function Admin(){
                             onChange={setPassword}
                             required
                         />
-                        <button type="submit" disabled={isPending} className="bg-primary-blue text-white p-1 cursor-pointer">
+                        <AdminButton type="submit" variant="green" disabled={isPending}>
                             {isPending ? "Loggar in..." : "Logga in"}
-                        </button>
-                        {emailError && <p className="text-sm text-error">{emailError}</p>}
+                        </AdminButton>
+                        {emailError && <AdminStatus kind="error">{emailError}</AdminStatus>}
                     </form>
                 </div>
             </>
             ) : (
             <>
-            <header className="p-5 flex justify-between items-center border-b-2">
-                <div>
-                    <h1 className="text-2xl">ADMIN</h1>
-                    <p>Inloggad som: {user?.email ? user?.email : "Admin"}</p>
-                </div>
-                <div>
-                    <button
-                        onClick={() => {handleLogout();}}
-                        className="border py-1 px-2 cursor-pointer hover:bg-light-gray font-semibold">
-                            Logga ut
-                    </button>
-                </div>
+            <AdminPageTitle>ADMIN</AdminPageTitle>
+            <header className="p-5 flex justify-between items-center">
+                <p>Inloggad som: {user?.email ? user?.email : "Admin"}</p>
+                <AdminButton onClick={() => {handleLogout();}}>Logga ut</AdminButton>
             </header>
 
-            <nav className="flex w-full mt-10 justify-center items-center">
-                <button 
-                    onClick={() => navigate("faq")}
-                    className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold"
-                >
-                        Hantera FAQ
-                </button>
-                <button
-                    onClick={() => navigate("operational-message")} 
-                    className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold">
-                        Driftmeddelande
-                </button>
-                <button
-                    onClick={() => navigate("inbox")}
-                    className="border p-4 m-2 cursor-pointer hover:bg-light-gray font-semibold"
-                >
-                    Kommunikationscenter
-                </button>
+            <nav className="flex w-full mt-10 justify-center items-center gap-4">
+                <AdminButton onClick={() => navigate("faq")}>Hantera FAQ</AdminButton>
+                <AdminButton onClick={() => navigate("operational-message")}>Driftmeddelande</AdminButton>
+                <AdminButton onClick={() => navigate("inbox")}>Kommunikationscenter</AdminButton>
             </nav>
             </>
             )}

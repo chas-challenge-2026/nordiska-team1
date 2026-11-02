@@ -20,6 +20,7 @@ export default function FaqPage() {
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("");
+    const PAGE_SIZE = 5;
 
     // FAQ state
     const [openFaqId, setOpenFaqId] =
@@ -39,7 +40,7 @@ export default function FaqPage() {
     }, [searchInput]);
 
     // FAQ data
-    const {data, isLoading, isError,} = useFaqs(i18n.language, page, search, category);
+    const {data, isLoading, isError,} = useFaqs(i18n.language, page, PAGE_SIZE, search, category, undefined, "views", "desc");
 
     // Categories
     const {data: categories = [], isError: categoriesError,} = useFaqCategories(i18n.language);

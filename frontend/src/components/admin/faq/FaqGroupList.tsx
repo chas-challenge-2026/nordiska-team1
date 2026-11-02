@@ -1,4 +1,6 @@
 import type { Faq, FaqGroup } from "../../../types/types";
+import AdminButton from "../ui/AdminButton";
+import AdminCard from "../ui/AdminCard";
 
 
 type Orders = "asc" | "desc" | undefined;
@@ -32,15 +34,12 @@ export default function FaqGroupList({
     sortingOrder
 }: FaqGroupListProps) {
 
-    const color = actionBtnStyle === "edit" ? "yellow-500" : "red-500";
+    const variant = actionBtnStyle === "edit" ? "yellow" : "red";
 
     return (
         <div className="mt-4 space-y-3 w-[80%] mx-auto">
             {faqGroups.map((group) => (
-                <div
-                    key={group.relationId}
-                    className="border rounded-lg p-4"
-                >
+                <AdminCard key={group.relationId}>
                     <div className="grid grid-cols-2 gap-6">
                         {(sortByHelpful ? sortByHelpfulCount(group.faqs, sortingOrder) : group.faqs).map((faq: Faq) => (
                             <div key={faq.id}>
@@ -67,16 +66,12 @@ export default function FaqGroupList({
 
                     {onAction && (
                         <div className="flex justify-end mt-4">
-                            <button
-                                type="button"
-                                onClick={() => onAction(group.relationId)}
-                                className={`border-5 bg-${color} border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-${color}`}
-                            >
+                            <AdminButton variant={variant} onClick={() => onAction(group.relationId)}>
                                 {actionLabel}
-                            </button>
+                            </AdminButton>
                         </div>
                     )}
-                </div>
+                </AdminCard>
             ))}
         </div>
     );
