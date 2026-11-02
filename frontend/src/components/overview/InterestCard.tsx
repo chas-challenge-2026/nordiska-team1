@@ -5,15 +5,14 @@ import { useGetAccounts } from "../../hooks/useAccounts";
 import { LoadingState, ErrorState } from "../StatusMessage";
 import { formatCurrencySmallSek } from "../../utils/currency";
 import OverviewCardHeader from "./OverviewCardHeader";
-import { OverviewCardFixedRow, OverviewCardRow } from "./OverviewCardRow";
+import { OverviewCardRow } from "./OverviewCardRow";
+import type { OverviewCardProps } from "../../pages/OverviewPage";
 
-export default function InterestCard() {
+export default function InterestCard({ showOnlyFavs }: OverviewCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { data: accounts, isPending, isError } = useGetAccounts("active");
-    const totalPrognos = accounts?.reduce((sum, a) => sum + a.estimatedYearEndInterest, 0) ?? 0;
-    const totalEarned = accounts?.reduce((sum, a) => sum + a.accruedInterestYtd, 0) ?? 0;
-    const displayedAccounts = [...(accounts ?? [])].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
+    const displayedAccounts = (accounts ?? []).filter((account) => !showOnlyFavs || account.isFavorite);
 
     return (
     <OverviewCard>
@@ -29,15 +28,6 @@ export default function InterestCard() {
             {!isPending && !isError && (
                 <section className="flex min-h-0 flex-1 flex-col ">
                     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-
-                        {/* TOTAL RAD */}
-                        <OverviewCardFixedRow 
-                            cols={"3"}
-                            hoverTitle={t("overview-route.interest-card.hover-total")}
-                            titleRow={[t("generic.amount"), formatCurrencySmallSek(totalEarned), formatCurrencySmallSek(totalPrognos)]}
-                            descriptionRow={[t("generic.total"), t("generic.accrued"), t("generic.forecast")]}
-                            greenAmount
-                        />
 
                         {/* KORT RADER */}
                             <div className="min-h-0 flex-1 overflow-y-auto">
