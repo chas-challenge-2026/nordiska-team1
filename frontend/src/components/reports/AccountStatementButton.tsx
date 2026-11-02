@@ -11,9 +11,10 @@ import { ReportTimeoutError } from "../../services/reportsTimeout";
 
 type AccountStatementBtnProps = {
     accountId?: number;
+    hideIcon?: boolean;
 }
 
-export default function AccountStatementBtn({ accountId }: AccountStatementBtnProps) {
+export default function AccountStatementBtn({ accountId, hideIcon = false }: AccountStatementBtnProps) {
 
     const { t } = useTranslation();
 
@@ -78,9 +79,9 @@ export default function AccountStatementBtn({ accountId }: AccountStatementBtnPr
                 onClick={() => setIsOpen(true)}
                 disabled={accountId == null}
                 aria-label={t("accounts-route.account-report")}
-                className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-primary-hover sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-blue"
-            >
-                <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5" />
+                className="whitespace-nowrap inline-flex min-h-11 group items-center justify-center rounded-lg bg-primary-blue  px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer disabled:cursor-not-allowed hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 [direction:ltr]">
+            
+                <span aria-hidden="true" className={`${hideIcon ? "hidden sm:inline-block" : "inline-block"} mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5`} />
                 {t("accounts-route.account-report")}
             </button>
             

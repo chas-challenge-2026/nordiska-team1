@@ -303,7 +303,7 @@ export default function AccountsPage() {
                                             ) : (
                                                 <>
                                                     {/* ACCOUNT STATEMENT */}
-                                                    <AccountStatementBtn key={expandedAccount.id} accountId={expandedAccount.id} />
+                                                    <AccountStatementBtn key={expandedAccount.id} accountId={expandedAccount.id} hideIcon />
 
                                                     {/* FAVORITE */}
                                                     <ActionButton
@@ -312,6 +312,7 @@ export default function AccountsPage() {
                                                         ariaLabel={isFavorite ? t("accounts-route.no-favorite") : t("accounts-route.favorite")}
                                                         prefixIcon={isFavorite ? "/icons/star-solid.svg" : "/icons/star.svg"}
                                                         title={isFavorite ? t("accounts-route.no-favorite") : t("accounts-route.favorite")}
+                                                        hideIcon
                                                     />
 
                                                    {!canClose && 
@@ -320,6 +321,7 @@ export default function AccountsPage() {
                                                             ariaLabel={t("accounts-route.forecast-section.heading")}
                                                             prefixIcon="/icons/compare.svg"
                                                             title={t("accounts-route.forecast-section.heading")}
+                                                            hideIcon={true}
                                                         />
                                                     }
 
@@ -331,6 +333,7 @@ export default function AccountsPage() {
                                                             ariaLabel={t("accounts-route.close-account")}
                                                             prefixIcon="/icons/warning.svg"
                                                             title={t("accounts-route.close-account")}
+                                                            hideIcon
                                                         />
                                                     )}
                                                 </>
