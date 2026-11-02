@@ -183,7 +183,7 @@ public class SavingsAccountServiceTests
         await Assert.ThrowsAsync<NotFoundException>(() => service.CreateAsync(req));
     }
 
-    private class FakeTxRepo : ITransactionRepository
+    private class FakeTxRepo : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
     {
         public readonly List<LedgerEntry> Store = new();
         private long _next = 1;

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Nordiska.FrontendApi.BackgroundWorkers;
 using Nordiska.FrontendApi.Contracts.Requests;
 using Nordiska.Modules.Banking.Domain;
 using Nordiska.Modules.Banking.Infrastructure.Db;
@@ -38,6 +40,12 @@ public sealed class PostgresAuthWebApplicationFactory : WebApplicationFactory<Pr
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureServices(services =>
+        {
+            var worker = services.SingleOrDefault(descriptor => descriptor.ServiceType == typeof(IHostedService)
+                && descriptor.ImplementationType == typeof(PlannedTransactionsBackgroundWorker));
+            if (worker is not null) services.Remove(worker);
+        });
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>

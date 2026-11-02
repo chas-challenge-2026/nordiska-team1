@@ -17,6 +17,12 @@ namespace Nordiska.Modules.Banking.Tests;
 
 public class TransactionServiceTests
 {
+    private static TransactionService CreateService(FakeTxRepo transactions, FakeSavingsRepo accounts)
+    {
+        transactions.Accounts = accounts;
+        return new TransactionService(transactions, accounts, new TestLogger<TransactionService>());
+    }
+
     private class FakeSavingsRepo : ISavingsAccountRepository
     {
         private readonly List<SavingsAccount> _store = new();
@@ -58,7 +64,7 @@ public class TransactionServiceTests
         }
     }
 
-    private class FakeTxRepo : ITransactionRepository
+    private class FakeTxRepo : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
     {
         private readonly List<LedgerEntry> _store = new();
         private long _next = 1;
@@ -183,6 +189,8 @@ public class TransactionServiceTests
 
         public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
         {
+            var existing = _store.FirstOrDefault(entry => entry.Id == id);
+            if (existing is not null && !existing.IsPlanned) throw new ConflictException("Only planned entries can be deleted.");
             var idx = _store.FindIndex(l => l.Id == id);
             if (idx >= 0)
             {
@@ -212,7 +220,7 @@ public class TransactionServiceTests
 
         var txRepo = new FakeTxRepo(seed);
         var accRepo = new FakeSavingsRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var res = await svc.QueryAsync(1);
 
@@ -235,7 +243,7 @@ public class TransactionServiceTests
 
         var txRepo = new FakeTxRepo(seed);
         var accRepo = new FakeSavingsRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var page1 = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, Page: 1, PageSize: 10));
         Assert.Equal(25, page1.TotalCount);
@@ -266,7 +274,7 @@ public class TransactionServiceTests
 
         var txRepo = new FakeTxRepo(seed);
         var accRepo = new FakeSavingsRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var res = await svc.QueryPagedAsync(new TransactionQueryParameters(
             AccountIds: new[] { 1L },
@@ -292,7 +300,7 @@ public class TransactionServiceTests
 
         var txRepo = new FakeTxRepo(seed);
         var accRepo = new FakeSavingsRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         // 1. Filter only planned transactions
         var plannedResult = await svc.QueryPagedAsync(new TransactionQueryParameters(AccountIds: new[] { 1L }, IsPlanned: true));
@@ -322,7 +330,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var balance = await svc.GetBalanceAsync(1);
 
@@ -335,7 +343,7 @@ public class TransactionServiceTests
         var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransactionRequest(1, "deposit", 150m, Label: "Lön");
         var res = await svc.ExecuteAsync(req);
@@ -360,7 +368,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransactionRequest(1, "withdrawal", 200m);
         var res = await svc.ExecuteAsync(req);
@@ -384,7 +392,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransactionRequest(1, "withdrawal", 100m);
 
@@ -403,7 +411,7 @@ public class TransactionServiceTests
         var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransactionRequest(1, "deposit", invalidAmount);
 
@@ -422,7 +430,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransferRequest(1, 2, 200m, "Överföring spar");
         var res = await svc.TransferAsync(req);
@@ -443,7 +451,7 @@ public class TransactionServiceTests
         var acc1 = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc1 });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransferRequest(1, 1, 100m);
         await Assert.ThrowsAsync<ArgumentException>(() => svc.TransferAsync(req));
@@ -461,7 +469,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new TransferRequest(1, 2, 100m);
         await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(req));
@@ -478,7 +486,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(1));
     }
@@ -489,7 +497,7 @@ public class TransactionServiceTests
         var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var plannedDate = DateTime.UtcNow.AddMonths(1);
         var req = new PlannedTransactionRequest(1, "withdrawal", 1200m, plannedDate, "Hyra");
@@ -516,7 +524,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var deleted = await svc.CancelPlannedAsync(10);
         Assert.True(deleted);
@@ -536,7 +544,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var res = await svc.ExecuteAsync(new TransactionRequest(1, "withdrawal", 300m));
 
@@ -554,7 +562,7 @@ public class TransactionServiceTests
         var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<ArgumentException>(() => svc.ExecuteAsync(new TransactionRequest(1, type, 100m)));
 
@@ -566,7 +574,7 @@ public class TransactionServiceTests
     {
         var accRepo = new FakeSavingsRepo();
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<NotFoundException>(() => svc.ExecuteAsync(new TransactionRequest(99, "deposit", 100m)));
 
@@ -582,7 +590,7 @@ public class TransactionServiceTests
         var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
         var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<ArgumentException>(() => svc.TransferAsync(new TransferRequest(1, 2, invalidAmount)));
 
@@ -595,7 +603,7 @@ public class TransactionServiceTests
         var acc2 = new SavingsAccount { Id = 2, CustomerId = 1, AccountNumber = "A2" };
         var accRepo = new FakeSavingsRepo(new[] { acc2 });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<NotFoundException>(() => svc.TransferAsync(new TransferRequest(99, 2, 100m)));
 
@@ -613,7 +621,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc1 });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<NotFoundException>(() => svc.TransferAsync(new TransferRequest(1, 99, 100m)));
 
@@ -633,7 +641,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await Assert.ThrowsAsync<ConflictException>(() => svc.TransferAsync(new TransferRequest(1, 2, 100m)));
 
@@ -653,7 +661,7 @@ public class TransactionServiceTests
 
         var accRepo = new FakeSavingsRepo(new[] { acc1, acc2 });
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         await svc.TransferAsync(new TransferRequest(1, 2, 750m));
 
@@ -671,7 +679,7 @@ public class TransactionServiceTests
         var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new PlannedTransactionRequest(1, "withdrawal", invalidAmount, DateTime.UtcNow.AddMonths(1), "Hyra");
 
@@ -685,7 +693,7 @@ public class TransactionServiceTests
         var acc = new SavingsAccount { Id = 1, CustomerId = 1, AccountNumber = "A1" };
         var accRepo = new FakeSavingsRepo(new[] { acc });
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var pastDate = DateTime.UtcNow.AddDays(-1);
         var req = new PlannedTransactionRequest(1, "withdrawal", 500m, pastDate, "Gamla pengar");
@@ -700,7 +708,7 @@ public class TransactionServiceTests
     {
         var accRepo = new FakeSavingsRepo();
         var txRepo = new FakeTxRepo();
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var req = new PlannedTransactionRequest(99, "withdrawal", 1200m, DateTime.UtcNow.AddMonths(1), "Hyra");
 
@@ -711,7 +719,7 @@ public class TransactionServiceTests
     [Fact]
     public async Task CancelPlanned_NotFound_ReturnsFalse()
     {
-        var svc = new TransactionService(new FakeTxRepo(), new FakeSavingsRepo(), new TestLogger<TransactionService>());
+        var svc = CreateService(new FakeTxRepo(), new FakeSavingsRepo());
 
         var deleted = await svc.CancelPlannedAsync(123);
 
@@ -727,7 +735,7 @@ public class TransactionServiceTests
         };
 
         var txRepo = new FakeTxRepo(seedTx);
-        var svc = new TransactionService(txRepo, new FakeSavingsRepo(), new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, new FakeSavingsRepo());
 
         await Assert.ThrowsAsync<ConflictException>(() => svc.CancelPlannedAsync(5));
 
@@ -746,7 +754,7 @@ public class TransactionServiceTests
 
         var txRepo = new FakeTxRepo(seedTx);
         var accRepo = new FakeSavingsRepo(new[] { sourceAcc, targetAcc });
-        var svc = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var svc = CreateService(txRepo, accRepo);
 
         var result = await svc.TransferAsync(new TransferRequest(1, 2, 250m, "Överföring buffert"));
 

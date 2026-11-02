@@ -16,6 +16,12 @@ namespace Nordiska.Modules.Banking.Tests;
 
 public class PlannedTransactionExecutionTests
 {
+    private static TransactionService CreateService(InMemoryTxRepo transactions, InMemorySavingsRepo accounts)
+    {
+        transactions.Accounts = accounts;
+        return new TransactionService(transactions, accounts, new TestLogger<TransactionService>());
+    }
+
     private class InMemorySavingsRepo : ISavingsAccountRepository
     {
         public readonly List<SavingsAccount> Store = new();
@@ -57,7 +63,7 @@ public class PlannedTransactionExecutionTests
         }
     }
 
-    private class InMemoryTxRepo : ITransactionRepository
+    private class InMemoryTxRepo : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
     {
         public readonly List<LedgerEntry> Store = new();
         private long _next = 1;
@@ -158,7 +164,7 @@ public class PlannedTransactionExecutionTests
             }
         });
 
-        var service = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var service = CreateService(txRepo, accRepo);
 
         // Act
         var result = await service.ProcessPlannedTransactionAsync(10);
@@ -217,7 +223,7 @@ public class PlannedTransactionExecutionTests
             }
         });
 
-        var service = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var service = CreateService(txRepo, accRepo);
 
         // Act
         var result = await service.ProcessPlannedTransactionAsync(15);
@@ -276,7 +282,7 @@ public class PlannedTransactionExecutionTests
             }
         });
 
-        var service = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var service = CreateService(txRepo, accRepo);
 
         // Act
         var result = await service.ProcessPlannedTransactionAsync(20);
@@ -321,7 +327,7 @@ public class PlannedTransactionExecutionTests
             }
         });
 
-        var service = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var service = CreateService(txRepo, accRepo);
 
         // Act
         var result = await service.ProcessPlannedTransactionAsync(30);
@@ -343,7 +349,7 @@ public class PlannedTransactionExecutionTests
             new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 100m, IsPlanned = false, CreatedAt = DateTime.UtcNow }
         });
 
-        var service = new TransactionService(txRepo, accRepo, new TestLogger<TransactionService>());
+        var service = CreateService(txRepo, accRepo);
 
         // Act & Assert
         Assert.Null(await service.ProcessPlannedTransactionAsync(999)); // Not found

@@ -24,4 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nordiska.FrontendApi\Nordiska.FrontendApi.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/InMemoryAtomicTransactions.cs" Link="TestSupport/InMemoryAtomicTransactions.cs" />
+  </ItemGroup>
 </Project>
