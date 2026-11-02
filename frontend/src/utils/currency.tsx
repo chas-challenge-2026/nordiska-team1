@@ -10,11 +10,11 @@ export function formatCurrency(value: number, { signed = false, showCurrency = t
     return (signed ? SIGNED_NO_CURRENCY : PLAIN_NO_CURRENCY).format(value);
 }
 
-export function formatCurrencySmallSek(value: number) {
+export function formatCurrencySmallSek(value: number, medium: boolean = false) {
     return (
         <span className="whitespace-nowrap">
-            {formatCurrency(value, { showCurrency: false })}{" "}
-            <span className="text-xs font-medium text-dark-navy">SEK</span>
+            {formatCurrency(value, { showCurrency: false })}
+            <span className={`${medium ? "text-base" : "text-xs"} ml-1 font-medium text-dark-navy`}>SEK</span>
         </span>
     );
 }

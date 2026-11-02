@@ -23,7 +23,6 @@ export default function DesktopLayout() {
                     </motion.div>
                 </AnimatePresence>
             </main>
-            {/* <PageFooter /> */}
         </div>
     );
 }

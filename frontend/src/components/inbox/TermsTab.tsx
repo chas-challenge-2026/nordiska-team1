@@ -16,7 +16,7 @@ export default function TermsTab() {
     return (
         <div className="bg-white shadow-card">
             <div className="bg-dark-navy px-4 py-3 text-white">
-                <span className="block text-xs uppercase text-light-blue-accent">{t("inbox.terms-tab.to-accept")}</span>
+                <span className="block text-xs uppercase text-white/80">{t("inbox.terms-tab.to-accept")}</span>
                 <h2 className="font-bold">{t("inbox.terms")}</h2>
             </div>
 

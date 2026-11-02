@@ -271,9 +271,9 @@ export default function TransferPage() {
                     </div>
 
                     {/* HELP / RELATED ARTICLES */}
-                    <aside aria-label={t("generic.help")} className="hidden min-w-0 shrink-0 self-start border border-gray-200 bg-white md:shadow-sm xl:block xl:w-60">
-                        <div className="min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white">
-                            <p className="mt-2 truncate text-right text-sm uppercase text-white/80">{t("generic.help-center")}</p>
+                    <aside aria-label={t("generic.help")} className="hidden min-w-0 shrink-0 self-start border border-gray-300 bg-white md:shadow-md/30 xl:block xl:w-60">
+                        <div className="min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3 text-dark-navy">
+                            <p className="mt-2 truncate text-right text-sm uppercase">{t("generic.help-center")}</p>
                             <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
                         </div>
 

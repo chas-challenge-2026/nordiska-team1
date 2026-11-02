@@ -103,14 +103,14 @@ export default function TransferForm({
             </section>
 
             {/* DIVIDER */}
-            <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
+            <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-light-blue-accent sm:mt-6" />
 
             {/* DETAILS */}
             <section aria-labelledby="transfer-details-heading" className="mt-4 sm:mt-6">
                 <h3 id="transfer-details-heading" className="mb-2 ml-1 text-sm font-semibold text-dark-navy sm:text-base">
                     {t("page-transfer.section-details")}
                 </h3>
-                <div className="flex flex-col gap-4 border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:gap-5 sm:p-4">
+                <div className="flex flex-col gap-4 border border-primary-hover/50 bg-light-gray/30 p-3 sm:gap-5 sm:p-4">
                     <InputField
                         name="transferAmount"
                         type="text"
@@ -146,7 +146,7 @@ export default function TransferForm({
                                 onChange={(e) =>
                                     onRecurringChange(e.target.checked)
                                 }
-                                className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-nordiska-blue)]"
+                                className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-primary-hover)]"
                             />
                             {t("page-transfer.recurring-label")}
                         </label>
@@ -178,7 +178,7 @@ export default function TransferForm({
             </section>
 
             {/* DIVIDER */}
-            <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-nordiska-orange sm:mt-6" />
+            <div aria-hidden="true" className="mx-auto mt-4 w-[99%] border-b-2 border-light-blue-accent sm:mt-6" />
 
             {/* SUBMIT */}
             <div className="mt-4 mb-2 flex flex-col items-stretch gap-2 sm:mt-6 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
@@ -191,7 +191,7 @@ export default function TransferForm({
                     type="button"
                     onClick={onSubmit}
                     disabled={!canSubmit}
-                    className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-nordiska-blue disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-primary-blue"
+                    className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-primary-blue"
                 >
                     {isExternal
                         ? t("page-transfer.cta-submit-external")

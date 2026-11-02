@@ -64,7 +64,7 @@ export default function ProgressBar(props: ProgressBarProps) {
             {props.type === "time" && (
                 <div className="mb-1 ml-1 mt-8 flex flex-col items-start justify-between">
                     <p className="text-xl font-semibold text-dark-navy sm:text-xl">{props.targetDate.slice(0, 10)}</p>
-                    <p className="mb-2 text-xs uppercase text-nordiska-blue sm:text-sm">{t("progress-bar.target-date-label")}</p>
+                    <p className="mb-2 text-xs uppercase text-dark-navy sm:text-sm">{t("progress-bar.target-date-label")}</p>
                 </div>
             )}
 

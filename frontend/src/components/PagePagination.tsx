@@ -84,7 +84,7 @@ export default function PagePagination({
                 disabled={isDisabled || !hasPreviousPage}
                 onClick={onPrevious}
                 aria-label={t("aria-label.previous-page")}
-                className="cursor-pointer text-xs sm:text-sm font-semibold text-primary-blue hover:text-nordiska-blue disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer text-xs sm:text-sm font-semibold text-primary-blue hover:text-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
                 {t("generic.previous")}
             </button>
@@ -112,7 +112,7 @@ export default function PagePagination({
                 disabled={isDisabled || !hasNextPage}
                 onClick={onNext}
                 aria-label={t("aria-label.next-page")}
-                className="cursor-pointer text-xs sm:text-sm disabled:cursor-not-allowed disabled:opacity-40 font-semibold text-primary-blue hover:text-nordiska-blue"
+                className="cursor-pointer text-xs sm:text-sm disabled:cursor-not-allowed disabled:opacity-40 font-semibold text-primary-blue hover:text-primary-hover"
             >
                 {t("generic.next")}
             </button>
