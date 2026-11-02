@@ -11,15 +11,17 @@ export default function PageLink({ title, route, mobile, hamburger = false}: Pag
     return (
         <NavLink
             to={route}
-            className={({ isActive }) => ` relative flex h-full whitespace-nowrap no-underline font-montserrat cursor-pointer transition-all duration-200 ease-in-out
-                ${isActive && !mobile 
-                    ? "font-bold text-white" 
-                    : mobile && !isActive ? "font-semibold text-white/80" : "font-semibold text-white"}
-                ${mobile 
-                    ? "text-[9px] truncate items-center" 
-                    : hamburger 
-                        ? "text-base uppercase"  
-                        : "text-base tracking-wider items-end"}`}
+            className={({ isActive }) => `relative flex h-full whitespace-nowrap no-underline cursor-pointer transition-all duration-200 ease-in-out
+                ${ mobile ? "text-[11px] sm:text-xs items-center" : ""}
+                ${mobile
+                    ? isActive ? "font-semibold text-white" : "text-light-blue-accent"
+                    : hamburger
+                        ? "text-white font-medium"
+                        : isActive
+                            ? "text-white font-bold"
+                            : "text-light-blue-accent font-medium"
+                }
+            `}
         >
             {({ isActive }) => (
                 <span className={` 
@@ -31,17 +33,17 @@ export default function PageLink({ title, route, mobile, hamburger = false}: Pag
                                 ? "after:w-full after:bg-light-blue-accent"
                                 : "after:w-0 after:bg-white hover:after:w-[70%]"
                             }`
-                        : ""}`}>
+                        : ""}   
+                    `}>
 
                     {mobile ? (
                     <>
-                    <span aria-hidden="true" className={`mx-auto block h-5 w-5 sm:h-7 sm:w-7 ${isActive ? "bg-light-blue-accent" : "bg-light-blue-accent/60" } ${mobile} mask-contain mask-center mask-no-repeat `}/>
+                    <span aria-hidden="true" className={`mx-auto block h-5 w-5 sm:h-7 sm:w-7 ${isActive ? "bg-white" : "bg-light-blue-accent/90" } ${mobile} mask-contain mask-center mask-no-repeat `}/>
                         {title}
                     </>
                     ):(
-                    <>
-                        {title}
-                    </>)}        
+                        title
+                    )}        
                 </span>
             )}
         </NavLink>

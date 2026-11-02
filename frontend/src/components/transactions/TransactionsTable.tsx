@@ -54,7 +54,7 @@ export default function TransactionTable({ accounts, groups, shownCount, totalCo
         <section aria-labelledby={`${listId}-heading`} className="flex min-w-0 flex-col overflow-hidden bg-white text-dark-navy md:border md:border-gray-300 md:shadow-md/30">
             {/* CARD HEADER */}
             <div className="flex min-h-22 flex-col justify-center bg-dark-navy px-4 py-3 text-white sm:px-6">
-                <h2 id={`${listId}-heading`} className="truncate text-base font-bold uppercase tracking-wide sm:text-lg">{t("transactions-route.list-title")}</h2>
+                <h2 id={`${listId}-heading`} className="truncate text-base font-bold tracking-wide sm:text-lg">{t("transactions-route.list-title")}</h2>
                 <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-white/90 sm:mt-1 sm:text-xs" aria-live="polite">
                     {!isLoading && !isError && t("transactions-route.showing-count", { shown: shownCount, count: totalCount })}
                 </p>
