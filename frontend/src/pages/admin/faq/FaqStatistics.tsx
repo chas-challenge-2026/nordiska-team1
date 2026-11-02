@@ -1,33 +1,37 @@
-import { useEffect, useState, useMemo } from "react";
-import { useFaqs } from "../../../hooks/useFaqs";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFaqs, useFaqAnalyticsSummary, useFaqContentGaps } from "../../../hooks/useFaqs";
 import PagePagination from "../../../components/PagePagination";
-
+import AdminButton from "../../../components/admin/ui/AdminButton";
+import { AdminPageTitle } from "../../../components/admin/ui/AdminTitle";
 type FaqItem = NonNullable<ReturnType<typeof useFaqs>["data"]>["items"][number];
-
-// Sökordsstatistik: ett objekt per sökord. Justera när spårningen är byggd.
-type KeywordStat = {
-    term: string;
-    count: number;
-    existsInFaq: boolean;
-};
-
 type SortKey = "views" | "helpful";
 
-const FAQ_PAGE_SIZE = 10; // TODO: samma som backend returnerar per sida
-const KEYWORD_PAGE_SIZE = 10;
+const DAYS = 30;
+const FAQ_PAGE_SIZE = 10;
+const VIEWED_PAGE_SIZE = 10;
+const GAPS_PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 400;
 const SECTION = "w-full max-w-6xl mx-auto px-4";
 
-// TODO: ersätt med hook, t.ex. useKeywordStats(lang)
-const NO_KEYWORD_DATA: KeywordStat[] = [];
+// Värden som skickas som sortBy till backend (tillåtna: id, helpful, views)
+const SORT_FIELD: Record<SortKey, "id" | "helpful" | "views"> = {
+    views: "views",
+    helpful: "helpful",
+};
 
-// TODO: ersätt med riktig visningsdata, t.ex. faq.viewCount ?? 0
-function getViews(_faq: FaqItem): number {
-    return 0;
+const FAQ_COLS = "grid grid-cols-[1fr_7rem_5rem_2rem] items-center gap-3 px-3 min-h-11";
+const VIEWED_COLS = "grid grid-cols-[1fr_10rem_6rem_7rem] items-center gap-3 px-3 min-h-11";
+const GAP_COLS = "grid grid-cols-[1fr_6rem_8rem] items-center gap-3 px-3 min-h-11";
+const TABLE_HEAD = "py-2 bg-gray-200 text-xs font-semibold uppercase";
+const SECTION_TITLE = "text-xl font-semibold py-2 bg-black text-white text-center";
+
+function getViews(faq: FaqItem): number {
+    return faq.viewCount ?? 0;
 }
 
 // TODO: ersätt med er redigera-route (och <Link> om ni använder react-router)
-function getEditHref(faq: FaqItem): string {
-    return `/faq/redigera/${faq.id}`;
+function getEditHref(id: number): string {
+    return `/faq/redigera/${id}`;
 }
 
 function formatScore(score: number) {
@@ -45,33 +49,101 @@ function reservedHeight(rows: number) {
     return { minHeight: `calc(${rows} * (2.75rem + 1px))` };
 }
 
-const FAQ_COLS = "grid grid-cols-[1fr_7rem_5rem_2rem] items-center gap-3 px-3 min-h-11";
-const KEYWORD_COLS = "grid grid-cols-[1fr_7rem_7rem] items-center gap-3 px-3 min-h-11";
+function paginate<T>(items: T[], page: number, size: number): T[] {
+    return items.slice((page - 1) * size, page * size);
+}
+
+function totalPagesFor(count: number, size: number) {
+    return Math.max(1, Math.ceil(count / size));
+}
+
+function rangeText(page: number, size: number, total: number) {
+    if (total === 0) return "Visar 0 av 0";
+    const from = (page - 1) * size + 1;
+    const to = Math.min(page * size, total);
+    return `Visar ${from}–${to} av ${total}`;
+}
 
 export default function FaqStatistics() {
     const [lang, setLang] = useState<"sv" | "en">("sv");
-    const [searchInput, setSearchInput] = useState("");
-    const [search, setSearch] = useState("");
+
+    // Alla FAQ: sök (debounce, filtreras i backend)
+    const [faqSearchInput, setFaqSearchInput] = useState("");
+    const [faqSearch, setFaqSearch] = useState("");
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    // Sökningar utan träff: filter (i frontend)
+    const [gapsFilter, setGapsFilter] = useState("");
+
     const [page, setPage] = useState(1);
-    const [keywordPage, setKeywordPage] = useState(1);
-    const [sortKey, setSortKey] = useState<SortKey>("views");
+    const [viewedPage, setViewedPage] = useState(1);
+    const [gapsPage, setGapsPage] = useState(1);
+    const [sortKey, setSortKey] = useState<SortKey>("helpful");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-    const { data, isLoading, isError, isFetching } = useFaqs(lang, page, FAQ_PAGE_SIZE, search, "");
+    // FAQ-LISTA (sortering och paginering i backend)
+    const { data, isLoading, isError, isFetching } = useFaqs(
+        lang,
+        page,
+        FAQ_PAGE_SIZE,
+        faqSearch,
+        undefined,
+        undefined,
+        SORT_FIELD[sortKey],
+        sortOrder
+    );
     const faqs = useMemo(() => data?.items ?? [], [data?.items]);
     const totalPages = data?.totalPages ?? 1;
-    const hasPreviousPage = data?.hasPreviousPage ?? false;
-    const hasNextPage = data?.hasNextPage ?? false;
+    const totalCount = data?.totalCount ?? 0;
 
-    const keywordStats = NO_KEYWORD_DATA;
+    // STATISTIK
+    const { data: summary, isError: isSummaryError } = useFaqAnalyticsSummary({ lang, days: DAYS, limit: 50 });
+    const { data: contentGaps, isError: isGapsError } = useFaqContentGaps({ lang, days: DAYS, limit: 200 });
 
-    // SORTERA PÅ VISNINGAR / BETYG
-    const sortedFaqs = useMemo(() => {
-        const dir = sortOrder === "asc" ? 1 : -1;
-        const value = (faq: FaqItem) =>
-            sortKey === "views" ? getViews(faq) : (faq.helpfulCount ?? 0);
-        return faqs.toSorted((a, b) => dir * (value(a) - value(b)));
-    }, [faqs, sortKey, sortOrder]);
+    const totalViews = summary?.views.totalViews ?? 0;
+    const totalSearches = summary?.searches.totalSearches ?? 0;
+    const successfulSearches = summary?.searches.successfulSearches ?? 0;
+    const noResultSearches = summary?.searches.noResultSearches ?? 0;
+    const noResultPct = totalSearches > 0 ? Math.round((noResultSearches / totalSearches) * 100) : 0;
+
+    const mostViewed = useMemo(() => summary?.views.mostViewedArticles ?? [], [summary]);
+
+    const gaps = useMemo(() => {
+        const q = gapsFilter.trim().toLowerCase();
+        return (contentGaps ?? []).filter((g) => (g.query ?? "").toLowerCase().includes(q));
+    }, [contentGaps, gapsFilter]);
+
+    const viewedTotalPages = totalPagesFor(mostViewed.length, VIEWED_PAGE_SIZE);
+    const gapsTotalPages = totalPagesFor(gaps.length, GAPS_PAGE_SIZE);
+    const pagedViewed = paginate(mostViewed, viewedPage, VIEWED_PAGE_SIZE);
+    const pagedGaps = paginate(gaps, gapsPage, GAPS_PAGE_SIZE);
+
+    // Rensa väntande sök-timer när sidan lämnas (ingen state sätts här)
+    useEffect(() => {
+        return () => clearTimeout(searchTimer.current);
+    }, []);
+
+    // SÖK DEBOUNCE i event handler (+ tillbaka till sida 1)
+    function handleFaqSearchChange(value: string) {
+        setFaqSearchInput(value);
+        clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => {
+            setFaqSearch(value.trim());
+            setPage(1);
+        }, SEARCH_DEBOUNCE_MS);
+    }
+
+    function handleGapsFilterChange(value: string) {
+        setGapsFilter(value);
+        setGapsPage(1);
+    }
+
+    function changeLang(next: "sv" | "en") {
+        setLang(next);
+        setPage(1);
+        setViewedPage(1);
+        setGapsPage(1);
+    }
 
     function toggleSort(key: SortKey) {
         if (key === sortKey) {
@@ -80,6 +152,7 @@ export default function FaqStatistics() {
             setSortKey(key);
             setSortOrder("desc");
         }
+        setPage(1);
     }
 
     function sortArrow(key: SortKey) {
@@ -87,90 +160,168 @@ export default function FaqStatistics() {
         return sortOrder === "desc" ? " ▼" : " ▲";
     }
 
-    // SÖKORD: FILTRERA, SUMMERA, PAGINERA
-    const filteredKeywords = useMemo(() => {
-        const q = search.toLowerCase();
-        return keywordStats
-            .filter((k) => k.term.toLowerCase().includes(q))
-            .toSorted((a, b) => b.count - a.count);
-    }, [keywordStats, search]);
-
-    const keywordTotals = useMemo(() => {
-        const total = filteredKeywords.reduce((sum, k) => sum + k.count, 0);
-        const missing = filteredKeywords
-            .filter((k) => !k.existsInFaq)
-            .reduce((sum, k) => sum + k.count, 0);
-        const missingPct = total > 0 ? Math.round((missing / total) * 100) : 0;
-        return { total, found: total - missing, missing, missingPct };
-    }, [filteredKeywords]);
-
-    const keywordTotalPages = Math.max(1, Math.ceil(filteredKeywords.length / KEYWORD_PAGE_SIZE));
-    const pagedKeywords = filteredKeywords.slice(
-        (keywordPage - 1) * KEYWORD_PAGE_SIZE,
-        keywordPage * KEYWORD_PAGE_SIZE
-    );
-
-    // SÖK DEBOUNCE (+ tillbaka till sida 1)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setSearch(searchInput.trim());
-            setPage(1);
-            setKeywordPage(1);
-        }, 400);
-
-        return () => clearTimeout(timer);
-    }, [searchInput]);
-
-    function changeLang(next: "sv" | "en") {
-        setLang(next);
-        setPage(1);
-        setKeywordPage(1);
-    }
-
     return (
         <>
-            <h1 className="text-3xl font-semibold py-2.5 bg-black text-white text-center">Statistik</h1>
+            <AdminPageTitle>Statistik</AdminPageTitle>
 
-            {/* SÖK */}
-            <section className={SECTION}>
-                <h2 className="block w-full text-xl font-semibold border-b mt-10 py-2 bg-black text-white text-center">SÖK</h2>
-                <div className="flex justify-center gap-10 mt-3">
-                    <label>
-                        <input
-                            type="radio"
-                            name="language"
-                            value="sv"
-                            checked={lang === "sv"}
-                            onChange={() => changeLang("sv")}
-                        />
-                        <span className="ml-2">Svenska</span>
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="language"
-                            value="en"
-                            checked={lang === "en"}
-                            onChange={() => changeLang("en")}
-                        />
-                        <span className="ml-2">Engelska</span>
-                    </label>
-                </div>
-                <input
-                    type="text"
-                    aria-label="Sök"
-                    placeholder="Sök på fråga, svar, kategori eller sökord"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    className="block w-full bg-white border rounded-2xl py-2.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
-                />
+            {/* SPRÅK (gäller hela sidan) */}
+            <div className={`${SECTION} flex justify-center gap-10 mt-4`}>
+                <label>
+                    <input
+                        type="radio"
+                        name="language"
+                        value="sv"
+                        checked={lang === "sv"}
+                        onChange={() => changeLang("sv")}
+                    />
+                    <span className="ml-2">Svenska</span>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="language"
+                        value="en"
+                        checked={lang === "en"}
+                        onChange={() => changeLang("en")}
+                    />
+                    <span className="ml-2">Engelska</span>
+                </label>
+            </div>
+
+            {/* ÖVERSIKT */}
+            <section className={`${SECTION} mt-6`}>
+                <h2 className={SECTION_TITLE}>ÖVERSIKT – SENASTE {DAYS} DAGARNA</h2>
+                {isSummaryError && <p className="px-3 py-2 text-sm">Kunde inte hämta statistik.</p>}
+                <p className="flex flex-wrap justify-center gap-x-8 gap-y-1 py-3 border-b border-gray-300">
+                    <span>Visningar: <strong className="tabular-nums">{totalViews}</strong></span>
+                    <span>Sökningar: <strong className="tabular-nums">{totalSearches}</strong></span>
+                    <span>Med träff: <strong className="tabular-nums">{successfulSearches}</strong></span>
+                    <span>
+                        Utan träff:{" "}
+                        <strong className={`tabular-nums ${noResultSearches > 0 ? "text-red-700" : ""}`}>
+                            {noResultSearches} ({noResultPct} %)
+                        </strong>
+                    </span>
+                </p>
             </section>
 
-            {/* FAQ */}
+            {/* MEST VISADE */}
             <section className={`${SECTION} mt-10`}>
-                <h2 className="text-xl font-semibold py-2 bg-black text-white text-center">FAQ</h2>
+                <h2 className={SECTION_TITLE}>MEST VISADE</h2>
+                <div className={`${VIEWED_COLS} ${TABLE_HEAD}`}>
+                    <span>Fråga</span>
+                    <span>Kategori</span>
+                    <span className="text-right">Visningar</span>
+                    <span aria-hidden="true" />
+                </div>
 
-                <div className={`${FAQ_COLS} py-2 bg-gray-200 text-xs font-semibold uppercase`}>
+                <div style={reservedHeight(VIEWED_PAGE_SIZE)}>
+                    {pagedViewed.length === 0 ? (
+                        <p className="px-3 py-4 text-sm">Inga visningar ännu.</p>
+                    ) : (
+                        pagedViewed.map((a) => (
+                            <div key={a.id} className={`${VIEWED_COLS} py-2 border-b border-gray-300`}>
+                                <span className="font-semibold">{a.question ?? "–"}</span>
+                                <span className="text-sm">{a.category ?? "–"}</span>
+                                <span className="text-right tabular-nums">{a.viewCount}</span>
+                                <AdminButton
+                                    to={getEditHref(a.id)}
+                                    variant="yellow"
+                                    className="justify-self-end !border-2 !px-3 !py-0.5 text-sm"
+                                >
+                                    Redigera
+                                </AdminButton>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="my-3 flex flex-col items-center gap-2">
+                    <p className="text-sm text-gray-600 tabular-nums">
+                        {rangeText(viewedPage, VIEWED_PAGE_SIZE, mostViewed.length)}
+                    </p>
+                    {viewedTotalPages > 1 && (
+                        <PagePagination
+                            page={viewedPage}
+                            totalPages={viewedTotalPages}
+                            hasPreviousPage={viewedPage > 1}
+                            hasNextPage={viewedPage < viewedTotalPages}
+                            onPrevious={() => setViewedPage((p) => p - 1)}
+                            onNext={() => setViewedPage((p) => p + 1)}
+                            onPageChange={setViewedPage}
+                        />
+                    )}
+                </div>
+            </section>
+
+            {/* SÖKNINGAR UTAN TRÄFF */}
+            <section className={`${SECTION} mt-10`}>
+                <h2 className={SECTION_TITLE}>SÖKNINGAR UTAN TRÄFF</h2>
+                <input
+                    type="text"
+                    aria-label="Filtrera sökord"
+                    placeholder="Filtrera sökord"
+                    value={gapsFilter}
+                    onChange={(e) => handleGapsFilterChange(e.target.value)}
+                    className="block w-full max-w-sm ml-auto bg-white border rounded-2xl my-3 py-1.5 pl-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                />
+                <div className={`${GAP_COLS} ${TABLE_HEAD}`}>
+                    <span>Sökord</span>
+                    <span className="text-right">Antal</span>
+                    <span className="text-right">Senast sökt</span>
+                </div>
+
+                <div style={reservedHeight(GAPS_PAGE_SIZE)}>
+                    {isGapsError ? (
+                        <p className="px-3 py-4 text-sm">Kunde inte hämta sökningar.</p>
+                    ) : pagedGaps.length === 0 ? (
+                        <p className="px-3 py-4 text-sm">
+                            {gapsFilter ? "Inga sökord matchar." : "Inga sökningar utan träff."}
+                        </p>
+                    ) : (
+                        pagedGaps.map((g) => (
+                            <div key={`${g.query}-${g.lang}`} className={`${GAP_COLS} py-2 border-b border-gray-300`}>
+                                <span className="font-mono text-sm">{g.query ?? "–"}</span>
+                                <span className="text-right tabular-nums">{g.searchCount}</span>
+                                <span className="text-right text-sm tabular-nums">
+                                    {new Date(g.lastSearchedAt).toLocaleDateString("sv-SE")}
+                                </span>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="my-3 flex flex-col items-center gap-2">
+                    <p className="text-sm text-gray-600 tabular-nums">
+                        {rangeText(gapsPage, GAPS_PAGE_SIZE, gaps.length)}
+                    </p>
+                    {gapsTotalPages > 1 && (
+                        <PagePagination
+                            page={gapsPage}
+                            totalPages={gapsTotalPages}
+                            hasPreviousPage={gapsPage > 1}
+                            hasNextPage={gapsPage < gapsTotalPages}
+                            onPrevious={() => setGapsPage((p) => p - 1)}
+                            onNext={() => setGapsPage((p) => p + 1)}
+                            onPageChange={setGapsPage}
+                        />
+                    )}
+                </div>
+            </section>
+
+            {/* ALLA FAQ */}
+            <section className={`${SECTION} mt-10 mb-16`}>
+                <h2 className={SECTION_TITLE}>ALLA FAQ</h2>
+                <input
+                    type="text"
+                    aria-label="Sök i alla FAQ"
+                    placeholder="Sök på fråga, svar, kategori eller keywords"
+                    value={faqSearchInput}
+                    onChange={(e) => handleFaqSearchChange(e.target.value)}
+                    className="block w-full bg-white border rounded-2xl my-3 py-2.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                />
+
+                <div className={`${FAQ_COLS} ${TABLE_HEAD}`}>
                     <span>Fråga</span>
                     <button
                         type="button"
@@ -189,8 +340,11 @@ export default function FaqStatistics() {
                     <span aria-hidden="true" />
                 </div>
 
-                <div className={`relative transition-opacity ${isFetching ? "opacity-50" : ""}`} style={reservedHeight(FAQ_PAGE_SIZE)}>
-                    {sortedFaqs.map((faq) => {
+                <div
+                    className={`relative transition-opacity ${isFetching ? "opacity-50" : ""}`}
+                    style={reservedHeight(FAQ_PAGE_SIZE)}
+                >
+                    {faqs.map((faq) => {
                         const score = faq.helpfulCount ?? 0;
                         return (
                             <details key={faq.id} className="group border-b border-gray-300">
@@ -207,17 +361,18 @@ export default function FaqStatistics() {
                                 </summary>
 
                                 <div className="px-3 pb-4 flex flex-col gap-2 text-sm">
-                                    <p className="bg-gray-200 p-1 text-base">{faq.answer}</p>
+                                    <p className="bg-gray-200 p-1 text-base whitespace-pre-line">{faq.answer}</p>
                                     <p><strong>Kategori: </strong>{faq.category}</p>
                                     <p><strong>Keywords: </strong>{faq.keywords?.join(", ")}</p>
                                     <p><strong>ID: </strong>{faq.id}</p>
                                     <p><strong>Relations ID: </strong>{faq.relationId}</p>
-                                    <a
-                                        href={getEditHref(faq)}
-                                        className="self-start border-4 border-black rounded px-5 py-1 font-semibold hover:bg-gray-200"
+                                    <AdminButton
+                                        to={getEditHref(faq.id)}
+                                        variant="yellow"
+                                        className="self-start !border-2 !px-3 !py-0.5 text-sm"
                                     >
                                         Redigera
-                                    </a>
+                                    </AdminButton>
                                 </div>
                             </details>
                         );
@@ -230,77 +385,23 @@ export default function FaqStatistics() {
                     )}
                 </div>
 
-                {totalPages > 1 && (
-                    <div className="my-3">
+                <div className="my-3 flex flex-col items-center gap-2">
+                    <p className="text-sm text-gray-600 tabular-nums">
+                        {rangeText(page, FAQ_PAGE_SIZE, totalCount)}
+                    </p>
+                    {totalPages > 1 && (
                         <PagePagination
                             page={page}
                             totalPages={totalPages}
-                            hasPreviousPage={hasPreviousPage}
-                            hasNextPage={hasNextPage}
+                            hasPreviousPage={data?.hasPreviousPage ?? false}
+                            hasNextPage={data?.hasNextPage ?? false}
                             onPrevious={() => setPage((p) => p - 1)}
                             onNext={() => setPage((p) => p + 1)}
                             onPageChange={setPage}
                             isDisabled={isFetching}
                         />
-                    </div>
-                )}
-            </section>
-
-            {/* SÖKORD */}
-            <section className={`${SECTION} mt-10 mb-16`}>
-                <h2 className="text-xl font-semibold py-2 bg-black text-white text-center">SÖKORD</h2>
-
-                <p className="flex flex-wrap justify-center gap-x-8 gap-y-1 py-2 text-sm border-b border-gray-300">
-                    <span>Sökningar: <strong className="tabular-nums">{keywordTotals.total}</strong></span>
-                    <span>Finns i FAQ: <strong className="tabular-nums">{keywordTotals.found}</strong></span>
-                    <span>
-                        Saknas:{" "}
-                        <strong className={`tabular-nums ${keywordTotals.missing > 0 ? "text-red-700" : ""}`}>
-                            {keywordTotals.missing} ({keywordTotals.missingPct} %)
-                        </strong>
-                    </span>
-                </p>
-
-                <div className={`${KEYWORD_COLS} py-2 bg-gray-200 text-xs font-semibold uppercase`}>
-                    <span>Sökord</span>
-                    <span className="text-right">Antal</span>
-                    <span className="text-right">Finns i FAQ</span>
-                </div>
-
-                <div style={reservedHeight(KEYWORD_PAGE_SIZE)}>
-                    {pagedKeywords.length === 0 ? (
-                        <p className="px-3 py-4 text-sm">
-                            {search ? "Inga sökord matchar." : "Ingen sökdata ännu."}
-                        </p>
-                    ) : (
-                        pagedKeywords.map((k) => (
-                            <div
-                                key={k.term}
-                                className={`${KEYWORD_COLS} py-2 border-b border-gray-300 ${k.existsInFaq ? "" : "bg-red-50"}`}
-                            >
-                                <span className="font-mono text-sm">{k.term}</span>
-                                <span className="text-right tabular-nums">{k.count}</span>
-                                <span className={`text-right font-semibold ${k.existsInFaq ? "text-green-700" : "text-red-700"}`}>
-                                    {k.existsInFaq ? "Ja" : "Nej"}
-                                </span>
-                            </div>
-                        ))
                     )}
                 </div>
-
-                {keywordTotalPages > 1 && (
-                    <div className="my-3">
-                        <PagePagination
-                            page={keywordPage}
-                            totalPages={keywordTotalPages}
-                            hasPreviousPage={keywordPage > 1}
-                            hasNextPage={keywordPage < keywordTotalPages}
-                            onPrevious={() => setKeywordPage((p) => p - 1)}
-                            onNext={() => setKeywordPage((p) => p + 1)}
-                            onPageChange={setKeywordPage}
-                        />
-                    </div>
-                )}
             </section>
         </>
     );

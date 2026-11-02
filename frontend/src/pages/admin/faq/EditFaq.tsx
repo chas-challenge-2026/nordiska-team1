@@ -4,18 +4,24 @@ import { getFaqsByRelationId } from "../../../services/faqService";
 import type { FaqGroup } from "../../../types/types";
 import { useNavigate, useLocation } from "react-router";
 import FaqGroupList from "../../../components/admin/faq/FaqGroupList";
+import PagePagination from "../../../components/PagePagination";
+import AdminStatus from "../../../components/admin/ui/AdminStatus";
+import { AdminPageTitle, AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
 
 export default function EditFaq() {
     const [lang, setLang] = useState<"sv" | "en">("sv");
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
     const [faqGroups, setFaqGroups] = useState<FaqGroup[]>([]);
     const navigate = useNavigate();
     const location = useLocation();
     const feedback = location.state?.feedback;
+    const PAGE_SIZE = 5;
 
-    const { data, isLoading, isError } = useFaqs(lang,1,search,"");
+    const { data, isLoading, isError } = useFaqs(lang, page, PAGE_SIZE, search, "");
     const faqs = useMemo(() => data?.items ?? [], [data?.items]);
+    const totalPages = data?.totalPages ?? 0;
 
     // VISA UPDATE SUCCESS FEEDBACK
     useEffect(() => {
@@ -30,11 +36,12 @@ export default function EditFaq() {
 
         return () => clearTimeout(timer);
     }, [feedback, navigate, location.pathname]);
-  
+
     // SÖK DEBOUNCE
     useEffect(() => {
         const timer = setTimeout(() => {
             setSearch(searchInput.trim());
+            setPage(1);
         }, 400);
 
         return () => clearTimeout(timer);
@@ -43,7 +50,7 @@ export default function EditFaq() {
     // GRUPPERA FAQs på RELATION ID
     useEffect(() => {
         async function loadRelatedFaqs() {
-            if (!faqs.length) {setFaqGroups([]); return;}
+            if (!faqs.length) { setFaqGroups([]); return; }
 
             // hämtar alla unika IDn
             const relationIds = [
@@ -88,62 +95,76 @@ export default function EditFaq() {
     };
 
     return (
-    <>
-        <h1 className="text-3xl font-semibold py-2.5 bg-black text-white text-center">Redigera</h1>
+        <>
+            <AdminPageTitle>Redigera</AdminPageTitle>
 
-        <section className="w-full">
-            <h2 className="block w-[60%] mx-auto text-xl font-semibold border-b mt-10 py-2 bg-black text-white text-center">SÖK EFTER FAQ</h2>
-            {/* Språkval - radio buttons */}
-            <div className="flex justify-center gap-10 mt-3">
-                <label>
-                    <input
-                        type="radio"
-                        name="language"
-                        value="sv"
-                        checked={lang === "sv"}
-                        onChange={() => setLang("sv")}
-                    />
-                    <span className="ml-2">Svenska</span>
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        name="language"
-                        value="en"
-                        checked={lang === "en"}
-                        onChange={() => setLang("en")}
-                    />
-                    <span className="ml-2">Engelska</span>
-                </label>
-            </div>
-            {/* Fritext sök */}
-            <input
-                type="text"
-                placeholder="Sök efter FAQ via fråga, svar, kategori, keywords eller fritext"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="block w-[60%] mx-auto bg-white border rounded-2xl py-2.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
-            />
-
-            {/* Uppdaterd FAQ message */}
-            {feedback && (
-                <div className="block w-[60%] mx-auto mt-4 border-5 bg-green-500 border-black rounded-md px-4 py-2 font-semibold">
-                    <p className="text-center">{feedback}</p>
+            <section className="w-full">
+                <AdminSectionTitle className="block w-[60%] mx-auto mt-10">SÖK EFTER FAQ</AdminSectionTitle>
+                {/* Språkval - radio buttons */}
+                <div className="flex justify-center gap-10 mt-3">
+                    <label>
+                        <input
+                            type="radio"
+                            name="language"
+                            value="sv"
+                            checked={lang === "sv"}
+                            onChange={() => { setLang("sv"); setPage(1); }}
+                        />
+                        <span className="ml-2">Svenska</span>
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="language"
+                            value="en"
+                            checked={lang === "en"}
+                            onChange={() => { setLang("en"); setPage(1); }}
+                        />
+                        <span className="ml-2">Engelska</span>
+                    </label>
                 </div>
-            )}
+                {/* Fritext sök */}
+                <input
+                    type="text"
+                    placeholder="Sök efter FAQ via fråga, svar, kategori, keywords eller fritext"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="block w-[60%] mx-auto bg-white border rounded-2xl py-2.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                />
 
-            {isLoading && search && <p>Söker...</p>}
-            {isError && <p>Kunde inte hämta FAQ.</p>}
-            {!isLoading && search && faqs.length === 0 && (<p>Inga FAQ hittades.</p>)}
+                {/* Uppdaterd FAQ message */}
+                {feedback && (
+                    <div className="block w-[60%] mx-auto mt-4 border-5 bg-green-500 border-black rounded-md px-4 py-2 font-semibold">
+                        <p className="text-center">{feedback}</p>
+                    </div>
+                )}
 
-            {/* FAQ KORT  */}
-            <FaqGroupList 
-                faqGroups={faqGroups}
-                actionLabel="Redigera"
-                actionBtnStyle="edit"
-                onAction={handleEdit}
-            />
-        </section>
-    </>
+                {isLoading && search && <AdminStatus kind="loading">Söker...</AdminStatus>}
+                {isError && <AdminStatus kind="error">Kunde inte hämta FAQ.</AdminStatus>}
+                {!isLoading && search && faqs.length === 0 && <AdminStatus kind="empty">Inga FAQ hittades.</AdminStatus>}
+
+                {/* FAQ KORT  */}
+                <FaqGroupList
+                    faqGroups={faqGroups}
+                    actionLabel="Redigera"
+                    actionBtnStyle="edit"
+                    onAction={handleEdit}
+                />
+
+                {/* PAGINERING */}
+                <div className="my-3">
+                    <PagePagination
+                        page={page}
+                        totalPages={totalPages}
+                        hasPreviousPage={page > 1}
+                        hasNextPage={page < totalPages}
+                        onPrevious={() => setPage(page - 1)}
+                        onNext={() => setPage(page + 1)}
+                        onPageChange={setPage}
+                        isDisabled={isLoading}
+                    />
+                </div>
+            </section>
+        </>
     );
 }

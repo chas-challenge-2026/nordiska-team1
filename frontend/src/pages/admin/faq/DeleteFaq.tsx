@@ -4,6 +4,8 @@ import { deleteFaq, getFaqsByRelationId } from "../../../services/faqService";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Faq, FaqGroup } from "../../../types/types";
 import FaqGroupList from "../../../components/admin/faq/FaqGroupList";
+import AdminStatus from "../../../components/admin/ui/AdminStatus";
+import { AdminPageTitle, AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
 
 export default function DeleteFaq() {
     const [lang, setLang] = useState<"sv" | "en">("sv");
@@ -12,7 +14,7 @@ export default function DeleteFaq() {
     const [faqGroups, setFaqGroups] = useState<FaqGroup[]>([]);
     const queryClient = useQueryClient();
 
-    const { data, isLoading, isError } = useFaqs(lang,1,search,"");
+    const { data, isLoading, isError } = useFaqs(lang,1,5,search,"");
     const faqs = useMemo(() => data?.items ?? [], [data?.items]);
 
     // SÖK DEBOUNCE
@@ -74,10 +76,10 @@ export default function DeleteFaq() {
 
     return (
     <>
-        <h1 className="text-3xl font-semibold py-2.5 bg-red-600 text-white text-center">Radera</h1> 
+        <AdminPageTitle danger>Radera</AdminPageTitle>
 
         <section className="w-full">
-            <h2 className=" block w-[60%] mx-auto text-xl font-semibold border-b mt-10 py-2 bg-black text-white text-center"> SÖK EFTER FAQ </h2>
+            <AdminSectionTitle className="block w-[60%] mx-auto mt-10">SÖK EFTER FAQ</AdminSectionTitle>
             {/* Språkval - radio buttons */}
             <div className="flex justify-center gap-10 mt-3">
                 <label>
@@ -110,9 +112,9 @@ export default function DeleteFaq() {
                 className="block w-[60%] mx-auto bg-white border rounded-2xl py-2.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
             />
 
-            {isLoading && search && <p>Söker...</p>}
-            {isError && <p>Kunde inte hämta FAQ.</p>}
-            {!isLoading && search && faqs.length === 0 && (<p>Inga FAQ hittades.</p>)}
+            {isLoading && search && <AdminStatus kind="loading">Söker...</AdminStatus>}
+            {isError && <AdminStatus kind="error">Kunde inte hämta FAQ.</AdminStatus>}
+            {!isLoading && search && faqs.length === 0 && <AdminStatus kind="empty">Inga FAQ hittades.</AdminStatus>}
 
             {/* FAQ KORT  */}
             <FaqGroupList 

@@ -3,6 +3,9 @@ import { useState, type SubmitEvent } from "react";
 import { createOperationalMessage, updateOperationalMessage, type CreateOperationalMessageRequest,} from "../../../services/adminService";
 import { useServiceAlertStore } from "../../../store/serviceAlertStore";
 import InputField from "../../forms/InputField";
+import AdminButton from "../ui/AdminButton";
+import AdminStatus from "../ui/AdminStatus";
+import { AdminSectionTitle } from "../ui/AdminTitle";
 
 export type OperationalMessageData = {
     id: number;
@@ -127,7 +130,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
             <div className="grid gap-4 sm:grid-cols-2">
 
                 <div>
-                    <h2 className="text-xl font-semibold border-b py-2 mb-2 bg-black text-white text-center">Svenska</h2>
+                    <AdminSectionTitle className="mb-2">Svenska</AdminSectionTitle>
                     <div className="flex flex-col gap-1 bg-gray-200 p-2">
                         <InputField 
                             name="sv-title"
@@ -143,7 +146,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                 </div>
 
                 <div>
-                    <h2 className="text-xl font-semibold border-b py-2 mb-2 bg-black text-white text-center">Engelska</h2>
+                    <AdminSectionTitle className="mb-2">Engelska</AdminSectionTitle>
                     <div className="flex flex-col gap-1 bg-gray-200 p-2">
                         <InputField 
                             name="en-title"
@@ -187,7 +190,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                 </div>
             </div>
                 
-            <h2 className="text-xl font-semibold border-b py-2 bg-black text-white text-center">Inställningar</h2>
+            <AdminSectionTitle>Inställningar</AdminSectionTitle>
             
             <div className="space-y-4 bg-gray-200 p-4">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -197,7 +200,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                             ALLVARLIGHETSGRAD
                         </span>
                         <select
-                            className="w-full rounded-md border border-nordiska-blue bg-white px-3 py-2"
+                            className="w-full rounded-md border border-primary-hover bg-white px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
                             value={form.severity}
                             onChange={(e) => updateField("severity", e.target.value)}
                         >
@@ -225,7 +228,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                         </span>
                         <input
                             type="datetime-local"
-                            className="w-full rounded-md border border-nordiska-blue bg-white px-3 py-2"
+                            className="w-full rounded-md border border-primary-hover bg-white px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
                             value={form.startDate}
                             onChange={(e) => updateField("startDate", e.target.value)}
                         />
@@ -237,7 +240,7 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                         </span>
                         <input
                             type="datetime-local"
-                            className="w-full rounded-md border border-nordiska-blue bg-white px-3 py-2"
+                            className="w-full rounded-md border border-primary-hover bg-white px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
                             value={form.endDate}
                             onChange={(e) => updateField("endDate", e.target.value)}
                         />
@@ -255,31 +258,22 @@ export default function OperationalMessageForm({item, onCancel, onSaved,}: Props
                 </label>
             </div>
 
-            {error && (<p role="alert" className="text-sm text-red-600">{error}</p>)}
+            {error && <AdminStatus kind="error">{error}</AdminStatus>}
 
             <div className="flex flex-wrap justify-end gap-2">
                 {onCancel && (
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        disabled={saving}
-                        className="border-5 bg-red-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-red-500"
-                    >
+                    <AdminButton variant="red" onClick={onCancel} disabled={saving}>
                         Avbryt
-                    </button>
+                    </AdminButton>
                 )}
 
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="border-5 bg-green-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-green-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-500 disabled:hover:border-black"
-                >
+                <AdminButton type="submit" variant="green" disabled={saving}>
                     {saving
                         ? "Sparar..."
                         : item
                           ? "Spara ändringar"
                           : "Skapa driftmeddelande"}
-                </button>
+                </AdminButton>
             </div>
         </form>
     );

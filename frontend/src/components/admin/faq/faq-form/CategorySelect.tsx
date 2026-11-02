@@ -38,7 +38,7 @@ export default function CategorySelect({
             onChange={(e) => onChange(e.target.value)}
             required
             disabled={isLoading}
-            className="border rounded-md px-3 py-2 bg-white"
+            className="border border-primary-hover rounded-md px-3 py-2 bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
         >
             <option value="">{isLoading ? "Laddar kategorier..." : "Välj kategori"}</option>
             <option disabled> ───────────── </option>

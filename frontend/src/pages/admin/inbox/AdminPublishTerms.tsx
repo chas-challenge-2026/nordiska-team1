@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { usePublishNewTerms } from "../../../hooks/inbox/useStaffInbox";
-import { btn, input, section } from "./adminStyles";
+import { input, section } from "./adminStyles";
+import AdminButton from "../../../components/admin/ui/AdminButton";
+import AdminStatus from "../../../components/admin/ui/AdminStatus";
+import { AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
 
 export default function AdminPublishTerms() {
     const publish = usePublishNewTerms();
@@ -37,7 +40,7 @@ export default function AdminPublishTerms() {
 
     return (
         <section className={section}>
-            <h2 className="text-xl font-semibold">Publicera villkor</h2>
+            <AdminSectionTitle>Publicera villkor</AdminSectionTitle>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2 max-w-[600px]">
                 <label className="flex flex-col">
@@ -60,15 +63,15 @@ export default function AdminPublishTerms() {
                     Gäller från
                     <input className={input} type="date" required value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
                 </label>
-                <button type="submit" className={`${btn} self-start`} disabled={publish.isPending}>
+                <AdminButton type="submit" variant="green" className="self-start" disabled={publish.isPending}>
                     {publish.isPending ? "Publicerar..." : "Publicera"}
-                </button>
+                </AdminButton>
                 {publish.isSuccess && (
                     <p role="status">
                         Villkor publicerade: {publish.data.title} v{publish.data.version} (ID {publish.data.id}).
                     </p>
                 )}
-                {publish.isError && <p role="alert" className="text-error">Kunde inte publicera villkor.</p>}
+                {publish.isError && <AdminStatus kind="error">Kunde inte publicera villkor.</AdminStatus>}
             </form>
         </section>
     );

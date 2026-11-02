@@ -2,7 +2,10 @@ import { useState, type FormEvent } from "react";
 import { useCloseThread, useReopenThread } from "../../../hooks/inbox/useThreads";
 import { useStaffSendReply, useStaffThread, useStaffThreads } from "../../../hooks/inbox/useStaffInbox";
 import { formatDate, formatTime } from "../../../utils/date";
-import { btn, input, section } from "./adminStyles";
+import { input, section, smallBtn } from "./adminStyles";
+import AdminButton from "../../../components/admin/ui/AdminButton";
+import AdminStatus from "../../../components/admin/ui/AdminStatus";
+import { AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
 
 type StatusFilter = "" | "Open" | "Closed";
 
@@ -38,7 +41,7 @@ export default function AdminThreads() {
 
     return (
         <section className={section}>
-            <h2 className="text-xl font-semibold">Trådar</h2>
+            <AdminSectionTitle>Trådar</AdminSectionTitle>
 
             <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-3">
                 <label className="flex flex-col">
@@ -71,15 +74,15 @@ export default function AdminThreads() {
                         onChange={(e) => setDraft({ ...draft, customerId: e.target.value })}
                     />
                 </label>
-                <button type="submit" className={btn}>Filtrera</button>
+                <AdminButton type="submit" className={smallBtn}>Filtrera</AdminButton>
             </form>
 
-            {threads.isPending && <p role="status">Laddar...</p>}
-            {threads.isError && <p role="alert" className="text-error">Kunde inte hämta trådar.</p>}
+            {threads.isPending && <AdminStatus kind="loading" />}
+            {threads.isError && <AdminStatus kind="error">Kunde inte hämta trådar.</AdminStatus>}
             {(closeThread.isError || reopenThread.isError) && (
-                <p role="alert" className="text-error">Kunde inte ändra status.</p>
+                <AdminStatus kind="error">Kunde inte ändra status.</AdminStatus>
             )}
-            {threads.isSuccess && rows.length === 0 && <p>Inga trådar.</p>}
+            {threads.isSuccess && rows.length === 0 && <AdminStatus kind="empty">Inga trådar.</AdminStatus>}
 
             {rows.length > 0 && (
                 <div className="overflow-x-auto">
@@ -107,17 +110,17 @@ export default function AdminThreads() {
                                         <td className="p-1">{thread.status ?? "-"}</td>
                                         <td className="p-1">{formatDate(thread.lastMessageAt)}</td>
                                         <td className="p-1 flex gap-2">
-                                            <button type="button" className={btn} onClick={() => setSelectedId(thread.id)}>
+                                            <AdminButton className={smallBtn} onClick={() => setSelectedId(thread.id)}>
                                                 Öppna
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={btn}
+                                            </AdminButton>
+                                            <AdminButton
+                                                variant={isClosed ? "green" : "red"}
+                                                className={smallBtn}
                                                 disabled={busy}
                                                 onClick={() => (isClosed ? reopenThread.mutate(thread.id) : closeThread.mutate(thread.id))}
                                             >
                                                 {isClosed ? "Återöppna" : "Stäng"}
-                                            </button>
+                                            </AdminButton>
                                         </td>
                                     </tr>
                                 );
@@ -129,13 +132,13 @@ export default function AdminThreads() {
 
             {data && data.totalPages > 1 && (
                 <div className="flex items-center gap-3">
-                    <button type="button" className={btn} disabled={!data.hasPreviousPage} onClick={() => setPage(data.page - 1)}>
+                    <AdminButton className={smallBtn} disabled={!data.hasPreviousPage} onClick={() => setPage(data.page - 1)}>
                         Föregående
-                    </button>
+                    </AdminButton>
                     <span>Sida {data.page} av {data.totalPages}</span>
-                    <button type="button" className={btn} disabled={!data.hasNextPage} onClick={() => setPage(data.page + 1)}>
+                    <AdminButton className={smallBtn} disabled={!data.hasNextPage} onClick={() => setPage(data.page + 1)}>
                         Nästa
-                    </button>
+                    </AdminButton>
                 </div>
             )}
 
@@ -161,8 +164,8 @@ function ThreadPanel({ id }: { id: number }) {
         <div className="border-t-2 pt-3 flex flex-col gap-3">
             <h3 className="text-lg font-semibold">Tråd {id}</h3>
 
-            {thread.isPending && <p role="status">Laddar...</p>}
-            {thread.isError && <p role="alert" className="text-error">Kunde inte hämta tråden.</p>}
+            {thread.isPending && <AdminStatus kind="loading" />}
+            {thread.isError && <AdminStatus kind="error">Kunde inte hämta tråden.</AdminStatus>}
 
             {thread.data && (
                 <>
@@ -199,11 +202,11 @@ function ThreadPanel({ id }: { id: number }) {
                             <input type="checkbox" checked={replyAllowed} onChange={(e) => setReplyAllowed(e.target.checked)} />
                             Kunden får svara
                         </label>
-                        <button type="submit" className={`${btn} self-start`} disabled={sendReply.isPending}>
+                        <AdminButton type="submit" variant="green" className="self-start" disabled={sendReply.isPending}>
                             {sendReply.isPending ? "Skickar..." : "Skicka svar"}
-                        </button>
+                        </AdminButton>
                         {sendReply.isSuccess && <p role="status">Svar skickat.</p>}
-                        {sendReply.isError && <p role="alert" className="text-error">Kunde inte skicka svar.</p>}
+                        {sendReply.isError && <AdminStatus kind="error">Kunde inte skicka svar.</AdminStatus>}
                     </form>
                 </>
             )}

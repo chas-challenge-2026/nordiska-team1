@@ -6,6 +6,9 @@ import {
     getOperationalMessage,
 } from "../../../services/adminService";
 import { useServiceAlertStore } from "../../../store/serviceAlertStore";
+import AdminButton from "../ui/AdminButton";
+import AdminStatus from "../ui/AdminStatus";
+import { AdminPageTitle } from "../ui/AdminTitle";
 import OperationalMessageForm, {
     type OperationalMessageData,
 } from "./OperationalMessageForm";
@@ -125,11 +128,11 @@ export default function OperationalMessagesList() {
 
     return (
         <section className="space-y-6">
-            {error && ( <p role="alert" className="text-red-600">{error}</p>)}
+            {error && <AdminStatus kind="error">{error}</AdminStatus>}
 
             {editingItem && (
                 <>
-                <h1 className="text-3xl font-semibold py-2.5 bg-black text-white text-center">Redigera driftmeddelande</h1>
+                <AdminPageTitle>Redigera driftmeddelande</AdminPageTitle>
                 <OperationalMessageForm
                     key={editingItem.id}
                     item={editingItem}
@@ -144,18 +147,18 @@ export default function OperationalMessagesList() {
 
             {!editingItem && (
                 <>
-                <h1 className="text-3xl font-semibold py-2.5 bg-black text-white text-center">Aktuella driftmeddelanden</h1>
+                <AdminPageTitle>Aktuella driftmeddelanden</AdminPageTitle>
 
-                {loading 
-                ? ( <p>Laddar driftmeddelanden...</p>) : messages.length === 0 ? (
-                    <p>Inga driftmeddelanden hittades.</p>) 
+                {loading
+                ? ( <AdminStatus kind="loading">Laddar driftmeddelanden...</AdminStatus>) : messages.length === 0 ? (
+                    <AdminStatus kind="empty">Inga driftmeddelanden hittades.</AdminStatus>)
                 : (
                     <div className="space-y-3">
 
                         {messages.map((item) => {const currentlyActive = item.isActive && isWithinDateRange(item);
 
                             return (
-                                <article key={item.id} className="space-y-3 rounded-xl border p-4">
+                                <article key={item.id} className="space-y-3 rounded-lg border p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <h3 className="font-semibold"> {item.title?.[language] ||`Driftmeddelande #${item.id}`}</h3>
 
@@ -193,24 +196,19 @@ export default function OperationalMessagesList() {
                                     </div>
 
                                     <div className="flex justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setEditingItem(item)}
-                                            className="border-5 bg-yellow-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-yellow-500 disabled:hover:border-black "
-                                        >
+                                        <AdminButton variant="yellow" onClick={() => setEditingItem(item)}>
                                             Redigera
-                                        </button>
+                                        </AdminButton>
 
-                                        <button
-                                            type="button"
+                                        <AdminButton
+                                            variant="red"
                                             disabled={deletingId === item.id}
                                             onClick={() => void handleDelete(item.id)}
-                                            className="border-5 bg-red-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-red-500"
                                         >
                                             {deletingId === item.id
                                                 ? "Tar bort..."
                                                 : "Ta bort"}
-                                        </button>
+                                        </AdminButton>
                                     </div>
                                 </article>
                             );
