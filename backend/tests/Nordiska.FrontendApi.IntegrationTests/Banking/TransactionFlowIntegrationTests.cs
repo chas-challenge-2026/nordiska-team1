@@ -15,7 +15,7 @@ namespace Nordiska.FrontendApi.IntegrationTests.Banking;
 // repositories) and checks what actually ended up in the ledger. Every test uses its own customer
 // and accounts so the balances are never affected by other tests.
 [Collection(PostgresCollection.Name)]
-public class TransactionFlowIntegrationTests : IAsyncLifetime
+public partial class TransactionFlowIntegrationTests : IAsyncLifetime
 {
     private readonly PostgresAuthWebApplicationFactory _factory;
     private readonly List<long> _createdCustomerIds = new();

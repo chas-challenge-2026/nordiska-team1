@@ -348,8 +348,14 @@ public class TestSavingsAccountRepository : ISavingsAccountRepository
     }
 }
 
-public class TestTransactionRepository : ITransactionRepository
+public class TestTransactionRepository : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
 {
+    public TestTransactionRepository(ISavingsAccountRepository accounts, ISavingsGoalRepository goals)
+    {
+        Accounts = accounts;
+        Goals = goals;
+    }
+
     private static readonly List<LedgerEntry> _store = new()
     {
         new LedgerEntry { Id = 1, AccountId = 1, Type = "deposit", Amount = 5000m, CreatedAt = DateTime.UtcNow.AddDays(-10), Label = "Insättning" },
@@ -444,6 +450,8 @@ public class TestTransactionRepository : ITransactionRepository
 
     public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default)
     {
+        var existing = _store.FirstOrDefault(entry => entry.Id == id);
+        if (existing is not null && !existing.IsPlanned) throw new Nordiska.BuildingBlocks.Database.Errors.ConflictException("Only planned entries can be deleted.");
         var idx = _store.FindIndex(l => l.Id == id);
         if (idx >= 0)
         {
