@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFaqs, useFaqAnalyticsSummary, useFaqContentGaps } from "../../../hooks/useFaqs";
+import { useNavigate } from "react-router";
+import { getFaqsByRelationId } from "../../../services/faqService";
 import PagePagination from "../../../components/PagePagination";
 import AdminButton from "../../../components/admin/ui/AdminButton";
 import { AdminPageTitle } from "../../../components/admin/ui/AdminTitle";
@@ -20,18 +22,13 @@ const SORT_FIELD: Record<SortKey, "id" | "helpful" | "views"> = {
 };
 
 const FAQ_COLS = "grid grid-cols-[1fr_7rem_5rem_2rem] items-center gap-3 px-3 min-h-11";
-const VIEWED_COLS = "grid grid-cols-[1fr_10rem_6rem_7rem] items-center gap-3 px-3 min-h-11";
+const VIEWED_COLS = "grid grid-cols-[1fr_10rem_6rem] items-center gap-3 px-3 min-h-11";
 const GAP_COLS = "grid grid-cols-[1fr_6rem_8rem] items-center gap-3 px-3 min-h-11";
 const TABLE_HEAD = "py-2 bg-gray-200 text-xs font-semibold uppercase";
 const SECTION_TITLE = "text-xl font-semibold py-2 bg-black text-white text-center";
 
 function getViews(faq: FaqItem): number {
     return faq.viewCount ?? 0;
-}
-
-// TODO: ersätt med er redigera-route (och <Link> om ni använder react-router)
-function getEditHref(id: number): string {
-    return `/faq/redigera/${id}`;
 }
 
 function formatScore(score: number) {
@@ -65,6 +62,19 @@ function rangeText(page: number, size: number, total: number) {
 }
 
 export default function FaqStatistics() {
+    const navigate = useNavigate();
+
+    // Öppnar redigeringsformuläret med båda språkversionerna (samma flöde som EditFaq)
+    async function openEdit(relationId: string) {
+        try {
+            const faqs = await getFaqsByRelationId(relationId);
+            navigate("/admin/faq/edit/form", { state: { faqGroup: { relationId, faqs } } });
+        } catch (error) {
+            console.error("Kunde inte hämta FAQ:", error);
+            alert("Något gick fel. FAQ kunde inte öppnas.");
+        }
+    }
+
     const [lang, setLang] = useState<"sv" | "en">("sv");
 
     // Alla FAQ: sök (debounce, filtreras i backend)
@@ -212,7 +222,6 @@ export default function FaqStatistics() {
                     <span>Fråga</span>
                     <span>Kategori</span>
                     <span className="text-right">Visningar</span>
-                    <span aria-hidden="true" />
                 </div>
 
                 <div style={reservedHeight(VIEWED_PAGE_SIZE)}>
@@ -224,13 +233,6 @@ export default function FaqStatistics() {
                                 <span className="font-semibold">{a.question ?? "–"}</span>
                                 <span className="text-sm">{a.category ?? "–"}</span>
                                 <span className="text-right tabular-nums">{a.viewCount}</span>
-                                <AdminButton
-                                    to={getEditHref(a.id)}
-                                    variant="yellow"
-                                    className="justify-self-end !border-2 !px-3 !py-0.5 text-sm"
-                                >
-                                    Redigera
-                                </AdminButton>
                             </div>
                         ))
                     )}
@@ -367,8 +369,8 @@ export default function FaqStatistics() {
                                     <p><strong>ID: </strong>{faq.id}</p>
                                     <p><strong>Relations ID: </strong>{faq.relationId}</p>
                                     <AdminButton
-                                        to={getEditHref(faq.id)}
                                         variant="yellow"
+                                        onClick={() => openEdit(faq.relationId)}
                                         className="self-start !border-2 !px-3 !py-0.5 text-sm"
                                     >
                                         Redigera
