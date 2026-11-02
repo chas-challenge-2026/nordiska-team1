@@ -158,8 +158,8 @@ void test_c_api_callback_rejection() {
     require(rc == 3, "rejected callback must return NORDISKA_PDF_CALLBACK_FAILED (3)");
 
     const char* last_err = nordiska_pdf_v1_get_last_error();
-    require(last_err != nullptr && std::strstr(last_err, "42") != nullptr,
-            "last_error must record callback rejection code");
+    require(last_err != nullptr && std::strstr(last_err, "delivery callback rejected batch") != nullptr,
+            "last_error must record controlled callback rejection diagnostic");
 }
 
 // 4. Test engine environment variable selection

@@ -27,6 +27,7 @@ struct GeneratorConfig {
     std::shared_ptr<PdfSigner> custom_signer{nullptr};
     // Hex characters, excluding delimiters. Passed per render/preparation call.
     size_t signature_contents_capacity{kDefaultSignatureSlotSize};
+    ReportProfile report_profile{ReportProfile::LightBlue};
 };
 
 // For "--instrumented" arg  in CLI/benchmark
@@ -52,29 +53,35 @@ struct PipelineTiming {
 
 // Explicit error types for generator-level failures (NOR-207)
 struct InvalidArgumentError {
-    std::string message;
+    DiagnosticCode code{DiagnosticCode::InvalidArgument};
 };
 
 struct ResourceLimitError {
-    std::string message;
+    DiagnosticCode code{DiagnosticCode::InvalidArgument};
+};
+
+struct InternalError {
+    DiagnosticCode code{DiagnosticCode::UnexpectedFailure};
 };
 
 // Sum type representing all possible pipeline errors
-using GeneratorErrorPayload =
-    std::variant<InvalidArgumentError, ResourceLimitError, IngestError, LayoutError, RenderError, SigningError>;
+using GeneratorErrorPayload = std::variant<InvalidArgumentError, ResourceLimitError, IngestError, LayoutError,
+                                           RenderError, SigningError, InternalError>;
 
 struct GeneratorError {
     GeneratorErrorPayload details;
-    std::string document_id{};
+    // Diagnostics identify positions, never caller-supplied document IDs.
+    std::optional<size_t> document_index;
 
     template <typename T>
         requires(!std::is_same_v<std::decay_t<T>, GeneratorError> && std::is_constructible_v<GeneratorErrorPayload, T>)
-    explicit GeneratorError(T&& error_payload, std::string doc_id = {})
-        : details(std::forward<T>(error_payload)), document_id(std::move(doc_id)) {}
+    explicit GeneratorError(T&& error_payload, std::optional<size_t> index = std::nullopt)
+        : details(std::forward<T>(error_payload)), document_index(index) {}
 
-    GeneratorError(GeneratorErrorPayload payload, std::string doc_id)
-        : details(std::move(payload)), document_id(std::move(doc_id)) {}
+    GeneratorError(GeneratorErrorPayload payload, std::optional<size_t> index)
+        : details(std::move(payload)), document_index(index) {}
 
+    [[nodiscard]] Diagnostic diagnostic() const noexcept;
     [[nodiscard]] std::string message() const;
 };
 
@@ -92,6 +99,7 @@ class PdfGenerator {
     std::shared_ptr<PdfSigner> signer_;
     bool enable_signing_{false};
     size_t signature_contents_capacity_;
+    ReportProfile report_profile_;
     std::optional<SigningError> signer_initialization_error_;
 };
 

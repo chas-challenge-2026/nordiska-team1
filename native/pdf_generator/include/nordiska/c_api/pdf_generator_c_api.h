@@ -39,6 +39,10 @@
  * Both versions use the shared helpers below for status names, payload limits
  * and thread-local diagnostics. Error strings remain valid until the next
  * generation call on the same thread; successful calls leave an empty string.
+ * Diagnostic text contains only controlled stage/field names, zero-based
+ * document/transaction positions, and a controlled failure reason. Input
+ * values, identifiers, exception text and callback return values are excluded.
+ * Wording is not a machine-readable contract; use numeric status for control flow.
  *
  * Boundary: C-compatible primitive types, structs and function pointers only.
  * No C++ classes, STL types or exceptions cross the ABI.

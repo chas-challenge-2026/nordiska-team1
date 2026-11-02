@@ -66,6 +66,9 @@ Raw JSON Buffer (UTF-8)
 GeneratedPdfs / C ABI Delivery Callback
 ```
 
+See [Diagnostic privacy boundary](docs/diagnostics.md) for typed errors, output
+restrictions, tests, and host/dependency limits.
+
 See [Branded report layout](docs/report-design.md) for style/resource ownership,
 IR commands, pagination, font substitution, and local synthetic previews.
 
@@ -162,6 +165,9 @@ Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/rele
 
 ## Integration Contracts
 
+See [Account product and rate metadata](docs/account-metadata.md) for the optional
+`account_type` and `interest_rate_display` fields supported by both report types.
+
 ### C ABI Public Interface (`pdf_generator_c_api.h`)
 
 Exported C functions for host interop:
@@ -188,6 +194,25 @@ are case-insensitive; an unset or empty value retains Libharu. Unknown values
 return invalid argument with no delivery callback. Signing configuration is
 independent of the selected renderer.
 
+#### Signing deadline
+
+`NORDISKA_PDF_SIGNER_TIMEOUT_MS` sets a **per-document signer request** budget:
+10,000 ms by default (also when unset or empty). Explicit values must be whole
+milliseconds in `1..2147483647`; invalid values return a controlled signing
+configuration error without echoing the supplied value.
+
+One monotonic deadline covers socket creation, connect/queue waiting, sending
+the digest, and receiving the complete response header and CMS body. Partial
+responses and interrupted system calls do not reset it. The budget is shared
+by plain and timestamp modes. It excludes rendering, PDF preparation and the
+rest of a multi-document batch; each document gets its own request budget.
+
+Timeouts return `SigningErrorKind::Timeout` with the fixed reason
+`signing request timed out`. The C ABI retains status 7 (signing failed), and
+failed batches deliver zero callbacks, even if earlier documents were signed.
+The socket closes; this does not cancel work already running in the external
+signer. Instrumented calls record signer-call time on failure as well as success.
+
 #### V2 API (Future Preparation — Not Yet in Production)
 
 > **Note:** The V2 C API (`nordiska_pdf_v2_generate_customer_batch` and
@@ -210,7 +235,8 @@ the call returns. Concurrent calls generate independent customer batches.
 There is no caller-owned generator handle or create/destroy lifecycle.
 
 Timing collection is explicit. The normal V1 and V2 entry points pass no timing
-collector, so the pipeline skips profiling clock reads and accumulation. Use
+collector, so the pipeline skips profiling clock reads and accumulation. Signing
+still reads the monotonic clock to enforce its request deadline. Use
 `nordiska_pdf_v1_generate_customer_batch_instrumented` or
 `nordiska_pdf_v2_generate_customer_batch_instrumented` to collect phase timings
 while using the same generation, validation and delivery code. V2 adds the
@@ -261,6 +287,7 @@ when it returns. No environment variable is needed to choose instrumentation.
 - `--compression <bool>`: Enable or disable stream compression (default: `true`).
 - `--signing`: Call the PDF signer service via Unix domain socket and embed its CMS hex in generated documents (default: `false`).
 - `--signature-capacity <n>`: Reserved CMS hex characters (default: `8192`).
+- `--profile <amber|light-blue|navy>`: Apply a complete report palette (default: `light-blue`; `--logo` is an alias).
 - `-q, --quiet`: Suppress progress messages, only report errors.
 - `-v, --verbose`: Print detailed execution summary and elapsed timing.
 - `--json-summary`: Output machine-readable JSON summary to stdout.
