@@ -20,7 +20,7 @@ public sealed class TaxReportConfiguration
             .IsRequired();
 
         builder.Property(x => x.AccountId)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(x => x.TaxYear)
             .IsRequired();
@@ -71,12 +71,13 @@ public sealed class TaxReportConfiguration
         builder.Property(x => x.AuthorityReference)
             .HasMaxLength(100);
 
-        builder.HasIndex(x => new
-            {
-                x.AccountId,
-                x.TaxYear
-            })
-            .IsUnique();
+        builder.HasIndex(x => new { x.CustomerId, x.TaxYear })
+            .IsUnique()
+            .HasFilter("\"AccountId\" IS NULL");
+
+        builder.HasIndex(x => new { x.AccountId, x.TaxYear })
+            .IsUnique()
+            .HasFilter("\"AccountId\" IS NOT NULL");
 
     }
 }

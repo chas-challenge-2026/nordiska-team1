@@ -27,9 +27,8 @@ public sealed class AnnualTaxReportRepository
                 cancellationToken);
     }
 
-    public Task<TaxReport?> GetByAccountAndYearAsync(
+    public Task<TaxReport?> GetByCustomerAndYearAsync(
         long customerId,
-        long accountId,
         int taxYear,
         CancellationToken cancellationToken)
     {
@@ -38,7 +37,6 @@ public sealed class AnnualTaxReportRepository
             .SingleOrDefaultAsync(
                 report =>
                     report.CustomerId == customerId &&
-                    report.AccountId == accountId &&
                     report.TaxYear == taxYear,
                 cancellationToken);
     }

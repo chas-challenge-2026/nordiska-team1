@@ -1,4 +1,5 @@
 using Nordiska.Modules.Reporting.Domain;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace Nordiska.Modules.Reporting.Application;
@@ -14,7 +15,6 @@ public interface IAnnualTaxReportService
 {
     Task<RequestAnnualTaxReportResult> RequestAsync(
         long customerId,
-        long accountId,
         int taxYear,
         CancellationToken cancellationToken);
 }
@@ -45,14 +45,22 @@ public sealed class AnnualTaxReportService
 
     public async Task<RequestAnnualTaxReportResult> RequestAsync(
         long customerId,
-        long accountId,
         int taxYear,
         CancellationToken cancellationToken)
     {
+        int currentYear = _timeProvider.GetUtcNow().Year;
+
+        if (taxYear >= currentYear)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(taxYear),
+                taxYear,
+                "Tax reports can only be generated for completed years.");
+        }
+
         TaxReport? existingReport =
-            await _repository.GetByAccountAndYearAsync(
+            await _repository.GetByCustomerAndYearAsync(
                 customerId,
-                accountId,
                 taxYear,
                 cancellationToken);
 
@@ -85,14 +93,13 @@ public sealed class AnnualTaxReportService
         AnnualTaxCalculation? calculation =
             await _calculationQuery.GetAsync(
                 customerId,
-                accountId,
                 taxYear,
                 cancellationToken);
 
         if (calculation is null)
         {
             throw new KeyNotFoundException(
-                "Kontot finns inte eller tillhör inte den inloggade kunden.");
+                "Kunden har inga rapporterbara konton för det valda året.");
         }
 
         DateTimeOffset createdAt =
@@ -122,11 +129,34 @@ public sealed class AnnualTaxReportService
                 SchemaVersion,
                 payloadHash);
 
-        (TaxReport savedReport, TaxReportJob job) =
-            await _repository.CreateReportAndJobAsync(
-                report,
-                createdAt,
-                cancellationToken);
+        TaxReport savedReport;
+        TaxReportJob job;
+
+        try
+        {
+            (savedReport, job) =
+                await _repository.CreateReportAndJobAsync(
+                    report,
+                    createdAt,
+                    cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            savedReport =
+                await _repository.GetByCustomerAndYearAsync(
+                    customerId,
+                    taxYear,
+                    cancellationToken)
+                ?? throw new InvalidOperationException(
+                    "Customer-wide tax report creation conflicted, but the winning report could not be loaded.");
+
+            job =
+                await _repository.GetLatestJobAsync(
+                    savedReport.Id,
+                    cancellationToken)
+                ?? throw new InvalidOperationException(
+                    "Customer-wide tax report exists without a job.");
+        }
 
         return MapResult(
             savedReport,

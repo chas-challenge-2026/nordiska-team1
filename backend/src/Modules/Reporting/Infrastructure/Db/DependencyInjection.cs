@@ -13,7 +13,6 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddScoped<IPdfReportGenerator, PdfReportGenerator>();
-        services.AddScoped<ITaxReportService, TaxReportService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
 
         services.AddScoped<

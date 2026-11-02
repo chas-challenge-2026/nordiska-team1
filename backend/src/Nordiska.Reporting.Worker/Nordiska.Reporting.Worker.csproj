@@ -18,22 +18,18 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <NativePdfBuildDirectory>$(MSBuildThisFileDirectory)..\..\..\native\pdf_generator\build</NativePdfBuildDirectory>
+    <NativePdfBuildDirectory Condition="'$(NativePdfBuildDirectory)' == ''">$(MSBuildThisFileDirectory)../../../native/pdf_generator/build</NativePdfBuildDirectory>
   </PropertyGroup>
 
   <ItemGroup>
-    <NativePdfRuntimeFiles Include="$(NativePdfBuildDirectory)\*.dll" />
+    <NativePdfRuntimeFiles Include="$(NativePdfBuildDirectory)/*.dll;$(NativePdfBuildDirectory)/*.so;$(NativePdfBuildDirectory)/*.so.*" />
+    <Content Include="@(NativePdfRuntimeFiles)" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="CopyNativePdfRuntime" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+  <Target Name="WarnMissingNativePdfRuntime" BeforeTargets="Build">
     <Warning
       Condition="'@(NativePdfRuntimeFiles)' == ''"
-      Text="Native PDF runtime not found. Build native/pdf_generator before running PDF generation." />
-    <Copy
-      Condition="'@(NativePdfRuntimeFiles)' != ''"
-      SourceFiles="@(NativePdfRuntimeFiles)"
-      DestinationFolder="$(TargetDir)"
-      SkipUnchangedFiles="true" />
+      Text="Native PDF runtime not found. Build native/pdf_generator or set NativePdfBuildDirectory to its build directory before running PDF generation." />
   </Target>
 
 </Project>
