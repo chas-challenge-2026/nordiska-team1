@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useCreateBroadcastMessage } from "../../../hooks/inbox/useStaffInbox";
 import type { Categories } from "../../../types/inbox";
-import { btn, input, section } from "./adminStyles";
+import { input, section, label, fieldPanel } from "./adminStyles";
+import AdminButton from "../../../components/admin/ui/AdminButton";
+import AdminStatus from "../../../components/admin/ui/AdminStatus";
+import { AdminSectionTitle } from "../../../components/admin/ui/AdminTitle";
 
 // Same values customer form sends. Empty = no category.
 const CATEGORIES: Categories[] = ["Sparkonto", "Sparmål", "Skatteunderlag", "Allmänt"];
@@ -45,14 +48,14 @@ export default function AdminBroadcast() {
 
     return (
         <section className={section}>
-            <h2 className="text-xl font-semibold">Skicka meddelande</h2>
+            <AdminSectionTitle>Skicka meddelande</AdminSectionTitle>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2 max-w-[600px]">
                 <label className="flex items-center gap-2">
                     <input type="checkbox" checked={broadcastToAll} onChange={(e) => setBroadcastToAll(e.target.checked)} />
                     Skicka till alla kunder
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Kund-ID
                     <input
                         className={input}
@@ -64,18 +67,18 @@ export default function AdminBroadcast() {
                         onChange={(e) => setCustomerId(e.target.value)}
                     />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Ämne
                     <input className={input} required value={subject} onChange={(e) => setSubject(e.target.value)} />
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Kategori
                     <select className={input} value={category} onChange={(e) => setCategory(e.target.value as Categories | "")}>
                         <option value="">Ingen</option>
                         {CATEGORIES.map((name) => <option key={name} value={name}>{name}</option>)}
                     </select>
                 </label>
-                <label className="flex flex-col">
+                <label className={`${label} ${fieldPanel}`}>
                     Meddelande
                     <textarea className={input} rows={5} required value={body} onChange={(e) => setBody(e.target.value)} />
                 </label>
@@ -92,11 +95,11 @@ export default function AdminBroadcast() {
                     />
                     Kunden får svara
                 </label>
-                <button type="submit" className={`${btn} self-start`} disabled={broadcast.isPending}>
+                <AdminButton type="submit" variant="green" className="self-start" disabled={broadcast.isPending}>
                     {broadcast.isPending ? "Skickar..." : "Skicka"}
-                </button>
+                </AdminButton>
                 {broadcast.isSuccess && <p role="status">Meddelande skickat.</p>}
-                {broadcast.isError && <p role="alert" className="text-error">Kunde inte skicka meddelande.</p>}
+                {broadcast.isError && <AdminStatus kind="error">Kunde inte skicka meddelande.</AdminStatus>}
             </form>
         </section>
     );

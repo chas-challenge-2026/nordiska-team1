@@ -16,6 +16,7 @@ export type Faq = {
     keywords: string[] | null;
     relationId: string;
     lang: "sv" | "en";
+    viewCount?: number;
 };
 
 export type FaqGroup = {

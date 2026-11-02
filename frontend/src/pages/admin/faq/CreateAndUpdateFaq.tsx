@@ -3,6 +3,8 @@ import { createFaq, editFaq } from "../../../services/faqService";
 import { useNavigate, useLocation } from "react-router";
 import type { FaqGroup } from "../../../types/types";
 import FaqForm from "../../../components/admin/faq/faq-form/FaqForm";
+import AdminButton from "../../../components/admin/ui/AdminButton";
+import { AdminPageTitle } from "../../../components/admin/ui/AdminTitle";
 import { QUESTION_MIN, QUESTION_MAX, ANSWER_MIN, ANSWER_MAX, CATEGORY_MAX, KEYWORDS_MAX, KEYWORDS_REGEX, type LANGUAGE_TYPES } from "../../../components/admin/faq/faq-form/InputRules";
 
 const categoryMap = {
@@ -310,8 +312,8 @@ export default function CreateAndUpdateFaq() {
 {/* -------------------------------------------------------------------- */}
     return (
     <>
-        <h1 className="text-3xl font-semibold py-2.5 bg-black text-white text-center">{editFaqs ? "Redigera" : "Skapa ny"}</h1>
-        <form onSubmit={handleSubmit} className="mt-10 flex-col gap-10 max-w">
+        <AdminPageTitle>{editFaqs ? "Redigera" : "Skapa ny"}</AdminPageTitle>
+        <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-10">
             <div className="flex gap-5">
                 {/* ----------------------------- SVENSKA ----------------------------- */}
                 {/* ------------------------------------------------------------------- */}
@@ -346,30 +348,20 @@ export default function CreateAndUpdateFaq() {
 
             {/* BUTTONS */}
             {!updateFeedback &&
-                <div className="flex justify-center gap-10 mt-10">
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        className="border-5 bg-red-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-red-500"
-                    >
+                <div className="flex justify-center gap-10">
+                    <AdminButton variant="red" onClick={handleCancel}>
                         Avbryt
-                    </button>
-                    <button
-                        type="button"
+                    </AdminButton>
+                    <AdminButton
+                        variant="yellow"
                         onClick={handleClear}
                         disabled={editFaqs ? false : !isFormValid}
-                        className="border-5 bg-yellow-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-yellow-500 disabled:hover:border-black "
                     >
                         {editFaqs ? "Återställ" : "Rensa"}
-                    </button>
-
-                    <button
-                        type="submit"
-                        disabled={!isFormValid}
-                        className="border-5 bg-green-500 border-black rounded-md px-4 py-2 cursor-pointer font-semibold hover:bg-white hover:text-black hover:border-green-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-500 disabled:hover:border-black"
-                    >
+                    </AdminButton>
+                    <AdminButton type="submit" variant="green" disabled={!isFormValid}>
                         {editFaqs ? "Uppdatera" : "Skapa ny"}
-                    </button>
+                    </AdminButton>
                 </div>
             }
 
