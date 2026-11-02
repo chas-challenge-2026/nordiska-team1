@@ -75,7 +75,7 @@ export default function SettingsPage() {
                 >
                     <h1
                         id="settings-title"
-                        className="-mt-5 mb-8 border-b-2 border-nordiska-orange pb-2 text-2xl font-bold uppercase tracking-wider sm:text-3xl"
+                        className="-mt-5 mb-8 border-b-2 border-light-blue-accent pb-2 text-2xl font-bold uppercase tracking-wider sm:text-3xl"
                     >
                         {t("settings-route.page-title")}
                     </h1>
