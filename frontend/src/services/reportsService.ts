@@ -36,8 +36,8 @@ async function fetchPdf(path: string): Promise<Blob> {
     return res.data;
 }
 
-export async function initiateTaxReport(accountId: number, taxYear?: number): Promise<TaxReportResponse> {
-    const res = await axiosInstance.post("/reports/tax", { accountId, taxYear });
+export async function initiateTaxReport(taxYear: number): Promise<TaxReportResponse> {
+    const res = await axiosInstance.post("/reports/tax", { taxYear });
     return res.data;
 }
 
