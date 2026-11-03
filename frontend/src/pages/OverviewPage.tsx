@@ -231,8 +231,10 @@ function OverviewContent({ initialPref }: { initialPref: OverviewPreference }) {
                                     </Reorder.Group>
                                     </>
                                 ) : (
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-8 pt-3">
-                                        {displayedAccounts?.map((account) => (<AccountCard key={account.id} account={account}/>))}
+                                    <div className="@container w-full">
+                                        <div className="grid grid-cols-1 gap-4 @min-[700px]:grid-cols-2 @min-[1200px]:grid-cols-3 lg:gap-8 pt-3">
+                                            {displayedAccounts?.map((account) => (<AccountCard key={account.id} account={account}/>))}
+                                        </div>
                                     </div>
                                 )
                         )}

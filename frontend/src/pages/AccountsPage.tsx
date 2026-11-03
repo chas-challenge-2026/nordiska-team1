@@ -206,12 +206,23 @@ export default function AccountsPage() {
                                         </div>
 
                                         {/* INTEREST RATE */}
-                                        <div className="ml-4 shrink-0 text-right">
-                                            <p className="text-[10px] uppercase tracking-wider text-white/70 sm:text-xs">{t("generic.interest")}</p>
+                                        <div className="ml-4 shrink-0 text-center">
+                                            <p className="pr-1 text-[10px] uppercase tracking-wider text-white/70 sm:text-xs">{t("generic.interest")}</p>
                                             <p className="mt-0.5 text-base font-bold tracking-wide sm:mt-1 sm:text-lg">
                                                 {(expandedAccount.interestRate * 100).toLocaleString("sv-SE")}<span className="font-normal"> %</span>
                                             </p>
                                         </div>
+
+                                        {/* INSÄTTNING  */}
+                                        <ActionButton
+                                            onClick={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
+                                            ariaLabel={t("accounts-route.savings-goal.deposit")}
+                                            prefixIcon="/icons/deposit.svg"
+                                            title={t("accounts-route.savings-goal.deposit")}
+                                            hideIcon
+                                            mobile
+                                        />
+
                                     </div>
                                 </div>
 
@@ -305,6 +316,15 @@ export default function AccountsPage() {
                                                     {/* ACCOUNT STATEMENT */}
                                                     <AccountStatementBtn key={expandedAccount.id} accountId={expandedAccount.id} hideIcon />
 
+                                                    {/* TRANSAKTIONER  */}
+                                                    <ActionButton
+                                                        onClick={() => {navigate(`/transactions?accountIds=${expandedAccount.id}`)}}
+                                                        ariaLabel={t("accounts-route.savings-goal.deposit")}
+                                                        prefixIcon="/icons/transactions.svg"
+                                                        title="Se transaktioner"
+                                                        hideIcon
+                                                    />
+
                                                     {/* FAVORITE */}
                                                     <ActionButton
                                                         onClick={() => handleFavorite(expandedAccount.id, !expandedAccount.isFavorite)}
@@ -324,6 +344,15 @@ export default function AccountsPage() {
                                                             hideIcon={true}
                                                         />
                                                     }
+
+                                                    {/* INSÄTTNING  */}
+                                                    <ActionButton
+                                                        onClick={() => {navigate(`/transfer?account=${expandedAccount.id}`)}}
+                                                        ariaLabel={t("accounts-route.savings-goal.deposit")}
+                                                        prefixIcon="/icons/deposit.svg"
+                                                        title={t("accounts-route.savings-goal.deposit")}
+                                                        hideIcon
+                                                    />
 
                                                     {/* CLOSE ACCOUNT */}
                                                     {canClose && (
