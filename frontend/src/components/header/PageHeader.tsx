@@ -51,12 +51,12 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
     const closeMenu = () => setMenuOpen(false);
     let headerBackground = "bg-dark-navy"
     let dotColor = "text-light-blue-accent"
-    let languageSelectBg = "bg-nordiska-blue"
+    let languageSelectBg = "bg-dark-navy"
 
     switch (location.pathname) {
         case "/login":
         case "/register":
-            dotColor = "text-white"
+            dotColor = "text-light-blue-accent"
             headerBackground = "bg-[url('/images/winter_forrest.webp')] bg-cover bg-center"
             languageSelectBg = ""
             break;
@@ -64,7 +64,7 @@ export default function PageHeader({ protectedHeader, noShow }: pageHeaderProps)
         case "/welcome":
         case "/inactive":
         case "/logged-out":
-            headerBackground = "bg-nordiska-blue"
+            headerBackground = "bg-dark-navy"
     }
 
     return (

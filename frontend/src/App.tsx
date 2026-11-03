@@ -35,7 +35,7 @@ export default function App() {
         case "/welcome":
         case "/inactive":
         case "/logged-out":
-            background = "bg-nordiska-blue";
+            background = "bg-dark-navy";
             break;
     }
 
