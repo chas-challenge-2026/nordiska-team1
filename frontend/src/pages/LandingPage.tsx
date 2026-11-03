@@ -16,9 +16,9 @@ export default function LandingPage({ inactive = false, loggedOut = false }: pag
     },[t, loggedOut, inactive])
 
     return (
-    <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-nordiska-blue">
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-dark-navy/10">
         {/* ----- BAKGRUND ----- */}
-        <div aria-hidden="true" className="absolute inset-0 bg-[url('/images/mountain_view.webp')] bg-cover bg-center opacity-65"/>
+        <div aria-hidden="true" className="absolute inset-0 bg-[url('/images/mountain_view.webp')] bg-cover bg-center opacity-80"/>
         {/* ----- INNEHÅLL ----- */}
         <section aria-labelledby="page-title" className="relative z-10 flex min-h-0 flex-1 items-center px-6 py-6 sm:px-10 lg:px-15 -mt-15">
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 text-white lg:ml-[10%] lg:gap-10">
@@ -40,15 +40,15 @@ export default function LandingPage({ inactive = false, loggedOut = false }: pag
                     }
                 </p>
                    
-                <Link to="/login" className="group flex min-h-14 w-full max-w-sm items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] shadow-xl/30 bg-nordiska-blue px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-login-bg focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl text-shadow-lg/40">
-                    <span>{inactive || loggedOut ? t("inactivity-route.button") : t("welcome-route.button")}</span>
-                    <img aria-hidden="true" src="/icons/arrow-right.svg" className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"/>
+                <Link to="/login" className="group flex min-h-14 w-full max-w-sm items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] shadow-xl/30 bg-white px-6 py-4 font-montserrat text-lg font-bold transition-colors hover:bg-primary-hover focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:text-2xl ">
+                    <span className='text-primary-blue group-hover:text-white shadow-0 text-shadow-0'>{inactive || loggedOut ? t("inactivity-route.button") : t("welcome-route.button")}</span>
+                    <span aria-hidden="true" className={`block size-7 mask-contain mask-center mask-no-repeat bg-primary-blue group-hover:bg-white transition transition-transform group-hover:translate-x-2`} style={{maskImage: `url('/icons/arrow-right.svg')`,}}/>
                 </Link>
                
                 {!loggedOut && !inactive && (
-                    <Link to="/register" className="group -mt-4 flex min-h-14 w-full max-w-sm items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] border-2 border-nordiska-blue px-6 py-4 backdrop-blur-sm font-montserrat text-lg font-bold transition-colors hover:bg-white/10 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:-mt-6 lg:text-2xl">
+                    <Link to="/register" className="group -mt-4 flex min-h-14 w-full max-w-sm items-center justify-between gap-4 rounded-br-[10px] rounded-bl-[10px] rounded-tr-[10px] border-2 border-white px-6 py-4 backdrop-blur-sm font-montserrat text-lg font-bold transition-colors hover:bg-white/10 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-white sm:px-8 sm:text-xl lg:-mt-6 lg:text-2xl">
                         <span>{t("welcome-route.register-button")}</span>
-                        <img aria-hidden="true" src="/icons/arrow-right.svg" className="h-7 w-7 shrink-0 invert transition-transform group-hover:translate-x-2"/>
+                        <span aria-hidden="true" className={`block size-7 mask-contain mask-center mask-no-repeat bg-white transition-transform group-hover:translate-x-2`} style={{maskImage: `url('/icons/arrow-right.svg')`,}}/>
                     </Link>
                 )}
             </div>
