@@ -95,7 +95,7 @@
 
 | Beslut | Motivering | Ansvarig |
 | :--- | :---: | ---: |
-| Under håll av FAQ | Enkelt för kundtjänstmedarbetare att skapa, radera och uppdatera FAQ | Ingrid |
+| Underhåll av FAQ | Enkelt för kundtjänstmedarbetare att skapa, radera och uppdatera FAQ | Ingrid |
 | Hantera kundärenden | Ärenden som kunder skickar in från kundportalen ska enkelt hanteras via admin | Olle |
 | Utskick av info till kunder | Admin ska kunna skicka ut viktig information till alla kunder | Olle |
 | Uppdatering av driftmeddelanden | För admin att uppdatera och pusha ut driftmeddelanden | Ingrid |
