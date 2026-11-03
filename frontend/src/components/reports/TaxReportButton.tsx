@@ -10,11 +10,10 @@ import ActionButton from "../accounts/ActionButton";
 import { ReportTimeoutError } from "../../services/reportsTimeout";
 
 type TaxReportBtnProps = {
-    accountId?: number;
     year?: number;
 }
 
-export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
+export default function TaxReportBtn({ year }: TaxReportBtnProps) {
 
     const { t } = useTranslation();
 
