@@ -1,6 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { useRelevantFaqs } from "../../hooks/useRelevantFaqs";
 import { useTranslation } from "react-i18next";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import { markdownComponents } from "./markdownComponents";
 
 /**
  * HelpCard
@@ -136,9 +139,16 @@ export default function HelpCard({ heading, removeHeading = false, items, search
                             </div>
 
                             {/* SVAR OCH ACTION */}
-                            <div className="flex-1 min-h-0 overflow-y-auto mt-2 pr-2">
+                            <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto mt-2 pr-2">
                                 <div className="flex flex-col gap-4">
-                                    <p className="text-sm leading-6">{displayItems[selectedItem].answer}</p>
+                                    <div className="text-sm leading-6">
+                                        <Markdown
+                                            remarkPlugins={[remarkBreaks]}
+                                            components={markdownComponents}
+                                        >
+                                            {displayItems[selectedItem].answer}
+                                        </Markdown>
+                                    </div>
                                     {displayItems[selectedItem].action}
                                 </div>
                             </div>
