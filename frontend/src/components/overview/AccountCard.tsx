@@ -40,63 +40,66 @@ export default function AccountCard({account}:AccountCardProps) {
                         </div>
                 </div>
 
-                <section className={`flex min-h-0 flex-1 flex-col gap-10 md:gap-5 lg:gap-3 p-3 sm:overflow-y-auto`}>
+                <section className="flex min-h-0 flex-1 flex-col gap-3 p-3">
 
                     {/* KONTONAMN */}
-                    <div>
+                    <div className="shrink-0">
                         <span className="text-xs uppercase text-primary-hover">{t("accounts-route.account-name")}</span>
                         <div className="flex">
-                            <h2 title={accountName} className="-mt-1 w-full text-base font-semibold tracking-wide md:text-lg truncate"> 
+                            <h2 title={accountName} className="-mt-1 w-full text-base font-semibold tracking-wide md:text-lg truncate">
                                 {accountName}
                             </h2>
-
-                            { account.isFavorite &&
+                            {account.isFavorite &&
                                 <span aria-hidden="true" className="block h-4 w-4 bg-light-blue-accent mask-[url('/icons/star-solid.svg')] mask-contain mask-center mask-no-repeat sm:h-5 sm:w-5"/>
                             }
                         </div>
                     </div>
 
                     {/* SALDON  */}
-                    <div className="border border-light-blue-accent bg-light-gray/40  pt-2 px-2">
-                        <div className="mb-2">
-                            <span className="text-xs text-primary-hover">{t("generic.balance")}</span>
-                            {/* <p>{t("generic.balance")}</p> */}
-                            <p className="text-2xl font-bold -mt-1">
-                                {formatCurrencySmallSek(account.balance, true)}
-                            </p>
-                        </div>
-
-                        <div className="mb-2">
-                            <div className="grid grid-cols-2 text-sm">
-                                <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.accured-interest")}</span>
-                                <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.yearly-interest")}</span>
+                    <div className="shrink-0">
+                        <div className="border border-light-blue-accent bg-light-gray/40  py-2 lg:py-3 px-2">
+                            <div className="mb-2">
+                                <span className="text-xs text-primary-hover">{t("generic.balance")}</span>
+                                {/* <p>{t("generic.balance")}</p> */}
+                                <p className="text-2xl font-bold -mt-1">
+                                    {formatCurrencySmallSek(account.balance, true)}
+                                </p>
                             </div>
-                            <div className="grid grid-cols-2 text-xl font-bold -mt-0.5">
-                                <p className={` ${account.accruedInterestYtd > 0 ? "text-green-700" : ""}`}>
-                                    {formatCurrencySmallSek(account.accruedInterestYtd)}
-                                </p>
-                                <p>
-                                    {formatCurrencySmallSek(account.estimatedYearEndInterest)}
-                                </p>
+
+                            <div className="">
+                                <div className="grid grid-cols-2 text-sm">
+                                    <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.accured-interest")}</span>
+                                    <span className="text-xs md:text-sm text-primary-hover">{t("accounts-route.interest-section.yearly-interest")}</span>
+                                </div>
+                                <div className="grid grid-cols-2 text-xl font-bold -mt-0.5">
+                                    <p className={` ${account.accruedInterestYtd > 0 ? "text-green-700" : ""}`}>
+                                        {formatCurrencySmallSek(account.accruedInterestYtd)}
+                                    </p>
+                                    <p>
+                                        {formatCurrencySmallSek(account.estimatedYearEndInterest)}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                        
+
                     {/* SPARMÅL */}
-                    { savingGoal && 
-                        <div>
-                            <span className="text-xs uppercase text-primary-hover">{t("generic.savings-goal")}</span>
+                    <div className="shrink-0 min-h-14">
+                        { savingGoal && 
+                            <div>
+                                <span className="text-xs uppercase text-primary-hover">{t("generic.savings-goal")}</span>
 
-                            <div className="grid grid-cols-[6fr_1fr]">
-                                <p className="font-medium">{savingGoal?.title}</p> 
-                                <p className="justify-self-end"><span className="font-bold">{savingGoalPercentage > 100 ? "100" : displayedPercentage}</span>%</p>
-                            </div>
+                                <div className="grid grid-cols-[6fr_1fr]">
+                                    <p className="font-medium">{savingGoal?.title}</p> 
+                                    <p className="justify-self-end"><span className="font-bold">{savingGoalPercentage > 100 ? "100" : displayedPercentage}</span>%</p>
+                                </div>
 
-                            <div className="shrink-0 h-2 my-1 w-full overflow-hidden rounded-full bg-secondary/20">
-                                <div role="progressbar" aria-label={String(savingGoal.title)} aria-valuemin={0} aria-valuemax={100} aria-valuenow={savingGoalPercentage} className={`h-full rounded-full ${barColor} transition-[width] duration-300`} style={{ width: `${savingGoalPercentage}%` }} />
+                                <div className="shrink-0 h-2 my-1 w-full overflow-hidden rounded-full bg-secondary/20">
+                                    <div role="progressbar" aria-label={String(savingGoal.title)} aria-valuemin={0} aria-valuemax={100} aria-valuenow={savingGoalPercentage} className={`h-full rounded-full ${barColor} transition-[width] duration-300`} style={{ width: `${savingGoalPercentage}%` }} />
+                                </div>
                             </div>
-                        </div>
-                    }
+                        }
+                    </div>
                 </section>
 
                 {/* HANTERA KONTO */}
