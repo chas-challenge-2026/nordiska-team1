@@ -10,7 +10,6 @@ type SortKey = "views" | "helpful";
 
 const DAYS = 30;
 const FAQ_PAGE_SIZE = 10;
-const VIEWED_PAGE_SIZE = 10;
 const GAPS_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
 const SECTION = "w-full max-w-6xl mx-auto px-4";
@@ -22,7 +21,6 @@ const SORT_FIELD: Record<SortKey, "id" | "helpful" | "views"> = {
 };
 
 const FAQ_COLS = "grid grid-cols-[1fr_7rem_5rem_2rem] items-center gap-3 px-3 min-h-11";
-const VIEWED_COLS = "grid grid-cols-[1fr_10rem_6rem] items-center gap-3 px-3 min-h-11";
 const GAP_COLS = "grid grid-cols-[1fr_6rem_8rem] items-center gap-3 px-3 min-h-11";
 const TABLE_HEAD = "py-2 bg-gray-200 text-xs font-semibold uppercase";
 const SECTION_TITLE = "text-xl font-semibold py-2 bg-black text-white text-center";
@@ -86,7 +84,6 @@ export default function FaqStatistics() {
     const [gapsFilter, setGapsFilter] = useState("");
 
     const [page, setPage] = useState(1);
-    const [viewedPage, setViewedPage] = useState(1);
     const [gapsPage, setGapsPage] = useState(1);
     const [sortKey, setSortKey] = useState<SortKey>("helpful");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -116,16 +113,12 @@ export default function FaqStatistics() {
     const noResultSearches = summary?.searches.noResultSearches ?? 0;
     const noResultPct = totalSearches > 0 ? Math.round((noResultSearches / totalSearches) * 100) : 0;
 
-    const mostViewed = useMemo(() => summary?.views.mostViewedArticles ?? [], [summary]);
-
     const gaps = useMemo(() => {
         const q = gapsFilter.trim().toLowerCase();
         return (contentGaps ?? []).filter((g) => (g.query ?? "").toLowerCase().includes(q));
     }, [contentGaps, gapsFilter]);
 
-    const viewedTotalPages = totalPagesFor(mostViewed.length, VIEWED_PAGE_SIZE);
     const gapsTotalPages = totalPagesFor(gaps.length, GAPS_PAGE_SIZE);
-    const pagedViewed = paginate(mostViewed, viewedPage, VIEWED_PAGE_SIZE);
     const pagedGaps = paginate(gaps, gapsPage, GAPS_PAGE_SIZE);
 
     // Rensa väntande sök-timer när sidan lämnas (ingen state sätts här)
@@ -151,7 +144,6 @@ export default function FaqStatistics() {
     function changeLang(next: "sv" | "en") {
         setLang(next);
         setPage(1);
-        setViewedPage(1);
         setGapsPage(1);
     }
 
@@ -213,102 +205,6 @@ export default function FaqStatistics() {
                         </strong>
                     </span>
                 </p>
-            </section>
-
-            {/* MEST VISADE */}
-            <section className={`${SECTION} mt-10`}>
-                <h2 className={SECTION_TITLE}>MEST VISADE</h2>
-                <div className={`${VIEWED_COLS} ${TABLE_HEAD}`}>
-                    <span>Fråga</span>
-                    <span>Kategori</span>
-                    <span className="text-right">Visningar</span>
-                </div>
-
-                <div style={reservedHeight(VIEWED_PAGE_SIZE)}>
-                    {pagedViewed.length === 0 ? (
-                        <p className="px-3 py-4 text-sm">Inga visningar ännu.</p>
-                    ) : (
-                        pagedViewed.map((a) => (
-                            <div key={a.id} className={`${VIEWED_COLS} py-2 border-b border-gray-300`}>
-                                <span className="font-semibold">{a.question ?? "–"}</span>
-                                <span className="text-sm">{a.category ?? "–"}</span>
-                                <span className="text-right tabular-nums">{a.viewCount}</span>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <div className="my-3 flex flex-col items-center gap-2">
-                    <p className="text-sm text-gray-600 tabular-nums">
-                        {rangeText(viewedPage, VIEWED_PAGE_SIZE, mostViewed.length)}
-                    </p>
-                    {viewedTotalPages > 1 && (
-                        <PagePagination
-                            page={viewedPage}
-                            totalPages={viewedTotalPages}
-                            hasPreviousPage={viewedPage > 1}
-                            hasNextPage={viewedPage < viewedTotalPages}
-                            onPrevious={() => setViewedPage((p) => p - 1)}
-                            onNext={() => setViewedPage((p) => p + 1)}
-                            onPageChange={setViewedPage}
-                        />
-                    )}
-                </div>
-            </section>
-
-            {/* SÖKNINGAR UTAN TRÄFF */}
-            <section className={`${SECTION} mt-10`}>
-                <h2 className={SECTION_TITLE}>SÖKNINGAR UTAN TRÄFF</h2>
-                <input
-                    type="text"
-                    aria-label="Filtrera sökord"
-                    placeholder="Filtrera sökord"
-                    value={gapsFilter}
-                    onChange={(e) => handleGapsFilterChange(e.target.value)}
-                    className="block w-full max-w-sm ml-auto bg-white border rounded-2xl my-3 py-1.5 pl-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
-                />
-                <div className={`${GAP_COLS} ${TABLE_HEAD}`}>
-                    <span>Sökord</span>
-                    <span className="text-right">Antal</span>
-                    <span className="text-right">Senast sökt</span>
-                </div>
-
-                <div style={reservedHeight(GAPS_PAGE_SIZE)}>
-                    {isGapsError ? (
-                        <p className="px-3 py-4 text-sm">Kunde inte hämta sökningar.</p>
-                    ) : pagedGaps.length === 0 ? (
-                        <p className="px-3 py-4 text-sm">
-                            {gapsFilter ? "Inga sökord matchar." : "Inga sökningar utan träff."}
-                        </p>
-                    ) : (
-                        pagedGaps.map((g) => (
-                            <div key={`${g.query}-${g.lang}`} className={`${GAP_COLS} py-2 border-b border-gray-300`}>
-                                <span className="font-mono text-sm">{g.query ?? "–"}</span>
-                                <span className="text-right tabular-nums">{g.searchCount}</span>
-                                <span className="text-right text-sm tabular-nums">
-                                    {new Date(g.lastSearchedAt).toLocaleDateString("sv-SE")}
-                                </span>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <div className="my-3 flex flex-col items-center gap-2">
-                    <p className="text-sm text-gray-600 tabular-nums">
-                        {rangeText(gapsPage, GAPS_PAGE_SIZE, gaps.length)}
-                    </p>
-                    {gapsTotalPages > 1 && (
-                        <PagePagination
-                            page={gapsPage}
-                            totalPages={gapsTotalPages}
-                            hasPreviousPage={gapsPage > 1}
-                            hasNextPage={gapsPage < gapsTotalPages}
-                            onPrevious={() => setGapsPage((p) => p - 1)}
-                            onNext={() => setGapsPage((p) => p + 1)}
-                            onPageChange={setGapsPage}
-                        />
-                    )}
-                </div>
             </section>
 
             {/* ALLA FAQ */}
@@ -405,6 +301,62 @@ export default function FaqStatistics() {
                     )}
                 </div>
             </section>
+
+            {/* SÖKNINGAR UTAN TRÄFF */}
+            <section className={`${SECTION} mt-10`}>
+                <h2 className={SECTION_TITLE}>SÖKNINGAR UTAN TRÄFF</h2>
+                <input
+                    type="text"
+                    aria-label="Filtrera sökord"
+                    placeholder="Filtrera sökord"
+                    value={gapsFilter}
+                    onChange={(e) => handleGapsFilterChange(e.target.value)}
+                    className="block w-full max-w-sm ml-auto bg-white border rounded-2xl my-3 py-1.5 pl-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                />
+                <div className={`${GAP_COLS} ${TABLE_HEAD}`}>
+                    <span>Sökord</span>
+                    <span className="text-right">Antal</span>
+                    <span className="text-right">Senast sökt</span>
+                </div>
+
+                <div style={reservedHeight(GAPS_PAGE_SIZE)}>
+                    {isGapsError ? (
+                        <p className="px-3 py-4 text-sm">Kunde inte hämta sökningar.</p>
+                    ) : pagedGaps.length === 0 ? (
+                        <p className="px-3 py-4 text-sm">
+                            {gapsFilter ? "Inga sökord matchar." : "Inga sökningar utan träff."}
+                        </p>
+                    ) : (
+                        pagedGaps.map((g) => (
+                            <div key={`${g.query}-${g.lang}`} className={`${GAP_COLS} py-2 border-b border-gray-300`}>
+                                <span className="font-mono text-sm">{g.query ?? "–"}</span>
+                                <span className="text-right tabular-nums">{g.searchCount}</span>
+                                <span className="text-right text-sm tabular-nums">
+                                    {new Date(g.lastSearchedAt).toLocaleDateString("sv-SE")}
+                                </span>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="my-3 flex flex-col items-center gap-2">
+                    <p className="text-sm text-gray-600 tabular-nums">
+                        {rangeText(gapsPage, GAPS_PAGE_SIZE, gaps.length)}
+                    </p>
+                    {gapsTotalPages > 1 && (
+                        <PagePagination
+                            page={gapsPage}
+                            totalPages={gapsTotalPages}
+                            hasPreviousPage={gapsPage > 1}
+                            hasNextPage={gapsPage < gapsTotalPages}
+                            onPrevious={() => setGapsPage((p) => p - 1)}
+                            onNext={() => setGapsPage((p) => p + 1)}
+                            onPageChange={setGapsPage}
+                        />
+                    )}
+                </div>
+            </section>
+
         </>
     );
 }
