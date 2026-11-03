@@ -58,9 +58,8 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
     }, [pdfUrl]);
 
     const handleClick = () => {
-        if (accountId == null) return;
         resetDownload();
-        initiate.mutate({ accountId, year: selectedYear });
+        initiate.mutate({ year: selectedYear });
     };
 
     const handleClose = () => {

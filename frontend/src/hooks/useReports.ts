@@ -19,8 +19,7 @@ function getPollInterval(isError: boolean, status: ReportStatus | null | undefin
 }
 
 interface InitiateTaxReportVars {
-    accountId: number;
-    year?: number;
+    year: number;
 }
 
 interface InitiateAccountStatementVars {
@@ -31,8 +30,8 @@ interface InitiateAccountStatementVars {
 
 export function useInitiateTaxReport() {
     return useMutation({
-        mutationFn: ({ accountId, year }: InitiateTaxReportVars) =>
-            initiateTaxReport(accountId, year),
+        mutationFn: ({ year }: InitiateTaxReportVars) =>
+            initiateTaxReport(year),
     });
 }
 
