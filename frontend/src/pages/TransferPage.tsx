@@ -46,8 +46,6 @@ const ownAccounts: OwnAccount[] = useMemo(
     [accountsData, t],
 );
 
-    console.log(ownAccounts)
-
     const { addLocalPlanned, createPlanned, panelProps } =
         usePlannedTransfers(ownAccounts);
     const { pendingTransfers, addPending } = usePendingTransfers();
@@ -224,8 +222,6 @@ const ownAccounts: OwnAccount[] = useMemo(
         setTransferPhase("processing");
     };
 
-    console.log(fromAccount)
-
     return (
         <main className="w-full text-dark-navy">
             <div className="mx-auto w-full max-w-7xl px-2 pt-4 pb-20 sm:px-6 sm:pt-8 md:pb-8 lg:px-1 lg:py-10">
@@ -286,16 +282,18 @@ const ownAccounts: OwnAccount[] = useMemo(
                     </div>
 
                     {/* HELP / RELATED ARTICLES */}
-                    <aside aria-label={t("generic.help")} className="hidden min-w-0 shrink-0 self-start border border-gray-300 bg-white md:shadow-md/30 xl:block xl:w-60">
-                        <div className="min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3 text-dark-navy">
-                            <p className="mt-2 truncate text-right text-sm uppercase">{t("generic.help-center")}</p>
-                            <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
-                        </div>
+                    <div className="relative hidden min-w-0 shrink-0 xl:block xl:w-60">
+                        <aside aria-label={t("generic.help")} className="absolute inset-0 overflow-y-auto border border-gray-300 bg-white md:shadow-md/30">
+                            <div className="min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3 text-dark-navy">
+                                <p className="mt-2 truncate text-right text-sm uppercase">{t("generic.help-center")}</p>
+                                <p className="mt-1 truncate text-right text-md font-semibold">{t("generic.related-articles")}</p>
+                            </div>
 
-                        <div className="p-4">
-                            <HelpCard searchTerms={t("page-transfer.help-card-search")} removeHeading numOfHits={12} />
-                        </div>
-                    </aside>
+                            <div className="p-4">
+                                <HelpCard searchTerms={t("page-transfer.help-card-search")} removeHeading numOfHits={12} />
+                            </div>
+                        </aside>
+                    </div>
                 </div>
 
                 <TransferModals
