@@ -1,136 +1,120 @@
-# Quickstart Setup Guide
+# Nordiska Sparbanken v2
 
-Run all commands starting from the repository root (`nordiska-team1`).
+<div align="center">
 
----
+Check out the deployed [Live demo](https://nordiska-team1-dev.team.chas-challenge.comerit.se/)!
 
-## 1. Local Initialization (DevSetup)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![C++23](https://img.shields.io/badge/C++-23-00599C?logo=c%2B%2B)](https://en.cppreference.com/w/cpp/23)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql)](https://www.postgresql.org/)
+[![Test Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen.svg)](https://github.com/chas-challenge-2026/nordiska-team1)
 
-Generates secrets into `infra/.env`, boots the database, runs migrations, and applies permissions:
+<img src="docs/Screenshots/demo.jpg" alt="Nordiska Sparbanken Platform" width="100%" />
 
-```bash
-dotnet run --project ./backend/tools/Nordiska.DevSetup/Nordiska.DevSetup.csproj -- .
-```
+</div>
 
-> [!TIP]
-> **WSL / Ubuntu .NET SDK Requirement (`>= 8.0.400`):**  
-> If `dotnet run` fails with `CS0121: The call is ambiguous...` on collection expressions, your system has an older .NET 8 SDK installed (Ubuntu 24.04 APT packages ship `8.0.1xx`).  
-> Nordiska requires SDK version **8.0.400+** (as specified in `backend/global.json`). To install the latest SDK in WSL/Linux:
-> ```bash
-> curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
-> echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
-> echo 'export PATH=$DOTNET_ROOT:$PATH' >> ~/.bashrc
-> source ~/.bashrc
-> ```
+## The problem
 
----
+As Nordiska Sparbanken moves into direct consumer banking, routine requests such as checking accrued interest, confirming a balance, or ordering annual tax documents go through support queues and postal correspondence. That is about 500 support tickets a week for questions customers should be able to answer themselves, and it does not match the clear, trustworthy experience a retail bank needs.
 
-## 2. Start Application (Choose One)
+## Our solution
 
-### Option A: Full Docker Stack (All Services in Docker)
-Best for testing the entire system together:
+**Customer portal**
+- Overview of all accounts with real-time accrued interest and growth forecasts against savings goals
+- Deposits and withdrawals with multi-step confirmations
+- Account statements and annual tax reports (`Skatteunderlag`), cryptographically signed and downloadable on demand
+- FAQ with full-text search and relevance ranking
+- One inbox for support threads, bank notices, and delivered documents
+- BankID sign-in with 15-minute sessions
 
-```bash
-cd infra
-docker compose up -d --build
-cd ..
-```
-* Web App available at: **http://localhost:8080**
+**Admin portal**
+- Customer threads with status tracking and response auditing
+- FAQ editing, guided by search analytics and customer helpfulness votes (up/down)
+- System-wide notices and scheduled maintenance messages
 
-### Option B: Frontend Hot-Reload Workflow (Local Dev)
-Best for frontend work. Runs backend in Docker and Vite locally with hot-reloading:
+<table>
+<tr>
+<td align="center" width="50%">
 
-```bash
-cd frontend
-npm install                      # First time only
-npm run setup:local-backend      # Boots backend in Docker on port 5031
-npm run dev                      # Starts Vite with instant hot-reload
-```
-* Frontend (Vite HMR): **http://localhost:5173**
-* Backend API: **http://localhost:5031** (Scalar docs at `/scalar/v1`)
+**Before**
 
----
+<img src="docs/Screenshots/before.png" alt="Legacy System" width="100%" />
 
-## 3. Synthetic Database
+*Legacy interface*
 
-Switch to a separate database seeded with test accounts and transactions.
+</td>
+<td align="center" width="50%">
 
-### Interactive Menu (Recommended)
-```bash
-./tools/syntheticDB/nordiska-synthetic-linux-x86_64
-```
-* Select **Create synthetic data** (e.g. 10k customers).
-* Select **Switch to SYNTHETIC DB**.
-* Select **Random customer login** to get test credentials (`password123`).
+**After**
 
-### CLI One-Liners
-```bash
-# 1. Generate 10,000 customers
-./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000
+<img src="docs/Screenshots/after-desk.png" alt="Modern Portal" width="100%" />
 
-# 2. Switch running stack to synthetic DB
-./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic
+*Self-service customer portal*
 
-# 3. Print test customer credentials for web login
-./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --get-random-customer
+</td>
+</tr>
+</table>
 
-# 4. Switch back to normal database anytime:
-./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_v2
-```
+<details>
+<summary><b>Mobile screenshots</b></summary>
 
----
+<table>
+<tr>
+<td align="center" width="33%"><img src="docs/Screenshots/after-mobile.png" alt="Mobile 1" width="90%" /></td>
+<td align="center" width="33%"><img src="docs/Screenshots/after-mobile1.png" alt="Mobile 2" width="90%" /></td>
+<td align="center" width="33%"><img src="docs/Screenshots/after-mobile2.png" alt="Mobile 3" width="90%" /></td>
+</tr>
+</table>
 
-## 4. Benchmarking Tool
+</details>
 
-Benchmark the end-to-end reporting pipeline (tax reports and account statements) against the production `.NET` worker container, evaluating job staging, DB queue draining (`SKIP LOCKED`), native Haru PDF generation, PKCS#11 socket signing, and storage persistence.
+## Architecture
 
-### Interactive TUI (Recommended)
-An interactive terminal controller to configure worker settings and run benchmarks:
-```bash
-./tools/benchmark/bench-tui.sh
-```
-* **Signing Presets:** Toggle between Unsigned, Plain CMS, and Timestamped (RFC 3161 TSA).
-* **Worker Concurrency:** Adjust worker batch consumer concurrency slots on the fly.
-* **TSA Latency Simulation:** Configure simulated network latency and jitter.
-* **Run Benchmark:** Trigger whole-database benchmark runs directly from the menu.
+<img width="1547" height="869" alt="image" src="https://github.com/user-attachments/assets/9f0ec56d-d5aa-42b8-bd24-ad1ea1e479c6" />
 
-### CLI Usage
-Run the standalone C++23 benchmark binary directly:
-```bash
-# Run full whole-database benchmark (auto-detects database from infra/.env)
-./tools/benchmark/nordiska-benchmark
 
-# Test run limited to first 50 customers
-./tools/benchmark/nordiska-benchmark --limit 50
+- **Modular monolith.** Four modules (Banking, Reporting, FAQ, Inbox), each with its own PostgreSQL schema and least-privilege database role.
+- **Job queue on PostgreSQL.** Workers claim jobs with `FOR UPDATE SKIP LOCKED`, so concurrency needs no extra locking layer.
+- **Native PDF engine.** C++23, called in-process by the worker through a C ABI.
+- **Isolated signer.** A separate PKCS#11 service, called by the native PDF engine over a Unix domain socket, so signing keys never share memory or process space with the application or worker.
+- **Benchmark performance.** In stress tests on an 8-core laptop with 10,000 synthetic customers (15,444 accounts, 733k+ transactions), the full pipeline generated and CMS-signed all **25,448 PDF documents in 52.5 seconds** (485 PDFs/s) with zero errors. Pure in-memory C++ generation and socket signing took **6.16 seconds** (over 4,100 PDFs/s, ~3.7 ms/doc).
 
-# Target a specific database with 1-second progress polling
-./tools/benchmark/nordiska-benchmark --db nordiska_synthetic --poll 1
-```
-*(To rebuild the benchmark binary: `./tools/benchmark/build-linux-release.sh`)*
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend** | ASP.NET Core 8, EF Core 8, BCrypt.Net-Next, ActiveLogin BankID, Polly, FluentValidation, Serilog |
+| **Frontend** | React 18, TypeScript, Vite, TailwindCSS, Zustand, TanStack Query, Framer Motion, i18n, fuse.js |
+| **Native engine** | C++23, libharu, Cairo, simdjson, nlohmann-json, OpenSSL 3.0+, CMake + Ninja, CTest |
+| **Security & signing** | PKCS#11, CMS/PKCS#7 signing, RFC 3161 timestamps |
+| **Infrastructure** | PostgreSQL 15, Docker Compose, GitHub Actions CI, multi-stage Dockerfiles |
 
-For architecture details and metrics, see [tools/benchmark/README.md](tools/benchmark/README.md). For scalability benchmarks and latency percentiles, see [docs/benchmark-report.md](docs/benchmark-report.md).
+## Security
 
----
+- **Transfers:** immutable double-entry ledger with `SELECT FOR UPDATE` row locking, so balances cannot race.
+- **Sessions:** `HttpOnly`, `SameSite=Lax`, `Secure` cookies; 15-minute tokens with sliding refresh and automatic 5-minute inactivity logout.
+- **Credentials:** BCrypt (work factor 12); SCRAM-SHA-256 for database connections.
+- **Signed documents:** CMS/PKCS#7 signatures with RFC 3161 timestamps; signing isolated in its own service.
+- **Privacy in logs:** native diagnostics use fixed error codes, so customer PII never reaches log output.
+- **Containers:** non-root users, strict UID isolation, read-only mounts where appropriate.
 
-## 5. Teardown & Reset
+## Run it
 
-Run from `infra/`:
+Running and development instructions are found in [DEVELOPMENT.md](DEVELOPMENT.md).
 
-* **Stop stack (preserves database data):**
-  ```bash
-  cd infra
-  docker compose down
-  ```
+## Team
 
-* **Full wipe (removes containers, networks, and database volumes):**
-  ```bash
-  cd infra
-  docker compose down -v
-  ```
+Built by Nordiska Team 1 for Chas Challenge 2026.
 
-* **Complete reset (also removes locally built images):**
-  ```bash
-  cd infra
-  docker compose down -v --rmi local
-  ```
+| Team member | Focus | Profile |
+| :--- | :--- | :--- |
+| **Alexander Jansson** | Backend Architecture | [GitHub](https://github.com/AlexanderJson) |
+| **Coday Awahmed** | Backend Architecture | [GitHub](https://github.com/Coday-aw) |
+| **Dennis Cederqvist** | Frontend Engineering | [GitHub](https://github.com/DennisCederqvist) |
+| **Ingrid Berggren** | Frontend Engineering | [GitHub](https://github.com/ingridber) |
+| **Jimmy Jordan** | Native Systems & Performance | [GitHub](https://github.com/jimmyjordanSWE)  |
+| **Joco Borghol** | Backend Architecture | [GitHub](https://github.com/JocoBorghol) |
+| **Marcus Mandelström** | Native Systems & Security | [GitHub](https://github.com/mmandelstrom) |
+| **Olle Warne** | Frontend Engineering | [GitHub](https://github.com/ollewarne) |
+| **Vivienne Bengtsson** | Backend Architecture | [GitHub](https://github.com/BwunLevain) |
 
+**Project leadership:** [Linus Ivarsson](https://www.linkedin.com/in/linus-ivarsson-44379671/)

@@ -1,27 +1,20 @@
-# native/
+# Native-moduler
 
-This directory is reserved for v2 native modules.
+| Modul | Ansvar | Dokumentation |
+| --- | --- | --- |
+| `pdf_generator/` | C++23-bibliotek som omvandlar en kunds JSON-underlag till kontoutdrag och skatteunderlag i PDF-format. | [README](pdf_generator/README.md) |
+| `pdf-signer/` | C-tjänst som tar emot en SHA-256-digest och returnerar en CMS-signatur, med valfri RFC 3161-tidsstämpel. | [README](pdf-signer/README.md) |
 
-## What belongs here in v2
+## Rapportflöde
 
-### 1. PDF Generator — `pdf_generator/`
-- **Language:** C or C++
-- **Purpose:** Batch-generate tax reports at year-end
-- **Scale target:** 10,000 customers × ~50 transactions = 500,000 records rendered to PDF in < 5 minutes
-- **Why native?** Thread.Sleep-based synchronous generation in v1 times out above ~20 accounts. A C/C++ batch worker called from a .NET background job can generate PDFs at 1,000/s using libharu or cairo.
-- **Interface:** Called via `dotnet exec` or a named pipe IPC from the .NET background job service.
+![Dataflöde genom PDF-generatorn och signeringstjänsten](images/native-pipeline.png)
 
-### 2. PDF Signing Module — `pdf_signer/`
-- **Language:** C
-- **Purpose:** Cryptographic signing of generated tax report PDFs for audit trail
-- **What it does:** Computes SHA-256 hash of PDF content, signs with private key (PKCS#1), embeds signature in PDF metadata.
-- **Why not in .NET?** HSM (Hardware Security Module) integration requires direct PKCS#11 C bindings; .NET wrappers add latency and reduce audit surface clarity.
+Diagrammet visar flödet från MVP-presentationen. Signering och tidsstämpel är valfria. V2-gränssnittet tillhandahåller dokumentets hash; den nuvarande .NET-workern använder V1.
 
-## Build requirements (v2)
-- CMake 3.25+
-- OpenSSL 3.x dev headers (for pdf_signer)
-- libharu (for pdf_generator)
-- Valgrind for memory safety verification before integration
+## Integration
 
-## Integration pattern (v2)
-Native modules expose a minimal C ABI (`extern "C"`) consumed by the .NET app via P/Invoke or `ProcessStartInfo`. No direct memory sharing between runtimes.
+.NET-workern laddar generatorns delade bibliotek via P/Invoke. Varje synkront C ABI-anrop omfattar en kunds dokument. Generatorn och workern delar process; PDF-resultaten lånas under callbacken och måste användas eller kopieras innan den avslutas.
+
+När signering används kommunicerar generatorns adapter med signeringstjänsten via en Unix-socket. Själva tjänsten och den lokala TSA:n kör som separata processer. Generatorns kärna skriver inte PDF-filer; CLI-programmet och .NET-värden har egna ansvar för filutmatning respektive lagring.
+
+Byggkrav, körinstruktioner, tidsgränser och integrationskontrakt finns i respektive moduls README. Anvisningar om en äldre separat generatorprocess eller IPC med hela kundunderlag beskriver inte den nuvarande integrationsmodellen.
