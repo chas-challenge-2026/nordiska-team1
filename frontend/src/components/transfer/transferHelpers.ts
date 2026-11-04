@@ -1,4 +1,4 @@
-import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
+import type { OwnAccount, TransferAccount } from "../../types/transferAccounts";
 import type { Account } from "../../services/accountsService";
 import type { TFunction } from "i18next";
 
