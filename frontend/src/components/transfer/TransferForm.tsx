@@ -4,7 +4,7 @@ import AccountTriggerButton from "./AccountTriggerButton";
 import RecurrenceFields from "./RecurrenceFields";
 import type { RecurrenceFieldsValue } from "./RecurrenceFields";
 import { formatCurrency } from "../../utils/currency";
-import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
+import type { OwnAccount, TransferAccount } from "../../types/transferAccounts";
 
 type TransferFormProps = {
     fromAccount: OwnAccount | null;

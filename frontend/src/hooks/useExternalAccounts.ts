@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Payee } from "../constants/transferAccounts";
+import type { Payee } from "../types/transferAccounts";
 
 // Externa mottagare saknar backend-stöd — de som användaren lägger till
 // sparas som mockad data i localStorage så att de finns kvar vid omladdning.

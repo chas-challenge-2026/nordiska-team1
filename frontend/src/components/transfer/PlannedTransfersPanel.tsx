@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import TableRow from "../TableRow";
 import PlannedTransferActionsModal from "./PlannedTransferActionsModal";
 import type { EditPlannedError } from "./PlannedTransferActionsModal";
-import type { PlannedTransfer } from "../../constants/transferAccounts";
+import type { PlannedTransfer } from "../../types/transferAccounts";
 import type { PlannedTransferChanges } from "../../hooks/usePlannedTransfers";
 
 type PlannedTransfersPanelProps = {
