@@ -1,27 +1,4 @@
-# Frontend Readme och beslutslogg
-
-## Implementering och bearbetning av specialist och kund feed forward
-
-### Expert CTO
-- Session och JWT
-    - Tillämpades genom att implementera HTTP-only cookie token
-    - Token går ut efter 15 minuter
-    - Användare loggas automatisk ut efter inaktivitet i 5 minuter
-
-### Expert UX
-- Enhetlig och mer central design
-    - Utökade funktion av bankkonto sidan
-    - Gjorde översikten mer tydlig
-    - förbättrade flödet genom sidan för funktioner som används ofta
-    - Göm undan kontakt till kundtjänst och gör FAQ mer användbar
-
-### Kund
-- Be folk testa sidan
-    - Flertalet personer utanför team:et har testat sidan
-- Fokus på ränta
-    - Mer info om ränta på översikten och tydligare på bankkontosidan
-- Rätt grafisk profil
-    - Vi har gjort vårat bästa för att följa de färger som de har på nordiska i nuläget.
+# Beslutslogg: frontend
 
 ## Teknik och arkitektur
 
