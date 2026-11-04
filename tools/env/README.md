@@ -22,8 +22,6 @@ To update `infra/.env` without altering your current shell variables:
 ./tools/set-env.sh
 ```
 
----
-
 ## Features
 
 - **Database Switching**:
@@ -44,44 +42,6 @@ To update `infra/.env` without altering your current shell variables:
   - Spawns an isolated subshell with all variables loaded.
 - **Preserves `.env` Structure**:
   - Atomic writes preserving original comments, spacing, and variable ordering.
-
----
-
-## Interactive Menu Overview
-
-```text
-====================================================================
-              NORDISKA ENVIRONMENT MANAGER
-====================================================================
- Config File: /home/jimmy/nordiska-team1/infra/.env
- Target DB (.env):  nordiska_synthetic (Synthetic DB)
- Shell DB ($ENV):   nordiska_synthetic
- Document Storage:  nordiska-v2_synthetic_report_documents
---------------------------------------------------------------------
- Database Presets:
-   [1] Switch to NORMAL database      (nordiska_v2)
-   [2] Switch to SYNTHETIC database   (nordiska_synthetic)
-   [3] Enter custom database name
-
- Variables & Secrets:
-   [4] View all environment variables
-   [5] Edit a variable value
-   [6] Add a new variable
-   [7] Delete a variable
-   [8] Generate missing secrets (random keys)
-
- Shell Integration:
-   [9] Launch subshell with variables exported
-   [10] Print shell export commands
-
- Actions:
-   [S] Force re-save to infra/.env
-   [Q] Quit
---------------------------------------------------------------------
-Select an option [1-10, S, Q]:
-```
-
----
 
 ## Command Line Options
 
@@ -109,8 +69,6 @@ eval $(./tools/env/nordiska-env --export)
 # Check database and config status
 ./tools/env/nordiska-env --status
 ```
-
----
 
 ## Building from Source
 
