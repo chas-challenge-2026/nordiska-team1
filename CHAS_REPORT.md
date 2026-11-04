@@ -123,7 +123,8 @@ High level full project decisions:
 - [Frontend](frontend/README.md#Frontend)
 
 ### Native
-- [PDF Generator Architecture](native/pdf_generator/README.md#arkitektur)
+- [PDF Generator Architecture & Teststatus](native/pdf_generator/README.md)
+- [Native PDF Generator ADR (Jimmy Jordan)](native/pdf_generator/ADR_jimmy_jordan.md)
 - [PDF Signer README](native/pdf-signer/README.md)
 - [PDF Signer Architecture](native/pdf-signer/README.md#Architecture)
 - [PDF Signer Decision log](native/pdf-signer/beslutslogg.md)
