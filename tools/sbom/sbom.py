@@ -29,7 +29,7 @@ DOWNLOADS = {
         "c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"),
 }
 TRIVY_SHA256 = "d1dfca6ae10a1ad4540bb94e64f0510077c47008920a9b554986b39dca573d83"
-OUTPUT = Path("docs/internal/sbom")
+OUTPUT = Path("docs/internal/sbom/source-dependencies")
 MANIFEST = Path("_manifest/spdx_2.2/manifest.spdx.json")
 NAMES = {"package.json", "package-lock.json", "packages.lock.json", "packages.config",
          "Directory.Packages.props", "Directory.Build.props", "global.json"}
