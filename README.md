@@ -111,7 +111,9 @@ Comprehensive project documentation, requirements fulfillment, and architecture 
   - **PDF Signing & PKI:** [ADR: PDF Signer](native/pdf-siger/beslutslogg.md) 
   
   - **Backend:** 
+    
     [ADR 0001](backend/docs/internal/ADR001.md) 
+  
     [ADR 0002](backend/docs/internal/ADR002.md)
   
     [ADR 0003](backend/docs/internal/ADR003.md)
@@ -123,7 +125,7 @@ Comprehensive project documentation, requirements fulfillment, and architecture 
     [ADR 0006](backend/docs/internal/ADR006.md)
   
     [ADR 0007](backend/docs/internal/ADR007.md)
-  
+    
   - **Frontend:** [Frontend Decision Log](frontend/README.md).
   
 - **Module READMEs & Test Status:**
