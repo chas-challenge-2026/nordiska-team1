@@ -102,17 +102,34 @@ As Nordiska Sparbanken moves into direct consumer banking, routine requests such
 Comprehensive project documentation, requirements fulfillment, and architecture decisions for the Chas Challenge 2026 delivery:
 
 - **Final Project Report:** [CHAS_REPORT.md](CHAS_REPORT.md) — Unified delivery report detailing requirement fulfillment, testing status, specialist feed-forward, high-level decision logs, and demo contingency plans.
+
 - **Run, Install & Test Guide:** [DEVELOPMENT.md](DEVELOPMENT.md) — Comprehensive guide for environment bootstrapping, Docker Compose orchestration, frontend HMR, synthetic database seeding, and local native compilation.
+
 - **Architecture Decision Records (ADR) & Decision Logs:**
   - **Native PDF Generator:** [ADR: PDF Generator](native/pdf_generator/ADR_jimmy_jordan.md) 
+  
   - **PDF Signing & PKI:** [ADR: PDF Signer](native/pdf-siger/beslutslogg.md) 
-  - **Backend:** [ADR 0001 (Architecture & Transaction Patterns)](backend/docs/internal/ADR001.md) and [ADR 0002 (Database Security & RBAC)](backend/docs/internal/ADR002.md).
+  
+  - **Backend:** 
+    [ADR 0001](backend/docs/internal/ADR001.md) 
+    [ADR 0002](backend/docs/internal/ADR002.md)
+  
+    [ADR 0003](backend/docs/internal/ADR003.md)
+  
+    [ADR 0004](backend/docs/internal/ADR004.md)
+  
+    [ADR 0005](backend/docs/internal/ADR005.md)
+  
+    [ADR 0006](backend/docs/internal/ADR006.md)
+  
+    [ADR 0007](backend/docs/internal/ADR007.md)
+  
   - **Frontend:** [Frontend Decision Log](frontend/README.md).
+  
 - **Module READMEs & Test Status:**
   - **Native PDF Generator:** [native/pdf_generator/README.md](native/pdf_generator/README.md)
   - **Native PDF Signer:** [native/pdf-signer/README.md](native/pdf-signer/README.md)
   - **Frontend:** [frontend/README.md](frontend/README.md)
-  - **Backend:** [backend/README.md](backend/README.md)
 
 ## Run it
 

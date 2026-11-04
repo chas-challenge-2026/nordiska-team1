@@ -129,7 +129,8 @@ High level full project decisions, detailed decision logs live under each module
 - [Backend ADR003](backend/docs/internal/ADR003.md)
 - [Backend ADR004](backend/docs/internal/ADR004.md)
 - [Backend ADR005](backend/docs/internal/ADR005.md)
-- [Backend README](backend/README.md)
+- [Backend ADR006](backend/docs/internal/ADR006.md)
+- [Backend ADR007](backend/docs/internal/ADR007.md)
 
 ### Native
 - [PDF Generator Architecture & Teststatus](native/pdf_generator/README.md)
