@@ -77,8 +77,8 @@ As Nordiska Sparbanken moves into direct consumer banking, routine requests such
 
 - **Modular monolith.** Four modules (Banking, Reporting, FAQ, Inbox), each with its own PostgreSQL schema and least-privilege database role.
 - **Job queue on PostgreSQL.** Workers claim jobs with `FOR UPDATE SKIP LOCKED`, so concurrency needs no extra locking layer.
-- **Native PDF engine.** C++23, called in-process by the worker through a C ABI.
-- **Isolated signer.** A separate PKCS#11 daemon, called by the native PDF engine over a Unix domain socket, so signing keys never share memory or process space with the application or worker.
+- **Native PDF engine.** C++23, called in-process by the worker through a C ABI. See [Native PDF Generator](native/pdf_generator/README.md) and [ADR: Jimmy Jordan](native/pdf_generator/ADR_jimmy_jordan.md).
+- **Isolated signer.** A separate PKCS#11 daemon, called by the native PDF engine over a Unix domain socket, so signing keys never share memory or process space with the application or worker. See [Beslutslogg: Marcus Mandelström](beslutslogg.md).
 - **Benchmark performance.** In stress tests on an 8-core laptop with 10,000 synthetic customers (15,444 accounts, 733k+ transactions), the full pipeline generated and CMS-signed all **25,448 PDF documents in 52.5 seconds** (485 PDFs/s) with zero errors. Pure in-memory C++ generation and socket signing took **6.16 seconds** (over 4,100 PDFs/s, ~3.7 ms/doc).
 
 | Layer | Technologies |
@@ -98,6 +98,22 @@ As Nordiska Sparbanken moves into direct consumer banking, routine requests such
 - **Privacy in logs:** native diagnostics use fixed error codes, so customer PII never reaches log output.
 - **Containers:** non-root users, strict UID isolation, read-only mounts where appropriate.
 
+## Project Deliverables & Decision Logs
+
+För slutleveransen till Chas Challenge 2026 finns alla krav och dokumentation samlade enligt nedan:
+
+- **Slutrapport:** [CHAS_REPORT.md](CHAS_REPORT.md) – Samlad leveransrapport med kravuppfyllelse, teststatus, specialist feed-forward, beslutsloggar och demo-fallback.
+- **Körning, installation & testning:** [DEVELOPMENT.md](DEVELOPMENT.md) – Detaljerad guide för miljöinitiering, Docker Compose, frontend HMR, syntetisk testdata och lokal kompilering.
+- **Arkitekturbeslut (ADR) & Beslutsloggar:**
+  - **Native PDF Generator:** [ADR: Jimmy Jordan](native/pdf_generator/ADR_jimmy_jordan.md) – In-process C-ABI, 3-stegs pipeline, zero-knowledge signering och minneshantering.
+  - **PDF-signering & PKI:** [Beslutslogg: Marcus Mandelström](beslutslogg.md) – PKCS#11, CMS/PAdES och RFC 3161 TSA-arkitektur.
+  - **Backend:** [ADR 0001 (Arkitektur & Transaktionsmönster)](backend/docs/internal/ADR001.md) och [ADR 0002 (Databassäkerhet & RBAC)](backend/docs/internal/ADR002.md).
+  - **Frontend:** [Beslutslogg Frontend](frontend/README.md).
+- **Modul-READMEs & Teststatus:**
+  - **Native PDF-generator:** [native/pdf_generator/README.md](native/pdf_generator/README.md) – Detaljerad installations-, bygg-, CLI- och teststatus (17/17 CTest Debug med ASan/UBSan, 13/13 Release).
+  - **Frontend:** [frontend/README.md](frontend/README.md)
+  - **Backend:** [backend/README.md](backend/README.md)
+
 ## Run it
 
 Running and development instructions are found in [DEVELOPMENT.md](DEVELOPMENT.md).
@@ -112,9 +128,9 @@ Built by Nordiska Team 1 for Chas Challenge 2026.
 | **Coday Awahmed** | Backend Architecture | [GitHub](https://github.com/Coday-aw) |
 | **Dennis Cederqvist** | Frontend Engineering | [GitHub](https://github.com/DennisCederqvist) |
 | **Ingrid Berggren** | Frontend Engineering | [GitHub](https://github.com/ingridber) |
-| **Jimmy Jordan** | Native Systems & Performance | [GitHub](https://github.com/jimmyjordanSWE)  |
+| **Jimmy Jordan** | Native Systems & Performance | [GitHub](https://github.com/jimmyjordanSWE) · [ADR](native/pdf_generator/ADR_jimmy_jordan.md) |
 | **Joco Borghol** | Backend Architecture | [GitHub](https://github.com/JocoBorghol) |
-| **Marcus Mandelström** | Native Systems & Security | [GitHub](https://github.com/mmandelstrom) |
+| **Marcus Mandelström** | Native Systems & Security | [GitHub](https://github.com/mmandelstrom) · [Beslutslogg](beslutslogg.md) |
 | **Olle Warne** | Frontend Engineering | [GitHub](https://github.com/ollewarne) |
 | **Vivienne Bengtsson** | Backend Architecture | [GitHub](https://github.com/BwunLevain) |
 

@@ -161,7 +161,41 @@ Använd `--help` för alla flaggor. Några vanliga val:
 
 ## Testning och kodkvalitet
 
-Se [testernas README](tests/README.md) för CTest, fuzztestning och formatering.
+Arkitektur- och designbeslut för PDF-generatorn finns dokumenterade i [ADR: Jimmy Jordan (Native Systems & Performance)](ADR_jimmy_jordan.md).
+
+### Teststatus
+
+Samtliga automatiserade tester körs via CMake/CTest med AddressSanitizer (ASan) och UndefinedBehaviorSanitizer (UBSan) aktiverade:
+
+- **CTest Debug-läge:** **17/17 testsviter passerar (100 %)** inklusive minneskontroller och sanitizers.
+- **CTest Release-läge:** **13/13 testsviter passerar (100 %)**.
+- **Stress- och masskörning:** **100 % felfri generering** vid massgenerering av 25 448 PDF:er i Docker.
+
+### Testsviter i projektet
+
+Testerna finns i katalogen `tests/` och omfattar följande delar:
+
+| Testsvit | Beskrivning |
+| :--- | :--- |
+| `json_ingestor_tests` | Validering av JSON-tolkning (`simdjson` och `nlohmann`), fältkrav och typkonvertering. |
+| `report_layout_tests` | Layoutberäkningar, tabellpaginering, marginaler, radbrytning och varumärkeskomponenter. |
+| `pdf_generator_c_api_tests` | Verifiering av C-ABI, buffertlån, minnesregler och callbackleverans. |
+| `pdf_signing_tests` & `signing_deadline_tests` | Hashing av `/ByteRange`, signeringslucka, socket-timeouts och all-or-nothing felhantering. |
+| `allocation_failure_tests` | Resiliens vid simulerad minnesbrist och allokeringsbelastning. |
+| `adversarial_*_tests` | Fuzz- och robusthetstester mot deformerad JSON, trasiga tecken, extrema koordinater och avbrutna anrop. |
+| `check_diagnostic_boundary.py` | Statisk analys som garanterar att kundens PII (personnummer, namn, saldo) aldrig loggas. |
+
+### Köra testerna
+
+Från `native/pdf_generator/`:
+
+```bash
+# Kör hela CTest-sviten med felutskrifter
+ctest --test-dir build --output-on-failure
+
+# Kontrollera formatering
+./tools/check-format.sh
+```
 
 ## Prestanda
 

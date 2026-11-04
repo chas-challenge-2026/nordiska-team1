@@ -123,8 +123,9 @@ High level full project decisions:
 - [Frontend](frontend/README.md#Frontend)
 
 ### Native
-- [PDF Generator Architecture](native/pdf_generator/README.md#arkitektur)
-- LÄNKA MARKUS 
+- [PDF Generator Architecture & Teststatus](native/pdf_generator/README.md)
+- [Native PDF Generator ADR (Jimmy Jordan)](native/pdf_generator/ADR_jimmy_jordan.md)
+- [PDF-signering Beslutslogg (Marcus Mandelström)](beslutslogg.md)
 
 ## Known limitations
 
