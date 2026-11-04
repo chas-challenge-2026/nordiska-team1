@@ -81,3 +81,4 @@ För v2 behövde banken ett högpresterande, automatiserat system för on-demand
 ## 4. Sammanfattning och resultat
 
 Den valda arkitekturen har framgångsrikt levererat en bankmässig, säker och extremt snabb PDF-lösning som uppfyller samtliga krav för Chas Challenge 2026. Lösningen är verifierad med 17/17 godkända CTest-testsviter i Debug (med ASan/UBSan) och 100 % felfri generering i storskaliga stresstester.
+
