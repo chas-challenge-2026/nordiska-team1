@@ -124,6 +124,7 @@ High level full project decisions:
 
 ### Native
 - [PDF Generator Architecture](native/pdf_generator/README.md#arkitektur)
+- [PDF Signer README](native/pdf-signer/README.md)
 - [PDF Signer Architecture](native/pdf-signer/README.md#Architecture)
 - [PDF Signer Decision log](native/pdf-signer/beslutslogg.md)
 
