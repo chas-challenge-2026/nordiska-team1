@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-04T11:35:42.608006Z",
-  "sourceCommit": "0c1bca39e2fe17a90df2dd1feb4a2d46e63c3743",
+  "generatedAt": "2026-11-04T13:38:11.647933Z",
+  "sourceCommit": "e7ebdc4b0c869c2f19d9d2990ad41cdd6ed258d7",
   "inputSha256": {
     "backend/Directory.Build.props": "157584db22df2f46d3f87d558725b353349326b749a2c22ece3043110aac6c64",
     "backend/Directory.Packages.props": "6f980a96e0b7f3281be4a931136a3d6a7d47383a4f58e0d09677b96d4a78522c",
@@ -3843,9 +3843,9 @@
     }
   ],
   "artifactSha256": {
-    "_manifest/spdx_2.2/manifest.spdx.json": "c1722202b4d920e0df1b6382f4a57715cab1f73371a94b7449017e0357913b73",
-    "_manifest/spdx_2.2/manifest.spdx.json.sha256": "3983fb527466a94675df3fbde31ee416fe6b35d854effb78f46c9a7e60a19840",
-    "vulnerabilities-2026-11-04.json": "79e1c3d7eb8bb9d5aae4143545e5c1e6cbd79258a49d7e9e1435e9efeb34cb66",
-    "vulnerabilities-2026-11-04.md": "71e08d0f99fbf6f46916a88f55f3d9e2135b4474fd35fc018821693c2ade21f9"
+    "_manifest/spdx_2.2/manifest.spdx.json": "e7f30e744a3cfd9bd58ab2160c06c26fc31482487ef83433f7b48b1c50ed63a9",
+    "_manifest/spdx_2.2/manifest.spdx.json.sha256": "59020f4f8f83abb247d693b265d747f3e42157aa49ea8865bd6b6747d4155a8c",
+    "vulnerabilities-2026-11-04.json": "745d460f7c8d32f6a4bf4d88131fdfa01049fedf52a3b1b6b57c79891f3e91aa",
+    "vulnerabilities-2026-11-04.md": "3051fda605d86925f77d14207d5fc44f5e00983330c96ab7c21c445e89af939c"
   }
 }

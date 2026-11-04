@@ -1,8 +1,8 @@
 # Source dependency vulnerability report
 
-Scan completed successfully at **2026-11-04T11:35:42.594180Z** using Trivy **0.76.1**.
+Scan completed successfully at **2026-11-04T13:38:11.634574Z** using Trivy **0.76.1**.
 
-Source commit: `0c1bca39e2fe17a90df2dd1feb4a2d46e63c3743`. Exact dependency input hashes are in `provenance.json`.
+Source commit: `e7ebdc4b0c869c2f19d9d2990ad41cdd6ed258d7`. Exact dependency input hashes are in `provenance.json`.
 
 Scope: tracked npm and NuGet lockfiles, including transitive, development, test, peer, and optional dependencies.
 Native libraries, container OS packages/base images, external services, and deployed artifacts were not scanned.
