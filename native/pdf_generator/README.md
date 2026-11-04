@@ -1,327 +1,220 @@
-# Nordiska Native PDF Generator
+# Native PDF-generator
 
-C++23 module for generating customer PDF reports (account statements, annual summaries, and tax reports).
-Designed for direct FFI / P-Invoke integration from .NET services and standalone native CLI execution on Linux.
+## Innehåll
 
----
+- [Funktioner](#funktioner)
+- [Arkitektur](#arkitektur)
+- [Renderare och JSON-tolkning](#renderare-och-json-tolkning)
+- [Miljövariabler](#miljövariabler)
+- [JSON-underlag](#json-underlag)
+- [Integrationskontrakt](#integrationskontrakt)
+- [Köra från terminalen](#köra-från-terminalen)
+- [Testning och kodkvalitet](#testning-och-kodkvalitet)
+- [Prestanda](#prestanda)
+- [Begränsningar](#begränsningar)
+- [Möjliga framtida förbättringar](#möjliga-framtida-förbättringar)
 
+## Om
 
-## Architecture & Subsystems
+C++23-bibliotek som skapar kontoutdrag och årliga skatteunderlag från JSON.
+Varje anrop innehåller underlagen för exakt en kund.
 
-```text
-native/pdf_generator/
-├── include/nordiska/             # Public C++ interface headers
-│   ├── application/              # Orchestration (PdfGenerator, GeneratorConfig, PipelineTiming)
-│   ├── c_api/                    # C89 ABI boundary (pdf_generator_c_api.h)
-│   ├── domain/                   # CustomerBatch, Document, PdfRenderingJob
-│   ├── ingestion/                # JSON ingestor interface & factory
-│   ├── layout/                   # Deterministic layout structures (DocumentLayout)
-│   ├── rendering/                # PDF rendering engine abstraction (PdfEngine)
-│   ├── text/                     # Shared encoding and standard-font metrics
-│   └── signing/                  # Digest signing interface & PDF preparation
-├── src/                          # Subsystem implementations
-│   ├── application/              # PdfGenerator pipeline driver
-│   ├── c_api/                    # C ABI implementation & boundary validation
-│   ├── ingestion/                # simdjson (default) & nlohmann JSON parsers
-│   ├── layout/                   # LayoutBuilder (typography, tables, flow)
-│   ├── rendering/                # Native, Haru (default, bump arena), Cairo
-│   └── signing/                  # Socket signer adapter, PDF preparation & hashing
-├── cli/                          # Standalone CLI binary (pdf_generator)
-├── tests/                        # CTest automated test suites
-├── tools/                        # Code formatters & OpenSSL setup helper
-└── docs/                         # Golden customer batch specification & signing docs
-```
+Det finns också ett CLI för att skapa PDF-filer direkt från en JSON-fil.
 
-### The Generation Pipeline
-```
-Raw JSON Buffer (UTF-8)
-         │
-         ▼  [1. Ingestion Stage]
-   JsonIngestor (simdjson / nlohmann)
-   - Validates envelope & versioning
-   - Zero-copy string borrows where possible
-         │
-         ▼
-   PdfRenderingJob (C++ domain model)
-         │
-         ▼  [2. Layout Stage]
-   LayoutBuilder
-   - Typography, column metrics & pagination
-   - Composes branded page furniture and flowing tables
-   - Generates ordered text, line, rectangle, and image commands
-         │
-         ▼
-   DocumentLayout (deterministic coordinate geometry)
-         │
-         ▼  [3. Rendering Stage]
-   PdfEngine (Native / Libharu / Cairo)
-   - Compiles binary PDF 1.4 streams
-         │
-         ▼  [4. Optional Signing Stage]
-   PdfSigner (Unix Domain Socket / Protocol v2)
-   - Per-document signing dispatch to pdf-signer service
-   - Strict all-or-nothing failure guarantee
-         │
-         ▼
-GeneratedPdfs / C ABI Delivery Callback
-```
+Anroparen väljer kunduppgifter, beräknar belopp och formaterar värdena som ska
+visas. Generatorn läser underlaget, placerar innehållet på sidorna och skapar
+PDF-dokumenten, med valfri digital signering.
 
-See [Diagnostic privacy boundary](docs/diagnostics.md) for typed errors, output
-restrictions, tests, and host/dependency limits.
+## Funktioner
 
-See [Branded report layout](docs/report-design.md) for style/resource ownership,
-IR commands, pagination, font substitution, and local synthetic previews.
+- **Utbyggbar JSON-inläsning**: nya tolkar kan läggas till bakom ett gemensamt
+  gränssnitt. I dag finns simdjson och nlohmann.
+- **Utbyggbar PDF-rendering**: nya motorer kan läggas till och använda samma
+  mellanrepresentation. I dag finns Haru, Native och Cairo.
+- **Utbyggbara dokumenttyper**: definiera dokumentets data och layout i den
+  gemensamma mellanrepresentationen; befintliga PDF-motorer sköter renderingen.
+- **Mellanrepresentation av dokumentens layout**, som skiljer layout från rendering
+  och ger en grund för en framtida grafisk layout- och mallredigerare.
+- **Prestanda**: generering i minnet med återanvända arbetsbuffertar för färre
+  allokeringar. Oberoende kundanrop kan köras parallellt.
+- **PDF-komprimering** för mindre filer, aktiverad som standard.
+- **Valfri digital signering och tidsstämpling** via en extern signerare.
+- **Enkelt C-ABI** för integration med andra språk, samt CLI för direkt användning.
+- **Konfiguration via miljövariabler** för bland annat PDF-motor och signering.
 
----
+## Arkitektur
 
-## Pluggable Engines & Ingestors
+![PDF-generatorns flöde från JSON till layout, rendering och eventuell signering](docs/pipeline.png)
 
-### PDF Rendering Engines (`--renderer <engine>`)
+JSON-tolkningen skapar interna dokumentdata. Layoutsteget bestämmer var text,
+linjer och bilder ska placeras. PDF-motorn omvandlar sedan layouten till PDF.
+Vid signering skickas dokumentets hash till den externa signeraren, och den
+returnerade signaturen läggs in i PDF-dokumentet.
 
-1. **`native` (`PdfEngineKind::Native`)**:
-   - Zero-dependency direct PDF 1.4 compiler.
-   - Formats Core-14 PostScript Type 1 Helvetica and Helvetica-Bold font dictionaries, text matrices (`BT`, `Tf`, `Tm`, `Tj`, `ET`), colored vector paths, rectangles, and shared image XObjects.
-   - Zero-allocation numeric formatting via `<charconv>` (`std::to_chars`).
-   - Reuses precompressed image pixels directly. See the report-design notes for the measured cost of branded output.
-2. **`haru` (`PdfEngineKind::Libharu`) — Default**:
-   - Classical C library backend optimized with a thread-local bump arena (`HaruBumpArena` via `HPDF_NewEx`).
-   - Allocations are $\mathcal{O}(1)$ pointer bumps, eliminating libc `ptmalloc` lock contention.
-3. **`cairo` (`PdfEngineKind::Cairo`)**:
-   - Cairo 2D graphics engine with front-loaded font caching.
-   - Forces subset font embedding (larger files, slower throughput).
+Koden följer samma uppdelning i `src/ingestion/`, `src/layout/`, `src/rendering/`
+och `src/signing/`. `src/c_api/` innehåller C-gränssnittet och `cli/`
+kommandoradsprogrammet. Biblioteket arbetar i minnet; CLI-programmet skriver filer.
+Textvärden från JSON kopieras till interna datastrukturer.
 
-### JSON Ingestors (`--ingestor <engine>`)
+I dag finns kontoutdrag och årliga skatteunderlag. För en ny dokumenttyp definieras
+vilka data den behöver, JSON-inläsningen kompletteras vid behov och en layout
+byggs med mellanrepresentationens text, linjer, rektanglar och bilder.
+Samma PDF-motorer kan sedan rendera den nya typen.
 
-1. **`simdjson` (`JsonIngestorKind::Simdjson`) — Default**:
-   - SIMD-accelerated JSON parser with single-pass dictionary scanning, thread-local scratch buffer reuse, and lazy error formatting.
-   - Parses banking payloads at >155,000 docs/second.
-2. **`nlohmann` (`JsonIngestorKind::Nlohmann`)**:
-   - Standard DOM-based JSON parser used for validation and compatibility.
+## Renderare och JSON-tolkning
 
----
+Layouten kan omvandlas till PDF med tre olika motorer:
 
-## Build Instructions
+| Motor | Beskrivning |
+| --- | --- |
+| `haru` | Standardalternativet, byggt på libharu. |
+| `native` | Egen PDF-motor med PDF:s standardtypsnitt. |
+| `cairo` | Alternativ för funktionstestning. Bäddar in typsnittsdelar och är för långsam för den här modulens massgenerering. |
 
-### Prerequisites
-- Linux x86_64
-- C++23 capable compiler (GCC 13+ or Clang 17+)
-- CMake 3.25+
-- Ninja build system
-- Third-party dependencies (ZLIB, OpenSSL, Cairo, nlohmann-json, simdjson, libharu) automatically resolved via system packages or CMake FetchContent
-- OpenSSL >= 3.0 for SHA-256 hashing and signature tests (`libssl-dev`).
-  CMS signing runs in the external signer service. A custom OpenSSL installation
-  can be selected with `-DOPENSSL_ROOT_DIR=<path>`. The optional
-  `tools/setup-openssl-3.3.sh` helper remains for the root Dockerfile, which still
-  calls it; standalone generator builds can use system OpenSSL.
-- Third-party libraries:
-  - ZLIB (system package: `zlib1g-dev`)
-  - Cairo 2D graphics (system package: `libcairo2-dev`)
-  - JSON parsers: `simdjson` and `nlohmann-json` (system packages or auto-fetched via CMake `FetchContent`)
-  - PDF backend: `libharu` (system package `libhpdf-dev` or auto-fetched via CMake `FetchContent`)
+CLI väljer motor med `--renderer`. För biblioteksanrop används miljövariabeln
+`NORDISKA_PDF_ENGINE`. Haru är standard. JSON läses med simdjson;
+CLI kan även välja nlohmann med `--ingestor`.
 
-### Build Presets (`CMakePresets.json`)
+## Miljövariabler
 
-CMake presets provide reproducible configuration and compilation for both Debug and Release environments.
+Sätt variablerna i miljön för processen som använder biblioteket.
 
-#### Debug Build (Recommended for development & debugging)
-Outputs to `build/debug/` with full debug symbols:
-```bash
-# Configure
-cmake --preset debug
+| Variabel | Betydelse och standardvärde |
+| --- | --- |
+| `NORDISKA_PDF_ENGINE` | PDF-motor: `haru` (standard), `native` eller `cairo`. Även CLI läser variabeln; `--renderer` har företräde. |
+| `NORDISKA_PDF_ENABLE_SIGNING` | C-ABI: `1` eller `true` aktiverar signering; andra värden stänger av. Om variabeln saknas aktiveras signering när signerarsocketen är läs- och skrivbar. CLI använder i stället `--signing`. |
+| `PDF_SIGNER_SOCKET_PATH` | Signerarens Unix-socket. Standard: `/run/pdf-signer/pdf-signer.sock`. |
+| `PDF_SIGNER_MODE` | `timestamp` eller `1` begär tidsstämpel. Annars signering utan tidsstämpel. |
+| `NORDISKA_PDF_SIGNER_TIMEOUT_MS` | Tidsgräns för ett signeraranrop per dokument, i millisekunder. Standard: `10000`. Tillåtna värden: `1–2147483647`. |
+| `NORDISKA_PDF_MAX_PAYLOAD_BYTES` | Maximal JSON-storlek via C-ABI, i byte. Standard: `33554432` (32 MiB). |
+| `NORDISKA_PDF_HARU_BASE_CHUNK_BYTES` | Harus grundstorlek för återanvändbart arbetsminne, i byte. Standard: `2097152` (2 MiB). |
+| `NORDISKA_PDF_HARU_MAX_ARENA_BYTES` | Övre gräns för Harus minnesarena, i byte. Standard: `33554432` (32 MiB). |
 
-# Build all targets
-cmake --build --preset debug -j
-```
+JSON-tolk och komprimering väljs med CLI-flaggor (`--ingestor` och
+`--compression`), inte miljövariabler. C-ABI använder simdjson och komprimering.
 
-#### Release Build (Recommended for benchmarking & production deployment)
-Outputs to `build/release/` with optimizations enabled:
-```bash
-# Configure
-cmake --preset release
+## JSON-underlag
 
-# Build all targets
-cmake --build --preset release -j
-```
+Utgå från [det fullständiga JSON-exemplet](docs/golden_customer_batch_sample.json),
+som visar en kund med både kontoutdrag och skatteunderlag. Samma format används
+av C-ABI och CLI: `customer_id` identifierar kunden och `documents` innehåller
+posterna med `document_id`, dokumenttypen `kind` och innehållet `document`.
+Belopp och datum som ska visas levereras färdigformaterade av anroparen.
 
+Valfria produkt- och räntefält beskrivs i
+[metadatakontraktet](docs/account-metadata.md), med ett
+[utökat JSON-exempel](docs/account_metadata_sample.json).
 
-#### Manual CMake Invocation (Fallback without presets)
-```bash
-# Debug
-cmake -B build/debug -S . -DCMAKE_BUILD_TYPE=Debug -G Ninja
-cmake --build build/debug -j
+## Integrationskontrakt
 
-# Release
-cmake -B build/release -S . -DCMAKE_BUILD_TYPE=Release -G Ninja
-cmake --build build/release -j
-```
+Bygget skapar `build/debug/libnordiska_pdf_generator_c_api.so`.
+Ingången är `nordiska_pdf_v1_generate_customer_batch`, som tar en UTF-8-kodad
+JSON-buffert och en callback: en funktion som anroparen tillhandahåller för att
+ta emot de färdiga dokumenten.
 
-### Build Artifacts
-Artifacts are emitted into `build/<preset>/` (e.g. `build/debug/` or `build/release/`):
-- `libnordiska_pdf_generator_c_api.so`: Exported C ABI shared library for .NET P/Invoke.
-- `pdf_generator`: Standalone CLI worker.
-- `nordiska_*_tests`: CTest unit test executables.
+- Anropet körs synkront. JSON-bufferten måste vara giltig och oförändrad tills
+  anropet returnerar. Standardgränsen är 32 MiB JSON.
+- Callbacken körs en gång när alla dokument för kunden är klara. Om genereringen
+  misslyckas levereras inga dokument.
+- Biblioteket äger PDF-data och identifierare. Använd eller kopiera dem innan
+  callbacken returnerar; frigör dem inte själv. Anroparen ansvarar för lagring.
+- Callbacken returnerar `0` för att godkänna resultatet. Genereringsfunktionen
+  returnerar `0` vid framgång och annars en felkod. Läs felbeskrivningen med
+  `nordiska_pdf_v1_get_last_error()` på samma tråd.
 
----
+Dokumenten behandlas i turordning. Separata anrop kan köras parallellt.
 
-## Integration Contracts
+Se [C-headern](include/nordiska/c_api/pdf_generator_c_api.h) för funktioner,
+resultatstrukturer, felkoder och minnesregler. Där finns även V2, som levererar
+SHA-256-hashvärden tillsammans med dokumenten, och funktioner för tidsmätning.
+Den nuvarande .NET-workern använder V1.
 
-See [Account product and rate metadata](docs/account-metadata.md) for the optional
-`account_type` and `interest_rate_display` fields supported by both report types.
+## Köra från terminalen
 
-### C ABI Public Interface (`pdf_generator_c_api.h`)
-
-Exported C functions for host interop:
-
-```c
-#include "nordiska/c_api/pdf_generator_c_api.h"
-
-// Synchronous generation for a single customer batch
-int nordiska_pdf_v1_generate_customer_batch(
-    const uint8_t* json_utf8,
-    size_t json_length,
-    nordiska_pdf_delivery_callback callback,
-    void* user_data);
-
-// Thread-local diagnostic retrieval
-const char* nordiska_pdf_v1_get_last_error(void);
-const char* nordiska_pdf_v1_status_name(int status_code);
-```
-
-The C API uses Libharu by default. Set `NORDISKA_PDF_ENGINE=native`,
-`NORDISKA_PDF_ENGINE=haru` (or `libharu`), or `NORDISKA_PDF_ENGINE=cairo`
-before generation to compare engines without rebuilding the library. Values
-are case-insensitive; an unset or empty value retains Libharu. Unknown values
-return invalid argument with no delivery callback. Signing configuration is
-independent of the selected renderer.
-
-#### Signing deadline
-
-`NORDISKA_PDF_SIGNER_TIMEOUT_MS` sets a **per-document signer request** budget:
-10,000 ms by default (also when unset or empty). Explicit values must be whole
-milliseconds in `1..2147483647`; invalid values return a controlled signing
-configuration error without echoing the supplied value.
-
-One monotonic deadline covers socket creation, connect/queue waiting, sending
-the digest, and receiving the complete response header and CMS body. Partial
-responses and interrupted system calls do not reset it. The budget is shared
-by plain and timestamp modes. It excludes rendering, PDF preparation and the
-rest of a multi-document batch; each document gets its own request budget.
-
-Timeouts return `SigningErrorKind::Timeout` with the fixed reason
-`signing request timed out`. The C ABI retains status 7 (signing failed), and
-failed batches deliver zero callbacks, even if earlier documents were signed.
-The socket closes; this does not cancel work already running in the external
-signer. Instrumented calls record signer-call time on failure as well as success.
-
-#### V2 API (Future Preparation — Not Yet in Production)
-
-> **Note:** The V2 C API (`nordiska_pdf_v2_generate_customer_batch` and
-> `nordiska_pdf_v2_generate_customer_batch_instrumented`) is **preparation for
-> future adoption** and is **not yet used in production or by the .NET worker**.
-> Its main purpose is to eliminate duplicate hashing in the rest of the
-> application: because the native generator already computes the SHA-256 digest
-> of each complete delivered PDF (including any inserted signature), V2 exposes
-> that checksum directly (`sha256_hex`, 64 lowercase hex characters + NUL
-> terminator on `nordiska_pdf_document_view_v2`) so host callers do not need to
-> re-hash PDF bytes after delivery.
-
-Existing V1 functions and struct layouts remain completely unchanged for full
-backward compatibility. Status codes, environment configuration, atomic delivery
-and `nordiska_pdf_v1_get_last_error` are shared between V1 and V2.
-
-Both entry points are stateless: each call resolves the current environment
-configuration, constructs its own generator components and releases them when
-the call returns. Concurrent calls generate independent customer batches.
-There is no caller-owned generator handle or create/destroy lifecycle.
-
-Timing collection is explicit. The normal V1 and V2 entry points pass no timing
-collector, so the pipeline skips profiling clock reads and accumulation. Signing
-still reads the monotonic clock to enforce its request deadline. Use
-`nordiska_pdf_v1_generate_customer_batch_instrumented` or
-`nordiska_pdf_v2_generate_customer_batch_instrumented` to collect phase timings
-while using the same generation, validation and delivery code. V2 adds the
-artifact hash field to the callback view.
-
-After an instrumented call returns, copy its measurements with
-`nordiska_pdf_v1_get_last_timing`; this shared helper serves both versions.
-It returns the latest completed instrumented call's timings on the calling
-thread. Normal calls leave that snapshot intact. A fresh thread sees zeros;
-an instrumented failure reports work recorded before failure, or zeros when
-arguments fail validation. Totals cover the native pipeline and exclude
-configuration, component construction and callback delivery. Nested
-instrumented calls have separate local collectors; each publishes its snapshot
-when it returns. No environment variable is needed to choose instrumentation.
-
-#### Status Codes (`nordiska_pdf_status`):
-
-- `0`: `NORDISKA_PDF_OK` — Generation succeeded; delivery callback invoked.
-- `1`: `NORDISKA_PDF_INVALID_ARGUMENT` — Null buffer, zero length, or null callback.
-- `2`: `NORDISKA_PDF_INVALID_INPUT` — JSON parse or domain validation error.
-- `3`: `NORDISKA_PDF_CALLBACK_FAILED` — Host callback rejected the completed batch.
-- `4`: `NORDISKA_PDF_INTERNAL_ERROR` — PDF rendering or layout construction failure.
-- `5`: `NORDISKA_PDF_RESOURCE_LIMIT_EXCEEDED` — Payload exceeds 32 MB limit.
-- `6`: `NORDISKA_PDF_OUT_OF_MEMORY` — Memory allocation failed.
-- `7`: `NORDISKA_PDF_SIGNING_FAILED` — Document signing failure (batch aborted, zero callbacks).
-
-#### Memory Contract:
-- **Synchronous execution**: Executes entirely on the caller's thread (zero thread hopping).
-- **Borrowed memory**: Input JSON buffer is borrowed; native code never retains pointers after return.
-- **Delivery callback**: Exactly once on batch completion. The callback borrows `nordiska_pdf_batch_view`. All PDF byte views are deallocated immediately upon callback return.
-
----
-
-## CLI Usage
+Efter bygge, kör från `native/pdf_generator/`:
 
 ```bash
-./build/debug/pdf_generator [OPTIONS] [INPUT_JSON]
-# or for release:
-./build/release/pdf_generator [OPTIONS] [INPUT_JSON]
+./build/debug/pdf_generator \
+  -i docs/golden_customer_batch_sample.json \
+  -o output/ --renderer haru
 ```
 
-### Options:
-- `-i, --input <path>`: Path to input JSON payload (or `-` for stdin).
-- `-o, --output <path>`: Destination directory or file path.
-- `-r, --renderer <native|haru|cairo>`: Rendering engine (default: `haru`).
-- `-e, --ingestor <simdjson|nlohmann>`: JSON ingestor (default: `simdjson`).
-- `--no-compression`: Disable Flate stream compression for maximum rendering speed.
-- `--compression <bool>`: Enable or disable stream compression (default: `true`).
-- `--signing`: Call the PDF signer service via Unix domain socket and embed its CMS hex in generated documents (default: `false`).
-- `--signature-capacity <n>`: Reserved CMS hex characters (default: `8192`).
-- `--profile <amber|light-blue|navy>`: Apply a complete report palette (default: `light-blue`; `--logo` is an alias).
-- `-q, --quiet`: Suppress progress messages, only report errors.
-- `-v, --verbose`: Print detailed execution summary and elapsed timing.
-- `--json-summary`: Output machine-readable JSON summary to stdout.
+Exemplet skapar ett kontoutdrag och ett skatteunderlag i `output/`:
+`account1_statement.pdf` och `account1_tax.pdf`.
+[JSON-filen](docs/golden_customer_batch_sample.json) visar hur underlaget ska se ut.
+De befintliga dokumenttyperna heter `account_statement` och `annual_tax_report`.
 
-### Examples:
+Använd `--help` för alla flaggor. Några vanliga val:
 
-```bash
-# Generate batch with dedicated Native engine (fastest)
-./build/release/pdf_generator -i docs/golden_customer_batch_sample.json -o output/ --renderer native --no-compression
+| Flagga | Användning |
+| --- | --- |
+| `--renderer haru\|native\|cairo` | Välj PDF-motor. Haru är standard. |
+| `--ingestor simdjson\|nlohmann` | Välj JSON-tolk. simdjson är standard. |
+| `--signing` | Begär signering via en separat tjänst och Unix-socket. Av som standard i CLI. |
+| `--json-summary` | Skriv en maskinläsbar sammanfattning. |
 
-# Process piped payload from stdin with JSON output summary
-cat input.json | ./build/release/pdf_generator -o output/ --json-summary
-```
+## Testning och kodkvalitet
 
----
+Se [testernas README](tests/README.md) för CTest, fuzztestning och formatering.
 
-## 7. Testing & Code Quality
+## Prestanda
 
-For interactive, unsigned JSON-to-PDF fuzzing with AFL++, see
-[tests/fuzz/README.md](tests/fuzz/README.md). Fuzz targets are opt-in and are not
-included in normal builds.
+Mätt 3 november 2026 i Docker med 10 000 syntetiska kunder och fyra
+utvecklingskunder: totalt 25 448 PDF:er. Båda vägarna använder Haru,
+komprimering och CMS-signering utan tidsstämpel, med 16 anropstrådar och
+16 signertrådar, på en Ryzen AI 7 350.
 
-```bash
-# 1. Format native C++ code
-./tools/format-native.sh
+| Mätväg | Tid | Hastighet |
+| --- | --- | --- |
+| Hela rapportflödet: förberedelse, databas, worker och lagring | 52,47 s | 485 PDF/s |
+| Biblioteket: färdig JSON → signerad PDF i minnet | 6,16 s | 4 134 PDF/s |
 
-# 2. Verify formatting without modifications (CI check)
-./tools/check-format.sh
+Bibliotekets tid är medianen av tre körningar. Inga jobb eller biblioteksanrop
+misslyckades. En separat instrumenterad körning visar fördelningen inne i biblioteket:
 
-# 3. Run automated CTest test suite with presets
-ctest --preset debug
-ctest --preset release
+| Fas | Medeltid per dokument | Andel av uppmätt pipelinetid |
+| --- | --- | --- |
+| JSON-inläsning | 0,020 ms | 0,5 % |
+| Layout | 0,070 ms | 1,9 % |
+| PDF-rendering och komprimering | 1,098 ms | 29,7 % |
+| Signering inklusive sluthash | 2,505 ms | 67,8 % |
 
-# Or run directly against specific build directory
-ctest --test-dir build/debug --output-on-failure
-ctest --test-dir build/release --output-on-failure
-```
+Signeringstiden omfattar kommunikation och väntan på signeraren. Fasernas tider
+mäts per anrop och överlappar när anrop körs parallellt; de ska inte summeras till
+batchens förflutna tid. Konfiguration, komponentkonstruktion och callbackleverans
+ligger utanför fasernas tidtagning.
+[Mätmetod, miljö och råvärden](../../tools/benchmark/runs/2026-11-03-10k/results.md).
+
+## Begränsningar
+
+- **Typsnitt:** Haru och Native använder PDF:s standardtypsnitt Helvetica och
+  Helvetica-Bold utan inbäddade typsnittsfiler. Det håller filerna små och
+  undviker arbetet med att bädda in typsnitt. Cairo bäddar däremot in typsnittsdelar.
+- **Teckenstöd:** texten anpassas från UTF-8 till CP1252/WinAnsi, som stöder
+  bland annat å, ä och ö. Vissa tecken förenklas, exempelvis Unicode-minus till
+  `-`, medan tecken som saknar stöd ersätts med `?` eller utelämnas.
+  Fullständigt Unicode-stöd och avancerad textformning saknas.
+- **Innehållets riktighet:** generatorn kontrollerar JSON-struktur, datatyper
+  och obligatoriska fält, men verifierar inte belopp, saldon, datum eller
+  kundtillhörighet. Den skriver de levererade värdena efter teckenkonvertering;
+  anroparen ansvarar för att uppgifterna stämmer och får lämnas ut.
+- **PDF och signering:** generatorn skapar PDF-dokument och begär signering
+  när den är aktiverad. Den gör ingen oberoende slutvalidering av hela PDF-filen.
+  En digital signatur intygar inte att innehållets sakuppgifter är korrekta.
+
+Felmeddelanden innehåller kontrollerade fältnamn och positioner, inte levererade
+kundvärden. Detta gäller generatorns egen diagnostik; värdapplikationen och
+externa beroenden ansvarar för sin egen loggning.
+
+## Möjliga framtida förbättringar
+
+- **Mer återanvändning av trådlokalt arbetsminne:** utöka den befintliga
+  återanvändningen av buffertar och arbetsytor för att minska allokeringar mellan anrop.
+- **PDF-rendering anpassad till dokumenttyperna:** vidareutveckla den egna
+  PDF-motorn för just kontoutdrag och skatteunderlag. Förberäkna så mycket som
+  möjligt av återkommande sidinnehåll, ritkommandon och komprimerade resurser,
+  så att mindre arbete behöver upprepas för varje dokument.
+- **Grafisk layout- och mallredigerare:** bygg ett verktyg ovanpå
+  mellanrepresentationen för att formge dokument och skapa nya dokumenttyper.
+  Det skulle kunna anslutas till webbens administratörspanel, så att mallar kan
+  redigeras visuellt och sedan renderas av de befintliga PDF-motorerna.
