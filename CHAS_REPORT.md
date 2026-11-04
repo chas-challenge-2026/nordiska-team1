@@ -124,7 +124,8 @@ High level full project decisions:
 
 ### Native
 - [PDF Generator Architecture](native/pdf_generator/README.md#arkitektur)
-- LÄNKA MARKUS 
+- [PDF Signer Architecture](native/pdf-signer/README.md)
+- [PDF Signer Decision log](native/pdf-signer/beslutslogg.md)
 
 ## Known limitations
 
