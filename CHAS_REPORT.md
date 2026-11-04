@@ -125,11 +125,14 @@ High level full project decisions:
 ### Native
 - [PDF Generator Architecture & Teststatus](native/pdf_generator/README.md)
 - [Native PDF Generator ADR (Jimmy Jordan)](native/pdf_generator/ADR_jimmy_jordan.md)
-- [PDF-signering Beslutslogg (Marcus Mandelström)](beslutslogg.md)
+- [PDF Signer README](native/pdf-signer/README.md)
+- [PDF Signer Architecture](native/pdf-signer/README.md#Architecture)
+- [PDF Signer Decision log](native/pdf-signer/beslutslogg.md)
 
 ## Known limitations
 
 - **Native platform:** PDF generator and signing service require Linux x86-64 / Docker runtime.
+- **SoftHSM:** Software emulation for hardware keys currently used in place of real HSM.
 - **Identity provider:** Local Docker Compose environment uses real BankID but is currently set to test certificate.
 - **Frontend / Backend limitations:** Customer portal and admin portal runs in the same container. Practical for demo, not good enough for production.
 - GDPR explicitly out of scope for MVP.

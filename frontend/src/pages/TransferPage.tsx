@@ -18,7 +18,7 @@ import {
     toOwnAccount,
     SIMULATED_TRANSFER_DELAY_MS,
 } from "../components/transfer/transferHelpers";
-import type { OwnAccount } from "../constants/transferAccounts";
+import type { OwnAccount } from "../types/transferAccounts";
 import { useGetAccounts } from "../hooks/useAccounts";
 import { useTransferFunds } from "../hooks/useTransactions";
 import { usePlannedTransfers } from "../hooks/usePlannedTransfers";

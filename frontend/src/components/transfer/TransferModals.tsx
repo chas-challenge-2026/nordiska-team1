@@ -6,7 +6,7 @@ import AddAccountForm from "../modals/AddAccountForm";
 import type { NewAccountValues } from "../modals/AddAccountForm";
 import BankIdConfirm from "../modals/BankIdConfirm";
 import { formatCurrency } from "../../utils/currency";
-import type { TransferAccount } from "../../constants/transferAccounts";
+import type { TransferAccount } from "../../types/transferAccounts";
 
 export type ModalKind = "from" | "to" | null;
 

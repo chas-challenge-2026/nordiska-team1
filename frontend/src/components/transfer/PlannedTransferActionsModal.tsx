@@ -5,7 +5,7 @@ import Modal from "../modals/Modal";
 import InputField from "../forms/InputField";
 import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
 import RecurrenceFields from "./RecurrenceFields";
-import type { PlannedTransfer } from "../../constants/transferAccounts";
+import type { PlannedTransfer } from "../../types/transferAccounts";
 import type { PlannedTransferChanges } from "../../hooks/usePlannedTransfers";
 import { useRecurrence } from "../../hooks/useRecurrence";
 
