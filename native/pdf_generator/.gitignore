@@ -1,10 +1,9 @@
 build/
-vcpkg_installed/
 /output/
-benchmark-output/
-tools/synthetic-input-generator/generated/
+signing_samples/
 *.pdf
-!samples_for_signing/**/*.pdf
 
 treeclimber*
+*.csv*.supp
 *.csv
+*.supp

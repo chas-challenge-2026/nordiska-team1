@@ -88,7 +88,7 @@ public class SavingsGoalManagementTests
         }
     }
 
-    private class InMemoryTxRepo : ITransactionRepository
+    private class InMemoryTxRepo : Nordiska.Tests.Shared.InMemoryAtomicTransactions, ITransactionRepository
     {
         public readonly List<LedgerEntry> Store = new();
         private long _next = 1;

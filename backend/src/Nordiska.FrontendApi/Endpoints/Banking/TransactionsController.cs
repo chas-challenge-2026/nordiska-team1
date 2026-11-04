@@ -56,8 +56,18 @@ public class TransactionsController : ControllerBase
         query ??= new TransactionQueryRequest();
         var requestedAccountIds = query.GetRequestedAccountIds();
 
-        if (User.IsAdmin())
+        if (User.IsStaff())
         {
+            if (requestedAccountIds == null || requestedAccountIds.Count == 0)
+            {
+                var emptyStaffResult = PagedResult<TransactionResponse>.Create(
+                    Array.Empty<TransactionResponse>(),
+                    0,
+                    query.Page,
+                    query.PageSize);
+                return FormatResult(emptyStaffResult, query.GroupByDate);
+            }
+
             var adminParams = query.ToDomainParameters(requestedAccountIds);
             var adminResult = await _service.QueryPagedAsync(adminParams, cancellationToken);
             return FormatResult(adminResult, query.GroupByDate);
@@ -219,6 +229,7 @@ public class TransactionsController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TransactionResponse>> Create([FromBody] TransactionRequest request, CancellationToken cancellationToken)
     {
         if (!await IsAuthorizedForAccountAsync(request.AccountId, cancellationToken))
@@ -246,6 +257,7 @@ public class TransactionsController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TransactionResponse>> Transfer([FromBody] TransferRequest request, CancellationToken cancellationToken)
     {
         if (!await IsAuthorizedForAccountAsync(request.SourceAccountId, cancellationToken))
@@ -297,6 +309,7 @@ public class TransactionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CancelPlanned(long id, CancellationToken cancellationToken)
     {
         var existing = await _service.GetByIdAsync(id, cancellationToken);

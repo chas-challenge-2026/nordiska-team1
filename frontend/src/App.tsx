@@ -26,7 +26,7 @@ export default function App() {
 
     if (isCheckingSession) return <div><LoadingState title={t("generic.loading")}/></div>
 
-    let background = "bg-nordiska-bg"
+    let background = "bg-lightblue"
     switch (location.pathname) {
         case "/login":
         case "/register":
@@ -35,13 +35,12 @@ export default function App() {
         case "/welcome":
         case "/inactive":
         case "/logged-out":
-            background = "bg-nordiska-blue";
+            background = "bg-dark-navy";
             break;
     }
 
     const UNPROTECTED_HEADER = ["/welcome", "/inactive", "/login", "/logout", "/logged-out", "/register", "/error-500",]
     const protectedHeader = !UNPROTECTED_HEADER.includes(location.pathname);
-    const noScrollPage = UNPROTECTED_HEADER.includes(location.pathname);
     const noShow = location.pathname.startsWith("/admin")
     const margin = UNPROTECTED_HEADER.includes(location.pathname);
     const hidden = location.pathname.startsWith("/admin")
@@ -52,7 +51,7 @@ export default function App() {
             <OperationalMessageLoader />
             <ServiceAlertBanner margin={margin} hidden={hidden}/>
 
-            <div ref={scrollContainerRef} className={`flex min-h-0 flex-1 flex-col ${noScrollPage ? "overflow-hidden" : "overflow-y-auto"}`}>
+            <div ref={scrollContainerRef} className={`flex min-h-0 flex-1 flex-col overflow-y-auto`}>
                 <ErrorBoundary key={location.pathname.split("/")[1]}>
                     <AppRoutes />
                 </ErrorBoundary>

@@ -2,10 +2,12 @@
 #include "nordiska/rendering/pdf_engine.hpp"
 #include "nordiska/signing/pdf_signer.hpp"
 #include "nordiska/signing/signature_slot_appender.hpp"
+#include "pdf_test_helpers.hpp"
 
 #include <algorithm>
 #include <arpa/inet.h>
 #include <atomic>
+#include <cerrno>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -41,7 +43,11 @@ enum class MockSignerReply {
     TooLarge,
     Failure,
     ProtocolVersionMismatch,
-    UnsupportedAlgorithm
+    UnsupportedAlgorithm,
+    DisconnectImmediately,
+    DisconnectMidRequest,
+    DisconnectMidResponseHeader,
+    DisconnectMidResponseBody
 };
 
 class MockUnixSignerServer {
@@ -101,6 +107,10 @@ class MockUnixSignerServer {
         return seen_digests_;
     }
 
+    bool oversized_reply_disconnected() const {
+        return oversized_reply_disconnected_.load();
+    }
+
     void clear_digests() {
         seen_digests_.clear();
     }
@@ -125,10 +135,27 @@ class MockUnixSignerServer {
     }
 
     void handle_client(int fd) {
+        MockSignerReply rep = reply_.load();
+        if (rep == MockSignerReply::DisconnectImmediately) {
+            return;
+        }
+
         uint8_t req[48];
+        if (rep == MockSignerReply::DisconnectMidRequest) {
+            size_t partial = 0;
+            while (partial < 16) {
+                ssize_t n = ::recv(fd, req + partial, 16 - partial, MSG_NOSIGNAL);
+                if (n <= 0) {
+                    break;
+                }
+                partial += static_cast<size_t>(n);
+            }
+            return;
+        }
+
         size_t total = 0;
         while (total < sizeof(req)) {
-            ssize_t n = ::read(fd, req + total, sizeof(req) - total);
+            ssize_t n = ::recv(fd, req + total, sizeof(req) - total, MSG_NOSIGNAL);
             if (n <= 0) {
                 return;
             }
@@ -146,7 +173,24 @@ class MockUnixSignerServer {
         seen_digests_.push_back(digest);
         request_count_++;
 
-        MockSignerReply rep = reply_.load();
+        if (rep == MockSignerReply::DisconnectMidResponseHeader) {
+            uint32_t status_net = htonl(0);
+            (void)::send(fd, &status_net, 4, MSG_NOSIGNAL);
+            return;
+        }
+
+        if (rep == MockSignerReply::DisconnectMidResponseBody) {
+            uint32_t status_net = htonl(0);
+            uint32_t hex_len_net = htonl(4096);
+            uint8_t resp_hdr[8];
+            std::memcpy(resp_hdr, &status_net, 4);
+            std::memcpy(resp_hdr + 4, &hex_len_net, 4);
+            (void)::send(fd, resp_hdr, sizeof(resp_hdr), MSG_NOSIGNAL);
+            const char partial_body[] = "0123456789";
+            (void)::send(fd, partial_body, sizeof(partial_body) - 1, MSG_NOSIGNAL);
+            return;
+        }
+
         uint32_t status = 0;
         std::string hex;
 
@@ -179,11 +223,19 @@ class MockUnixSignerServer {
         uint8_t resp_hdr[8];
         std::memcpy(resp_hdr, &status_net, 4);
         std::memcpy(resp_hdr + 4, &hex_len_net, 4);
-        const ssize_t w1 = ::write(fd, resp_hdr, sizeof(resp_hdr));
+        const ssize_t w1 = ::send(fd, resp_hdr, sizeof(resp_hdr), MSG_NOSIGNAL);
         (void)w1;
         if (!hex.empty()) {
-            const ssize_t w2 = ::write(fd, hex.data(), hex.size());
-            (void)w2;
+            if (rep == MockSignerReply::TooLarge) {
+                // The client rejects the length header and closes without reading the body.
+                // Wait for that close to exercise the broken-pipe path deterministically.
+                char unused;
+                (void)::recv(fd, &unused, sizeof(unused), 0);
+            }
+            const ssize_t w2 = ::send(fd, hex.data(), hex.size(), MSG_NOSIGNAL);
+            if (rep == MockSignerReply::TooLarge) {
+                oversized_reply_disconnected_ = (w2 < 0 && errno == EPIPE);
+            }
         }
     }
 
@@ -192,6 +244,7 @@ class MockUnixSignerServer {
     std::atomic<bool> running_{false};
     std::atomic<MockSignerReply> reply_{MockSignerReply::Normal};
     std::atomic<size_t> request_count_{0};
+    std::atomic<bool> oversized_reply_disconnected_{false};
     std::vector<nordiska::Sha256Digest> seen_digests_;
     std::thread server_thread_;
 };
@@ -222,17 +275,12 @@ nordiska::Sha256Digest independent_hash(const std::vector<uint8_t>& bytes) {
     return digest;
 }
 
-void write_pdf(const std::filesystem::path& path, const std::vector<uint8_t>& bytes) {
-    std::ofstream out(path, std::ios::binary);
-    out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-    require(out.good(), "could not write signing sample");
-}
-
 void test_renderers() {
-    const nordiska::DocumentLayout layout{.pages = {
-                                              {.texts = {{.x = 40, .y = 50, .text = "Signing integration test"}}},
-                                              {.texts = {{.x = 40, .y = 50, .text = "Second page"}}},
-                                          }};
+    const nordiska::DocumentLayout layout{
+        .pages = {
+            {.commands = {nordiska::PositionedText{.x = 40, .y = 50, .text = "Signing integration test"}}},
+            {.commands = {nordiska::PositionedText{.x = 40, .y = 50, .text = "Second page"}}},
+        }};
     for (auto engine :
          {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
         nordiska::PdfEngine renderer(engine);
@@ -248,7 +296,7 @@ void test_renderers() {
             auto slot = nordiska::append_signature_slot(pdf, capacity, &preparation);
             require(untimed_slot.has_value() && untimed_pdf == pdf,
                     "instrumentation must not change signature preparation output");
-            require(slot.has_value(), slot ? "" : slot.error().message.c_str());
+            require(slot.has_value(), "signature slot preparation failed");
             require(pdf.data() == address, "signature append must not reallocate renderer output");
             require(std::equal(original.begin(), original.end(), pdf.begin()),
                     "incremental update modified original bytes");
@@ -282,9 +330,7 @@ void test_renderers() {
                     "exact-fit CMS rejected");
             require(!nordiska::append_signature_slot(pdf, capacity), "existing revision must be rejected");
             if (capacity == 8192) {
-                write_pdf(std::filesystem::path("signing_samples") /
-                              ("engine-" + std::to_string(static_cast<int>(engine)) + "-stub.pdf"),
-                          pdf);
+                require(nordiska::test::is_valid_pdf_structure(pdf), "signed stub PDF must have valid structure");
             }
         }
     }
@@ -369,6 +415,22 @@ void test_socket_signer_adapter() {
                 "signer failures must map to expected SigningErrorKind");
     }
 
+    require(server.oversized_reply_disconnected(), "oversized reply must exercise a disconnected peer");
+
+    // Test mid-handshake socket disconnects without terminating host process
+    for (auto mode : {MockSignerReply::DisconnectImmediately, MockSignerReply::DisconnectMidRequest,
+                      MockSignerReply::DisconnectMidResponseHeader, MockSignerReply::DisconnectMidResponseBody}) {
+        server.set_reply(mode);
+        nordiska::PdfGenerator generator(config);
+        auto result = generator.generate(payload);
+        require(!result, "socket disconnect must cause signing failure");
+        require(std::holds_alternative<nordiska::SigningError>(result.error().details),
+                "error details must be SigningError");
+        require(std::get<nordiska::SigningError>(result.error().details).kind ==
+                    nordiska::SigningErrorKind::InternalError,
+                "socket disconnect must map to SigningErrorKind::InternalError");
+    }
+
     // Test socket connection failure when server is stopped
     server.stop();
     {
@@ -378,13 +440,41 @@ void test_socket_signer_adapter() {
     }
 
     config.enable_signing = false;
-    nordiska::PdfGenerator deferred(config);
-    nordiska::PipelineTiming deferred_timing;
-    auto result = deferred.generate(payload, &deferred_timing);
-    require(deferred_timing.hash_seconds > 0.0 && deferred_timing.signer_call_seconds == 0.0,
-            "deferred mode must time hashing without recording an external call");
-    require(result.has_value(), "deferred mode generation failed");
-    require(!result->documents[0].signature_slot.is_signed, "deferred document marked signed");
+    for (auto engine :
+         {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
+        config.engine = engine;
+        nordiska::PdfGenerator unsigned_generator(config);
+        nordiska::PipelineTiming timing;
+        auto result = unsigned_generator.generate(payload, &timing);
+        require(result.has_value(), "unsigned generation failed without signer service");
+        require(timing.checksum_seconds > 0.0 && timing.hash_seconds == timing.checksum_seconds,
+                "unsigned generation must only hash the final artifact");
+        require(timing.prepare_seconds == 0.0 && timing.digest_seconds == 0.0 && timing.signer_call_seconds == 0.0 &&
+                    timing.insert_seconds == 0.0,
+                "unsigned generation must skip all signature preparation and signing");
+
+        nordiska::JsonIngestor ingestor;
+        auto job = ingestor.ingest(payload);
+        require(job.has_value(), "unsigned fixture ingestion failed");
+        nordiska::PdfEngine renderer(engine);
+        for (size_t i = 0; i < result->documents.size(); ++i) {
+            const auto& document = result->documents[i];
+            auto layout = nordiska::LayoutBuilder::build(job->documents[i], {.customer_name = job->customer_name});
+            require(layout.has_value(), "unsigned fixture layout failed");
+            auto rendered = renderer.render(*layout);
+            require(rendered.has_value(), "unsigned fixture render failed");
+            require(nordiska::test::same_rendered_pdf(document.pdf_bytes, *rendered),
+                    "unsigned PDF must equal the unmodified renderer output apart from creation time");
+            const std::string pdf(document.pdf_bytes.begin(), document.pdf_bytes.end());
+            require(pdf.find("/ByteRange") == std::string::npos && pdf.find("/Type /Sig") == std::string::npos,
+                    "unsigned PDF must not contain an empty signature revision");
+            require(!document.signature_slot.is_signed && document.signature_slot.max_length == 0 &&
+                        document.signing_digest == nordiska::Sha256Digest{},
+                    "unsigned metadata must not describe a prepared signature");
+            require(document.sha256_hash == independent_hash(document.pdf_bytes),
+                    "unsigned artifact checksum mismatch");
+        }
+    }
 
     ::unsetenv("PDF_SIGNER_SOCKET_PATH");
 }
@@ -400,17 +490,21 @@ void test_real_cms() {
     X509_gmtime_adj(X509_getm_notBefore(cert.get()), 0);
     X509_gmtime_adj(X509_getm_notAfter(cert.get()), 3600);
     X509_set_pubkey(cert.get(), key.get());
-    auto* name = X509_get_subject_name(cert.get());
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, reinterpret_cast<const unsigned char*>("PDF test only"), -1,
-                               -1, 0);
-    X509_set_issuer_name(cert.get(), name);
+    const std::unique_ptr<X509_NAME, decltype(&X509_NAME_free)> name(X509_NAME_new(), X509_NAME_free);
+    require(name != nullptr, "test certificate subject name allocation failed");
+    require(X509_NAME_add_entry_by_txt(name.get(), "CN", MBSTRING_ASC,
+                                       reinterpret_cast<const unsigned char*>("PDF test only"), -1, -1, 0) == 1,
+            "test certificate CN entry failed");
+    require(X509_set_subject_name(cert.get(), name.get()) == 1, "set subject name failed");
+    require(X509_set_issuer_name(cert.get(), name.get()) == 1, "set issuer name failed");
     require(X509_sign(cert.get(), key.get(), EVP_sha256()) > 0, "test certificate signing failed");
 
     for (auto engine :
          {nordiska::PdfEngineKind::Libharu, nordiska::PdfEngineKind::Cairo, nordiska::PdfEngineKind::Native}) {
         nordiska::PdfEngine renderer(engine);
         auto rendered = renderer.render(
-            {.pages = {{.texts = {{.x = 40, .y = 50, .text = "Valid test signature; untrusted certificate"}}}}},
+            {.pages = {{.commands = {nordiska::PositionedText{
+                            .x = 40, .y = 50, .text = "Valid test signature; untrusted certificate"}}}}},
             16384 + nordiska::kSignatureUpdateOverhead);
         require(rendered.has_value(), "test rendering failed");
         auto& pdf = *rendered;
@@ -453,9 +547,7 @@ void test_real_cms() {
                               CMS_BINARY | CMS_NO_SIGNER_CERT_VERIFY);
         };
         require(verify() == 1, "embedded signature failed cryptographic verification");
-        write_pdf(std::filesystem::path("signing_samples") /
-                      ("engine-" + std::to_string(static_cast<int>(engine)) + "-valid-test-cert.pdf"),
-                  pdf);
+        require(nordiska::test::is_valid_pdf_structure(pdf), "CMS-signed PDF must have valid structure");
         pdf[10] ^= 1;
         require(verify() != 1, "tampered PDF unexpectedly verified");
         ERR_clear_error();
@@ -465,7 +557,6 @@ void test_real_cms() {
 } // namespace
 
 int main() {
-    std::filesystem::create_directories("signing_samples");
     test_renderers();
     test_socket_signer_adapter();
     test_real_cms();

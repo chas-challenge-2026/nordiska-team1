@@ -265,4 +265,30 @@ public class SavingsAccountService : ISavingsAccountService
 
         return acc.ToResponse();
     }
+
+    public async Task<AccountInterestSummaryResponse> GetInterestSummaryByCustomerIdAsync(long customerId, CancellationToken cancellationToken = default)
+    {
+        var accounts = await GetByCustomerIdAsync(customerId, cancellationToken);
+        var activeAccounts = accounts.Where(a => a.Status.Equals("active", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (activeAccounts.Count == 0)
+        {
+            return new AccountInterestSummaryResponse(
+                CustomerId: customerId,
+                TotalAccruedInterestYtd: 0m,
+                TotalEstimatedYearEndInterest: 0m,
+                ActiveAccountsCount: 0
+            );
+        }
+
+        var totalAccrued = activeAccounts.Sum(a => a.AccruedInterestYtd);
+        var totalEstimated = activeAccounts.Sum(a => a.EstimatedYearEndInterest);
+
+        return new AccountInterestSummaryResponse(
+            CustomerId: customerId,
+            TotalAccruedInterestYtd: Math.Round(totalAccrued, 2, MidpointRounding.AwayFromZero),
+            TotalEstimatedYearEndInterest: Math.Round(totalEstimated, 2, MidpointRounding.AwayFromZero),
+            ActiveAccountsCount: activeAccounts.Count
+        );
+    }
 }

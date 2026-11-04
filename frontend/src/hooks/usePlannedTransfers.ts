@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { OwnAccount, PlannedTransfer } from "../constants/transferAccounts";
+import type { OwnAccount, PlannedTransfer } from "../types/transferAccounts";
 import type { EditPlannedError } from "../components/transfer/PlannedTransferActionsModal";
 import {
     todayIso,

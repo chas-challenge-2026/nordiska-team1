@@ -10,11 +10,10 @@ import ActionButton from "../accounts/ActionButton";
 import { ReportTimeoutError } from "../../services/reportsTimeout";
 
 type TaxReportBtnProps = {
-    accountId?: number;
     year?: number;
 }
 
-export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
+export default function TaxReportBtn({ year }: TaxReportBtnProps) {
 
     const { t } = useTranslation();
 
@@ -58,9 +57,8 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
     }, [pdfUrl]);
 
     const handleClick = () => {
-        if (accountId == null) return;
         resetDownload();
-        initiate.mutate({ accountId, year: selectedYear });
+        initiate.mutate({ year: selectedYear });
     };
 
     const handleClose = () => {
@@ -75,9 +73,8 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
             <button
                 type="button"
                 onClick={() => setIsOpen(true)}
-                disabled={accountId == null}
                 aria-label={t("accounts-route.aria-label.generate-full-report")}
-                className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-nordiska-blue sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-blue"
+                className="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer bg-primary-blue hover:bg-primary-hover sm:w-auto sm:flex-none sm:px-4 sm:py-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary-blue"
             >
                 <span aria-hidden="true" className="mr-1.5 block h-4 w-4 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat sm:mr-2 sm:h-5 sm:w-5" />
                 {t("accounts-route.full-report")}
@@ -131,7 +128,7 @@ export default function TaxReportBtn({ accountId, year }: TaxReportBtnProps) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => setIsOpen(false)}
-                                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-nordiska-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
+                                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2"
                                 >
                                     <span aria-hidden="true" className="mr-2 h-6 w-6 bg-white mask-[url('/icons/file-pdf.svg')] mask-contain mask-center mask-no-repeat" />
                                     {t("accounts-route.show-report")}

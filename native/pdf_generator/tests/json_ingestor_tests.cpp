@@ -103,7 +103,7 @@ int main() {
     auto dup_res =
         ingestor.ingest(std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(dup_json.data()), dup_json.size()});
     require(!dup_res.has_value(), "duplicate document_id must fail");
-    require(dup_res.error().message.find("Duplicate document_id: duplicate_id") != std::string::npos,
+    require(dup_res.error().code == nordiska::DiagnosticCode::DuplicateDocumentId,
             "error should indicate duplicate id");
 
     // 3. Unsupported document kind rejection
@@ -120,7 +120,7 @@ int main() {
     auto unknown_res = ingestor.ingest(
         std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(unknown_kind_json.data()), unknown_kind_json.size()});
     require(!unknown_res.has_value(), "unknown kind must fail");
-    require(unknown_res.error().message.find("unsupported document kind: unknown_future_kind") != std::string::npos,
+    require(unknown_res.error().code == nordiska::DiagnosticCode::UnsupportedDocumentKind,
             "error should mention unsupported kind");
 
     // 4. Missing required customer_id
@@ -136,8 +136,7 @@ int main() {
     auto missing_cust_res = ingestor.ingest(
         std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(missing_cust_json.data()), missing_cust_json.size()});
     require(!missing_cust_res.has_value(), "missing customer_id must fail");
-    require(missing_cust_res.error().message.find("customer_id") != std::string::npos,
-            "error should mention customer_id");
+    require(missing_cust_res.error().code == nordiska::DiagnosticCode::Required, "error should mention customer_id");
 
     // 5. Zero customer_id
     const std::string zero_cust_json = R"({
@@ -153,7 +152,7 @@ int main() {
     auto zero_cust_res = ingestor.ingest(
         std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(zero_cust_json.data()), zero_cust_json.size()});
     require(!zero_cust_res.has_value(), "zero customer_id must fail");
-    require(zero_cust_res.error().message.find("customer_id must be greater than zero") != std::string::npos,
+    require(zero_cust_res.error().code == nordiska::DiagnosticCode::MustBePositive,
             "error should indicate customer_id > 0");
 
     // 6. Empty documents array
@@ -179,15 +178,14 @@ int main() {
     auto missing_acct_res = ingestor.ingest(
         std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(missing_acct_json.data()), missing_acct_json.size()});
     require(!missing_acct_res.has_value(), "missing account_number must fail");
-    require(missing_acct_res.error().message.find("account_number") != std::string::npos,
-            "error should mention account_number");
+    require(missing_acct_res.error().code == nordiska::DiagnosticCode::Required, "error should mention account_number");
 
     // 8. Malformed JSON syntax
     const std::string malformed_json = "{ bad json ";
     auto malformed_res = ingestor.ingest(
         std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(malformed_json.data()), malformed_json.size()});
     require(!malformed_res.has_value(), "malformed json must fail");
-    require(malformed_res.error().message.find("Malformed JSON") != std::string::npos,
+    require(malformed_res.error().code == nordiska::DiagnosticCode::MalformedJson,
             "error should indicate malformed json");
 
     // 9. PdfGenerator with default config (Libharu) renders golden sample
@@ -255,24 +253,17 @@ int main() {
     require(native_uncomp_res->documents[0].pdf_bytes.size() > native_batch_res->documents[0].pdf_bytes.size(),
             "uncompressed native PDF should be larger than compressed PDF");
 
-    // 14. Verify in-place digital signature slot append across backends
+    // 14. Unsigned golden samples must not carry an empty signature revision.
     for (const auto* batch_res : {&default_batch_res, &cairo_batch_res, &native_batch_res}) {
         require((*batch_res)->documents.size() == 2, "batch must have 2 documents");
         for (const auto& doc : (*batch_res)->documents) {
             const auto& slot = doc.signature_slot;
-            require(slot.offset > 0, "signature slot offset must be non-zero");
-            require(slot.max_length == nordiska::kDefaultSignatureSlotSize,
-                    "signature slot must use configured default hex capacity");
-            require(!slot.is_signed, "initial signature slot must not be marked signed");
-            require(slot.offset + slot.max_length < doc.pdf_bytes.size(), "slot must fit within pdf bytes");
-            require(doc.pdf_bytes[slot.offset - 1] == '<', "preceding byte must be opening '<'");
-            require(doc.pdf_bytes[slot.offset + slot.max_length] == '>', "succeeding byte must be closing '>'");
-            for (size_t i = 0; i < slot.max_length; ++i) {
-                require(doc.pdf_bytes[slot.offset + i] == '0', "slot content must be initialized to '0'");
-            }
+            require(slot.offset == 0 && slot.max_length == 0 && !slot.is_signed,
+                    "unsigned PDF must have no signature slot");
             std::string_view pdf_sv(reinterpret_cast<const char*>(doc.pdf_bytes.data()), doc.pdf_bytes.size());
-            require(pdf_sv.find("/Type /Sig") != std::string_view::npos, "PDF must contain /Type /Sig dictionary");
-            require(pdf_sv.find("/ByteRange [") != std::string_view::npos, "PDF must contain /ByteRange");
+            require(pdf_sv.find("/Type /Sig") == std::string_view::npos,
+                    "unsigned PDF must not contain /Type /Sig dictionary");
+            require(pdf_sv.find("/ByteRange [") == std::string_view::npos, "unsigned PDF must not contain /ByteRange");
         }
     }
 

@@ -8,7 +8,8 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 infra = root / "infra"
-with tempfile.TemporaryDirectory() as temporary:
+(root / "tmp").mkdir(exist_ok=True)
+with tempfile.TemporaryDirectory(dir=root / "tmp") as temporary:
     env = Path(temporary) / ".env"
     env.write_text("\n".join(f"{key}=isolated-config-test" for key in (
         "POSTGRES_BOOTSTRAP_PASSWORD", "NORDISKA_MIGRATOR_PASSWORD", "NORDISKA_API_PASSWORD",
@@ -17,8 +18,8 @@ with tempfile.TemporaryDirectory() as temporary:
     tool_override = Path(temporary) / "compose.override.yml"
     template = (root / "tools/syntheticDB/compose.override.yml").read_text()
     for override in ("docker-compose.override.yml", "docker-compose.frontend-local.yml"):
-        app_service = "api" if override == "docker-compose.frontend-local.yml" else "app"
-        tool_override.write_text(template.replace("\n  app:", f"\n  {app_service}:"))
+        app_service = "app"
+        tool_override.write_text(template)
         for database, volume in (("nordiska_v2", "nordiska-v2_report_documents"),
                                  ("nordiska_synthetic", "nordiska-v2_synthetic_report_documents")):
             environment = dict(os.environ, NORDISKA_DATABASE=database, NORDISKA_REPORT_DOCUMENTS_VOLUME=volume)
@@ -39,7 +40,7 @@ with tempfile.TemporaryDirectory() as temporary:
                 if mount["type"] == "bind":
                     assert Path(mount["source"]).exists(), mount["source"]
             if override == "docker-compose.frontend-local.yml":
-                assert services[app_service]["build"]["target"] == "api"
+                assert services[app_service]["build"]["target"] == "app"
                 assert Path(services["frontend"]["build"]["context"]).resolve() == root
                 assert app_service in services["frontend"]["depends_on"]
                 assert any(mount["source"] == str(root / "frontend") for mount in services["frontend"]["volumes"])

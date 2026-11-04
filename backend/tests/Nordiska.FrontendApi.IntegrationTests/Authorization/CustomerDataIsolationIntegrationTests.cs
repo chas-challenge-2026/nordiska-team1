@@ -198,4 +198,54 @@ public class CustomerDataIsolationIntegrationTests : IClassFixture<CustomAuthWeb
         loans.Should().NotBeNullOrEmpty();
         loans!.Should().OnlyContain(l => l.CustomerId == 2);
     }
+
+    [Fact]
+    public async Task RefreshSession_ForCustomer_RetainsCustomerRoleAndDoesNotElevateToAdmin()
+    {
+        var client = await CreateAuthenticatedClientAsync(AnnaEmail);
+
+        // Session refresh must preserve customer identity even though StaffMember has Id == 1
+        var refreshResp = await client.PostAsync("/api/auth/refresh", null);
+        refreshResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // /api/auth/me should identify as Customer
+        var me = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/auth/me");
+        me.GetProperty("role").GetString().Should().Be("Customer");
+        me.GetProperty("name").GetString().Should().Be("Anna Smith");
+
+        // Accounts list should strictly return only Anna's accounts (CustomerId == 1)
+        var accounts = await client.GetFromJsonAsync<List<SavingsAccountResponse>>("/api/accounts");
+        accounts.Should().NotBeNullOrEmpty();
+        accounts!.Should().OnlyContain(a => a.CustomerId == 1);
+    }
+
+    [Fact]
+    public async Task Admin_GetAccounts_ReturnsEmptyList_NeverCustomerAccounts()
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true
+        });
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin@nordiska.se", "password123"));
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var accounts = await client.GetFromJsonAsync<List<SavingsAccountResponse>>("/api/accounts");
+        accounts.Should().NotBeNull();
+        accounts!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Admin_GetLoans_ReturnsEmptyList_NeverCustomerLoans()
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true
+        });
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin@nordiska.se", "password123"));
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var loans = await client.GetFromJsonAsync<List<LoanResponse>>("/api/loans");
+        loans.Should().NotBeNull();
+        loans!.Should().BeEmpty();
+    }
 }

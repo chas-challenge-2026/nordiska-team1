@@ -15,16 +15,27 @@ body {
   --color-dark-navy: #00102B;
   --color-primary-blue: #0052BD;
   --color-light-blue-accent: #88BCFF;
+  --color-primary-hover: #004297;
+
   --color-secondary: #515C6E;
   --color-light-gray: #ECEBE9;
   --color-nordiska-blue: #134663;
   --color-nordiska-orange: #EDA91B;
   --color-nordiska-orange-hover: #D9990F;
   --color-login-bg: #0F3644;
-  --color-nordiska-bg: #F7F7F6;
+  /* --color-nordiska-bg: #F7F7F6; */
+  --color-nordiska-bg: #F0F6FF;
+  
   --color-error: #DC2626; /* (color-red-600) */
   --color-success: #16A34A; /* (color-green-600) */
   --color-primary-blue-hover: #E8EEF9;
+
+  /* Ytterligare färger från nordiska.se */
+  --color-lightblue: #F0F6FF;
+  --color-bg-beige: #ECEBE9;
+  --color-light-pink: #FCE3F6;
+  --color-custard: #FCF0D4;
+  --color-honey: #E1A345;
 
   --shadow-card: 0 1px 3px rgb(0 16 43 / 0.08);
   --shadow-modal: 0 24px 60px rgb(0 16 43 / 0.32);
@@ -80,4 +91,13 @@ body {
   15% { opacity: 1; }
   85% { opacity: 1; }
   100% { transform: translateX(112px); opacity: 0; }
+}
+
+@keyframes arrow-bounce {
+    0%, 100% { transform: translateX(0);}
+    50% { transform: translateX(5px);}
+}
+
+@utility animate-arrow-bounce {
+    animation: arrow-bounce 0.6s ease-in-out infinite;
 }

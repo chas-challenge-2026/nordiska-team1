@@ -1,6 +1,6 @@
 
 import { useTranslation } from "react-i18next";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import type { SavingGoal } from "../../services/accountsService";
 import { useDeleteSavingsGoal } from "../../hooks/useAccounts";
 import ActionButton from "./ActionButton";
@@ -21,9 +21,9 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
     if (!savingGoal) {
         return (
             <section aria-labelledby="savings-goal-heading">
-                <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
+                <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white sm:text-lg pl-1">{t("accounts-route.savings-goal-title")}</h2>
 
-                <div className="border border-nordiska-blue/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
+                <div className="border border-dark-navy/50 bg-light-gray/30 pb-4 flex flex-col items-center justify-center ">
                     <div className="mt-5 flex w-28 items-center justify-center">
                         <span aria-hidden="true" className="block h-11 w-11 bg-nordiska-orange mask-[url('/icons/target.svg')] mask-contain mask-center mask-no-repeat sm:h-15 sm:w-15" />
                     </div>
@@ -78,53 +78,57 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
 
     return (
         <section aria-labelledby="savings-goal-heading" className="bg-white -mt-1">
-            <h2 id="savings-goal-heading" className="mb-1 ml-1 text-base font-semibold text-dark-navy sm:text-xl">{t("accounts-route.savings-goal-title")}</h2>
-            <div className="border border-nordiska-blue/50 bg-light-gray/30 p-3 sm:p-4">
+            <h2 id="savings-goal-heading" className="bg-dark-navy text-base font-medium text-white  sm:text-lg pl-2 pt-1">{t("accounts-route.savings-goal-title")}</h2>
+            <div className="border border-dark-navy/50 bg-light-gray/30 p-3 sm:p-4">
             <div className="mb-2 flex flex-col items-start justify-between">
-                <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.your-goal")}</p>
+                <p className="text-xs uppercase text-dark-navy sm:text-sm">{t("accounts-route.savings-goal.your-goal")}</p>
                 <p className="mb-2 max-w-full break-words text-xl font-bold text-dark-navy sm:text-xl">{savingGoal.title}</p>
             </div>
 
             <div className="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
                 <div className="relative mx-auto h-40 w-40 max-sm:h-36 max-sm:w-36">
-                    <PercentagePieChart percentage={roundedPercentage} isCompleted={isCompleted} />
+                    <PercentagePieChart percentage={roundedPercentage} />
                 </div>
 
                 <div className="min-w-0">
-                    <div className="flex items-end justify-between gap-3 border border-nordiska-blue/50 bg-primary-blue/10 p-3 max-sm:flex-col max-sm:items-stretch">
+                    <div className="flex items-end justify-between gap-3 border border-dark-navy/50 bg-primary-blue/10 p-3 max-sm:flex-col max-sm:items-stretch">
                         {!isCompleted && (
                             <div className="min-w-0">
-                                <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.remaining")}</p>
-                                <p className="break-words text-xl font-semibold text-dark-navy sm:text-2xl">{formatCurrency(remainingAmount)}</p>
+                                <p className="text-xs uppercase text-dark-navy sm:text-sm">{t("accounts-route.savings-goal.remaining")}</p>
+                                <p className="break-words text-xl font-semibold text-dark-navy">{formatCurrencySmallSek(remainingAmount)}</p>
                             </div>
                         )}
 
                         <div className="min-w-0 max-sm:w-full">
                             {!isCompleted ? (
-                                <p className="text-right text-xs uppercase text-nordiska-blue sm:text-sm max-sm:text-left">{t("accounts-route.savings-goal.goal-amount")}</p>
+                                <p className="text-right text-xs uppercase text-dark-navy sm:text-sm max-sm:text-left">{t("accounts-route.savings-goal.goal-amount")}</p>
                             ) : (
                                 <p className="text-xs font-medium uppercase text-success sm:text-sm">{t("accounts-route.savings-goal.goal-achieved")}</p>
                             )}
-                            <p className="break-words text-xl font-bold text-dark-navy sm:text-2xl">{formatCurrency(targetAmount)}</p>
+                            <p className="break-words text-xl font-bold text-dark-navy">{formatCurrencySmallSek(targetAmount)}</p>
                         </div>
                     </div>
 
-                    <div className="mt-5 flex items-end justify-between border-l-2 border-nordiska-orange py-1 pl-3 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
+                    <div className="mt-5 flex items-end justify-between border-l-2 border-light-blue-accent py-1 pl-3 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
                         {!isCompleted ? (
                             <>
                                 <div className="w-full min-w-0">
-                                    <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.progress-label")}</p>
+                                    <p className="text-xs uppercase text-dark-navysm:text-sm">{t("accounts-route.savings-goal.progress-label")}</p>
                                     <p className="mt-1 break-words text-xs leading-5 sm:text-base font-medium">{getProgressMessage()}</p>
                                 </div>
 
-                                <button type="button" onClick={onDeposit} className="group inline-flex min-w-0 max-w-[60%] flex-1 cursor-pointer items-center justify-center rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold text-primary-blue transition hover:bg-primary-blue hover:text-white sm:w-auto sm:flex-none sm:text-sm max-sm:w-full max-sm:max-w-full max-sm:flex-none">
-                                    <span aria-hidden="true" className="mr-1.5 block h-4 w-4 shrink-0 bg-primary-blue mask-[url('/icons/deposit.svg')] mask-contain mask-center mask-no-repeat group-hover:bg-white sm:mr-2 sm:h-5 sm:w-5" />
-                                    {t("accounts-route.savings-goal.deposit")}
-                                </button>
+                                <div className="shrink-0">
+                                    <ActionButton 
+                                        onClick={onDeposit}
+                                        prefixIcon="/icons/deposit.svg"
+                                        title={t("accounts-route.savings-goal.deposit")}
+                                        ariaLabel={t("accounts-route.savings-goal.deposit")}
+                                    />
+                                </div>
                             </>
                         ) : (
                             <div className="w-full min-w-0">
-                                <p className="text-xs uppercase text-nordiska-blue sm:text-sm">{t("accounts-route.savings-goal.completed-title")}</p>
+                                <p className="text-xs uppercase text-dark-navy sm:text-sm">{t("accounts-route.savings-goal.completed-title")}</p>
                                 <p className="mt-1 break-words text-xs leading-5 sm:text-base">
                                     {t("accounts-route.savings-goal.completed-info")} <span className="font-medium">"{savingGoal.title}"</span> {t("accounts-route.savings-goal.completed-info-suffix")}
                                 </p>
@@ -141,7 +145,7 @@ export default function SavingsGoalSection({ savingGoal, accountAmount, onDeposi
             {!isCompleted ? (
                 <div className="mt-6 flex justify-end gap-3 sm:gap-5 max-sm:flex-col max-sm:items-stretch">
                     <ActionButton
-                        style="regular"
+                        style="light"
                         onClick={() => onEdit(false)}
                         ariaLabel={t("accounts-route.savings-goal.edit")}
                         prefixIcon="/icons/target.svg"

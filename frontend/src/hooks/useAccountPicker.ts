@@ -8,7 +8,7 @@ import { formatCurrency } from "../utils/currency";
 import type {
     OwnAccount,
     TransferAccount,
-} from "../constants/transferAccounts";
+} from "../types/transferAccounts";
 import { useExternalAccounts } from "./useExternalAccounts";
 
 type UseAccountPickerArgs = {

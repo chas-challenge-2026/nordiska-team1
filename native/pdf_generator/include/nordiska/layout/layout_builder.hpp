@@ -1,11 +1,14 @@
 #pragma once
 
+#include "nordiska/diagnostics/diagnostic.hpp"
 #include "nordiska/domain/document_types.hpp"
 #include "nordiska/domain/pdf_rendering_job.hpp"
 #include "nordiska/layout/document_layout.hpp"
+#include "nordiska/layout/report_style.hpp"
 
 #include <expected>
 #include <string>
+#include <string_view>
 
 namespace nordiska {
 
@@ -17,14 +20,23 @@ enum class LayoutErrorKind {
 
 struct LayoutError {
     LayoutErrorKind kind{LayoutErrorKind::InternalError};
-    std::string message;
+    DiagnosticCode code{DiagnosticCode::UnexpectedFailure};
+    DiagnosticLocation location{};
+};
+
+struct LayoutContext {
+    std::string_view customer_name;
+    ReportProfile report_profile{ReportProfile::LightBlue};
 };
 
 class LayoutBuilder {
   public:
-    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build(const Document& doc);
-    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_statement(const AccountStatement& stmt);
-    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_tax_report(const AnnualTaxReport& tax);
+    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build(const Document& doc,
+                                                                          LayoutContext context = {});
+    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_statement(const AccountStatement& stmt,
+                                                                                    LayoutContext context = {});
+    [[nodiscard]] static std::expected<DocumentLayout, LayoutError> build_tax_report(const AnnualTaxReport& tax,
+                                                                                     LayoutContext context = {});
 };
 
 } // namespace nordiska

@@ -139,7 +139,7 @@ export default function AddAccountForm({ onCancel, onSave }: AddAccountFormProps
                         onChange={(e) =>
                             handleTypeChange(e.target.value as NewAccountType)
                         }
-                        className="mt-1 w-full rounded-md border border-nordiska-blue bg-white px-3 py-2"
+                        className="mt-1 w-full rounded-md border border-primary-hover bg-white px-3 py-2"
                     >
                         <option value="" disabled>
                             {t("page-transfer.add-account.type-placeholder")}

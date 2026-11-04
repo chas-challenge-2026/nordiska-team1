@@ -1,5 +1,6 @@
 add_executable(pdf_generator
     main.cpp
+    output.cpp
 )
 
 set_target_properties(pdf_generator PROPERTIES

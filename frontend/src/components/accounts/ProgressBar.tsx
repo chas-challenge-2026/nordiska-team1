@@ -31,7 +31,7 @@ export default function ProgressBar(props: ProgressBarProps) {
                 start: toUtcDay(props.createdAt),
                 current: toUtcDay(new Date().toISOString()),
                 target: toUtcDay(props.targetDate),
-                color: props.color ?? "#134663",
+                color: props.color ?? "#88BCFF",
             }
             : {
                 start: props.start,
@@ -64,7 +64,7 @@ export default function ProgressBar(props: ProgressBarProps) {
             {props.type === "time" && (
                 <div className="mb-1 ml-1 mt-8 flex flex-col items-start justify-between">
                     <p className="text-xl font-semibold text-dark-navy sm:text-xl">{props.targetDate.slice(0, 10)}</p>
-                    <p className="mb-2 text-xs uppercase text-nordiska-blue sm:text-sm">{t("progress-bar.target-date-label")}</p>
+                    <p className="mb-2 text-xs uppercase text-dark-navy sm:text-sm">{t("progress-bar.target-date-label")}</p>
                 </div>
             )}
 
@@ -73,7 +73,7 @@ export default function ProgressBar(props: ProgressBarProps) {
                     <BarChart data={data} layout="vertical" margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                         <XAxis type="number" domain={[0, 100]} hide />
                         <YAxis type="category" dataKey="name" hide />
-                        <Bar dataKey="value" fill={color} background={{ fill: "#E5E7EB", radius: 10 }} barSize={20} radius={10} isAnimationActive={false} />
+                        <Bar dataKey="value" fill={color} background={{ fill: "#E5E7EB", radius: 8 }} barSize={15} radius={100} isAnimationActive={false} />
                     </BarChart>
                 </ResponsiveContainer>
 

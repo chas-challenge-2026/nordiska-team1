@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { type Account } from "../../services/accountsService";
 import { useTranslation } from "react-i18next";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import PanelHeader from "./PanelHeader";
 
 interface AccountSelectorProps {
@@ -37,19 +37,21 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
     const renderAccount = (acc: Account) => {
         const isSelected = selectedIds.includes(acc.id);
         return (
-            <li key={acc.id}>
-                <label className={`flex cursor-pointer items-center gap-3 border-b border-primary-blue/40 py-3 ${isSheet ? '' : 'px-4'} ${isSelected ? 'bg-primary-blue/10' : 'bg-white hover:bg-primary-blue/10'}`}>
+            <li key={acc.id} >
+                <label className={`flex cursor-pointer items-center gap-3 border-b truncate border-primary-blue/40 py-3 ${isSheet ? '' : 'px-4'} ${isSelected ? 'bg-primary-blue/10' : 'bg-white hover:bg-primary-blue/10'}`}>
                     <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleOne(acc.id)}
                         className="cursor-pointer accent-primary-blue"
                     />
-                    <span className="min-w-0">
-                        <span className="block truncate text-xs text-dark-navy">
-                            {acc.accountNumber} • <span className="font-semibold">{formatCurrency(acc.balance)}</span>
+                    <span className="min-w-0 flex-1 flex flex-col">
+                        <span className="truncate text-xs text-dark-navy">
+                            {acc.accountNumber} • <span className="font-semibold">{formatCurrencySmallSek(acc.balance)}</span>
                         </span>
-                        <span className="mt-0.5 block truncate text-sm font-semibold">
+                        <span 
+                        title={acc.accountName ? acc.accountName : t(`accounts-route.account-type-${acc.accountType}`)}
+                        className="mt-0.5 truncate text-sm font-semibold ">
                             {acc.accountName || t(`accounts-route.account-type-${acc.accountType}`)}
                             {acc.status === "closed" && (
                                 <span className="ml-1 text-xs font-normal text-secondary">({t("transactions-route.closed")})</span>
@@ -75,7 +77,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
     };
 
     return (
-        <div className={isSheet ? 'relative bg-white px-4 pb-4 text-dark-navy' : 'relative overflow-hidden border border-gray-200 bg-white text-dark-navy shadow-sm'}>
+        <div className={isSheet ? 'relative bg-white px-4 pb-4 text-dark-navy' : 'relative overflow-hidden border border-gray-300 bg-white text-dark-navy shadow-md/30'}>
             {!isSheet && <PanelHeader subtitle={t("transactions-route.accounts-subtitle")} title={t("generic.account")} />}
 
             {isLoading && (
@@ -108,7 +110,7 @@ export default function AccountSelector({ accounts, selectedIds, onChange, isLoa
                         </label>
                     </div>
 
-                    <fieldset>
+                    <fieldset className="w-full min-w-0">
                         <legend className="sr-only">{t("transactions-route.account-select")}</legend>
                         <ul>{activeAccounts.map(renderAccount)}</ul>
                         {isSheet && visibleAccounts.length === 0 && (

@@ -25,14 +25,14 @@ const FaqSearch = ({
                 }
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full bg-white rounded-2xl py-1.5 sm:py-2.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange"
+                className="w-full bg-white rounded-3xl py-2 sm:py-1.5 pl-4 pr-10 text-sm sm:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-light-blue-accent"
             />
 
             {value && (
                 <button
                     type="button"
                     onClick={() => onChange("")}
-                    className="absolute right-7 sm-right-3 top-1/2 -translate-y-1/2 cursor-pointer text-primary-blue text-2xl leading-none hover:text-dark-navy focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange rounded"
+                    className="absolute right-5 sm-right-3 top-1/2 -translate-y-1/2 cursor-pointer text-primary-blue text-2xl leading-none hover:text-dark-navy focus:outline-none focus-visible:ring-2 focus-visible:ring-nordiska-orange rounded"
                     aria-label={t("faq.faq-search.aria-label")}
                 >
                     ×

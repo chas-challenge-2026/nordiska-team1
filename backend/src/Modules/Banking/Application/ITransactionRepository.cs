@@ -14,6 +14,9 @@ public interface ITransactionRepository
     Task<LedgerEntry?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<List<LedgerEntry>> GetPendingPlannedTransactionsAsync(DateTime asOfUtc, CancellationToken cancellationToken = default);
     Task<long> CreateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
+    Task<long> CreateLedgerEntry(LedgerEntry entry, CancellationToken cancellationToken = default);
+    Task<LedgerEntry> CreateTransferAsync(TransferRequest request, CancellationToken cancellationToken = default);
+    Task<LedgerEntry?> ProcessPlannedTransactionAsync(long ledgerEntryId, DateTime asOfUtc, CancellationToken cancellationToken = default);
     Task<bool> UpdateAsync(LedgerEntry entry, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
     Task<LedgerEntry?> GetPlannedTransactionByGoalIdAsync(long savingsGoalId, CancellationToken cancellationToken = default)

@@ -100,7 +100,9 @@ public record FaqQueryParameters(
     string? SearchTerm = null,
     string? Category = null,
     string? Keyword = null,
-    string? Lang = null
+    string? Lang = null,
+    string? SortBy = null,
+    string? SortOrder = null
 );
 
 /// <summary>

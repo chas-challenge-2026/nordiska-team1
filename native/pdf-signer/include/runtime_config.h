@@ -14,5 +14,7 @@ const char* runtime_config_tsa_url(void);
 
 unsigned short runtime_config_tsa_port(void);
 long           runtime_config_tsa_timeout_ms(void);
+unsigned int   runtime_config_tsa_worker_count(void);
+unsigned int   runtime_config_tsa_http_worker_count(void);
 
 #endif

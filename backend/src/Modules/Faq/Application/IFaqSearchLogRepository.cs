@@ -9,5 +9,7 @@ public interface IFaqSearchLogRepository
 
     Task<IReadOnlyList<FaqContentGapResponse>> GetContentGapsAsync(string? language, DateTime since, int limit, CancellationToken cancellationToken = default);
 
+    Task<FaqSearchAnalyticsResponse> GetAnalyticsAsync(string? language, DateTime since, int limit, CancellationToken cancellationToken = default);
+
     Task<int> DeleteOlderThanAsync(DateTime cutoff, CancellationToken cancellationToken = default);
 }

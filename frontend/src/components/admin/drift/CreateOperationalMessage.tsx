@@ -1,13 +1,14 @@
 
 import { useNavigate } from "react-router";
 import OperationalMessageForm from "./OperationalMessageForm";
+import { AdminPageTitle } from "../ui/AdminTitle";
 
 export default function CreateOperationalMessage() {
     const navigate = useNavigate();
 
     return (
     <>
-        <h1 className="text-3xl font-semibold py-2.5 bg-black text-white text-center">Skapa driftmeddelande</h1>
+        <AdminPageTitle>Skapa driftmeddelande</AdminPageTitle>
         <section className="mt-10 space-y-4">
             <OperationalMessageForm
                 onCancel={() => navigate("/admin/operational-message")}

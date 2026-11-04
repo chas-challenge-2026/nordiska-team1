@@ -5,7 +5,7 @@ import Modal from "../modals/Modal";
 import InputField from "../forms/InputField";
 import { CollapsibleFormBtns } from "../forms/CollapsibleFormButtons";
 import RecurrenceFields from "./RecurrenceFields";
-import type { PlannedTransfer } from "../../constants/transferAccounts";
+import type { PlannedTransfer } from "../../types/transferAccounts";
 import type { PlannedTransferChanges } from "../../hooks/usePlannedTransfers";
 import { useRecurrence } from "../../hooks/useRecurrence";
 
@@ -119,7 +119,7 @@ export default function PlannedTransferActionsModal({
                             onChange={(e) =>
                                 recurrence.setRecurring(e.target.checked)
                             }
-                            className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-nordiska-blue)]"
+                            className="h-4.5 w-4.5 cursor-pointer accent-[var(--color-primary-hover)]"
                         />
                         {t("page-transfer.recurring-label")}
                     </label>

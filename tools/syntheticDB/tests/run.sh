@@ -13,6 +13,8 @@ case "${1:---cli}" in
   --help|-h) usage; exit 0;;
   *) usage >&2; exit 2;;
 esac
+mkdir -p "${repo_root}/tmp"
+export TMPDIR="${TMPDIR:-${repo_root}/tmp}"
 test_dir=$(mktemp -d)
 trap 'rm -rf -- "$test_dir"' EXIT
 if [[ ${1:---cli} == --native ]]; then

@@ -30,6 +30,8 @@ public sealed class FaqController(FaqService service) : ControllerBase
     /// <param name="search">Free text search term across question, answer, and keywords.</param>
     /// <param name="category">Category filter (e.g. 'Ränta', 'Interest').</param>
     /// <param name="keyword">Keyword filter (e.g. 'ränta', 'deposit').</param>
+    /// <param name="sortBy">Optional sort field: id, helpful, or views (views are counted over the last 30 days).</param>
+    /// <param name="sortOrder">Optional direction: asc or desc. Defaults to asc for id and desc for helpful/views.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Paginated list of FAQ entries matching the criteria.</response>
     /// <response code="400">Validation failed for query parameters.</response>
@@ -44,6 +46,8 @@ public sealed class FaqController(FaqService service) : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] string? category = null,
         [FromQuery] string? keyword = null,
+        [FromQuery, RegularExpression("^(id|helpful|views)$", ErrorMessage = "sortBy must be id, helpful, or views.")] string? sortBy = null,
+        [FromQuery, RegularExpression("^(asc|desc)$", ErrorMessage = "sortOrder must be asc or desc.")] string? sortOrder = null,
         CancellationToken cancellationToken = default)
     {
         var parameters = new FaqQueryParameters(
@@ -52,7 +56,9 @@ public sealed class FaqController(FaqService service) : ControllerBase
             SearchTerm: search,
             Category: category,
             Keyword: keyword,
-            Lang: lang);
+            Lang: lang,
+            SortBy: sortBy,
+            SortOrder: sortOrder);
 
         var result = await service.GetByLanguagePagedAsync(parameters, GetSessionKey(), cancellationToken);
         return Ok(result);
@@ -85,6 +91,23 @@ public sealed class FaqController(FaqService service) : ControllerBase
     {
         var gaps = await service.GetContentGapsAsync(lang, days, limit, cancellationToken);
         return Ok(gaps);
+    }
+
+    /// <summary>
+    /// Returns aggregate FAQ search and view analytics. Requires the faq:manage permission.
+    /// </summary>
+    [HttpGet("analytics/summary")]
+    [Authorize(Policy = "faq:manage")]
+    [ProducesResponseType(typeof(FaqAnalyticsSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<FaqAnalyticsSummaryResponse>> GetAnalyticsSummary(
+        [FromQuery, RegularExpression("^(sv|en)$")] string? lang = null,
+        [FromQuery, Range(1, 90)] int days = 30,
+        [FromQuery, Range(1, 50)] int limit = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var summary = await service.GetAnalyticsSummaryAsync(lang, days, limit, cancellationToken);
+        return Ok(summary);
     }
 
     /// <summary>
@@ -495,7 +518,7 @@ public sealed class FaqController(FaqService service) : ControllerBase
         [FromQuery] SearchFaqRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await service.SearchAsync(request, cancellationToken);
+        var result = await service.SearchAsync(request, cancellationToken, GetSessionKey());
         return Ok(result);
     }
 
@@ -508,23 +531,29 @@ public sealed class FaqController(FaqService service) : ControllerBase
         return $"{ip}|{userAgent}";
     }
 
-[HttpGet("best-match")]
-[AllowAnonymous]
-[ProducesResponseType(typeof(FaqEntryResponse), StatusCodes.Status200OK)]
-[ProducesResponseType(StatusCodes.Status204NoContent)]
-[ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-public async Task<ActionResult<FaqEntryResponse>> BestMatch(
-    [FromQuery, Required, StringLength(500)] string q,
-    [FromQuery, StringLength(10)] string? lang,
-    CancellationToken cancellationToken)
-{
-    var match = await service.GetBestMatchAsync(q, lang, cancellationToken);
-
-    if (match is null)
+    [HttpGet("best-match")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FaqEntryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<FaqEntryResponse>> BestMatch(
+        [FromQuery, Required, StringLength(500)] string q,
+        [FromQuery, RegularExpression("^(sv|en)$")] string? lang,
+        [FromQuery, StringLength(200)] string? category,
+        CancellationToken cancellationToken)
     {
-        return NoContent();
-    }
+        var match = await service.GetBestMatchAsync(
+            q,
+            lang,
+            category,
+            GetSessionKey(),
+            cancellationToken);
 
-    return Ok(match.Entry);
-}
+        if (match is null)
+        {
+            return NoContent();
+        }
+
+        return Ok(match.Entry);
+    }
 }

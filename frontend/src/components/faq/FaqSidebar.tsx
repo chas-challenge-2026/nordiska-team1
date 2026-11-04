@@ -20,7 +20,7 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
                         type="button"
                         title={i18n.language === "sv" ? "Switch to english" : "Växla till svenska"}
                         onClick={toggleLanguage}
-                        className="text-primary-blue text-xs font-semibold cursor-pointer hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
+                        className="text-primary-blue text-xs font-semibold cursor-pointer hover:text-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
     >
                             {t("faq.faq-sidebar.answer.change-language-action")}
                     </button>,
@@ -30,7 +30,7 @@ export default function FaqSidebar({onLanguageChange}: FaqSidebarProps)  {
             answer: t("faq.faq-sidebar.answer.update-info"),
             action: <Link
                         to="/settings"
-                        className="text-primary-blue text-xs text-center font-semibold hover:text-nordiska-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
+                        className="text-primary-blue text-xs text-center font-semibold hover:text-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue"
                     >
                         {t("faq.faq-sidebar.answer.update-info-action")}
                     </Link>,

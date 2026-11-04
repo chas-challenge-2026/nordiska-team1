@@ -19,4 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Banking\Nordiska.Modules.Banking.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/InMemoryAtomicTransactions.cs" Link="TestSupport/InMemoryAtomicTransactions.cs" />
+  </ItemGroup>
 </Project>

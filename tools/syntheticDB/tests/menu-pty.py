@@ -114,6 +114,7 @@ def assert_layout(view, controls, title=None):
     if title:
         assert lines[0].strip() == title, view
     assert lines[1].strip() == '-' * 50, view
+    assert controls in [line.strip() for line in lines], view
     footer = next(i for i, line in enumerate(lines) if line.strip() == controls)
     assert lines[footer - 1].strip() == '-' * 50, view
     assert not any(line.strip() for line in lines[footer + 4:]), view
@@ -123,7 +124,7 @@ fixture(saved='nordiska_synthetic', runtime='nordiska_v2')
 terminal = Terminal()
 terminal.wait(b'   Exit')
 view = terminal.screen()
-assert_layout(view, 'Up/Down Navigate   Enter Select   Esc Exit', 'Synthetic Data Manager [Active DB: NORMAL]')
+assert_layout(view, 'Up/Down Navigate   Enter Select   R Refresh   Esc Exit', 'Synthetic Data Manager [Active DB: NORMAL]')
 assert view.count('Switch to SYNTHETIC DB') == 1
 assert 'Switch to SYNTHETIC DB' in view
 assert '1,003' in view and '70,722' in view
@@ -136,6 +137,22 @@ terminal.send(b'\x1b[A\x1b[B')
 terminal.wait(b'> Switch to SYNTHETIC DB')
 terminal.finish()
 print('PASS: compact 80x24 main screen, actual state, no append or diagnostic noise')
+
+fixture()
+terminal = Terminal()
+terminal.wait(b'   Exit')
+for key, runtime, label in ((b'r', 'runtime-synthetic', 'SYNTHETIC'),
+                            (b'R', 'runtime-normal', 'NORMAL')):
+    for marker in ('runtime-normal', 'runtime-synthetic'):
+        (state / marker).unlink(missing_ok=True)
+    (state / runtime).touch()
+    terminal.send(key)
+    terminal.wait(b'Status refreshed.')
+    assert f'Active DB: {label}' in terminal.screen()
+    assert '> Refresh status' in terminal.screen()
+assert ' up ' not in (state / 'calls').read_text()
+terminal.finish()
+print('PASS: lowercase and uppercase refresh reload running state without recreating services')
 
 fixture()
 (state / 'slow-up').touch()
@@ -161,7 +178,7 @@ print('PASS: one-selection switching, animated spinner, direction refresh and pr
 fixture()
 terminal = Terminal()
 terminal.wait(b'   Exit')
-terminal.send(b'\x1b[A\x1b[A\r')
+terminal.send(b'\x1b[A\x1b[A\x1b[A\r')
 terminal.wait(b'Esc Back')
 assert 'Random customer login' in terminal.screen()
 assert_layout(terminal.screen(), 'Esc Back', 'Random customer login from NORMAL DB')
@@ -272,7 +289,7 @@ fixture(runtime='nordiska_synthetic')
 (state / 'unicode-customer').touch()
 terminal = Terminal()
 terminal.wait(b'   Exit')
-terminal.send(b'\x1b[A\x1b[A\r')
+terminal.send(b'\x1b[A\x1b[A\x1b[A\r')
 terminal.wait(b'Esc Back')
 view = terminal.screen()
 assert 'Random customer login from SYNTHETIC DB' in view
@@ -323,7 +340,7 @@ fixture()
 terminal = Terminal()
 terminal.wait(b'   Exit')
 (state / 'no-login-customer').touch()
-terminal.send(b'\x1b[A\x1b[A\r')
+terminal.send(b'\x1b[A\x1b[A\x1b[A\r')
 terminal.wait(b'Error:')
 view = terminal.screen()
 assert 'Show random customer login' not in view

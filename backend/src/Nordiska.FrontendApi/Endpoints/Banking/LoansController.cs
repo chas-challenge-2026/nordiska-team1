@@ -36,9 +36,12 @@ public sealed class LoansController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<LoanResponse>>> GetAll(CancellationToken cancellationToken)
     {
-        var results = User.IsAdmin()
-            ? await _service.GetAllAsync(cancellationToken)
-            : await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), cancellationToken);
+        if (User.IsStaff())
+        {
+            return Ok(Enumerable.Empty<LoanResponse>());
+        }
+
+        var results = await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), cancellationToken);
 
         return Ok(results);
     }

@@ -40,3 +40,19 @@ public record SavingsAccountResponse(
     /// </summary>
     public string Type => AccountType;
 }
+
+/// <summary>
+/// Aggregated interest summary across all active accounts for a customer.
+/// </summary>
+/// <param name="CustomerId">The customer identifier owning the accounts.</param>
+/// <param name="TotalAccruedInterestYtd">Sum of interest earned year-to-date across all active accounts.</param>
+/// <param name="TotalEstimatedYearEndInterest">Sum of projected year-end interest across all active accounts.</param>
+/// <param name="ActiveAccountsCount">The number of active accounts included in the calculation.</param>
+/// <param name="CurrencyCode">The currency code (default: SEK).</param>
+public record AccountInterestSummaryResponse(
+    long CustomerId,
+    decimal TotalAccruedInterestYtd,
+    decimal TotalEstimatedYearEndInterest,
+    int ActiveAccountsCount,
+    string CurrencyCode = "SEK"
+);

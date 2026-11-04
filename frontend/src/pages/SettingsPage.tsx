@@ -56,7 +56,7 @@ export default function SettingsPage() {
                 <button
                     type="button"
                     onClick={ () => navigate(-1)}
-                    className="absolute right-4 top-4 z-10 hidden min-h-11 items-center gap-2 rounded-sm px-2 font-montserrat text-sm font-semibold uppercase text-primary-blue cursor-pointer transition-colors hover:text-nordiska-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy md:flex"
+                    className="absolute right-4 top-4 z-10 hidden min-h-11 items-center gap-2 rounded-sm px-2 font-montserrat text-sm font-semibold uppercase text-primary-blue cursor-pointer transition-colors hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy md:flex"
                 >
                     <span>{t("generic.close")}</span>
 
@@ -75,7 +75,7 @@ export default function SettingsPage() {
                 >
                     <h1
                         id="settings-title"
-                        className="-mt-5 mb-8 border-b-2 border-nordiska-orange pb-2 text-2xl font-bold uppercase tracking-wider sm:text-3xl"
+                        className="-mt-5 mb-8 border-b-2 border-light-blue-accent pb-2 text-2xl font-bold uppercase tracking-wider sm:text-3xl"
                     >
                         {t("settings-route.page-title")}
                     </h1>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
 
                     <Link
                         to="/help"
-                        className="group flex min-h-11 items-center justify-end rounded-sm font-semibold text-primary-blue transition-colors hover:text-nordiska-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy"
+                        className="group flex min-h-11 items-center justify-end rounded-sm font-semibold text-primary-blue transition-colors hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-navy"
                     >
                         <span>{t("settings-route.help-link")}</span>
 

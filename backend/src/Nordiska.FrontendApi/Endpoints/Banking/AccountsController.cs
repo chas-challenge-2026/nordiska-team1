@@ -44,10 +44,12 @@ public class AccountsController : ControllerBase
         [FromQuery] bool? isFavorite,
         CancellationToken cancellationToken)
     {
-        // Filter in the query so other customers' accounts never leave the database
-        var results = User.IsAdmin()
-            ? await _service.GetAllAsync(isFavorite, cancellationToken)
-            : await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), isFavorite, cancellationToken);
+        if (User.IsStaff())
+        {
+            return Ok(Enumerable.Empty<SavingsAccountResponse>());
+        }
+
+        var results = await _service.GetByCustomerIdAsync(User.GetRequiredCustomerId(), isFavorite, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(type))
         {
@@ -58,6 +60,31 @@ public class AccountsController : ControllerBase
             results = results.Where(a => a.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
         }
         return Ok(results);
+    }
+
+    /// <summary>
+    /// Retrieves an aggregated interest summary (accrued YTD and projected year-end total) across all active bank accounts for the authenticated customer.
+    /// </summary>
+    /// <remarks>
+    /// Calculates the sum of accrued interest since January 1st (YTD) and projected total interest by December 31st
+    /// across all active bank accounts owned by the authenticated customer.
+    ///
+    /// - **totalAccruedInterestYtd:** Combined interest earned day-by-day from Jan 1st up to today.
+    /// - **totalEstimatedYearEndInterest:** Combined projected total interest at year-end based on current account balances.
+    /// - **activeAccountsCount:** Number of active accounts included in the calculation (closed accounts are excluded).
+    /// - **currencyCode:** Account currency code (e.g., "SEK").
+    /// </remarks>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Aggregated interest summary for active accounts.</response>
+    /// <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+    [HttpGet("interest-summary")]
+    [ProducesResponseType(typeof(AccountInterestSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AccountInterestSummaryResponse>> GetInterestSummary(CancellationToken cancellationToken)
+    {
+        var customerId = User.GetRequiredCustomerId();
+        var summary = await _service.GetInterestSummaryByCustomerIdAsync(customerId, cancellationToken);
+        return Ok(summary);
     }
 
     /// <summary>

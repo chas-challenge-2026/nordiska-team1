@@ -1,0 +1,6 @@
+build/
+bin/
+*.o
+*.a
+runs/*.txt
+!runs/.gitkeep

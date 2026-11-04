@@ -33,7 +33,7 @@ export default function FaqHeader({
                 }}
             className="bg-dark-navy pb-3 sm:pb-4 sticky pt-5"
         >
-            <h1 className="text-white text-xl sm:text-4xl font-montserrat-alternates text-center font-semibold sm:text-2xl">
+            <h1 className="text-white text-xl md:text-3xl font-montserrat-alternates text-center font-semibold sm:text-2xl">
                 {t("faq.faq-header.title")}
             </h1>
 

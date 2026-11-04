@@ -15,13 +15,20 @@
         "yes": "Yes",
         "no": "No",
         "account": "Account",
+        "handle-account": "Manage account",
+        "account-number": "Account number",
         "savings-account": "Savings account",
+        "savings-goal": "Savings goal",
         "interest": "Interest",
         "filter": "Filter",
         "showing": "Showing",
         "of": "of",
         "transactions": "transactions",
         "balance": "Balance",
+        "total": "Total",
+        "amount": "Amount",
+        "accrued": "Accrued",
+        "forecast": "Projected",
         "tax-report": "Tax report",
         "log-out": "Log out",
         "stay": "Stay",
@@ -127,6 +134,7 @@
  
 
     "accounts-route": {
+        "create-new-account": "Create new account",
         "info": "Account Information",
         "overview": "Balance & Actions",
         "favorite-error": "You can have a maximum of 4 favorite accounts. Remove a favorite to add a new one.",
@@ -136,13 +144,19 @@
         "account-type-flex": "Flexible savings account",
         "account-type-fix": "Fixed-term savings account",
         "account-type-premium": "Premium account",
+        "best-rate": "Best rate",
+        "account-type-desc-fix": "3-month lock-in",
+        "account-type-desc-premium": "Our top rate for larger savings",
+        "account-type-desc-flex": "Variable rate, free withdrawals",
+        "account-type-desc-saving": "High-yield savings account",
+        "account-type-desc-standard": "Safe everyday savings",
         "account-name": "Account name",
         "savings-goal-title": "Savings goal",
         "actions": "Account management",
         "favorite": "Add to favorites",
         "no-favorite": "Remove favorite",
         "close-account": "Close account",
-        "help-card-search": "reports account terms",
+        "help-card-search": "deposits, account statements, closing an account, opening a new account, savings goals, interest",
 
         "accounts-header": {
             "my-accounts": "My accounts",
@@ -159,10 +173,26 @@
             "no-transactions": "There are no transactions associated with this account"
         },
         "interest-section": {
-            "accured-interest": "Interest earned",
-            "accured-interest-info": "Interest earned is calculated from January 1 each year.",
-            "yearly-interest": "Estimated annual interest",
+            "accured-interest": "Accrued interest",
+            "accured-interest-info": "Accrued interest is calculated from January 1 each year.",
+            "yearly-interest": "Projected interest",
             "yearly-interest-info": "Annual interest is calculated based on the current balance."
+        },
+        "forecast-section": {
+            "heading": "Savings forecast",
+            "earned-interest": "of which estimated interest earned",
+            "total": "Total estimated savings",
+            "monthly-saving": "Monthly saving",
+            "saving-period": "Saving period",
+            "years": "{{count}} years",
+            "years_one": "{{count}} year",
+            "years-unit": "years",
+            "start-deposit": "Initial deposit",
+            "start-amount": "Starting amount (account balance)",
+            "interest-rate": "Interest rate",
+            "edit": "Edit {{label}}",
+            "move-money": "Move money here",
+            "info": "The calculation is based on the account's current balance and interest rate."
         },
         "savings-goal": {
             "no-goal-title": "Set a savings goal and track your progress",
@@ -212,6 +242,9 @@
 
         "account-type-required": "Account type is required",
         "select-account-type": "Select account type",
+        "create-forecast-info": "The example uses the account type's current rate.",
+        "compare-accounts": "Compare accounts with a savings forecast",
+        "back-to-create": "Back",
 
         "initial-deposit": "Initial deposit",
         "interest-rate": "Interest rate",
@@ -225,7 +258,7 @@
         "closing": "Closing...",
         "loading-account-types": "Loading account types...",
         "error-account-types": "Could not retrieve account types.",
-        "payback": "Interest earned and estimated annual interest",
+        "payback": "Projected interest payout",
 
         "generate-statement": "Generate account statement",
         "show-statement": "View account statement",
@@ -270,6 +303,19 @@
         "percentage": "{{percentage}}%"
     },
 "overview-route": {
+    "view-favorites": "Show favorite accounts only",
+    "view-extended": "Extended overview",
+    "view-default": "Account overview",
+    "show-all": "Show all",
+    "show-favs": "Show favorites",
+    "loading": "Loading overview",
+    "error": "Could not load overview",
+    "inbox": "Go to inbox",
+    "unread": "You have unread notifications",
+    "no-accounts": "You don't have any accounts to display yet",
+    "no-accounts-description": "Start saving with Nordiska and let your money grow with competitive savings interest rates, no account fees and a Swedish government deposit guarantee.",
+    "no-favs": "You have no favoritemarked accounts",
+    "no-favs-description": "Mark up to 4 accounts as favorites in the account view, which you find under the \"Bank Accounts\" tab.",
     "edit-moved": "{{card}} moved to position {{position}} of {{total}}.",
     "card-accounts": "My accounts",
     "card-savings": "Savings goals",
@@ -284,18 +330,37 @@
 
     "account-card": {
         "title": "Balance",
-        "description": "Total balance and balances for favorite accounts",
+        "description": "Total balance and balances for accounts",
         "description-no-favorites": "Mark account as favorite to show balance here",
         "pending": "Loading your accounts",
         "error": "Oops... Something went wrong",
         "total-balance": "Total balance",
-        "hover-title": "Open account"
+        "hover-title": "Open account",
+        "hover-total": "Your total balance at Nordiska."
+    },
+
+    "interest-card": {
+        "hover-total": "Total accrued interest and projected total interest payout",
+        "description": "Accrued interest and projected annual interest",
+        "pending": "Calculating your interest",
+        "error": "Could not calculate your interest"
+    },
+
+    "inbox-card": {
+        "title": "Notifications",
+        "description": "Your latest notifications in your inbox",
+        "pending": "Loading your inbox",
+        "error": "Unable to load your inbox",
+        "aria-label": "Latest notifications"
     },
 
     "transactions-card": {
+        "no-transactions": "Nothing here yet",
+        "no-transactions-description": "There are no transactions to display. You can easily transfer money under the \"Transfers\" tab.",
         "closed-account": "closed account",
-        "title": "Recent transactions",
-        "description": "Showing the latest transactions from all accounts",
+        "title": "Transactions",
+        "hover-title": "View transactions for",
+        "description": "Shows your latest transactions",
         "pending": "Loading transactions",
         "error": "Oops... Something went wrong",
         "transfer-type-transfer": "Transfer",
@@ -310,21 +375,23 @@
         "title": "Planned transfers",
         "description": "Shows your planned transfers",
         "pending": "Loading planned transfers",
-        "error": "Oops... Something went wrong"
+        "error": "Oops... Something went wrong",
+        "btn-hover": "Open transfers"
     },
 
     "savings-card": {
-    "title": "Savings Goals",
-    "description": "Here are your selected savings goals",
-    "select": "Select",
-    "selected-count": "{{selected}}/{{max}}",
-    "max-goals": "Max {{max}} savings goals",
-    "done": "Done",
-    "loading": "Loading savings goals...",
-    "error": "Could not retrieve savings goals or account balances.",
-    "achieved": "achieved",
-    "remaining": "remaining",
-    "empty-selection": "Select one or more savings goals to view your progress."
+        "title": "Savings Goals",
+        "description": "The progress of your savings goals",
+        "select": "Select",
+        "selected-count": "{{selected}}/{{max}}",
+        "max-goals": "Max {{max}} savings goals",
+        "done": "Done",
+        "loading": "Loading savings goals...",
+        "error": "Could not retrieve savings goals or account balances.",
+        "achieved": "achieved",
+        "remaining": "left",
+        "empty-selection": "Select one or more savings goals to view your progress.",
+        "btn-hover": "Go to savings goal for account:"
     },
 
     "savings-eta": "Reached in {{time}}",

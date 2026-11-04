@@ -241,9 +241,9 @@ export default function TransactionsPage() {
                             onShowClosedChange={handleShowClosedChange}
                         />
 
-                        <aside aria-label={t("generic.help")} className='hidden min-w-0 border border-gray-200 bg-white md:shadow-sm xl:block'>
-                            <div className='min-h-22 items-center justify-between bg-nordiska-blue px-4 py-3 text-white'>
-                                <p className='mt-2 truncate text-right text-sm uppercase text-white/80'>{t("generic.help-center")}</p>
+                        <aside aria-label={t("generic.help")} className='hidden min-w-0 border border-gray-300 bg-white md:shadow-md/30 xl:block'>
+                            <div className='min-h-22 items-center justify-between bg-light-blue-accent px-4 py-3 text-dark-navy'>
+                                <p className='mt-2 truncate text-right text-sm uppercase'>{t("generic.help-center")}</p>
                                 <p className='mt-1 truncate text-right text-md font-semibold'>{t("generic.related-articles")}</p>
                             </div>
 

@@ -205,10 +205,12 @@ public class DbInitializer
         }
         else
         {
+            existingDennis.Name = "Dennis Svensson";
             existingDennis.UserName = "dennis@demo.com";
             existingDennis.Email = "dennis@demo.com";
             existingDennis.NormalizedUserName = "DENNIS@DEMO.COM";
             existingDennis.NormalizedEmail = "DENNIS@DEMO.COM";
+            existingDennis.PhoneNumber = "+46708901234";
             if (string.IsNullOrEmpty(existingDennis.PasswordHash))
             {
                 await userManager.AddPasswordAsync(existingDennis, "password123");
@@ -219,28 +221,6 @@ public class DbInitializer
         var peterPersonalNum = "198404142385";
         var existingPeter = await db.Customers
             .FirstOrDefaultAsync(c => c.PersonalNum == peterPersonalNum);
-
-        // If Peter exists from a legacy manual test without official demo accounts (NOR-400001), reset him so fresh seed data takes over
-        if (existingPeter != null && !await db.SavingsAccounts.AnyAsync(a => a.CustomerId == existingPeter.Id && a.AccountNumber == "NOR-400001"))
-        {
-            var oldAccounts = await db.SavingsAccounts.Where(a => a.CustomerId == existingPeter.Id).ToListAsync();
-            var oldAccIds = oldAccounts.Select(a => a.Id).ToList();
-
-            var oldLedger = await db.LedgerEntries.Where(l => oldAccIds.Contains(l.AccountId) || (l.TargetAccountId.HasValue && oldAccIds.Contains(l.TargetAccountId.Value))).ToListAsync();
-            db.LedgerEntries.RemoveRange(oldLedger);
-
-            var oldGoals = await db.SavingsGoals.Where(g => g.CustomerId == existingPeter.Id).ToListAsync();
-            db.SavingsGoals.RemoveRange(oldGoals);
-
-            var oldLoans = await db.Loans.Where(l => l.CustomerId == existingPeter.Id).ToListAsync();
-            db.Loans.RemoveRange(oldLoans);
-
-            db.SavingsAccounts.RemoveRange(oldAccounts);
-            db.Customers.Remove(existingPeter);
-            await db.SaveChangesAsync();
-
-            existingPeter = null;
-        }
 
         if (existingPeter == null)
         {
@@ -258,10 +238,12 @@ public class DbInitializer
         }
         else
         {
+            existingPeter.Name = "Peter Hansson";
             existingPeter.UserName = "peter@demo.com";
             existingPeter.Email = "peter@demo.com";
             existingPeter.NormalizedUserName = "PETER@DEMO.COM";
             existingPeter.NormalizedEmail = "PETER@DEMO.COM";
+            existingPeter.PhoneNumber = "+46708456789";
             if (string.IsNullOrEmpty(existingPeter.PasswordHash))
             {
                 await userManager.AddPasswordAsync(existingPeter, "password123");
@@ -494,7 +476,12 @@ public class DbInitializer
                 new { AccountNumber = "NOR-100001", Type = "interest", Amount = 1250.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
                 new { AccountNumber = "NOR-100001", Type = "tax", Amount = -375.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) },
                 new { AccountNumber = "NOR-100002", Type = "interest", Amount = 300.00m, Label = "Ränteutbetalning 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc) },
-                new { AccountNumber = "NOR-100002", Type = "tax", Amount = -90.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) }
+                new { AccountNumber = "NOR-100002", Type = "tax", Amount = -90.00m, Label = "Preliminärskatt på ränta 2026", CreatedAt = new DateTime(2026, 9, 30, 0, 1, 0, DateTimeKind.Utc) },
+
+                new { AccountNumber = "NOR-100001", Type = "interest", Amount = 1250.00m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100001", Type = "tax", Amount = -375.00m, Label = "Preliminärskatt på ränta 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "interest", Amount = 300.00m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+                new { AccountNumber = "NOR-100002", Type = "tax", Amount = -90.00m, Label = "Preliminärskatt på ränta 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) }
             };
 
             foreach (var transaction in annaTaxReportTransactions)
@@ -612,250 +599,18 @@ public class DbInitializer
             await db.SaveChangesAsync();
         }
 
-        // 3. Seed / Update Dennis Svensson's Accounts
+        // 3. Seed / Update Dennis Svensson's Accounts (All 5 account types)
         var dennis = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198908092383");
         if (dennis != null)
         {
-            var dennisAccounts = await db.SavingsAccounts
-                .Where(a => a.CustomerId == dennis.Id)
-                .ToListAsync();
-
-            var dennisSalaryAcc = dennisAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-300001");
-            var dennisSavingsAcc = dennisAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-300002");
-
-            if (dennisSalaryAcc != null)
-            {
-                dennisSalaryAcc.AccountName = "Lönekonto";
-                dennisSalaryAcc.AccountType = "standard";
-                dennisSalaryAcc.InterestRate = 0.0250m;
-                dennisSalaryAcc.Status = "active";
-            }
-
-            if (dennisSavingsAcc != null)
-            {
-                dennisSavingsAcc.AccountName = "Sparkonto";
-                dennisSavingsAcc.AccountType = "saving";
-                dennisSavingsAcc.InterestRate = 0.0350m;
-                dennisSavingsAcc.Status = "active";
-            }
-
-            if (!dennisAccounts.Any())
-            {
-                dennisSalaryAcc = new SavingsAccount
-                {
-                    CustomerId = dennis.Id,
-                    AccountNumber = "NOR-300001",
-                    AccountName = "Lönekonto",
-                    AccountType = "standard",
-                    Balance = 34850.00m,
-                    InterestRate = 0.0250m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-                dennisSavingsAcc = new SavingsAccount
-                {
-                    CustomerId = dennis.Id,
-                    AccountNumber = "NOR-300002",
-                    AccountName = "Sparkonto",
-                    AccountType = "saving",
-                    Balance = 75000.00m,
-                    InterestRate = 0.0350m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-
-                db.SavingsAccounts.AddRange(dennisSalaryAcc, dennisSavingsAcc);
-                await db.SaveChangesAsync();
-
-                var dennisTransactions = new List<LedgerEntry>
-                {
-                    // NOR-300001 (Lönekonto)
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "deposit", Amount = 15685.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "deposit", Amount = 31500.00m, Label = "Lön", CreatedAt = new DateTime(2026, 8, 25, 8, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -9800.00m, Label = "Hyra", CreatedAt = new DateTime(2026, 8, 27, 0, 1, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -1420.50m, Label = "ICA Maxi", CreatedAt = new DateTime(2026, 8, 28, 16, 30, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -1020.00m, Label = "SL Månadsbiljett", CreatedAt = new DateTime(2026, 8, 29, 7, 15, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSalaryAcc.Id, Type = "withdrawal", Amount = -95.00m, Label = "Espresso House", CreatedAt = new DateTime(2026, 8, 30, 11, 45, 0, DateTimeKind.Utc) },
-
-                    // NOR-300002 (Sparkonto)
-                    new() { AccountId = dennisSavingsAcc.Id, Type = "deposit", Amount = 73000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = dennisSavingsAcc.Id, Type = "deposit", Amount = 2000.00m, Label = "Månadssparande", CreatedAt = new DateTime(2026, 8, 25, 9, 0, 0, DateTimeKind.Utc) }
-                };
-
-                db.LedgerEntries.AddRange(dennisTransactions);
-                await db.SaveChangesAsync();
-            }
-
-            // Planned transaction for Dennis
-            var dennisPlanned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == dennisSalaryAcc!.Id && l.IsPlanned);
-            if (dennisPlanned == null && dennisSalaryAcc != null && dennisSavingsAcc != null)
-            {
-                db.LedgerEntries.Add(new LedgerEntry
-                {
-                    AccountId = dennisSalaryAcc.Id,
-                    Type = "transfer",
-                    Amount = 2000.00m,
-                    Label = "Månadssparande",
-                    TargetAccountId = dennisSavingsAcc.Id,
-                    IsPlanned = true,
-                    Repeating = "month",
-                    PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (dennisPlanned != null && dennisPlanned.Repeating == "monthly")
-            {
-                dennisPlanned.Repeating = "month";
-                await db.SaveChangesAsync();
-            }
-
-            // Savings goal for Dennis
-            var dennisGoal = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == dennis.Id && g.AccountId == dennisSavingsAcc!.Id);
-            if (dennisGoal == null && dennisSavingsAcc != null)
-            {
-                db.SavingsGoals.Add(new SavingsGoal
-                {
-                    CustomerId = dennis.Id,
-                    AccountId = dennisSavingsAcc.Id,
-                    Title = "Sommarsemester 2027",
-                    TargetAmount = 90000.00m,
-                    CurrentAmount = 75000.00m,
-                    TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
-                    Status = "active",
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (dennisGoal != null)
-            {
-                dennisGoal.TargetAmount = 90000.00m;
-                dennisGoal.CurrentAmount = 75000.00m;
-                await db.SaveChangesAsync();
-            }
+            await SeedCustomerAccountsDemoDataAsync(db, dennis, "NOR-30000", "Swedbank", "Handelsbanken");
         }
 
-        // 4. Seed / Update Peter Hansson's Accounts
+        // 4. Seed / Update Peter Hansson's Accounts (All 5 account types)
         var peter = await db.Customers.FirstOrDefaultAsync(c => c.PersonalNum == "198404142385");
         if (peter != null)
         {
-            var peterAccounts = await db.SavingsAccounts
-                .Where(a => a.CustomerId == peter.Id)
-                .ToListAsync();
-
-            var peterSalaryAcc = peterAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-400001");
-            var peterSavingsAcc = peterAccounts.FirstOrDefault(a => a.AccountNumber == "NOR-400002");
-
-            if (peterSalaryAcc != null)
-            {
-                peterSalaryAcc.AccountName = "Lönekonto";
-                peterSalaryAcc.AccountType = "standard";
-                peterSalaryAcc.InterestRate = 0.0250m;
-                peterSalaryAcc.Status = "active";
-            }
-
-            if (peterSavingsAcc != null)
-            {
-                peterSavingsAcc.AccountName = "Sparkonto";
-                peterSavingsAcc.AccountType = "saving";
-                peterSavingsAcc.InterestRate = 0.0350m;
-                peterSavingsAcc.Status = "active";
-            }
-
-            if (!peterAccounts.Any())
-            {
-                peterSalaryAcc = new SavingsAccount
-                {
-                    CustomerId = peter.Id,
-                    AccountNumber = "NOR-400001",
-                    AccountName = "Lönekonto",
-                    AccountType = "standard",
-                    Balance = 34850.00m,
-                    InterestRate = 0.0250m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-                peterSavingsAcc = new SavingsAccount
-                {
-                    CustomerId = peter.Id,
-                    AccountNumber = "NOR-400002",
-                    AccountName = "Sparkonto",
-                    AccountType = "saving",
-                    Balance = 75000.00m,
-                    InterestRate = 0.0350m,
-                    Status = "active",
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                };
-
-                db.SavingsAccounts.AddRange(peterSalaryAcc, peterSavingsAcc);
-                await db.SaveChangesAsync();
-
-                var peterTransactions = new List<LedgerEntry>
-                {
-                    // NOR-400001 (Lönekonto)
-                    new() { AccountId = peterSalaryAcc.Id, Type = "deposit", Amount = 15685.50m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "deposit", Amount = 31500.00m, Label = "Lön", CreatedAt = new DateTime(2026, 8, 25, 8, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -9800.00m, Label = "Hyra", CreatedAt = new DateTime(2026, 8, 27, 0, 1, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -1420.50m, Label = "ICA Maxi", CreatedAt = new DateTime(2026, 8, 28, 16, 30, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -1020.00m, Label = "SL Månadsbiljett", CreatedAt = new DateTime(2026, 8, 29, 7, 15, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSalaryAcc.Id, Type = "withdrawal", Amount = -95.00m, Label = "Espresso House", CreatedAt = new DateTime(2026, 8, 30, 11, 45, 0, DateTimeKind.Utc) },
-
-                    // NOR-400002 (Sparkonto)
-                    new() { AccountId = peterSavingsAcc.Id, Type = "deposit", Amount = 73000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc) },
-                    new() { AccountId = peterSavingsAcc.Id, Type = "deposit", Amount = 2000.00m, Label = "Månadssparande", CreatedAt = new DateTime(2026, 8, 25, 9, 0, 0, DateTimeKind.Utc) }
-                };
-
-                db.LedgerEntries.AddRange(peterTransactions);
-                await db.SaveChangesAsync();
-            }
-
-            // Planned transaction for Peter
-            var peterPlanned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == peterSalaryAcc!.Id && l.IsPlanned);
-            if (peterPlanned == null && peterSalaryAcc != null && peterSavingsAcc != null)
-            {
-                db.LedgerEntries.Add(new LedgerEntry
-                {
-                    AccountId = peterSalaryAcc.Id,
-                    Type = "transfer",
-                    Amount = 2000.00m,
-                    Label = "Månadssparande",
-                    TargetAccountId = peterSavingsAcc.Id,
-                    IsPlanned = true,
-                    Repeating = "month",
-                    PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (peterPlanned != null && peterPlanned.Repeating == "monthly")
-            {
-                peterPlanned.Repeating = "month";
-                await db.SaveChangesAsync();
-            }
-
-            // Savings goal for Peter
-            var peterGoal = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == peter.Id && g.AccountId == peterSavingsAcc!.Id);
-            if (peterGoal == null && peterSavingsAcc != null)
-            {
-                db.SavingsGoals.Add(new SavingsGoal
-                {
-                    CustomerId = peter.Id,
-                    AccountId = peterSavingsAcc.Id,
-                    Title = "Sommarsemester 2027",
-                    TargetAmount = 90000.00m,
-                    CurrentAmount = 75000.00m,
-                    TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
-                    Status = "active",
-                    CreatedAt = DateTime.UtcNow
-                });
-                await db.SaveChangesAsync();
-            }
-            else if (peterGoal != null)
-            {
-                peterGoal.TargetAmount = 90000.00m;
-                peterGoal.CurrentAmount = 75000.00m;
-                await db.SaveChangesAsync();
-            }
+            await SeedCustomerAccountsDemoDataAsync(db, peter, "NOR-40000", "SEB", "Handelsbanken");
         }
 
         // 5. Ensure all accounts with positive balance have matching initial ledger entries (ADR 0001 Ledger Pattern sync)
@@ -875,6 +630,271 @@ public class DbInitializer
                 });
             }
         }
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedCustomerAccountsDemoDataAsync(
+        BankingDbContext db,
+        Customer customer,
+        string accPrefix,
+        string mainBankName,
+        string altBankName)
+    {
+        var existingAccounts = await db.SavingsAccounts
+            .Where(a => a.CustomerId == customer.Id)
+            .ToListAsync();
+
+        var acc1 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}1", "Flexkonto", "flex", 0.0350m, isFavorite: true);
+        var acc2 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}2", "Fasträntekonto", "fix", 0.0410m, isFavorite: false);
+        var acc3 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}3", "Standardkonto", "standard", 0.0250m, isFavorite: false);
+        var acc4 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}4", "Sparkonto", "saving", 0.0350m, isFavorite: false);
+        var acc5 = await EnsureAccountAsync(db, existingAccounts, customer.Id, $"{accPrefix}5", "Premiumkonto", "premium", 0.0400m, isFavorite: false);
+
+        // Internal demo transfer between customer's own accounts (acc2 Fasträntekonto -> acc4 Sparkonto)
+        var internalTransferTime = new DateTime(2026, 10, 28, 14, 12, 0, DateTimeKind.Utc);
+        var internalTransferCorrelationId = Guid.Parse(customer.PersonalNum == "198404142385"
+            ? "b1b2c3d4-4444-4444-4444-ef1234567890"
+            : "b1b2c3d4-3333-3333-3333-ef1234567890");
+
+        // 1. Transactions for NOR-x00001 (Flexkonto, 3.50%)
+        var acc1Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc1.Id, Type = "deposit", Amount = 45000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "deposit", Amount = 20000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 5, 10, 12, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -15000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2025, 9, 12, 13, 45, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "interest", Amount = 2470.33m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "tax", Amount = -741.10m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "deposit", Amount = 15000.00m, Label = "Extra sparande", CreatedAt = new DateTime(2026, 3, 14, 11, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc1.Id, Type = "withdrawal", Amount = -10000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2026, 6, 20, 15, 30, 0, DateTimeKind.Utc) }
+        };
+        acc1Entries.AddRange(GenerateMonthlySavings(acc1.Id, 2025, 1, 2025, 12, 3000.00m, "Månadssparande via Autogiro"));
+        acc1Entries.AddRange(GenerateMonthlySavings(acc1.Id, 2026, 1, 2026, 10, 3000.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc1, acc1Entries);
+
+        // 2. Transactions for NOR-x00002 (Fasträntekonto, 4.10% - untouched fixed term savings + internal transfer)
+        var acc2Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc2.Id, Type = "deposit", Amount = 100000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "deposit", Amount = 40000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "deposit", Amount = 30000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 7, 15, 11, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "withdrawal", Amount = -20000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2025, 10, 8, 14, 30, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "interest", Amount = 5771.45m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "tax", Amount = -1731.44m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc2.Id, Type = "transfer", Amount = -2000.00m, Label = "Överföring", TargetAccountId = acc4.Id, CorrelationId = internalTransferCorrelationId, CreatedAt = internalTransferTime }
+        };
+        await SyncAccountLedgerAndBalanceAsync(db, acc2, acc2Entries);
+
+        // 3. Transactions for NOR-x00003 (Standardkonto, 2.50%)
+        var acc3Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc3.Id, Type = "deposit", Amount = 25000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "deposit", Amount = 10000.00m, Label = $"Överföring från {altBankName}", CreatedAt = new DateTime(2025, 4, 18, 10, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -8000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *3321", CreatedAt = new DateTime(2025, 10, 5, 15, 20, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "interest", Amount = 968.63m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "tax", Amount = -290.59m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc3.Id, Type = "withdrawal", Amount = -6000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *3321", CreatedAt = new DateTime(2026, 7, 4, 12, 0, 0, DateTimeKind.Utc) }
+        };
+        acc3Entries.AddRange(GenerateMonthlySavings(acc3.Id, 2025, 1, 2025, 12, 1500.00m, "Månadssparande via Autogiro"));
+        acc3Entries.AddRange(GenerateMonthlySavings(acc3.Id, 2026, 1, 2026, 10, 1500.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc3, acc3Entries);
+
+        // 4. Transactions for NOR-x00004 (Sparkonto, 3.50%)
+        var acc4Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc4.Id, Type = "deposit", Amount = 50000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "deposit", Amount = 15000.00m, Label = $"Överföring från {mainBankName}", CreatedAt = new DateTime(2025, 6, 15, 11, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "withdrawal", Amount = -10000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2025, 8, 10, 14, 30, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "interest", Amount = 2401.58m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "tax", Amount = -720.47m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "deposit", Amount = 10000.00m, Label = "Extra sparande", CreatedAt = new DateTime(2026, 5, 18, 10, 15, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "withdrawal", Amount = -5000.00m, Label = $"Uttag till föranmält konto hos {mainBankName} *4589", CreatedAt = new DateTime(2026, 7, 12, 16, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc4.Id, Type = "transfer", Amount = 2000.00m, Label = "Överföring", TargetAccountId = acc2.Id, CorrelationId = internalTransferCorrelationId, CreatedAt = internalTransferTime }
+        };
+        acc4Entries.AddRange(GenerateMonthlySavings(acc4.Id, 2025, 1, 2025, 12, 2500.00m, "Månadssparande via Autogiro"));
+        acc4Entries.AddRange(GenerateMonthlySavings(acc4.Id, 2026, 1, 2026, 10, 2500.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc4, acc4Entries);
+
+        // 5. Transactions for NOR-x00005 (Premiumkonto, 4.00%)
+        var acc5Entries = new List<LedgerEntry>
+        {
+            new() { AccountId = acc5.Id, Type = "deposit", Amount = 120000.00m, Label = "Ingående saldo", CreatedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "deposit", Amount = 20000.00m, Label = $"Överföring från {altBankName}", CreatedAt = new DateTime(2025, 3, 18, 10, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "withdrawal", Amount = -25000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *8821", CreatedAt = new DateTime(2025, 7, 2, 10, 15, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "interest", Amount = 6079.45m, Label = "Ränteutbetalning 2025", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "tax", Amount = -1823.83m, Label = "Preliminärskatt på ränta (30%)", CreatedAt = new DateTime(2025, 12, 31, 23, 59, 1, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "deposit", Amount = 20000.00m, Label = $"Överföring från {altBankName}", CreatedAt = new DateTime(2026, 4, 10, 14, 0, 0, DateTimeKind.Utc) },
+            new() { AccountId = acc5.Id, Type = "withdrawal", Amount = -15000.00m, Label = $"Uttag till föranmält konto hos {altBankName} *8821", CreatedAt = new DateTime(2026, 8, 15, 11, 30, 0, DateTimeKind.Utc) }
+        };
+        acc5Entries.AddRange(GenerateMonthlySavings(acc5.Id, 2025, 1, 2025, 12, 5000.00m, "Månadssparande via Autogiro"));
+        acc5Entries.AddRange(GenerateMonthlySavings(acc5.Id, 2026, 1, 2026, 10, 5000.00m, "Månadssparande via Autogiro"));
+        await SyncAccountLedgerAndBalanceAsync(db, acc5, acc5Entries);
+
+        // Planned transfer (Internal regular monthly transfer between Flexkonto and Standardkonto)
+        var planned = await db.LedgerEntries.FirstOrDefaultAsync(l => l.AccountId == acc1.Id && l.IsPlanned);
+        if (planned == null)
+        {
+            db.LedgerEntries.Add(new LedgerEntry
+            {
+                AccountId = acc1.Id,
+                Type = "transfer",
+                Amount = 3000.00m,
+                Label = "Månadsöverföring",
+                TargetAccountId = acc3.Id,
+                IsPlanned = true,
+                Repeating = "month",
+                PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc),
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            planned.Label = "Månadsöverföring";
+            planned.Amount = 3000.00m;
+            planned.TargetAccountId = acc3.Id;
+            planned.Repeating = "month";
+            planned.PlannedDate = new DateTime(2026, 11, 25, 8, 0, 0, DateTimeKind.Utc);
+            await db.SaveChangesAsync();
+        }
+
+        // Savings goals
+        // Goal 1: Sommarsemester 2027 (Klar / completed on Sparkonto acc4)
+        var goal1 = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == customer.Id && g.Title == "Sommarsemester 2027");
+        if (goal1 == null)
+        {
+            db.SavingsGoals.Add(new SavingsGoal
+            {
+                CustomerId = customer.Id,
+                AccountId = acc4.Id,
+                Title = "Sommarsemester 2027",
+                TargetAmount = 100000.00m,
+                CurrentAmount = 100000.00m,
+                TargetDate = new DateTime(2027, 6, 30, 0, 0, 0, DateTimeKind.Utc),
+                Status = "completed",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            goal1.AccountId = acc4.Id;
+            goal1.TargetAmount = 100000.00m;
+            goal1.CurrentAmount = 100000.00m;
+            goal1.Status = "completed";
+            await db.SaveChangesAsync();
+        }
+
+        // Goal 2: Buffertsparande (Active on Flexkonto acc1, target 150 000 SEK, below target so user can transfer and complete in demo)
+        var goal2 = await db.SavingsGoals.FirstOrDefaultAsync(g => g.CustomerId == customer.Id && g.Title == "Buffertsparande");
+        if (goal2 == null)
+        {
+            db.SavingsGoals.Add(new SavingsGoal
+            {
+                CustomerId = customer.Id,
+                AccountId = acc1.Id,
+                Title = "Buffertsparande",
+                TargetAmount = 150000.00m,
+                CurrentAmount = acc1.Balance,
+                TargetDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc),
+                Status = "active",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            goal2.AccountId = acc1.Id;
+            goal2.TargetAmount = 150000.00m;
+            goal2.CurrentAmount = acc1.Balance;
+            goal2.Status = "active";
+            goal2.TargetDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Utc);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private static async Task<SavingsAccount> EnsureAccountAsync(
+        BankingDbContext db,
+        List<SavingsAccount> existingAccounts,
+        long customerId,
+        string accountNumber,
+        string accountName,
+        string accountType,
+        decimal interestRate,
+        bool isFavorite)
+    {
+        var acc = existingAccounts.FirstOrDefault(a => a.AccountNumber == accountNumber);
+        if (acc == null)
+        {
+            acc = new SavingsAccount
+            {
+                CustomerId = customerId,
+                AccountNumber = accountNumber,
+                AccountName = accountName,
+                AccountType = accountType,
+                InterestRate = interestRate,
+                IsFavorite = isFavorite,
+                Status = "active",
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            };
+            db.SavingsAccounts.Add(acc);
+            await db.SaveChangesAsync();
+            existingAccounts.Add(acc);
+        }
+        else
+        {
+            acc.AccountName = accountName;
+            acc.AccountType = accountType;
+            acc.InterestRate = interestRate;
+            acc.IsFavorite = isFavorite;
+            acc.Status = "active";
+            await db.SaveChangesAsync();
+        }
+        return acc;
+    }
+
+    private static List<LedgerEntry> GenerateMonthlySavings(long accountId, int startYear, int startMonth, int endYear, int endMonth, decimal amount, string label)
+    {
+        var list = new List<LedgerEntry>();
+        var current = new DateTime(startYear, startMonth, 25, 8, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(endYear, endMonth, 25, 8, 0, 0, DateTimeKind.Utc);
+        while (current <= end)
+        {
+            list.Add(new LedgerEntry
+            {
+                AccountId = accountId,
+                Type = "deposit",
+                Amount = amount,
+                Label = label,
+                CreatedAt = current
+            });
+            current = current.AddMonths(1);
+        }
+        return list;
+    }
+
+
+    private static async Task SyncAccountLedgerAndBalanceAsync(BankingDbContext db, SavingsAccount account, List<LedgerEntry> desiredEntries)
+    {
+        foreach (var entry in desiredEntries)
+        {
+            var exists = await db.LedgerEntries.AnyAsync(l =>
+                l.AccountId == entry.AccountId &&
+                l.Type == entry.Type &&
+                l.Label == entry.Label &&
+                l.CreatedAt == entry.CreatedAt);
+
+            if (!exists)
+            {
+                db.LedgerEntries.Add(entry);
+            }
+        }
+        await db.SaveChangesAsync();
+
+        var totalBalance = await db.LedgerEntries
+            .Where(l => l.AccountId == account.Id && !l.IsPlanned)
+            .SumAsync(l => l.Amount);
+
+        account.Balance = totalBalance;
         await db.SaveChangesAsync();
     }
 
@@ -926,261 +946,209 @@ public class DbInitializer
             return;
         }
 
-        var faqPairs = new (string SvQ, string SvA, string SvCat, string SvKey, string EnQ, string EnA, string EnCat, string EnKey, Guid RelationId, int SvHelpful, int EnHelpful)[]
-        {
-            (
-                "Hur gör jag ett uttag?",
-                "Du kan enkelt göra uttag och överföringar under fliken “Överföringar”. Där kan du föra över pengar mellan dina egna konton eller till dina sparade mottagare. Du kan också schemalägga återkommande överföringar veckovis, månadsvis eller årsvis.",
-                "Överföringar",
-                "uttag, uttagning, ta ut pengar, överföring, föra över pengar, överföra pengar, flytta pengar, ta ut, uttaget, uttagsgräns, stående överföring, återkommande överföring, schemalägga överföring, mottagare, mellan konton",
-                "How do I withdraw money?",
-                "You can easily make withdrawals and transfers under the “Transfers” tab. There, you can transfer money between your own accounts or to your saved recipients. You can also schedule recurring transfers on a weekly, monthly, or yearly basis.",
-                "Transfers",
-                "withdrawal, withdrawals, withdraw money, take out money, transfer, money transfer, transfer money, move money, withdrawal limit, recurring transfer, scheduled transfer, standing transfer, saved recipient, between accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000001"),
-                8,
-                4
-            ),
-            (
-                "När betalas räntan ut?",
-                "Räntan beräknas dagligen och betalas ut den 31 december varje år.",
-                "Ränta",
-                "ränta, räntan, räntesats, procent, utbetalning",
-                "When is interest paid?",
-                "Interest is calculated daily and paid on December 31st each year.",
-                "Interest",
-                "interest, rate, payment, percentage, yield",
-                Guid.Parse("a0000001-0000-0000-0000-000000000002"),
-                9,
-                6
-            ),
-            (
-                "Hur gör jag en insättning?",
-                "Gå till fliken “Överföringar” och välj alternativet för insättning. Ange beloppet och bekräfta transaktionen. När insättningen har genomförts visas pengarna på ditt konto.",
-                "Överföringar",
-                "insättning, sätta in pengar, sätt in pengar, insätta pengar, överföra pengar, fylla på konto, insättningsbelopp, insättningsalternativ, transaktion",
-                "How do I make a deposit?",
-                "Go to the Transfers tab and select the deposit option. Enter the amount and confirm the transaction. Once the deposit has been completed, the money will appear in your account.",
-                "Transfers",
-                "deposit, make a deposit, deposit money, add money, transfer money, top up account, deposit amount, deposit option, transaction",
-                Guid.Parse("a0000001-0000-0000-0000-000000000003"),
-                5,
-                2
-            ),
-            (
-                "Var hittar jag mitt årsbesked?",
-                "Ditt årsbesked ingår i skatteunderlaget. Du kan ladda ner skatteunderlaget under fliken “Bankkonton” genom att klicka på knappen “Skatteunderlag” högst upp på sidan.\nDu hittar även ditt årsbesked i din inbox under fliken “Dokument”.",
-                "Rapporter",
-                "årsbesked, årsbeskedet, skatteunderlag, skatteunderlaget, skatt, deklaration, deklarationen, skattedokument, dokument, ladda ner årsbesked, hitta årsbesked, bankkonton, inkorg, räntebesked",
-                "Where can I find my annual statement?",
-                "Your annual statement is included in your tax statement. You can download the tax statement under the \"Bank Accounts\" tab by clicking the \"Tax Report\" button at the top of the page.\nYou can also find your annual statement in your inbox under the \"Documents\" tab.",
-                "Reports",
-                "annual statement, year-end statement, tax statement, tax documentation, tax return, tax declaration, download annual statement, find annual statement, bank accounts, inbox, documents, interest statement",
-                Guid.Parse("a0000001-0000-0000-0000-000000000004"),
-                7,
-                -2
-            ),
-            (
-                "Hur får jag ett kontoutdrag?",
-                "Gå till fliken \"Bankkonton\" och välj det konto du vill ha ett kontoutdrag för i menyn. Längst ner på sidan hittar du knappen \"Kontoutdrag\", där du kan skapa och ladda ner ett kontoutdrag för det valda kontot.",
-                "Rapporter",
-                "kontoutdrag, kontoutdraget, utdrag, bankutdrag, kontoöversikt, transaktioner, transaktionshistorik, kontohistorik, betalningshistorik, skapa kontoutdrag, ladda ner kontoutdrag, bankkonton",
-                "How do I get an account statement?",
-                "Go to the \"Bank Accounts\" tab and select the account you want an account statement for from the menu. At the bottom of the page, you will find the \"Account Statement\" button, where you can generate a statement for the selected account.",
-                "Reports",
-                "account statement, bank statement, statement, transaction history, transactions, account history, payment history, generate account statement, download account statement, bank accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000005"),
-                6,
-                1
-            ),
-            (
-                "Var hittar jag villkoren för mitt sparkonto?",
-                "Du hittar villkoren för ditt sparkonto i din inkorg under fliken \"Villkor\". Öppna inkorgen genom att klicka på ikonen längst upp till höger i menyn.",
-                "Villkor",
-                "villkor, villkoren, sparkonto, sparkontovillkor, kontoavtal, avtal, regler, avtalsvillkor, läsa villkor, hitta villkor, inkorg",
-                "Where can I find the terms for my savings account?",
-                "You can find the terms and conditions for your savings account in your inbox under the \"Terms and Conditions\" tab. Open your inbox by clicking the icon in the top-right corner of the menu.",
-                "Terms",
-                "terms and conditions, savings account, account terms, agreement, account agreement, rules, contractual terms, view terms, find terms, inbox",
-                Guid.Parse("a0000001-0000-0000-0000-000000000006"),
-                -3,
-                3
-            ),
-            (
-                "Hur öppnar jag ett nytt sparkonto?",
-                "Gå till fliken \"Bankkonton\" och klicka på knappen \"Nytt Konto\". Välj vilken typ av konto du vill öppna. Du kan också välja att namnge kontot om du vill.",
-                "Konton",
-                "öppna konto, öppna sparkonto, nytt konto, nytt sparkonto, skapa konto, skapa sparkonto, lägga till konto, bankkonto, sparkonto, kontotyp, namnge konto, nytt bankkonto",
-                "How do I open a new savings account?",
-                "Go to the \"Bank Accounts\" tab and click the \"New Account\" button. Choose the type of account you want to open. You can also give the account a name if you wish.",
-                "Accounts",
-                "open account, open savings account, new account, new savings account, create account, create savings account, add account, bank account, savings account, account type, name an account, new bank account",
-                Guid.Parse("a0000001-0000-0000-0000-000000000007"),
-                10,
-                8
-            ),
-            (
-                "Hur avslutar jag mitt sparkonto?",
-                "För att avsluta ditt sparkonto behöver du först ta ut hela saldot. Gå till fliken \"Bankkonton\" och välj det konto du vill avsluta i menyn. När saldot är 0,00 kr visas en röd knapp längst ner på sidan med texten \"Avsluta Konto\". Klicka på knappen för att avsluta kontot.",
-                "Konton",
-                "avsluta konto, avsluta sparkonto, stänga konto, stänga sparkonto, säga upp konto, ta bort konto, avsluta kontot, kontosaldo, nollsaldo, saldo, ta ut pengar, Avsluta Konto",
-                "How do I close my savings account?",
-                "To close your savings account, you must first withdraw the entire balance. Go to the \"Bank Accounts\" tab and select the account you want to close from the menu. When the balance is 0.00 SEK, a red button labelled \"Close Account\" will appear at the bottom of the page. Click the button to close the account.",
-                "Accounts",
-                "close account, close savings account, closing an account, terminate account, cancel account, remove account, account balance, zero balance, withdraw money, empty account, Close Account",
-                Guid.Parse("a0000001-0000-0000-0000-000000000008"),
-                -5,
-                -8
-            ),
-            (
-                "Vilka villkor gäller för mitt sparkonto?",
-                "Du hittar de aktuella villkoren för ditt sparkonto i din inkorg under fliken \"Villkor\". Öppna inkorgen genom att klicka på ikonen längst upp till höger i menyn.",
-                "Villkor",
-                "villkor, sparkonto, sparkontovillkor, kontovillkor, regler, avgifter, ränta, avtalsvillkor, kontoavtal, aktuella villkor, läsa villkor, hitta villkor, dokument, inkorg",
-                "What terms and conditions apply to my savings account?",
-                "You can find the current terms and conditions for your savings account in your inbox under the \"Terms and Conditions\" tab. Open your inbox by clicking the icon in the top-right corner of the menu.",
-                "Terms",
-                "terms and conditions, savings account, account terms, account rules, fees, interest rate, contractual terms, account agreement, current terms, view terms, find terms, documents, inbox",
-                Guid.Parse("a0000001-0000-0000-0000-000000000009"),
-                -1,
-                -4
-            ),
-            (
-                "Kan jag hantera mitt sparkonto via mobilen?",
-                "Ja, du kan hantera ditt sparkonto direkt i mobilen. Webbplatsen är mobilanpassad och fungerar lika bra på dator, surfplatta och mobiltelefon.",
-                "Hemsidan",
-                "hemsidan, Nordiska, mobil, mobilanpassad, sparkonto, saldo, kontohantering",
-                "Can I manage my savings account from my mobile phone?",
-                "Yes, you can manage your savings account directly from your mobile phone. The website is mobile-friendly and works just as well on a computer, tablet, or mobile phone.",
-                "Website",
-                "website, Nordiska, mobile, mobile friendly, savings account, balance, account management",
-                Guid.Parse("a0000001-0000-0000-0000-000000000010"),
-                4,
-                -1
-            ),
-            (
-                "Är Nordiskas hemsida säker att använda?",
-                "Ja, Nordiskas hemsida är utformad med säkerhet i fokus. Om du glömmer att logga ut själv loggas du automatiskt ut efter en period av inaktivitet. Det minskar risken för att någon annan kan få tillgång till ditt konto om du lämnar sidan öppen.",
-                "Hemsidan",
-                "hemsidan, säkerhet, säker, automatisk utloggning, logga ut, inaktivitet, konto, trygg",
-                "Is Nordiska's website safe to use?",
-                "Yes, Nordiska's website is designed with security in mind. If you forget to log out yourself, you will be automatically logged out after a period of inactivity. This helps reduce the risk of someone else accessing your account if you leave the website open.",
-                "Website",
-                "website, security, safe, automatic logout, log out, inactivity, account, secure",
-                Guid.Parse("a0000001-0000-0000-0000-000000000011"),
-                3,
-                5
-            ),
-            (
-                "Hur skapar jag ett sparmål?",
-                "Gå till fliken \"Bankkonton\" och välj det konto du vill skapa ett sparmål för. Klicka på knappen \"Skapa sparmål\". Ange ett namn på sparmålet och det belopp du vill spara ihop. Du kan även ange ett måldatum om du vill.\nNär sparmålet har skapats kan du följa hur ditt sparande utvecklas och se hur nära du är att nå ditt mål. Du kan när som helst redigera eller ta bort ditt sparmål.",
-                "Konton",
-                "sparmål, skapa sparmål, nytt sparmål, sparande, sparmål för konto, målnamn, sparbelopp, målsumma, måldatum, följa sparande, sparutveckling, redigera sparmål, ändra sparmål, ta bort sparmål, radera sparmål, Skapa sparmål, Bankkonton",
-                "How do I create a savings goal?",
-                "Go to the \"Bank Accounts\" tab and select the account you want to create a savings goal for. Click the \"Create Savings Goal\" button. Enter a name for your savings goal and the amount you want to save. You can also set a target date if you wish.\nOnce your savings goal has been created, you can track your savings progress and see how close you are to reaching your goal. You can edit or delete your savings goal at any time.",
-                "Accounts",
-                "savings goal, create savings goal, new savings goal, savings, account savings goal, goal name, savings amount, target amount, target date, track savings, savings progress, edit savings goal, update savings goal, delete savings goal, remove savings goal, Create Savings Goal, Bank Accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000012"),
-                6,
-                2
-            ),
-            (
-                "Var kan jag se mina transaktioner?",
-                "Under fliken \"Transaktioner\" hittar du din samlade transaktionshistorik. Du kan filtrera transaktionerna efter ett specifikt konto, en tidsperiod eller transaktionstyp, till exempel insättningar och uttag.\nDu kan även se transaktionshistoriken för avslutade konton genom att markera \"Visa stängda konton\" i kontofiltret.",
-                "Transaktioner",
-                "transaktioner, transaktionshistorik, transaktionshistorik konto, kontohistorik, betalningshistorik, insättning, insättningar, uttag, uttagshistorik, filtrera transaktioner, söka transaktioner, transaktionstyp, tidsperiod, avslutade konton, stängda konton, Visa stängda konton",
-                "Where can I view my transactions?",
-                "Under the \"Transactions\" tab, you can find your complete transaction history. You can filter transactions by a specific account, a date range, or transaction type, such as deposits and withdrawals.\nYou can also view the transaction history of closed accounts by selecting \"Show closed accounts\" in the account filter.",
-                "Transactions",
-                "transactions, transaction history, account history, payment history, deposit, deposits, withdrawal, withdrawals, filter transactions, search transactions, transaction type, date range, closed accounts, view closed accounts, Show closed accounts",
-                Guid.Parse("a0000001-0000-0000-0000-000000000013"),
-                4,
-                1
-            ),
-            (
-                "Var kan jag ändra mina kontaktuppgifter?",
-                "Klicka på hamburgermenyn uppe i högra hörnet och välj \"Inställningar\". Där kan du uppdatera din e-postadress och ditt telefonnummer.",
-                "Inställningar",
-                "kontaktuppgifter, ändra kontaktuppgifter, uppdatera kontaktuppgifter, e-post, e-postadress, ändra e-postadress, uppdatera e-post, telefonnummer, ändra telefonnummer, uppdatera telefonnummer, inställningar, personuppgifter, kontaktinformation, hamburgermeny",
-                "Where can I update my contact details?",
-                "Click the hamburger menu in the top-right corner and select \"Settings\". There, you can update your email address and phone number.",
-                "Settings",
-                "contact details, update contact details, change contact information, email, email address, change email address, update email, phone number, change phone number, update phone number, settings, personal information, contact information, hamburger menu",
-                Guid.Parse("a0000001-0000-0000-0000-000000000014"),
-                2,
-                0
-            ),
-            (
-                "Hur ändrar jag språk på hemsidan?",
-                "Klicka på hamburgermenyn uppe i högra hörnet. Längst ner i menyn hittar du språkinställningarna, där du kan välja vilket språk du vill använda. Nordiska.se stöder för närvarande svenska och engelska.",
-                "Inställningar",
-                "språk, byta språk, ändra språk, språkinställningar, språkval, svenska, engelska, hemsida, webbplats, språk på hemsidan, ändra språk på webbplatsen, inställningar, hamburgermeny",
-                "How do I change the language on the website?",
-                "Click the hamburger menu in the top-right corner. At the bottom of the menu, you will find the language settings, where you can choose your preferred language. Nordiska.se currently supports Swedish and English.",
-                "Settings",
-                "language, change language, switch language, language settings, language selection, Swedish, English, website, change website language, language preferences, settings, hamburger menu",
-                Guid.Parse("a0000001-0000-0000-0000-000000000015"),
-                1,
-                3
-            ),
-            (
-                "Var loggar jag ut?",
-                "Du loggar ut genom att klicka på \"Logga ut\" i hamburgermenyn uppe i högra hörnet.",
-                "Hemsidan",
-                "logga ut, loggar ut, utloggning, avsluta session, lämna kontot, logga ut från kontot, utloggningsknapp, Logga ut, hamburgermeny",
-                "Where can I log out?",
-                "You can log out by clicking \"Log Out\" in the hamburger menu in the top-right corner.",
-                "Website",
-                "log out, logout, sign out, log off, end session, leave account, log out of account, sign-out button, Log Out, hamburger menu",
-                Guid.Parse("a0000001-0000-0000-0000-000000000016"),
-                -2,
-                -6
-            ),
-            (
-                "Var hanterar jag mina planerade överföringar?",
-                "Under fliken \"Överföringar\" hittar du sektionen för dina planerade överföringar. Där kan du ändra datum och intervall för en planerad överföring eller ta bort den om du inte längre behöver den.",
-                "Överföringar",
-                "planerade överföringar, planerad överföring, schemalagda överföringar, återkommande överföring, stående överföring, hantera överföringar, redigera överföring, ändra överföring, ändra datum, ändra intervall, ta bort överföring, avbryta överföring, överföringsdatum, överföringsintervall",
-                "Where can I manage my scheduled transfers?",
-                "Under the \"Transfers\" tab, you will find the section for your scheduled transfers. There, you can change the date and frequency of a scheduled transfer or delete it if you no longer need it.",
-                "Transfers",
-                "scheduled transfers, scheduled transfer, recurring transfers, recurring transfer, standing order, manage transfers, edit transfer, update transfer, change date, change frequency, delete transfer, cancel transfer, transfer date, transfer frequency",
-                Guid.Parse("a0000001-0000-0000-0000-000000000017"),
-                5,
-                -3
-            )
-        };
+        List<FaqSeedPair>? seedPairs = null;
 
-        foreach (var pair in faqPairs)
+        // 1. Try reading from embedded resource
+        var assembly = typeof(DbInitializer).Assembly;
+        var resourceName = assembly.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("faq_seed_data.json", StringComparison.OrdinalIgnoreCase));
+
+        if (resourceName != null)
         {
-            var existingSv = await faqDb.FaqEntries.FirstOrDefaultAsync(f => (f.Question == pair.SvQ || f.RelationId == pair.RelationId) && f.Language == "sv");
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream != null)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                seedPairs = await System.Text.Json.JsonSerializer.DeserializeAsync<List<FaqSeedPair>>(stream, options);
+            }
+        }
+
+        // 2. Fallback to file system
+        if (seedPairs == null || seedPairs.Count == 0)
+        {
+            var candidates = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "Data", "faq_seed_data.json"),
+                Path.Combine(AppContext.BaseDirectory, "faq_seed_data.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "src", "Nordiska.FrontendApi", "Data", "faq_seed_data.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "Data", "faq_seed_data.json")
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    var json = await File.ReadAllTextAsync(candidate);
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    seedPairs = System.Text.Json.JsonSerializer.Deserialize<List<FaqSeedPair>>(json, options);
+                    if (seedPairs != null && seedPairs.Count > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (seedPairs == null || seedPairs.Count == 0)
+        {
+            await SeedFaqViewLogsAsync(faqDb);
+            return;
+        }
+
+        // 3. Batch synchronization with database
+        var existingEntries = await faqDb.FaqEntries.ToListAsync();
+
+        // Remove decommissioned categories if present from earlier runs
+        var decommissioned = existingEntries
+            .Where(e => e.Category == "Nordiska app" || e.Category == "Nordiska App" || e.Category == "Lån" || e.Category == "Loans")
+            .ToList();
+        if (decommissioned.Count > 0)
+        {
+            try
+            {
+                faqDb.FaqEntries.RemoveRange(decommissioned);
+                await faqDb.SaveChangesAsync();
+                foreach (var d in decommissioned)
+                {
+                    existingEntries.Remove(d);
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = serviceProvider.GetService<Microsoft.Extensions.Logging.ILogger<DbInitializer>>();
+                logger?.LogWarning(ex, "Could not remove decommissioned FAQ entries: {Message}", ex.Message);
+            }
+        }
+
+        foreach (var pair in seedPairs)
+        {
+            // Swedish
+            var existingSv = existingEntries.FirstOrDefault(f => f.Language == "sv" && (f.RelationId == pair.RelationId || f.Question == pair.Sv.Question));
             if (existingSv == null)
             {
-                var entry = FaqEntry.Create(pair.SvQ, pair.SvA, pair.SvCat, pair.SvKey, "sv", pair.RelationId);
-                faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.SvHelpful;
+                var entry = FaqEntry.Create(pair.Sv.Question, pair.Sv.Answer, pair.Sv.Category, pair.Sv.Keywords, "sv", pair.RelationId);
+                if (pair.Sv.HelpfulCount != 0)
+                {
+                    faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.Sv.HelpfulCount;
+                }
                 faqDb.FaqEntries.Add(entry);
+                existingEntries.Add(entry);
             }
             else
             {
-                existingSv.ReviseEntry(pair.SvQ, pair.SvA, pair.SvCat, pair.SvKey, "sv");
-                faqDb.Entry(existingSv).Property(e => e.HelpfulCount).CurrentValue = pair.SvHelpful;
+                existingSv.ReviseEntry(pair.Sv.Question, pair.Sv.Answer, pair.Sv.Category, pair.Sv.Keywords, "sv");
+                if (pair.Sv.HelpfulCount != 0)
+                {
+                    faqDb.Entry(existingSv).Property(e => e.HelpfulCount).CurrentValue = pair.Sv.HelpfulCount;
+                }
             }
 
-            var existingEn = await faqDb.FaqEntries.FirstOrDefaultAsync(f => (f.Question == pair.EnQ || f.RelationId == pair.RelationId) && f.Language == "en");
+            // English
+            var existingEn = existingEntries.FirstOrDefault(f => f.Language == "en" && (f.RelationId == pair.RelationId || f.Question == pair.En.Question));
             if (existingEn == null)
             {
-                var entry = FaqEntry.Create(pair.EnQ, pair.EnA, pair.EnCat, pair.EnKey, "en", pair.RelationId);
-                faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.EnHelpful;
+                var entry = FaqEntry.Create(pair.En.Question, pair.En.Answer, pair.En.Category, pair.En.Keywords, "en", pair.RelationId);
+                if (pair.En.HelpfulCount != 0)
+                {
+                    faqDb.Entry(entry).Property(e => e.HelpfulCount).CurrentValue = pair.En.HelpfulCount;
+                }
                 faqDb.FaqEntries.Add(entry);
+                existingEntries.Add(entry);
             }
             else
             {
-                existingEn.ReviseEntry(pair.EnQ, pair.EnA, pair.EnCat, pair.EnKey, "en");
-                faqDb.Entry(existingEn).Property(e => e.HelpfulCount).CurrentValue = pair.EnHelpful;
+                existingEn.ReviseEntry(pair.En.Question, pair.En.Answer, pair.En.Category, pair.En.Keywords, "en");
+                if (pair.En.HelpfulCount != 0)
+                {
+                    faqDb.Entry(existingEn).Property(e => e.HelpfulCount).CurrentValue = pair.En.HelpfulCount;
+                }
             }
         }
 
         await faqDb.SaveChangesAsync();
+        await SeedFaqViewLogsAsync(faqDb);
+    }
+
+    private sealed class FaqSeedPair
+    {
+        public Guid RelationId { get; set; }
+        public FaqSeedItem Sv { get; set; } = new();
+        public FaqSeedItem En { get; set; } = new();
+    }
+
+    private sealed class FaqSeedItem
+    {
+        public string Question { get; set; } = string.Empty;
+        public string Answer { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Keywords { get; set; } = string.Empty;
+        public int HelpfulCount { get; set; }
+    }
+
+    private static async Task SeedFaqViewLogsAsync(FaqDbContext faqDb)
+    {
+        if (await faqDb.FaqViewLogs.AnyAsync())
+        {
+            return;
+        }
+
+        var entries = await faqDb.FaqEntries.AsNoTracking().ToListAsync();
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var viewLogs = new List<FaqViewLog>();
+        var random = new Random(42);
+
+        foreach (var entry in entries)
+        {
+            // Give higher view counts to articles with higher helpful counts or common questions
+            int viewCount;
+            if (entry.HelpfulCount >= 5)
+            {
+                viewCount = random.Next(35, 75);
+            }
+            else if (entry.HelpfulCount > 0)
+            {
+                viewCount = random.Next(15, 35);
+            }
+            else if (entry.Id % 7 == 0)
+            {
+                viewCount = random.Next(20, 45);
+            }
+            else if (entry.Id % 3 == 0)
+            {
+                viewCount = random.Next(5, 15);
+            }
+            else if (entry.Id % 2 == 0)
+            {
+                viewCount = random.Next(1, 6);
+            }
+            else
+            {
+                viewCount = 0;
+            }
+
+            for (var v = 0; v < viewCount; v++)
+            {
+                // Realistic spread over the last 28 days
+                var daysAgo = random.NextDouble() * 28;
+                var minutesOffset = random.Next(0, 1440);
+                var viewedAt = DateTime.SpecifyKind(now.AddDays(-daysAgo).AddMinutes(-minutesOffset), DateTimeKind.Utc);
+                var sessionHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes($"seed-session-{entry.Id}-{v}"))).ToLowerInvariant()[..32];
+
+                viewLogs.Add(FaqViewLog.Create(entry.Id, sessionHash, viewedAt));
+            }
+        }
+
+        if (viewLogs.Count > 0)
+        {
+            await faqDb.FaqViewLogs.AddRangeAsync(viewLogs);
+            await faqDb.SaveChangesAsync();
+        }
     }
 
     private static async Task SeedOperationalMessagesAsync(BankingDbContext db)

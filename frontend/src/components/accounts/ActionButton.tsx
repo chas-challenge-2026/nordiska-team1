@@ -6,6 +6,8 @@ type ActionButtonProps = {
     ariaLabel?: string;
     prefixIcon?: string;
     title: string;
+    hideIcon?: boolean;
+    mobile?: boolean;
 }
 
 export default function ActionButton({
@@ -16,15 +18,18 @@ export default function ActionButton({
     ariaLabel,
     prefixIcon,
     title,
+    hideIcon = false,
+    mobile = false
 }: ActionButtonProps) {
 
     let bgColor = "bg-primary-blue";
-    let hoverBgColor = "hover:bg-nordiska-blue"
+    let hoverBgColor = "hover:bg-primary-hover"
     let textColor = "text-white"
     let hoverTextColor = "hover:text-white"
     let border = ""
     let iconColor = "bg-white";
     let hoverIconColor = "group-hover:bg-white"
+    const size = mobile ? "min-h-7 px-2 sm:px-4 sm:py-2.5" : "min-h-11 px-4 py-2.5"
 
     switch (style) {
         case "light":
@@ -37,7 +42,6 @@ export default function ActionButton({
             hoverIconColor = "group-hover:bg-white"
             break;
             
-
         case "cancel":
             bgColor = "bg-white"
             hoverBgColor = "hover:bg-error"
@@ -47,30 +51,22 @@ export default function ActionButton({
             iconColor = "bg-error";
             hoverIconColor = "group-hover:bg-white"
             break;
-
-        case "regular":
         default:
             break;
-        
     }
 
-
-
     return (
-
         <button
             type="button"
             disabled={disabled || isPending}
             onClick={onClick}
             aria-label={ariaLabel}
-            className={`inline-flex min-h-11 group items-center justify-center rounded-lg ${bgColor} ${border} px-4 py-2.5 text-sm font-semibold ${textColor} transition ${disabled || isPending ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${hoverBgColor} ${hoverTextColor} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 [direction:ltr]`}>
+            className={`whitespace-nowrap inline-flex group items-center justify-center rounded-lg ${bgColor} ${border} ${size} text-sm font-semibold ${textColor} transition ${disabled || isPending ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${hoverBgColor} ${hoverTextColor} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 [direction:ltr]`}>
 
             { prefixIcon &&
-                <span aria-hidden="true" style={{maskImage: `url("${prefixIcon}")`, WebkitMaskImage: `url("${prefixIcon}")`,}} className={`mr-2 h-6 w-6  mask-contain   mask-center mask-no-repeat ${iconColor} ${hoverIconColor}`}/>
+                <span aria-hidden="true" style={{maskImage: `url("${prefixIcon}")`, WebkitMaskImage: `url("${prefixIcon}")`,}} className={`mr-2 h-6 w-6  mask-contain  ${hideIcon ? "hidden sm:inline-block" : "inline-block"} mask-center mask-no-repeat ${iconColor} ${hoverIconColor}`}/>
             }
-            
                 {title}
         </button>
     )
-
 }

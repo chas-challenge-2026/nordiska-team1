@@ -1,4 +1,4 @@
-import type { OwnAccount, TransferAccount } from "../../constants/transferAccounts";
+import type { OwnAccount, TransferAccount } from "../../types/transferAccounts";
 import type { Account } from "../../services/accountsService";
 import type { TFunction } from "i18next";
 
@@ -71,13 +71,13 @@ export function matchesSearch(account: TransferAccount, query: string) {
     return `${account.name} ${account.meta}`.toLowerCase().includes(query);
 }
 
-export function toOwnAccount(account: Account): OwnAccount {
+export function toOwnAccount(account: Account, fallbackName: string): OwnAccount {
     return {
         id: String(account.id),
         own: true,
         type: account.accountType,
         number: account.accountNumber,
-        name: account.accountName?.trim() || account.accountType,
+        name: account.accountName?.trim() || fallbackName,
         meta: account.accountNumber,
         balance: account.balance,
         isFavorite: account.isFavorite,

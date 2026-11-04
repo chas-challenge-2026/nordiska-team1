@@ -8,6 +8,8 @@ using Nordiska.FrontendApi.Authentication.Jwt;
 using Nordiska.Modules.Faq.Infrastructure.Db;
 using Nordiska.Modules.Banking.Infrastructure.Db;
 using Nordiska.Modules.Reporting.Infrastructure.Db;
+using Nordiska.Modules.Reporting.Infrastructure;
+using Nordiska.Modules.Reporting.Application;
 using Nordiska.Modules.Faq.Application;
 using System.IO;
 using System.Reflection;
@@ -113,6 +115,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddFaqModuleInfrastructure(builder.Configuration);
 
 builder.Services.AddReportingModuleInfrastructure(builder.Configuration);
+builder.Services.AddScoped<ITaxReportService, Nordiska.Modules.Reporting.Infrastructure.TaxReportService>();
 
 builder.Services.AddBankingModuleInfrastructure(builder.Configuration);
 builder.Services.AddInboxModuleInfrastructure(builder.Configuration);

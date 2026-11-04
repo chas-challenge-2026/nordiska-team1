@@ -49,10 +49,36 @@ static std::string read_file(const fs::path& path) {
     if (!stream) throw std::runtime_error("Cannot read " + path.string());
     return {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
 }
+
+
+static fs::path repo_root() {
+    // Locate the checkout from the executable directory.
+    fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
+    while (!current.empty()) {
+        if (fs::exists(current / "infra/docker-compose.yml")) return current;
+        auto parent = current.parent_path();
+        if (parent == current) break;
+        current = parent;
+    }
+    throw std::runtime_error("Run the checked-in executable inside the repository checkout");
+}
+
 // Private temporary files keep schema dumps and environment rewrites off shared paths.
+static fs::path default_temp_pattern() {
+    try {
+        auto repo_tmp = repo_root() / "tmp";
+        std::error_code ec;
+        fs::create_directories(repo_tmp, ec);
+        if (fs::exists(repo_tmp) && fs::is_directory(repo_tmp)) {
+            return repo_tmp / "nordiska-synthetic.XXXXXX";
+        }
+    } catch (...) {}
+    return fs::temp_directory_path() / "nordiska-synthetic.XXXXXX";
+}
+
 struct TempFile {
     fs::path path;
-    explicit TempFile(fs::path pattern = fs::temp_directory_path() / "nordiska-synthetic.XXXXXX") {
+    explicit TempFile(fs::path pattern = default_temp_pattern()) {
         std::string name = pattern.string();
         int fd = mkstemp(name.data());
         if (fd < 0) throw std::runtime_error("Cannot create temporary file");
@@ -82,17 +108,7 @@ static std::string run(const Args& args, const std::string* input = nullptr) {
         throw std::runtime_error("Command failed: " + command(args));
     return trim(output);
 }
-static fs::path repo_root() {
-    // Locate the checkout from the executable directory.
-    fs::path current = fs::read_symlink("/proc/self/exe").parent_path();
-    while (!current.empty()) {
-        if (fs::exists(current / "infra/docker-compose.yml")) return current;
-        auto parent = current.parent_path();
-        if (parent == current) break;
-        current = parent;
-    }
-    throw std::runtime_error("Run the checked-in executable inside the repository checkout");
-}
+
 static bool valid_database(const std::string& name) {
     return name == "nordiska_v2" || name == "nordiska_synthetic";
 }
@@ -410,6 +426,9 @@ public:
         std::cout << "App, worker and signer now use " << target << '\n'
                   << "PDF volume: " << document_volume(target) << '\n';
     }
+    void update_ui() {
+        compose({"up", "-d", "--build", app_service});
+    }
     void drop() {
         if (needs_normal_database()) switch_to("nordiska_v2");
         sql("postgres", "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'nordiska_synthetic';");
@@ -610,7 +629,7 @@ static void help() {
 Usage: ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 [options]
   --customers N   Replace synthetic data with N customers (1..37,620,000)
   --seed N        Random seed (default: 42)
-  --year N        Reporting year (default: 2025; allowed: 2000..2100)
+  --year N        Reporting year (default: 2026; allowed: 2000..2100)
   --threads N     Generation threads (default: available CPU cores)
   --append        Add customers without replacing existing synthetic data
   --stress-text   Generate long transaction descriptions
@@ -618,6 +637,7 @@ Usage: ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 [options]
   --switch DB     nordiska_synthetic or nordiska_v2; recreate app, worker and signer
   --status        Show configured/running databases and actual row counts
   --get-random-customer  Print a known customer login from the active app database
+  --update-ui     Rebuild and update the UI (app) container
   --menu, --tui   Interactive menu with customer-count presets
   --reset         Replace synthetic database with an empty cloned V2 schema
   --delete        Delete synthetic database (--drop is an alias)
@@ -631,16 +651,16 @@ Local Compose: infra/docker-compose.yml; secrets/selection: infra/.env (legacy i
 Synthetic PDFs use a separate volume; normal PDFs are preserved.
 Personal numbers count from the seed through valid dates 1905-01-01..2007-12-31,
 using individual numbers 000..999 and a calculated Luhn checksum.
-Everyone is aged 18..120 at the end of 2025. Oversized requests fail before DB changes.
+Everyone is aged 18..120 at the end of 2026. Oversized requests fail before DB changes.
 
 Standard benchmark setup:
-  ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2025 --threads 4
+  ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --customers 10000 --seed 42 --year 2026 --threads 4
   ./tools/syntheticDB/nordiska-synthetic-linux-x86_64 --switch nordiska_synthetic
 )";
 }
 
 struct SeedOptions {
-    int64_t customers = 10000, seed = 42, year = 2025;
+    int64_t customers = 10000, seed = 42, year = 2026;
     int64_t threads = std::max(1u, std::thread::hardware_concurrency());
     bool append = false, stress = false, keep_indexes = false;
 };
@@ -790,7 +810,7 @@ static void create_with_progress(DatabaseManager& manager, const SeedOptions& op
     }, details);
 }
 
-enum class MenuAction { Switch, Create, Delete, Documents, Login, Retry, Exit };
+enum class MenuAction { Switch, Create, Delete, Documents, Login, UpdateUi, Refresh, Retry, Exit };
 
 static std::string environment_name(const std::string& database) {
     if (database == "nordiska_v2") return "NORMAL";
@@ -863,6 +883,7 @@ static int run_menu(DatabaseManager& manager) {
                     !state.synthetic_exists || state.synthetic[3] == "0" ? " (stored files)" : "";
                 add(MenuAction::Documents, "Delete synthetic documents" + std::string(document_label), false, state.documents_available);
                 if (state.login_available) add(MenuAction::Login, "Show random customer login");
+                add(MenuAction::Refresh, "Refresh status");
             } else add(MenuAction::Retry, "Retry loading database state");
             add(MenuAction::Exit, "Exit");
             auto position = std::find(actions.begin(), actions.end(), selected);
@@ -906,6 +927,11 @@ static int run_menu(DatabaseManager& manager) {
                     }
                     terminal::loading("Deleting synthetic documents", [&] { manager.delete_documents(); });
                     notice = "OK: synthetic PDFs and PDF jobs deleted.";
+                } else if (selected == MenuAction::UpdateUi) {
+                    terminal::loading("Rebuilding and updating UI container", [&] { manager.update_ui(); });
+                    notice = "OK: UI container rebuilt and updated.";
+                } else if (selected == MenuAction::Refresh) {
+                    notice = "Status refreshed.";
                 }
             } catch (const terminal::Cancelled& cancel) {
                 if (cancel.eof) throw;
@@ -925,15 +951,16 @@ int main(int argc, char** argv) {
     if (!std::setlocale(LC_CTYPE, "C.UTF-8")) std::setlocale(LC_CTYPE, "");
     signal(SIGPIPE, SIG_IGN);
     try {
-        int64_t customers = 10000, seed = 42, year = 2025;
+        int64_t customers = 10000, seed = 42, year = 2026;
         int64_t threads = std::max(1u, std::thread::hardware_concurrency());
-        bool seed_requested = false, status = false, reset = false, drop = false, append = false, stress = false, benchmark = false, menu = false, random_customer = false, delete_documents = false, keep_indexes = false;
+        bool seed_requested = false, status = false, reset = false, drop = false, append = false, stress = false, benchmark = false, menu = false, random_customer = false, delete_documents = false, keep_indexes = false, update_ui = false;
         std::string target;
         for (int i = 1; i < argc; ++i) {
             std::string option = argv[i];
             if (option == "--help" || option == "-h") { help(); return 0; }
             if (option == "--version") { std::cout << "nordiska-synthetic 1.3.0 linux-x86_64\n"; return 0; }
             if (option == "--status") status = true;
+            else if (option == "--update-ui" || option == "--rebuild-ui") update_ui = true;
             else if (option == "--get-random-customer") random_customer = true;
             else if (option == "--menu" || option == "--tui") menu = true;
             else if (option == "--reset") reset = true;
@@ -972,6 +999,8 @@ int main(int argc, char** argv) {
             throw std::runtime_error("Use --get-random-customer on its own or with --status");
         if (delete_documents && (argc != (status ? 3 : 2) || seed_requested || reset || drop || benchmark || random_customer || !target.empty() || menu))
             throw std::runtime_error("Use --delete-documents on its own or with --status");
+        if (update_ui && (seed_requested || reset || drop || benchmark || random_customer || !target.empty() || menu))
+            throw std::runtime_error("Use --update-ui on its own");
         if (keep_indexes && !seed_requested && !benchmark) throw std::runtime_error("--keep-indexes requires --customers or --benchmark");
         SeedOptions options{customers, seed, year, threads, append, stress, keep_indexes};
         if (benchmark) {
@@ -981,6 +1010,12 @@ int main(int argc, char** argv) {
             return 0;
         }
         DatabaseManager manager;
+        if (update_ui) {
+            std::cout << "Rebuilding and updating UI container...\n";
+            manager.update_ui();
+            std::cout << "UI container rebuilt and running.\n";
+            return 0;
+        }
         if (menu || (argc == 1 && isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))) return run_menu(manager);
         if (reset) { manager.reset(); std::cout << "Synthetic database reset\n"; }
         if (drop) { manager.drop(); std::cout << "Synthetic database deleted; its PDF volume was retained\n"; }

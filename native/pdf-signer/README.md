@@ -1,281 +1,255 @@
 # PDF Signer
 
-Native C service for producing CMS signatures for PDF documents.
+Native C service for creating detached CMS/CAdES signatures for PDF documents.
 
-The service receives a SHA-256 digest over a Unix domain socket and returns an uppercase hexadecimal CMS signature suitable for writing directly into a PDF `/Contents` placeholder.
+The signer is designed as a separate process from the PDF generator. The PDF generator computes the SHA-256 digest of the PDF `ByteRange` and sends only that digest to the signer over a Unix domain socket. The signer loads the private key through PKCS#11, creates the CMS/CAdES signature, optionally adds an RFC 3161 timestamp token, and returns the final CMS value as uppercase hexadecimal data for the PDF `/Contents` field.
 
-Supported modes:
+## Purpose
 
-- plain CMS/CAdES
-- CMS/CAdES with an RFC 3161 timestamp token
+The main goals of the signer are to:
 
-The signer and the local TSA run as separate processes in the same container.
+- keep private-key operations separated from PDF generation and application logic;
+- support PKCS#11-backed private keys so the same signing flow can use SoftHSM during development and an HSM in production;
+- avoid passing complete PDF documents into the signing service;
+- support detached CMS/CAdES signatures suitable for PDF/PAdES signing;
+- support RFC 3161 signature timestamps;
+- keep key and certificate state long-lived instead of reloading it for every document;
+- support concurrent signing requests through worker pools and bounded queues;
+- provide a small and explicit binary protocol between the PDF generator and signer service.
+
+The current implementation provides the cryptographic foundation for PAdES Baseline signatures, including timestamped signatures corresponding to the B-T level. Higher long-term validation levels such as B-LT and B-LTA require additional PDF-side validation data and document timestamp handling.
 
 ## Architecture
 
 ```text
 PDF generator
     |
-    | Unix domain socket
+    | SHA-256 digest of signed PDF ByteRange
     v
-pdf_signer_service
+Unix domain socket
     |
-    +-- PKCS#11 private key
+    v
+PDF signer service
     |
-    +-- plain CMS
+    +--> PKCS#11 provider
+    |      |
+    |      +--> SoftHSM (development/test)
+    |      \--> HSM (production)
     |
-    +-- timestamp mode --> tsa_server_service
-                            |
-                            +-- RFC 3161 timestamp response
+    +--> CMS/CAdES detached signature
+    |
+    \--> optional RFC 3161 timestamp
+           |
+           v
+        TSA service
 ```
 
-Default runtime endpoints:
+The signer returns the DER-encoded CMS object as uppercase hexadecimal data. The PDF generator is responsible for inserting that value into the PDF signature `/Contents` field.
+
+## Key handling
+
+Private keys are accessed through OpenSSL and PKCS#11.
+
+Credentials are supplied on demand through callbacks rather than being stored as part of the key identity or loader configuration. Temporary credential buffers in the generic key-loader layer are explicitly cleared before release.
+
+The signer verifies that the configured signing certificate matches the loaded private key before accepting signing requests.
+
+## CMS/CAdES signing
+
+The PDF generator supplies a 32-byte SHA-256 digest representing the signed PDF `ByteRange`.
+
+The signer creates a detached CMS signature using:
+
+- SHA-256;
+- the configured X.509 signing certificate;
+- the PKCS#11-backed private key;
+- detached binary CMS;
+- CAdES signing attributes.
+
+Two signing modes are supported:
 
 ```text
-Signer socket: /run/pdf-signer/pdf-signer.sock
-TSA URL:       http://127.0.0.1:8081/
+SIGNER_MODE_PLAIN
+SIGNER_MODE_TIMESTAMP
 ```
 
-The TSA listens only on loopback and is not exposed outside the signer container.
+Timestamp mode additionally requests an RFC 3161 timestamp token and embeds it as the `id-aa-signatureTimeStampToken` unsigned CMS attribute.
 
-## Requirements
+## Signer protocol
 
-The service image uses Ubuntu 26.04 and provides:
+The current protocol version is `2`.
 
-- OpenSSL 3.5+
-- libcurl
-- SoftHSM2
-- pkcs11-provider
-- OpenSC
-- pthreads
+A request is exactly 48 bytes:
 
-SoftHSM is used for local development and tests.
+```text
+version          4 bytes
+digest_algorithm 4 bytes
+digest_len       4 bytes
+sign_mode        4 bytes
+SHA-256 digest   32 bytes
+```
+
+The response begins with an 8-byte header:
+
+```text
+status           4 bytes
+contents_hex_len 4 bytes
+```
+
+When the status is `SIGNER_STATUS_OK`, the response header is followed by the uppercase hexadecimal CMS data.
+
+## Concurrency
+
+The signer service uses:
+
+- 8 worker threads by default, customizable using environment variables;
+- one long-lived signer instance per worker;
+- a bounded client queue of 256 connections;
+- one request per socket connection;
+- socket send/receive timeouts.
+
+The TSA HTTP server also uses a bounded queue and a configurable worker pool.
+
+## Local TSA
+
+A local RFC 3161 TSA is included for development, testing, and demonstrations.
+
+The local TSA listens on `127.0.0.1:8081`, accepts `application/timestamp-query`, returns `application/timestamp-reply`, and uses a dedicated TSA certificate.
+
+The local TSA is intended for development and demo use. Production deployments should use an appropriately trusted TSA and certificate chain.
+
+## Dependencies
+
+The native build requires:
+
+- GCC
+- GNU Make
+- OpenSSL development libraries
+- libcurl development libraries
+- POSIX threads
+- SoftHSM2 for development/test PKCS#11 storage
+- an OpenSSL PKCS#11 provider
+- OpenSC utilities
 
 ## Build
 
 From `native/pdf-signer`:
 
 ```bash
+make
+```
+
+To build only the runtime services:
+
+```bash
 make services
 ```
 
-This builds:
+The service binaries are:
 
 ```text
 pdf_signer_service
 tsa_server_service
 ```
 
-Build all test binaries:
-
-```bash
-make all
-```
-
-Clean build output:
+To clean generated binaries:
 
 ```bash
 make clean
 ```
 
-## Tests
+## Runtime configuration
 
-The recommended test path uses Docker because PKCS#11 tests require SoftHSM and the OpenSSL PKCS#11 provider.
-
-From `native/pdf-signer`:
+### PKCS#11
 
 ```bash
-make test-docker
+PDF_SIGNER_PKCS11_PROVIDER=pkcs11
+PDF_SIGNER_PKCS11_MODULE=/usr/lib/softhsm/libsofthsm2.so
+PDF_SIGNER_PKCS11_URI='pkcs11:token=key-load-dev;object=pdf-signer-test;type=private'
+PDF_SIGNER_PKCS11_PIN=<user-pin>
+PDF_SIGNER_PKCS11_SO_PIN=<so-pin>
 ```
 
-This initializes a SoftHSM token, creates test certificates, imports the private key, and runs the test suite.
-
-Useful targets:
+### Certificates
 
 ```bash
-make test-key-load
-make test-cert-load
-make test-pdf-sign
-make test-pkcs11
-make test-tsa-client
-make test-tsa-server
-make test-signer-service
+PDF_SIGNER_CERT_PATH=tests/data/signing_cert.pem
+PDF_SIGNER_TSA_CERT_PATH=tests/data/tsa_cert.pem
+```
+
+### Signer socket
+
+```bash
+PDF_SIGNER_SOCKET_PATH=/tmp/pdf-signer.sock
+```
+
+### TSA
+
+```bash
+PDF_SIGNER_TSA_URL=http://127.0.0.1:8081/
+TSA_WORKER_COUNT=8
+TSA_HTTP_WORKER_COUNT=8
+```
+
+## Tests
+
+Run the standard test suite with:
+
+```bash
+make test
+```
+
+Concurrency and stress tests are also available:
+
+```bash
+make test-signer-concurrency
+make test-signer-stress
 make test-tsa-stress
 ```
 
-## Service image
-
-Build from the repository root:
+Docker variants:
 
 ```bash
-docker build \
-  -f native/pdf-signer/docker/Dockerfile.service \
-  -t nordiska-pdf-signer \
-  .
+make test-docker
+make test-docker-debug
+make test-signer-concurrency-docker
+make test-signer-stress-docker
+make test-tsa-stress-docker
 ```
 
-The container starts both:
+## Docker
 
-```text
-tsa_server_service
-pdf_signer_service
-```
+The development/demo container initializes SoftHSM, generates temporary signing and TSA certificates, imports the private key into SoftHSM, and starts both the TSA and signer services.
 
-## Runtime configuration
+This startup key generation is intended for development and demo environments.
 
-Non-secret configuration is supplied through environment variables.
+A production deployment should instead use provisioned certificates and a persistent or external PKCS#11/HSM-backed private key.
 
-| Variable | Purpose |
-| --- | --- |
-| `PDF_SIGNER_PKCS11_PROVIDER` | OpenSSL PKCS#11 provider name |
-| `PDF_SIGNER_PKCS11_MODULE` | PKCS#11 module path |
-| `PDF_SIGNER_PKCS11_URI` | PKCS#11 private-key URI |
-| `PDF_SIGNER_CERT_PATH` | Signing certificate path |
-| `PDF_SIGNER_TSA_CERT_PATH` | TSA certificate path |
-| `PDF_SIGNER_SOCKET_PATH` | Unix socket path |
-| `PDF_SIGNER_TSA_URL` | Local TSA URL |
-| `PDF_SIGNER_TSA_PORT` | TSA HTTP port |
-| `PDF_SIGNER_TSA_TIMEOUT_MS` | TSA request timeout |
+## Security notes
 
-The runtime config layer owns environment parsing. Lower-level modules such as `key_load.c` remain independent of process configuration.
+The signer is separated from the PDF generator so that the signing service receives only the digest that must be signed rather than the full PDF document.
 
-## Secrets
+The current implementation includes:
 
-PKCS#11 credentials are supplied as Docker secrets.
+- PKCS#11-backed private-key access;
+- on-demand credential callbacks;
+- explicit clearing of temporary secret buffers;
+- certificate/private-key consistency checks;
+- bounded request queues;
+- request validation;
+- socket timeouts;
+- loopback-only local TSA HTTP listener;
+- graceful shutdown through `SIGINT` and `SIGTERM`.
 
-Expected paths inside the container:
+## PAdES scope
 
-```text
-/run/secrets/pdf_signer_pkcs11_pin
-/run/secrets/pdf_signer_pkcs11_so_pin
-```
+The current signer supports detached CMS/CAdES signatures and RFC 3161 signature timestamps.
 
-The entrypoint exports only the user PIN as:
+In practical PAdES terms:
 
-```text
-PDF_SIGNER_PKCS11_PIN
-```
+- plain CMS/CAdES provides the basic detached PDF signature foundation;
+- RFC 3161 signature timestamps provide the basis for PAdES B-T;
+- B-LT additionally requires long-term validation data such as certificate chains and revocation information to be embedded in the PDF;
+- B-LTA additionally requires document timestamps and archival renewal support.
 
-The SO PIN is used only while initializing the development SoftHSM token and is not exported to the signer process.
-
-Do not commit local secret files.
-
-Example local setup from the repository root:
-
-```bash
-mkdir -p secrets
-
-printf '1111\n' > secrets/pdf_signer_pkcs11_pin.txt
-printf '0000\n' > secrets/pdf_signer_pkcs11_so_pin.txt
-```
-
-Ensure `secrets/` is ignored by Git.
-
-## Compose integration
-
-The signer runs as its own Compose service.
-
-The application and signer share a named volume mounted at:
-
-```text
-/run/pdf-signer
-```
-
-The Unix socket is created at:
-
-```text
-/run/pdf-signer/pdf-signer.sock
-```
-
-No TCP port is required between the application and signer.
-
-The TSA remains internal to the signer container on:
-
-```text
-127.0.0.1:8081
-```
-
-## Signer protocol
-
-Protocol version:
-
-```text
-2
-```
-
-Request layout:
-
-```text
-offset  size  field
-0       4     protocol version
-4       4     digest algorithm
-8       4     digest length
-12      4     signing mode
-16      32    SHA-256 digest
-```
-
-Constants:
-
-```text
-SIGNER_PROTOCOL_VERSION = 2
-SIGNER_DIGEST_SHA256     = 1
-SIGNER_MODE_PLAIN        = 0
-SIGNER_MODE_TIMESTAMP    = 1
-```
-
-The request is 48 bytes.
-
-Response header:
-
-```text
-offset  size  field
-0       4     status
-4       4     contents hex length
-```
-
-The response body contains the uppercase hexadecimal CMS value.
-
-Maximum response size:
-
-```text
-65536 bytes
-```
-
-## PDF signing flow
-
-The caller is responsible for PDF-specific work:
-
-1. Build the PDF signature placeholder.
-2. Calculate `/ByteRange`.
-3. Compute SHA-256 over the ByteRange bytes.
-4. Send the 32-byte digest and signing mode to `pdf_signer_service`.
-5. Receive uppercase CMS hex.
-6. Write the hex directly into `/Contents`.
-7. Pad the unused placeholder with ASCII `0`.
-
-The signer does not parse or modify PDF files.
-
-## Timestamp flow
-
-Timestamp mode:
-
-1. Creates the detached CMS signature.
-2. Extracts the raw CMS signature value.
-3. Requests an RFC 3161 timestamp for its SHA-256 imprint.
-4. Verifies the TSA response.
-5. Adds the timestamp token as an unsigned CMS attribute.
-6. Encodes the final CMS structure and returns uppercase hex.
-
-## Ownership
-
-`key_loader_t` owns its OpenSSL library context and providers.
-
-Any `EVP_PKEY` loaded through a key loader must be disposed before the loader is destroyed.
-
-Signer and TSA result objects own their output buffers and must be released with their matching dispose functions.
-
-## Development setup
-
-The development container provisions a SoftHSM token, private key, and certificates at startup.
-
-This is for local development and integration testing. Production should use externally provisioned HSM-backed keys and certificates instead of generating them at container startup.
+Those higher-level PDF revisions are handled by the PDF layer and are not implemented by this signer service alone.

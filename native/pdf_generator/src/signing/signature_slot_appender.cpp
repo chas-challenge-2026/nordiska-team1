@@ -66,6 +66,120 @@ struct PdfStructure {
     std::string trailer_body;
 };
 
+struct TrailerInfo {
+    std::string_view body;
+    size_t object_count{};
+    size_t root_id{};
+    size_t root_generation{};
+};
+
+std::expected<TrailerInfo, SigningError> parse_trailer_dict(std::string_view xref, size_t trailer_pos) {
+    auto trailer = xref.substr(trailer_pos + 7);
+    skip_space(trailer);
+    const auto trailer_end = trailer.rfind(">>");
+    if (!trailer.starts_with("<<") || trailer_end == std::string_view::npos) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::InvalidTrailerDictionary});
+    }
+    trailer = trailer.substr(2, trailer_end - 2);
+    if (after_key(trailer, "/Prev") || after_key(trailer, "/Encrypt") || after_key(trailer, "/XRefStm")) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf,
+                                            DiagnosticCode::ExistingRevisionsEncryptionAndHybridXrefsAreUnsupported});
+    }
+    auto size_text = after_key(trailer, "/Size");
+    auto root_text = after_key(trailer, "/Root");
+    if (!size_text || !root_text) {
+        return std::unexpected(
+            SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::TrailerMustContainSizeAndRoot});
+    }
+    const auto count = read_number(*size_text);
+    const auto root = read_number(*root_text);
+    const auto generation = read_number(*root_text);
+    if (!count || !root || !generation || *generation != 0 || !consume(*root_text, "R") || *root == 0 ||
+        *root >= *count || *count > kMaxPdfOffset - 2) {
+        return std::unexpected(
+            SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::InvalidTrailerObjectReferences});
+    }
+    return TrailerInfo{
+        .body = trailer,
+        .object_count = *count,
+        .root_id = *root,
+        .root_generation = *generation,
+    };
+}
+
+std::expected<size_t, SigningError> find_root_offset_in_xref(std::string_view table, size_t count, size_t root_id,
+                                                             size_t xref_offset) {
+    std::optional<size_t> root_offset;
+    skip_space(table);
+    while (!table.empty()) {
+        const auto first = read_number(table);
+        const auto length = read_number(table);
+        if (!first || !length || *first >= count || *length > count - *first) {
+            return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::InvalidXrefSubsection});
+        }
+        for (size_t i = 0; i < *length; ++i) {
+            const auto offset = read_number(table);
+            const auto gen = read_number(table);
+            skip_space(table);
+            if (!offset || !gen || table.empty() || (table.front() != 'n' && table.front() != 'f')) {
+                return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::InvalidXrefEntry});
+            }
+            if (*first + i == root_id && table.front() == 'n' && *gen == 0) {
+                root_offset = *offset;
+            }
+            table.remove_prefix(1);
+        }
+        skip_space(table);
+    }
+    if (!root_offset || *root_offset >= xref_offset) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::CatalogMissingFromXref});
+    }
+    return *root_offset;
+}
+
+std::expected<std::string_view, SigningError> extract_catalog_body(std::string_view catalog, size_t root_id,
+                                                                   size_t root_generation) {
+    const auto catalog_id = read_number(catalog);
+    const auto catalog_gen = read_number(catalog);
+    if (catalog_id != root_id || catalog_gen != root_generation || !consume(catalog, "obj")) {
+        return std::unexpected(
+            SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::CatalogXrefDoesNotPointToTheRootObject});
+    }
+    skip_space(catalog);
+    const auto object_end = catalog.find("endobj");
+    if (object_end == std::string_view::npos) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::UnterminatedCatalogObject});
+    }
+    catalog = catalog.substr(0, object_end);
+    const auto catalog_end = catalog.rfind(">>");
+    if (!catalog.starts_with("<<") || catalog_end == std::string_view::npos) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::InvalidCatalogDictionary});
+    }
+    catalog = catalog.substr(2, catalog_end - 2);
+    auto type = after_key(catalog, "/Type");
+    if (!type || !consume(*type, "/Catalog") || !after_key(catalog, "/Pages")) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::RootIsNotAPageCatalog});
+    }
+    if (after_key(catalog, "/AcroForm") || after_key(catalog, "/Version")) {
+        return std::unexpected(
+            SigningError{SigningErrorKind::InvalidPdf, DiagnosticCode::CatalogAlreadyContainsAFormOrVersionOverride});
+    }
+    return catalog;
+}
+
+std::string rewrite_trailer_size(std::string_view trailer, size_t new_object_count) {
+    // Preserve existing trailer metadata (/Info, /ID) while replacing /Size.
+    const auto size_position = trailer.size() - after_key(trailer, "/Size")->size();
+    auto size_value = trailer.substr(size_position);
+    skip_space(size_value);
+    const auto digits_start = trailer.size() - size_value.size();
+    (void)read_number(size_value);
+    const auto digits_end = trailer.size() - size_value.size();
+    std::string trailer_body(trailer);
+    trailer_body.replace(digits_start, digits_end - digits_start, std::to_string(new_object_count));
+    return trailer_body;
+}
+
 std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> bytes,
                                                       SignaturePreparationTiming* timing) {
     auto previous = timing ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
@@ -76,122 +190,70 @@ std::expected<PdfStructure, SigningError> inspect_pdf(std::span<const uint8_t> b
             previous = now;
         }
     };
-    const auto invalid = [](std::string message) {
-        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, std::move(message)});
+    const auto invalid = [](DiagnosticCode code) {
+        return std::unexpected(SigningError{SigningErrorKind::InvalidPdf, code});
     };
+
+    // 1. Locate startxref and classic xref section
     const std::string_view pdf(reinterpret_cast<const char*>(bytes.data()), bytes.size());
     if (!pdf.starts_with("%PDF-")) {
-        return invalid("Missing PDF header");
+        return invalid(DiagnosticCode::MissingPDFHeader);
     }
     const auto start = pdf.rfind("startxref");
     if (start == std::string_view::npos) {
-        return invalid("Missing startxref");
+        return invalid(DiagnosticCode::MissingStartxref);
     }
     auto ending = pdf.substr(start + 9);
     const auto xref_offset = read_number(ending);
     if (!xref_offset || *xref_offset >= start || !consume(ending, "%%EOF")) {
-        return invalid("Invalid startxref or EOF");
+        return invalid(DiagnosticCode::InvalidStartxrefOrEOF);
     }
     skip_space(ending);
     if (!ending.empty()) {
-        return invalid("Unexpected bytes after PDF EOF");
+        return invalid(DiagnosticCode::UnexpectedBytesAfterPDFEOF);
     }
     auto xref = pdf.substr(*xref_offset, start - *xref_offset);
     if (!consume(xref, "xref")) {
-        return invalid("Only classic cross-reference tables from our renderers are supported");
+        return invalid(DiagnosticCode::OnlyClassicCrossReferenceTablesFromOurRenderersAreSupported);
     }
     checkpoint(&SignaturePreparationTiming::locate_xref_seconds);
+
+    // 2. Parse trailer dictionary
     const auto trailer_pos = xref.find("trailer");
     if (trailer_pos == std::string_view::npos) {
-        return invalid("Missing trailer");
+        return invalid(DiagnosticCode::MissingTrailer);
     }
-    auto trailer = xref.substr(trailer_pos + 7);
-    skip_space(trailer);
-    const auto trailer_end = trailer.rfind(">>");
-    if (!trailer.starts_with("<<") || trailer_end == std::string_view::npos) {
-        return invalid("Invalid trailer dictionary");
+    auto trailer_info = parse_trailer_dict(xref, trailer_pos);
+    if (!trailer_info) {
+        return std::unexpected(trailer_info.error());
     }
-    trailer = trailer.substr(2, trailer_end - 2);
-    if (after_key(trailer, "/Prev") || after_key(trailer, "/Encrypt") || after_key(trailer, "/XRefStm")) {
-        return invalid("Existing revisions, encryption and hybrid xrefs are unsupported");
-    }
-    auto size_text = after_key(trailer, "/Size");
-    auto root_text = after_key(trailer, "/Root");
-    if (!size_text || !root_text) {
-        return invalid("Trailer must contain /Size and /Root");
-    }
-    const auto count = read_number(*size_text);
-    const auto root = read_number(*root_text);
-    const auto generation = read_number(*root_text);
-    if (!count || !root || !generation || *generation != 0 || !consume(*root_text, "R") || *root == 0 ||
-        *root >= *count || *count > kMaxPdfOffset - 2) {
-        return invalid("Invalid trailer object references");
-    }
-
     checkpoint(&SignaturePreparationTiming::trailer_seconds);
-    auto table = xref.substr(0, trailer_pos);
-    std::optional<size_t> root_offset;
-    skip_space(table);
-    while (!table.empty()) {
-        const auto first = read_number(table);
-        const auto length = read_number(table);
-        if (!first || !length || *first >= *count || *length > *count - *first) {
-            return invalid("Invalid xref subsection");
-        }
-        for (size_t i = 0; i < *length; ++i) {
-            const auto offset = read_number(table);
-            const auto gen = read_number(table);
-            skip_space(table);
-            if (!offset || !gen || table.empty() || (table.front() != 'n' && table.front() != 'f')) {
-                return invalid("Invalid xref entry");
-            }
-            if (*first + i == *root && table.front() == 'n' && *gen == 0) {
-                root_offset = *offset;
-            }
-            table.remove_prefix(1);
-        }
-        skip_space(table);
-    }
-    if (!root_offset || *root_offset >= *xref_offset) {
-        return invalid("Catalog missing from xref");
+
+    // 3. Scan xref entries for the root catalog object offset
+    auto root_offset = find_root_offset_in_xref(xref.substr(0, trailer_pos), trailer_info->object_count,
+                                                trailer_info->root_id, *xref_offset);
+    if (!root_offset) {
+        return std::unexpected(root_offset.error());
     }
     checkpoint(&SignaturePreparationTiming::xref_entries_seconds);
-    auto catalog = pdf.substr(*root_offset, *xref_offset - *root_offset);
-    const auto catalog_id = read_number(catalog);
-    const auto catalog_gen = read_number(catalog);
-    if (catalog_id != root || catalog_gen != generation || !consume(catalog, "obj")) {
-        return invalid("Catalog xref does not point to the root object");
-    }
-    skip_space(catalog);
-    const auto object_end = catalog.find("endobj");
-    if (object_end == std::string_view::npos) {
-        return invalid("Unterminated catalog object");
-    }
-    catalog = catalog.substr(0, object_end);
-    const auto catalog_end = catalog.rfind(">>");
-    if (!catalog.starts_with("<<") || catalog_end == std::string_view::npos) {
-        return invalid("Invalid catalog dictionary");
-    }
-    catalog = catalog.substr(2, catalog_end - 2);
-    auto type = after_key(catalog, "/Type");
-    if (!type || !consume(*type, "/Catalog") || !after_key(catalog, "/Pages")) {
-        return invalid("Root is not a page catalog");
-    }
-    if (after_key(catalog, "/AcroForm") || after_key(catalog, "/Version")) {
-        return invalid("Catalog already contains a form or version override");
-    }
 
+    // 4. Validate and extract root catalog body
+    auto catalog_body = extract_catalog_body(pdf.substr(*root_offset, *xref_offset - *root_offset),
+                                             trailer_info->root_id, trailer_info->root_generation);
+    if (!catalog_body) {
+        return std::unexpected(catalog_body.error());
+    }
     checkpoint(&SignaturePreparationTiming::catalog_seconds);
-    // Preserve existing trailer metadata (/Info, /ID) while replacing /Size below.
-    const auto size_position = trailer.size() - after_key(trailer, "/Size")->size();
-    auto size_value = trailer.substr(size_position);
-    skip_space(size_value);
-    const auto digits_start = trailer.size() - size_value.size();
-    (void)read_number(size_value);
-    const auto digits_end = trailer.size() - size_value.size();
-    std::string trailer_body(trailer);
-    trailer_body.replace(digits_start, digits_end - digits_start, std::to_string(*count + 2));
-    PdfStructure result{*xref_offset, *count, *root, std::string(catalog), std::move(trailer_body)};
+
+    // 5. Copy metadata and update trailer /Size for the 2 appended signature objects
+    std::string trailer_body = rewrite_trailer_size(trailer_info->body, trailer_info->object_count + 2);
+    PdfStructure result{
+        .xref_offset = *xref_offset,
+        .object_count = trailer_info->object_count,
+        .root_id = trailer_info->root_id,
+        .catalog_body = std::string(*catalog_body),
+        .trailer_body = std::move(trailer_body),
+    };
     checkpoint(&SignaturePreparationTiming::metadata_copy_seconds);
     return result;
 }
@@ -211,7 +273,7 @@ std::expected<Sha256Digest, SigningError> hash_ranges(std::span<const uint8_t> f
         (!first.empty() && EVP_DigestUpdate(context.get(), first.data(), first.size()) != 1) ||
         (!second.empty() && EVP_DigestUpdate(context.get(), second.data(), second.size()) != 1) ||
         EVP_DigestFinal_ex(context.get(), digest.data(), &length) != 1 || length != digest.size()) {
-        return std::unexpected(SigningError{SigningErrorKind::DigestFailed, "OpenSSL SHA-256 digest failed"});
+        return std::unexpected(SigningError{SigningErrorKind::DigestFailed, DiagnosticCode::OpenSSLSHA256DigestFailed});
     }
     return digest;
 }
@@ -222,11 +284,11 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
                                                                  SignaturePreparationTiming* timing) {
     if (capacity == 0 || capacity % 2 != 0) {
         return std::unexpected(SigningError{SigningErrorKind::InvalidArgument,
-                                            "Signature capacity must be a positive even number of hex characters"});
+                                            DiagnosticCode::SignatureCapacityMustBeAPositiveEvenNumberOfHexCharacters});
     }
     if (pdf.size() > kMaxPdfOffset || capacity > kMaxPdfOffset - pdf.size() || capacity > pdf.max_size() - pdf.size()) {
         return std::unexpected(
-            SigningError{SigningErrorKind::ResourceLimitExceeded, "PDF signature capacity too large"});
+            SigningError{SigningErrorKind::ResourceLimitExceeded, DiagnosticCode::PDFSignatureCapacityTooLarge});
     }
     auto structure = inspect_pdf(pdf, timing);
     if (!structure) {
@@ -242,7 +304,9 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
         std::format("\n{} 0 obj\n<<{}\n/Version /1.7\n/AcroForm << /SigFlags 3 /Fields [ {} 0 R ] >>\n>>\nendobj\n",
                     root_id, catalog_body, field_id);
     const size_t field_offset = pdf.size() + prefix.size();
-    prefix += std::format("{} 0 obj\n<< /FT /Sig /T (Signature1) /V {} 0 R >>\nendobj\n", field_id, signature_id);
+    prefix += std::format("{} 0 obj\n<< /Type /Annot /Subtype /Widget /Rect [0 0 0 0] /F 132 /FT /Sig /T (Signature1) "
+                          "/V {} 0 R >>\nendobj\n",
+                          field_id, signature_id);
     const size_t signature_offset = pdf.size() + prefix.size();
     prefix += std::format(
         "{} 0 obj\n<< /Type /Sig /Filter /Adobe.PPKLite /SubFilter /ETSI.CAdES.detached\n/ByteRange [", signature_id);
@@ -259,7 +323,7 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
     const size_t final_size = slot_offset + capacity + suffix.size();
     if (final_size > kMaxPdfOffset || final_size > pdf.max_size()) {
         return std::unexpected(
-            SigningError{SigningErrorKind::ResourceLimitExceeded, "PDF exceeds 10-digit xref offsets"});
+            SigningError{SigningErrorKind::ResourceLimitExceeded, DiagnosticCode::PDFExceeds10DigitXrefOffsets});
     }
     const size_t second_offset = slot_offset + capacity + 1;
     const std::array<size_t, 4> ranges{0, slot_offset - 1, second_offset, final_size - second_offset};
@@ -287,7 +351,8 @@ std::expected<SignatureSlot, SigningError> append_signature_slot(std::vector<uin
 std::expected<Sha256Digest, SigningError> compute_byte_range_digest(std::span<const uint8_t> pdf,
                                                                     const SignatureSlot& slot) {
     if (!valid_slot(pdf, slot)) {
-        return std::unexpected(SigningError{SigningErrorKind::InvalidArgument, "Invalid signature slot bounds"});
+        return std::unexpected(
+            SigningError{SigningErrorKind::InvalidArgument, DiagnosticCode::InvalidSignatureSlotBounds});
     }
     return hash_ranges(pdf.first(slot.offset - 1), pdf.subspan(slot.offset + slot.max_length + 1));
 }
@@ -299,17 +364,17 @@ std::expected<Sha256Digest, SigningError> hash_final_document(std::span<const ui
 std::expected<void, SigningError> insert_signature(std::span<uint8_t> pdf, SignatureSlot& slot, std::string_view hex) {
     if (!valid_slot(pdf, slot) || slot.is_signed) {
         return std::unexpected(
-            SigningError{SigningErrorKind::InvalidArgument, "Invalid or already filled signature slot"});
+            SigningError{SigningErrorKind::InvalidArgument, DiagnosticCode::InvalidOrAlreadyFilledSignatureSlot});
     }
     if (hex.size() > slot.max_length) {
         return std::unexpected(
-            SigningError{SigningErrorKind::SignatureTooLarge, "CMS hex exceeds reserved /Contents capacity"});
+            SigningError{SigningErrorKind::SignatureTooLarge, DiagnosticCode::CMSHexExceedsReservedContentsCapacity});
     }
     if (hex.empty() || hex.size() % 2 != 0 || !std::ranges::all_of(hex, [](char c) {
             return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
         })) {
         return std::unexpected(
-            SigningError{SigningErrorKind::InvalidSignatureOutput, "Signer returned invalid CMS hex"});
+            SigningError{SigningErrorKind::InvalidSignatureOutput, DiagnosticCode::SignerReturnedInvalidCMSHex});
     }
     std::ranges::copy(hex, pdf.begin() + slot.offset);
     std::fill(pdf.begin() + slot.offset + hex.size(), pdf.begin() + slot.offset + slot.max_length, '0');

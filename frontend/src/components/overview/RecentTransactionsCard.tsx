@@ -3,12 +3,16 @@ import OverviewCard from "./OverviewCard";
 import { LoadingState, ErrorState } from "../StatusMessage";
 import { formatDate, formatTime, toTimestamp } from "../../utils/date";
 import { useTransactions } from "../../hooks/useTransactions";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrencySmallSek } from "../../utils/currency";
 import { useGetAccounts } from "../../hooks/useAccounts";
 import { useNavigate } from "react-router";
 import { type Transaction } from "../../services/transactionsService";
+import OverviewCardHeader from "./OverviewCardHeader";
+import { OverviewCardRow } from "./OverviewCardRow";
+import type { OverviewCardProps } from "../../pages/OverviewPage";
+import { NoTransactions } from "../StatusMessage";
 
-const MAX_ROWS = 5;
+const MAX_ROWS = 10;
 
 type TransferGroup = {
     id: string;
@@ -23,10 +27,10 @@ type TransferGroup = {
 
 type RecentTransaction = Transaction | TransferGroup;
 
-export default function RecentTransactionsCard() {
+export default function RecentTransactionsCard({ showOnlyFavs }: OverviewCardProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 14, AccountIds: [] });
+    const { data: transactions, isPending, isError } = useTransactions({ Page: 1, PageSize: 20, AccountIds: [] });
     const { data: accounts } = useGetAccounts();
 
     const result: RecentTransaction[] = [];
@@ -34,6 +38,10 @@ export default function RecentTransactionsCard() {
 
     const recent = (transactions?.items ?? [])
         .filter((tx) => !tx.isPlanned)
+        .filter((tx) => {
+            if (!showOnlyFavs) return true;
+            return accounts?.some( (account) =>  account.id === tx.accountId &&  account.isFavorite);
+        })
         .sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt))
 
     // PARA IHOP TRANSAKTIONER OCH SKAPA NY LISTA
@@ -93,54 +101,41 @@ export default function RecentTransactionsCard() {
         <div className="flex h-full flex-col">
 
             {/* CARD HEADER */}
-            <div className="h-22 bg-dark-navy pl-2 pt-1.5 text-white sm:pl-3">
-                <div className="flex flex-col items-start p-3 sm:p-4">
-                    <h2 className="text-xl font-semibold tracking-wide sm:text-2xl"> {t("overview-route.transactions-card.title")} </h2>
-                    <p className="text-[0.65em] uppercase text-white/80 sm:text-[0.70em]"> {t("overview-route.transactions-card.description")} </p>
-                </div>
-            </div>
+            <OverviewCardHeader title={t("overview-route.transactions-card.title")} description={t("overview-route.transactions-card.description")} />
 
             {/* USER FEEDBACK */}
+            {result.length === 0 && showOnlyFavs && (<NoTransactions />)}
             {isPending && ( <LoadingState title={t("overview-route.transactions-card.pending")} />)}
             {isError && ( <ErrorState title={t("overview-route.transactions-card.error")} />)}
 
-            {/* CONTENT */}
+            {/* CONTENT ROWS */}
             {!isPending && !isError && (
-                <section className="flex flex-1 flex-col p-2 sm:p-3">
-                <div className="flex flex-1 flex-col overflow-hidden">
+                <section className="flex min-h-0 flex-1 flex-col ">
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div className="min-h-0 flex-1 overflow-y-auto">
 
-                    {/* TRANSFER ROWS */}
-                    {result.slice(0, MAX_ROWS).map((tx) => (
-                        <button 
-                            key={tx.id}
-                            type="button"
-                            onClick={() => handleTransactionClick(tx)}
-                            className={`flex basis-1/5 shrink-0 flex-col justify-center px-3 py-2  border-nordiska-orange odd:bg-light-gray/60 even:bg-white sm:px-5 cursor-pointer hover:bg-primary-blue/10 `}
-                            >
-        
-                            {/* NAMN & SUMMA */}
-                            <p className="flex items-baseline justify-between gap-2 text-sm sm:text-base">
-                                <span className="min-w-0 wrap-break-word font-semibold truncate"> {tx.label ? tx.label : t(`overview-route.transactions-card.transfer-type-${tx.type}`)} </span>
-                                <span className={`shrink-0 whitespace-nowrap font-medium ${tx.amount < 0 ? "text-red-700" : tx.type === "transfer-group" ? "" : "text-green-700"}`}>
-                                    {tx.type === "transfer-group" ? "" : tx.amount < 0 ? "" : "+"}
-                                    {formatCurrency(tx.amount)}
-                                </span>
-                            </p>
+                            {result.slice(0, MAX_ROWS).map((tx) => {
 
-                            {/* TID & TRANSAKTIONSTYP / FRÅN TILL */}
-                            <p className="flex flex-wrap justify-between gap-x-2 gap-y-1 text-[9px] uppercase text-dark-navy/60 sm:text-xs">
-                                <span className="min-w-0 wrap-break-word"> {formatTime(tx.createdAt)} <span className="ml-1">{formatDate(tx.createdAt)}</span> </span> 
-                                <span className="shrink-0 whitespace-nowrap">
-                                    {tx.type === "transfer-group"
-                                        ? `${getAccountNumber(tx.from)} → ${getAccountNumber(tx.to)}`
-                                        : t(`overview-route.transactions-card.transfer-type-${tx.type}`)
-                                    }
-                                </span>
-                            </p>
-                        </button>
-                    
-                    ))}
-                </div>
+                                const displayName = tx.label ? tx.label : t(`overview-route.transactions-card.transfer-type-${tx.type}`);
+                                const colorAmount = tx.type === "transfer-group" ? "neutral" : tx.amount < 0 ? "minus" : "plus";
+                                const displayDate = <>{formatTime(tx.createdAt)} <span className="ml-1">{formatDate(tx.createdAt)}</span></>;
+                                const displayType = tx.type === "transfer-group" ? `${getAccountNumber(tx.from)} → ${getAccountNumber(tx.to)}` : getAccountNumber(tx.accountId);
+                                            
+                                return (
+                                    <OverviewCardRow 
+                                        key={tx.id}
+                                        btnHoverText={`${t("overview-route.transactions-card.hover-title")} ${formatDate(tx.createdAt)}`}
+                                        onClick={() => handleTransactionClick(tx)}
+                                        cols={"2"}
+                                        titleHoverText={displayName}
+                                        titleRow={[displayName, formatCurrencySmallSek(tx.amount)]}
+                                        colorAmount={colorAmount}
+                                        descriptionRow={[displayDate, displayType]}
+                                    />
+                                )
+                            })}
+                        </div>
+                    </div>
                 </section>
             )}
         </div>

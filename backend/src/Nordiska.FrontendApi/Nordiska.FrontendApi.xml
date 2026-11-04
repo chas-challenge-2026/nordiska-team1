@@ -51,9 +51,14 @@
             Helpers for reading the logged in customer from the JWT claims.
             </summary>
         </member>
+        <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.IsStaff(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            True if the authenticated user is an internal staff or admin member.
+            </summary>
+        </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetCustomerId(System.Security.Claims.ClaimsPrincipal)">
             <summary>
-            Returns the customer id from the token, or null if it is missing or not a number.
+            Returns the customer id from the token, or null if it is missing, not a number, or if the user is staff.
             </summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredCustomerId(System.Security.Claims.ClaimsPrincipal)">
@@ -64,7 +69,7 @@
         </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetStaffId(System.Security.Claims.ClaimsPrincipal)">
             <summary>
-            Returns the staff id from the token claims ("staff_id", "sub", or NameIdentifier), or null if missing or not a number.
+            Returns the staff id from the token claims ("staff_id" or "sub" when user_type is staff), or null if missing or not a number.
             </summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Authentication.Claims.ClaimsPrincipalExtensions.GetRequiredStaffId(System.Security.Claims.ClaimsPrincipal)">
@@ -571,7 +576,7 @@
             API endpoints for managing and querying FAQ knowledge base entries.
             </summary>
         </member>
-        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetByLanguage(System.String,System.Int32,System.Int32,System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetByLanguage(System.String,System.Int32,System.Int32,System.String,System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieves paginated FAQ entries for a specific language with optional search, category, and keyword filters.
             </summary>
@@ -581,6 +586,8 @@
             <param name="search">Free text search term across question, answer, and keywords.</param>
             <param name="category">Category filter (e.g. 'Ränta', 'Interest').</param>
             <param name="keyword">Keyword filter (e.g. 'ränta', 'deposit').</param>
+            <param name="sortBy">Optional sort field: id, helpful, or views (views are counted over the last 30 days).</param>
+            <param name="sortOrder">Optional direction: asc or desc. Defaults to asc for id and desc for helpful/views.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">Paginated list of FAQ entries matching the criteria.</response>
             <response code="400">Validation failed for query parameters.</response>
@@ -601,6 +608,11 @@
             <response code="400">Validation failed for query parameters.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
             <response code="403">Forbidden if the user lacks the faq:manage policy.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetAnalyticsSummary(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Returns aggregate FAQ search and view analytics. Requires the faq:manage permission.
+            </summary>
         </member>
         <member name="M:Nordiska.FrontendApi.Controllers.FaqController.GetCategories(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -840,6 +852,23 @@
             <param name="cancellationToken">Cancellation token.</param>
             <response code="200">List of bank accounts.</response>
             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
+        </member>
+        <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.GetInterestSummary(System.Threading.CancellationToken)">
+             <summary>
+             Retrieves an aggregated interest summary (accrued YTD and projected year-end total) across all active bank accounts for the authenticated customer.
+             </summary>
+             <remarks>
+             Calculates the sum of accrued interest since January 1st (YTD) and projected total interest by December 31st
+             across all active bank accounts owned by the authenticated customer.
+            
+             - **totalAccruedInterestYtd:** Combined interest earned day-by-day from Jan 1st up to today.
+             - **totalEstimatedYearEndInterest:** Combined projected total interest at year-end based on current account balances.
+             - **activeAccountsCount:** Number of active accounts included in the calculation (closed accounts are excluded).
+             - **currencyCode:** Account currency code (e.g., "SEK").
+             </remarks>
+             <param name="cancellationToken">Cancellation token.</param>
+             <response code="200">Aggregated interest summary for active accounts.</response>
+             <response code="401">Unauthorized if authentication token is missing or invalid.</response>
         </member>
         <member name="M:Nordiska.FrontendApi.Endpoints.Banking.AccountsController.GetById(System.Int64,System.Threading.CancellationToken)">
             <summary>
