@@ -154,7 +154,7 @@
         "favorite": "Favoritmarkera",
         "no-favorite": "Avmarkera favorit",
         "close-account": "Avsluta konto",
-        "help-card-search": "insättning, kontoutdrag, avslutar, öppnar nytt, sparmål, ränta",
+        "help-card-search": "hur gör jag en insättning, jag ett kontoutdrag, avslutar, öppnar nytt, sparmål, ränta",
 
         "accounts-header": {
             "my-accounts": "Mina konton",
@@ -178,8 +178,8 @@
         },
         "forecast-section": {
             "heading": "Sparprognos",
-            "earned-interest": "varav upplupen ränta",
-            "total": "Totalt sparande",
+            "earned-interest": "varav beräknad ränteintäkt",
+            "total": "Totalt beräknat sparande",
             "monthly-saving": "Månadssparande",
             "saving-period": "Spartid",
             "years": "{{count}} år",
