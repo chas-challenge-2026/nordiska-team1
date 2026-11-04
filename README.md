@@ -4,7 +4,6 @@
 
 Check out the deployed [Live demo](https://nordiska-team1-dev.team.chas-challenge.comerit.se/)!
 
-
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C++23](https://img.shields.io/badge/C++-23-00599C?logo=c%2B%2B)](https://en.cppreference.com/w/cpp/23)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
@@ -78,7 +77,7 @@ As Nordiska Sparbanken moves into direct consumer banking, routine requests such
 - **Modular monolith.** Four modules (Banking, Reporting, FAQ, Inbox), each with its own PostgreSQL schema and least-privilege database role.
 - **Job queue on PostgreSQL.** Workers claim jobs with `FOR UPDATE SKIP LOCKED`, so concurrency needs no extra locking layer.
 - **Native PDF engine.** C++23, called in-process by the worker through a C ABI.
-- **Isolated signer.** A separate PKCS#11 daemon, called by the native PDF engine over a Unix domain socket, so signing keys never share memory or process space with the application or worker.
+- **Isolated signer.** A separate PKCS#11 service, called by the native PDF engine over a Unix domain socket, so signing keys never share memory or process space with the application or worker.
 - **Benchmark performance.** In stress tests on an 8-core laptop with 10,000 synthetic customers (15,444 accounts, 733k+ transactions), the full pipeline generated and CMS-signed all **25,448 PDF documents in 52.5 seconds** (485 PDFs/s) with zero errors. Pure in-memory C++ generation and socket signing took **6.16 seconds** (over 4,100 PDFs/s, ~3.7 ms/doc).
 
 | Layer | Technologies |
@@ -86,7 +85,7 @@ As Nordiska Sparbanken moves into direct consumer banking, routine requests such
 | **Backend** | ASP.NET Core 8, EF Core 8, BCrypt.Net-Next, ActiveLogin BankID, Polly, FluentValidation, Serilog |
 | **Frontend** | React 18, TypeScript, Vite, TailwindCSS, Zustand, TanStack Query, Framer Motion, i18n, fuse.js |
 | **Native engine** | C++23, libharu, Cairo, simdjson, nlohmann-json, OpenSSL 3.0+, CMake + Ninja, CTest |
-| **Security & signing** | PKCS#11, CMS/PKCS#7 signing, SoftHSM2, RFC 3161 timestamps |
+| **Security & signing** | PKCS#11, CMS/PKCS#7 signing, RFC 3161 timestamps |
 | **Infrastructure** | PostgreSQL 15, Docker Compose, GitHub Actions CI, multi-stage Dockerfiles |
 
 ## Security
